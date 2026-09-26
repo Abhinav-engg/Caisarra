@@ -1,6 +1,5 @@
-package com.abhinav.caisarra.ui.theme
+package com.caisaara.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -11,48 +10,98 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val CaisaaraLightColorScheme = lightColorScheme(
+    primary = EmeraldNormal,
+    onPrimary = White,
+    primaryContainer = EmeraldLight,
+    onPrimaryContainer = EmeraldDarkActive,
+
+    secondary = SlateNormal,
+    onSecondary = White,
+    secondaryContainer = SlateLight,
+    onSecondaryContainer = SlateDarkActive,
+
+    tertiary = AmberNormal,
+    onTertiary = White,
+    tertiaryContainer = AmberLight,
+    onTertiaryContainer = AmberDarkActive,
+
+    error = RedNormal,
+    onError = White,
+    errorContainer = RedLight,
+    onErrorContainer = RedDarkActive,
+
+    background = SlateLight,
+    onBackground = SlateDarker,
+
+    surface = White,
+    onSurface = SlateDarker,
+    surfaceVariant = SlateLightHover,
+    onSurfaceVariant = SlateNormal,
+
+    outline = SlateNormalActive,
+    outlineVariant = SlateLightActive,
+
+    inverseSurface = SlateDarker,
+    inverseOnSurface = SlateLight,
+    inversePrimary = EmeraldLightActive,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+private val CaisaaraDarkColorScheme = darkColorScheme(
+    primary = EmeraldNormalHover,
+    onPrimary = SlateDarker,
+    primaryContainer = EmeraldDarkActive,
+    onPrimaryContainer = EmeraldLight,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondary = SlateLightActive,
+    onSecondary = SlateDarker,
+    secondaryContainer = SlateDarkHover,
+    onSecondaryContainer = SlateLight,
+
+    tertiary = AmberNormalHover,
+    onTertiary = SlateDarker,
+    tertiaryContainer = AmberDarkActive,
+    onTertiaryContainer = AmberLight,
+
+    error = RedNormalHover,
+    onError = SlateDarker,
+    errorContainer = RedDarkActive,
+    onErrorContainer = RedLight,
+
+    background = SlateDarker,
+    onBackground = SlateLight,
+
+    surface = SlateDark,
+    onSurface = SlateLight,
+    surfaceVariant = SlateDarkHover,
+    onSurfaceVariant = SlateLightActive,
+
+    outline = SlateNormalHover,
+    outlineVariant = SlateDarkActive,
+
+    inverseSurface = SlateLight,
+    inverseOnSurface = SlateDarker,
+    inversePrimary = EmeraldDark,
 )
 
 @Composable
-fun CaisarraTheme(
+fun CaisaaraTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> CaisaaraDarkColorScheme
+        else -> CaisaaraLightColorScheme
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
-        content = content
+        typography = CaisaaraM3Typography,
+        content = content,
     )
 }
