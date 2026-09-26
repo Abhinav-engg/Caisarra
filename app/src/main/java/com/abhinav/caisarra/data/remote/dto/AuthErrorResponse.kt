@@ -3,7 +3,6 @@ package com.abhinav.caisarra.data.remote.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AuthRequest(
-    val username: String,
-    val password: String
+data class AuthErrorResponse(
+    val error: String
 )
