@@ -3,8 +3,6 @@ package com.abhinav.caisarra.data.remote.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class RegisterRequest(
-    val username: String,
-    val email: String,
-    val password: String
+data class ApiError(
+    val error: String
 )

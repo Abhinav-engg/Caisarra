@@ -59,4 +59,9 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.serialization.json)
+<<<<<<< Updated upstream
+=======
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.datastore.preferences)
+>>>>>>> Stashed changes
 }

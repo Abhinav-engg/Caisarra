@@ -1,9 +1,10 @@
 package com.abhinav.caisarra.data.remote.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class RegisterResponse(
+data class ProfileResponse(
     val message: String,
-    val username: String
+    @SerialName("user_id") val userId: Int
 )
