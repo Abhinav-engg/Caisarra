@@ -59,4 +59,5 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation("androidx.compose.material:material-icons-extended")
 }

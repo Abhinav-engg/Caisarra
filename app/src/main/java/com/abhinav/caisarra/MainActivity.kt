@@ -5,6 +5,8 @@ import kotlinx.coroutines.selects.SelectInstance
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.abhinav.caisarra.presentation.components.PasswordTextField
+import com.abhinav.caisarra.presentation.components.SimpleTextField
 import com.caisaara.ui.theme.CaisaaraTheme
 
 class MainActivity : ComponentActivity(){
@@ -12,11 +14,12 @@ class MainActivity : ComponentActivity(){
         super.onCreate(savedInstance)
         enableEdgeToEdge()
         setContent {
-            CaisaaraTheme(
+            //CaisaaraTheme()
+            PasswordTextField()
 
-            ) {
 
-            }
+
+
 
         }
 
