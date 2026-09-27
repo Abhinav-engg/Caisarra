@@ -48,3 +48,5 @@ val AmberDarker = Color(0xFF563704)
 
 val White = Color(0xFFFFFFFF)
 val Black = Color(0xFF000000)
+
+val CyanLight = Color(0xFF00E5FF)
