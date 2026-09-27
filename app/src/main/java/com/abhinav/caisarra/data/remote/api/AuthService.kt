@@ -1,24 +1,29 @@
 package com.abhinav.caisarra.data.remote.api
 
+import com.abhinav.caisarra.data.remote.dto.AccessTokenResponse
+import com.abhinav.caisarra.data.remote.dto.AuthResponse
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
-import com.abhinav.caisarra.data.remote.dto.LoginResponse
+import com.abhinav.caisarra.data.remote.dto.MessageResponse
 import com.abhinav.caisarra.data.remote.dto.RegisterRequest
-import com.abhinav.caisarra.data.remote.dto.RegisterResponse
+import com.abhinav.caisarra.data.remote.dto.RefreshTokenRequest
 import retrofit2.http.Body
 import retrofit2.http.POST
-import retrofit2.http.Path
-import retrofit2.http.Query
-import retrofit2.http.GET
-import retrofit2.http.DELETE
-import retrofit2.http.PUT
+
 
 interface AuthService {
 
     @POST("register")
-    suspend fun register(@Body request: RegisterRequest): RegisterResponse
+    suspend fun register(@Body body: RegisterRequest): AuthResponse
 
     @POST("login")
-    suspend fun login(@Body request: LoginRequest): LoginResponse
+    suspend fun login(@Body body: LoginRequest): AuthResponse
 
+    @POST("refresh")
+    suspend fun refresh(@Body body: RefreshTokenRequest): AccessTokenResponse
 
+    @POST("logout")
+    suspend fun logout(@Body body: RefreshTokenRequest): MessageResponse
+
+    @POST("logout-all")
+    suspend fun logoutAll(@Body body: RefreshTokenRequest): MessageResponse
 }
