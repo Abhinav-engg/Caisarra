@@ -4,62 +4,74 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.caisaara.ui.theme.lable
+import com.caisaara.ui.theme.BorderColor
+import com.caisaara.ui.theme.Feildbackground
+import com.caisaara.ui.theme.Lable
+import com.caisaara.ui.theme.Lablecolor
+import com.caisaara.ui.theme.PlaceholderColor
+import com.caisaara.ui.theme.TextColor
 
 @Composable
-fun PasswordTextField() {
+fun PasswordTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = "",
+    helperText: String? = null
+) {
 
-    var password by remember {
-        mutableStateOf("")
-    }
+    var passwordVisible by remember { mutableStateOf(false) }
 
-    var passwordVisible by remember {
-        mutableStateOf(false)
-    }
-
-    Column(modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp)
+    Column(modifier = modifier.fillMaxWidth()
     ) {
-        Text(text = "Label name",
+        Text(text = label,
             fontSize = 14.sp,
-            color = lable
+            color = Lablecolor
         )
 
         Spacer(modifier = Modifier.height(4.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = {
-                password = it
-            },
-
-            modifier = Modifier
-                .fillMaxWidth(),
-
+        OutlinedTextField(value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
             placeholder = {
-                Text(text = "placeholder")
+                Text(text = placeholder
+                )
             },
 
-            visualTransformation = if (passwordVisible) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password
+            ),
+
+            visualTransformation =
+                if (passwordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
 
             trailingIcon = {
                 IconButton(
@@ -68,27 +80,41 @@ fun PasswordTextField() {
                     }
                 ) {
                     Icon(
-                        imageVector = if (passwordVisible) {
-                            Icons.Default.VisibilityOff
-                        } else {
-                            Icons.Default.Visibility
-                        },
-                        contentDescription = if (passwordVisible) {
-                            "Hide password"
-                        } else {
-                            "Show password"
-                        }
+                        imageVector =
+                            if (passwordVisible) {
+                                Icons.Default.VisibilityOff
+                            } else {
+                                Icons.Default.Visibility
+                            },
+                        contentDescription =
+                            if (passwordVisible) {
+                                "Hide password"
+                            } else {
+                                "Show password"
+                            }
                     )
                 }
             },
 
-            singleLine = true
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Feildbackground,
+                unfocusedContainerColor = Feildbackground,
+                focusedTextColor = TextColor,
+                unfocusedTextColor = TextColor,
+                focusedPlaceholderColor = PlaceholderColor,
+                unfocusedPlaceholderColor = PlaceholderColor,
+                focusedBorderColor = BorderColor,
+                unfocusedBorderColor = BorderColor
+            )
         )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = "Helper gap",
-            fontSize = 12.sp,
-            color = lable,
-            modifier = Modifier.padding(top = 4.dp)
-        )
+
+        if (helperText != null) {
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = helperText,
+                fontSize = 12.sp,
+                color = Lable
+            )
+        }
     }
 }

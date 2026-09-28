@@ -9,6 +9,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.caisaara.ui.theme.CaisaaraDarkColorScheme
 
 private val CaisaaraLightColorScheme = lightColorScheme(
     primary = EmeraldNormal,
@@ -72,9 +73,9 @@ private val CaisaaraDarkColorScheme = darkColorScheme(
     onBackground = SlateLight,
 
     surface = SlateDark,
-    onSurface = SlateLight,
-    surfaceVariant = SlateDarkHover,
-    onSurfaceVariant = SlateLightActive,
+    onSurface = TextColor,
+    surfaceVariant = Feildbackground,
+    onSurfaceVariant = PlaceholderColor,
 
     outline = SlateNormalHover,
     outlineVariant = SlateDarkActive,
