@@ -4,9 +4,12 @@ import android.content.Context
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
+import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
 import com.abhinav.caisarra.data.remote.dto.RefreshTokenRequest
 import com.abhinav.caisarra.data.remote.dto.RegisterRequest
+import com.abhinav.caisarra.data.remote.dto.ResetPasswordRequest
+import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 
 class AuthRepository(context: Context) {
 
@@ -66,5 +69,46 @@ class AuthRepository(context: Context) {
         }
 
         return AuthResult.Success("Logged out")
+    }
+
+    private var resetToken: String? = null
+
+    suspend fun sendResetCode(email: String): AuthResult {
+        try {
+            val response = service.forgotPassword(ForgotPasswordRequest(email))
+            return AuthResult.Success(response.message)
+        } catch (e: Exception) {
+            val message = ApiErrorInterpreter.toUserMessage(e)
+            return AuthResult.Error(message)
+        }
+    }
+
+    suspend fun verifyResetCode(email: String, code: String): AuthResult {
+        try {
+            val response = service.verifyResetCode(VerifyResetCodeRequest(email, code))
+            resetToken = response.resetToken
+            return AuthResult.Success(response.message)
+        } catch (e: Exception) {
+            val message = ApiErrorInterpreter.toUserMessage(e)
+            return AuthResult.Error(message)
+        }
+    }
+
+    suspend fun resetPassword(newPassword: String, confirmPassword: String): AuthResult {
+        val token = resetToken
+        if (token == null) {
+            return AuthResult.Error("Your reset session expired. Please start again.")
+        }
+
+        try {
+            val response = service.resetPassword(
+                ResetPasswordRequest(token, newPassword, confirmPassword)
+            )
+            resetToken = null
+            return AuthResult.Success(response.message)
+        } catch (e: Exception) {
+            val message = ApiErrorInterpreter.toUserMessage(e)
+            return AuthResult.Error(message)
+        }
     }
 }
