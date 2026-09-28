@@ -67,4 +67,7 @@ class AuthRepository(context: Context) {
 
         return AuthResult.Success("Logged out")
     }
+    suspend fun sendResetCode(email: String): AuthResult {
+        return AuthResult.Success("Code sent")
+    }
 }

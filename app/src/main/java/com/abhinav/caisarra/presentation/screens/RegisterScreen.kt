@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,21 +25,21 @@ import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.components.AuthCard
 import com.abhinav.caisarra.presentation.components.AuthFooter
 import com.abhinav.caisarra.presentation.components.AuthHeader
+import com.abhinav.caisarra.presentation.components.AuthMessage
 import com.abhinav.caisarra.presentation.components.GeneralButton
 import com.abhinav.caisarra.presentation.components.PasswordTextField
 import com.abhinav.caisarra.presentation.components.SimpleTextField
 import com.abhinav.caisarra.presentation.components.TermsOfServiceDialog
+import com.abhinav.caisarra.presentation.viewmodel.SignUpViewModel
 import com.abhinav.caisarra.ui.theme.SignUpCardHeight
 
 @Composable
 fun SignUpScreen(
-    onSignUpClick: () -> Unit = {},
-    onSignInClick: () -> Unit = {},
-    onTermsClick: () -> Unit = {}
+    viewModel: SignUpViewModel,
+    onSignUpSuccess: () -> Unit = {},
+    onSignInClick: () -> Unit = {}
 ) {
-    var username by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val state by viewModel.state.collectAsState()
     var showTerms by remember { mutableStateOf(false) }
 
     val termsText = buildAnnotatedString {
@@ -54,22 +55,22 @@ fun SignUpScreen(
 
             SimpleTextField(
                 label = "Username",
-                value = username,
-                onValueChange = { username = it },
+                value = state.username,
+                onValueChange = viewModel::onUsernameChange,
                 placeholder = "e.g. Karan_gamer"
             )
             Spacer(modifier = Modifier.height(16.dp))
             SimpleTextField(
                 label = "Email",
-                value = email,
-                onValueChange = { email = it },
+                value = state.email,
+                onValueChange = viewModel::onEmailChange,
                 placeholder = "yourname@gmail.com"
             )
             Spacer(modifier = Modifier.height(16.dp))
             PasswordTextField(
                 label = "Password",
-                value = password,
-                onValueChange = { password = it },
+                value = state.password,
+                onValueChange = viewModel::onPasswordChange,
                 placeholder = "Enter password"
             )
             Spacer(modifier = Modifier.height(6.dp))
@@ -86,19 +87,16 @@ fun SignUpScreen(
                 fontSize = 12.sp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        showTerms = true
-                        onTermsClick()
-                    }
+                    .clickable { showTerms = true }
             )
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            AuthMessage(state.error)
 
             GeneralButton(
-                text = "Sign Up",
-                onClick = onSignUpClick,
-                enabled = username.isNotBlank() &&
-                        email.isNotBlank() &&
-                        password.length >= 8
+                text = if (state.isLoading) "Please wait..." else "Sign Up",
+                onClick = { viewModel.signUp(onSignUpSuccess) },
+                enabled = state.canSubmit
             )
             Spacer(modifier = Modifier.height(24.dp))
 

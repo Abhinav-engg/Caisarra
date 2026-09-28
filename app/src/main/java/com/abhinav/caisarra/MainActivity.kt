@@ -5,6 +5,8 @@ import kotlinx.coroutines.selects.SelectInstance
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.remember
+import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.presentation.navigation.AppNavigation
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.SignUpScreen
@@ -16,7 +18,8 @@ class MainActivity : ComponentActivity(){
         super.onCreate(savedInstance)
         enableEdgeToEdge()
         setContent {
-            AppNavigation()
+            val authRepository = remember { AuthRepository(applicationContext) }
+            AppNavigation(authRepository)
         }
 
     }
