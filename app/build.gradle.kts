@@ -59,4 +59,9 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.navigation:navigation-compose:2.9.5")
+    implementation(libs.androidx.datastore.preferences)
+    implementation(kotlin("test"))
+
 }
