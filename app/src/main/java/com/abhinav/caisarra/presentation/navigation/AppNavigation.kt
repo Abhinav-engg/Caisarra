@@ -17,7 +17,10 @@ import androidx.navigation.compose.rememberNavController
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.ResetPasswordScreen
+import com.abhinav.caisarra.presentation.screens.SetNewPasswordScreen
 import com.abhinav.caisarra.presentation.screens.SignUpScreen
+import com.abhinav.caisarra.presentation.screens.VerifyScreen
+
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
 import com.abhinav.caisarra.presentation.viewmodel.ResetPasswordViewModel
 import com.abhinav.caisarra.presentation.viewmodel.SignUpViewModel
@@ -26,6 +29,8 @@ object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val RESET_PASSWORD = "reset_password"
+    const val VERIFY = "verify"
+    const val SET_NEW_PASSWORD = "set_new_password"
     const val HOME = "home"
 }
 
@@ -68,6 +73,37 @@ fun AppNavigation(authRepository: AuthRepository) {
             ResetPasswordScreen(
                 viewModel = screenViewModel { ResetPasswordViewModel(authRepository) },
                 onBackToSignIn = { navController.popBackStack() }
+            )
+        }
+        composable(AppRoutes.VERIFY) {
+
+            VerifyScreen(
+
+                onContinue = { enteredCode ->
+
+                    if (enteredCode == "123456") {
+                        navController.navigate(AppRoutes.SET_NEW_PASSWORD)
+                        true
+                    } else {
+                        false
+                    }
+                },
+
+                onResendCode = {
+                }
+            )
+        }
+        composable(AppRoutes.SET_NEW_PASSWORD) {
+
+            SetNewPasswordScreen(
+                onResetAndSignIn = {
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(AppRoutes.LOGIN) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
