@@ -10,7 +10,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.create
 
 object RetrofitInstance {
-    private const val BASE_URL = ""
+    private const val BASE_URL = "http://3.149.56.137:8050/"
     val json = Json { ignoreUnknownKeys = true }
 
     val client = OkHttpClient.Builder()

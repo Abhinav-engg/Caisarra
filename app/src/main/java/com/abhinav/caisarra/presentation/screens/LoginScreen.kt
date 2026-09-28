@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -19,34 +17,36 @@ import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.components.AuthCard
 import com.abhinav.caisarra.presentation.components.AuthFooter
 import com.abhinav.caisarra.presentation.components.AuthHeader
+import com.abhinav.caisarra.presentation.components.AuthMessage
 import com.abhinav.caisarra.presentation.components.GeneralButton
 import com.abhinav.caisarra.presentation.components.PasswordTextField
 import com.abhinav.caisarra.presentation.components.SimpleTextField
+import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
 import com.abhinav.caisarra.ui.theme.LoginCardHeight
 
 @Composable
 fun LoginScreen(
-    onSignInClick: () -> Unit = {},
+    viewModel: LoginViewModel,
+    onLoginSuccess: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {},
     onSignUpClick: () -> Unit = {}
 ) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val state by viewModel.state.collectAsState()
 
     AuthCard(cardHeight = LoginCardHeight) {
         AuthHeader("WELCOME BACK", "Sign into your Caisarra account")
 
         SimpleTextField(
-            label = "Username/Email",
-            value = username,
-            onValueChange = { username = it },
+            label = "Username",
+            value = state.username,
+            onValueChange = viewModel::onUsernameChange,
             placeholder = "grandmaster_karan"
         )
         Spacer(modifier = Modifier.height(16.dp))
         PasswordTextField(
             label = "Password",
-            value = password,
-            onValueChange = { password = it },
+            value = state.password,
+            onValueChange = viewModel::onPasswordChange,
             placeholder = "Password"
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -61,12 +61,14 @@ fun LoginScreen(
                 modifier = Modifier.clickable { onForgotPasswordClick() }
             )
         }
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        AuthMessage(state.error)
 
         GeneralButton(
-            text = "Sign In",
-            onClick = onSignInClick,
-            enabled = username.isNotBlank() && password.isNotBlank()
+            text = if (state.isLoading) "Please wait..." else "Sign In",
+            onClick = { viewModel.login(onLoginSuccess) },
+            enabled = state.canSubmit
         )
         Spacer(modifier = Modifier.height(24.dp))
 
