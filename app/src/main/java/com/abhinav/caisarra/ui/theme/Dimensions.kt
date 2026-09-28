@@ -6,3 +6,15 @@ import androidx.compose.ui.unit.dp
 val SignUpButtonDefaultMaxWidth = 287.dp
 val SignUpButtonDefaultMaxHeight = 48.dp
 val SignUpButtonDefaultCornerRadius = 12.dp
+
+
+val ResetCardMaxWidth = 420.dp
+val ResetCardHeight = 400.dp
+val ResetCardCornerRadius = 20.dp
+
+val AuthCardMaxWidth = 420.dp
+val AuthCardCornerRadius = 20.dp
+val LoginCardHeight = 440.dp
+val SignUpCardHeight = 600.dp
+
+
