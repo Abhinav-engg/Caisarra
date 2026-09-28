@@ -16,5 +16,7 @@ val AuthCardMaxWidth = 420.dp
 val AuthCardCornerRadius = 20.dp
 val LoginCardHeight = 440.dp
 val SignUpCardHeight = 600.dp
+val VerifyCardHeight = 340.dp
+val SetNewPasswordCardHeight = 420.dp
 
 

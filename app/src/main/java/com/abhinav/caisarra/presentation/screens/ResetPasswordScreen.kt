@@ -20,7 +20,7 @@ import com.caisaara.ui.theme.EmeraldNormal
 @Composable
 fun ResetPasswordScreen(
     viewModel: ResetPasswordViewModel,
-    onSendCode: () -> Unit = {},
+    onSendCode: (String) -> Unit = {},
     onBackToSignIn: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()

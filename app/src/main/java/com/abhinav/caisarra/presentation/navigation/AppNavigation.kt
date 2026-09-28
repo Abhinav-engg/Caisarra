@@ -1,11 +1,19 @@
 package com.abhinav.caisarra.presentation.navigation
 
+import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -20,18 +28,22 @@ import com.abhinav.caisarra.presentation.screens.ResetPasswordScreen
 import com.abhinav.caisarra.presentation.screens.SetNewPasswordScreen
 import com.abhinav.caisarra.presentation.screens.SignUpScreen
 import com.abhinav.caisarra.presentation.screens.VerifyScreen
-
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
 import com.abhinav.caisarra.presentation.viewmodel.ResetPasswordViewModel
+import com.abhinav.caisarra.presentation.viewmodel.SetNewPasswordViewModel
 import com.abhinav.caisarra.presentation.viewmodel.SignUpViewModel
+import com.abhinav.caisarra.presentation.viewmodel.VerifyViewModel
+
 
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val RESET_PASSWORD = "reset_password"
-    const val VERIFY = "verify"
-    const val SET_NEW_PASSWORD = "set_new_password"
+    const val VERIFY = "verify/{email}"
+    const val NEW_PASSWORD = "new_password"
     const val HOME = "home"
+
+    fun verify(email: String) = "verify/${Uri.encode(email)}"
 }
 
 @Composable
@@ -46,11 +58,28 @@ private fun NavController.goHome() {
 
 @Composable
 fun AppNavigation(authRepository: AuthRepository) {
+    var startDestination by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        startDestination =
+            AppRoutes.LOGIN
+    }
+
+    val start = startDestination
+    if (start == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF071017))
+        )
+        return
+    }
+
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = AppRoutes.LOGIN
+        startDestination = start
     ) {
         composable(route = AppRoutes.LOGIN) {
             LoginScreen(
@@ -72,37 +101,28 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(route = AppRoutes.RESET_PASSWORD) {
             ResetPasswordScreen(
                 viewModel = screenViewModel { ResetPasswordViewModel(authRepository) },
+                onSendCode = { email -> navController.navigate(AppRoutes.verify(email)) },
                 onBackToSignIn = { navController.popBackStack() }
             )
         }
-        composable(AppRoutes.VERIFY) {
 
+        composable(route = AppRoutes.VERIFY) { entry ->
+            val email = entry.arguments?.getString("email").orEmpty()
             VerifyScreen(
-
-                onContinue = { enteredCode ->
-
-                    if (enteredCode == "123456") {
-                        navController.navigate(AppRoutes.SET_NEW_PASSWORD)
-                        true
-                    } else {
-                        false
+                viewModel = screenViewModel { VerifyViewModel(authRepository, email) },
+                onVerified = {
+                    navController.navigate(AppRoutes.NEW_PASSWORD) {
+                        popUpTo(AppRoutes.VERIFY) { inclusive = true }
                     }
-                },
-
-                onResendCode = {
                 }
             )
         }
-        composable(AppRoutes.SET_NEW_PASSWORD) {
 
+        composable(route = AppRoutes.NEW_PASSWORD) {
             SetNewPasswordScreen(
-                onResetAndSignIn = {
-                    navController.navigate(AppRoutes.LOGIN) {
-                        popUpTo(AppRoutes.LOGIN) {
-                            inclusive = false
-                        }
-                        launchSingleTop = true
-                    }
+                viewModel = screenViewModel { SetNewPasswordViewModel(authRepository) },
+                onPasswordUpdated = {
+                    navController.popBackStack(AppRoutes.LOGIN, inclusive = false)
                 }
             )
         }

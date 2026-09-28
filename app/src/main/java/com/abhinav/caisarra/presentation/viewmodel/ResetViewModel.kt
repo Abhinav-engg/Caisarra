@@ -28,7 +28,7 @@ class ResetPasswordViewModel(private val repository: AuthRepository) : ViewModel
     fun onEmailChange(value: String) =
         _state.update { it.copy(email = value, error = null, codeSent = false) }
 
-    fun sendCode(onSuccess: () -> Unit) {
+    fun sendCode(onSuccess: (String) -> Unit) {
         val current = _state.value
         if (!current.canSubmit) return
         _state.update { it.copy(isLoading = true, error = null) }
@@ -36,7 +36,7 @@ class ResetPasswordViewModel(private val repository: AuthRepository) : ViewModel
             when (val result = repository.sendResetCode(current.email.trim())) {
                 is AuthResult.Success -> {
                     _state.update { it.copy(isLoading = false, codeSent = true) }
-                    onSuccess()
+                    onSuccess(current.email.trim())
                 }
                 is AuthResult.Error ->
                     _state.update { it.copy(isLoading = false, error = result.message) }
