@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,16 +21,16 @@ import com.abhinav.caisarra.presentation.components.AuthCard
 import com.abhinav.caisarra.presentation.components.AuthFooter
 import com.abhinav.caisarra.presentation.components.GeneralButton
 import com.abhinav.caisarra.presentation.components.SimpleTextField
+import com.abhinav.caisarra.presentation.viewmodel.SignUpViewModel
 
 @Composable
 fun GuestScreen(
+    viewModel: SignUpViewModel,
     onContinueClick: (String) -> Unit = {},
     onSignUpClick: () -> Unit = {}
 ) {
+    val state by viewModel.state.collectAsState()
 
-    var username by remember {
-        mutableStateOf("")
-    }
 
     AuthCard(
         cardHeight = 350.dp
@@ -55,19 +56,18 @@ fun GuestScreen(
         Spacer(modifier = Modifier.height(24.dp))
         SimpleTextField(
             label = "Username",
-            value = username,
-            onValueChange = {
-                username = it
-            },
-            placeholder = "grandmaster_karan"
+            value = state.username,
+            onValueChange = viewModel::onUsernameChange,
+            placeholder = "grandmaster_karan",
+            helperText = state.usernameError
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         GeneralButton(text = "Continue",
-            onClick = {onContinueClick(username)
+            onClick = {onContinueClick(state.username)
             },
-            enabled = username.isNotBlank()
+            enabled = state.username.isNotBlank()
         )
 
         Spacer(modifier = Modifier.height(24.dp))
