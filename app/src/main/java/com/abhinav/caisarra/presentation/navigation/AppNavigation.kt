@@ -27,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.presentation.screens.GuestScreen
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.ResetPasswordScreen
 import com.abhinav.caisarra.presentation.screens.SetNewPasswordScreen
@@ -47,6 +48,7 @@ object AppRoutes {
     const val VERIFY = "verify/{purpose}/{email}"
     const val NEW_PASSWORD = "new_password"
     const val HOME = "home"
+    const val GUEST = "guest"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -92,7 +94,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = screenViewModel { LoginViewModel(authRepository) },
                 onLoginSuccess = { navController.goHome() },
                 onForgotPasswordClick = { navController.navigate(AppRoutes.RESET_PASSWORD) },
-                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) }
+                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
+                onContinueAsGuestClick = { navController.navigate(AppRoutes.GUEST) }
             )
         }
 
@@ -102,8 +105,23 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onSignUpSuccess = { email ->
                     navController.navigate(AppRoutes.verify(email, VerifyPurpose.REGISTRATION))
                 },
-                onSignInClick = { navController.popBackStack() }
+                onSignInClick = {
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(AppRoutes.LOGIN) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
+                }
             )
+        }
+        composable(route = AppRoutes.GUEST) { GuestScreen(
+            viewModel = screenViewModel { SignUpViewModel(authRepository) },
+            onContinueClick = { username ->
+                // For now, navigate to Home
+                navController.goHome() },
+                onSignUpClick =
+                    { navController.navigate(AppRoutes.REGISTER) } )
         }
 
         composable(route = AppRoutes.RESET_PASSWORD) {

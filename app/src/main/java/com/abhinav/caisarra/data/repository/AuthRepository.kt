@@ -16,7 +16,7 @@ import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 class AuthRepository(context: Context) {
 
     private val tokenManager = TokenManager(context)
-    private val service = RetrofitInstance.service
+    private val service = RetrofitInstance.createAuthService(tokenManager)
     private var pendingRegistration: RegisterRequest? = null
 
     suspend fun register(username: String, email: String, password: String): AuthResult {
@@ -39,6 +39,7 @@ class AuthRepository(context: Context) {
             return AuthResult.Error(message)
         }
     }
+
     suspend fun login(username: String, password: String): AuthResult {
         try {
             val response = service.login(LoginRequest(username, password))
@@ -124,8 +125,6 @@ class AuthRepository(context: Context) {
             return AuthResult.Error(message)
         }
     }
-
-
 
     suspend fun verifyRegistration(email: String, code: String): AuthResult {
         try {

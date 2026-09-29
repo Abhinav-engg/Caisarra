@@ -41,8 +41,7 @@ interface AuthService {
 
     @POST("auth/reset-password")
     suspend fun resetPassword(@Body body: ResetPasswordRequest): MessageResponse
-
-
     @POST("verify-registration")
     suspend fun verifyRegistration(@Body body: VerifyRegistrationRequest): VerifyRegistrationResponse
+
 }
