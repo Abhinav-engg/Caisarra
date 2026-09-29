@@ -68,7 +68,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
     LaunchedEffect(Unit) {
         startDestination =
-            AppRoutes.LOGIN
+            if (authRepository.isLoggedIn()) AppRoutes.HOME else AppRoutes.LOGIN
     }
 
     val start = startDestination
