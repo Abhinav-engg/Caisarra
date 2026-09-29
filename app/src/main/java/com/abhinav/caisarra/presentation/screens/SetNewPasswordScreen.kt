@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.components.AuthCard
@@ -19,6 +18,7 @@ import com.abhinav.caisarra.presentation.components.PasswordTextField
 import com.abhinav.caisarra.presentation.viewmodel.SetNewPasswordViewModel
 import com.abhinav.caisarra.ui.theme.SetNewPasswordCardHeight
 import com.caisaara.ui.theme.EmeraldNormal
+import com.caisaara.ui.theme.SubtleText
 
 @Composable
 fun SetNewPasswordScreen(
@@ -34,31 +34,33 @@ fun SetNewPasswordScreen(
             label = "Set New Password",
             value = state.newPassword,
             onValueChange = viewModel::onNewPasswordChange,
-            placeholder = "Enter password"
+            placeholder = "Enter password",
+            helperText = state.newPasswordError
         )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "Password must be at least 8 characters long.",
-            color = Color(0xFF82909E),
-            fontSize = 12.sp,
-            modifier = Modifier.fillMaxWidth()
-        )
+        if (state.newPasswordError == null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Password must be at least 8 characters long.",
+                color = SubtleText,
+                fontSize = 12.sp,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Spacer(modifier = Modifier.height(12.dp))
 
         PasswordTextField(
             label = "Confirm Password",
             value = state.confirmPassword,
             onValueChange = viewModel::onConfirmPasswordChange,
-            placeholder = "Enter password"
+            placeholder = "Enter password",
+            helperText = state.confirmPasswordError
         )
         Spacer(modifier = Modifier.height(8.dp))
 
         if (state.updated) {
             AuthMessage("Password updated successfully!", EmeraldNormal)
         } else {
-            AuthMessage(
-                state.error ?: if (state.passwordsMismatch) "Passwords do not match." else null
-            )
+            AuthMessage(state.error)
         }
 
         GeneralButton(

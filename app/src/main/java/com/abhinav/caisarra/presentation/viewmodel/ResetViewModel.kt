@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.AuthResult
+import com.abhinav.caisarra.domain.Validators
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,8 +17,11 @@ data class ResetPasswordUiState(
     val codeSent: Boolean = false,
     val error: String? = null
 ) {
+    val emailError: String?
+        get() = if (email.isBlank()) null else Validators.emailError(email)
+
     val canSubmit: Boolean
-        get() = email.isNotBlank() && !isLoading
+        get() = email.isNotBlank() && emailError == null && !isLoading
 }
 
 class ResetPasswordViewModel(private val repository: AuthRepository) : ViewModel() {

@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class VerifyPurpose { RESET_PASSWORD, REGISTRATION }
+
 data class VerifyUiState(
     val otp: String = "",
     val isLoading: Boolean = false,
@@ -24,7 +26,8 @@ data class VerifyUiState(
 
 class VerifyViewModel(
     private val repository: AuthRepository,
-    private val email: String
+    private val email: String,
+    private val purpose: VerifyPurpose
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VerifyUiState())
@@ -44,7 +47,11 @@ class VerifyViewModel(
         if (!current.canSubmit) return
         _state.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            when (val result = repository.verifyResetCode(email, current.otp)) {
+            val result = when (purpose) {
+                VerifyPurpose.RESET_PASSWORD -> repository.verifyResetCode(email, current.otp)
+                VerifyPurpose.REGISTRATION -> repository.verifyRegistration(email, current.otp)
+            }
+            when (result) {
                 is AuthResult.Success -> {
                     _state.update { it.copy(isLoading = false) }
                     onSuccess()
@@ -60,7 +67,10 @@ class VerifyViewModel(
         _state.update { it.copy(otp = "", error = null) }
         startTimer()
         viewModelScope.launch {
-            val result = repository.sendResetCode(email)
+            val result = when (purpose) {
+                VerifyPurpose.RESET_PASSWORD -> repository.sendResetCode(email)
+                VerifyPurpose.REGISTRATION -> repository.resendRegistrationCode()
+            }
             if (result is AuthResult.Error) {
                 _state.update { it.copy(error = result.message) }
             }
@@ -76,4 +86,4 @@ class VerifyViewModel(
             }
         }
     }
-}C
+}

@@ -4,13 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.AuthResult
+import com.abhinav.caisarra.domain.Validators
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
 data class SetNewPasswordUiState(
     val newPassword: String = "",
     val confirmPassword: String = "",
@@ -18,14 +18,17 @@ data class SetNewPasswordUiState(
     val updated: Boolean = false,
     val error: String? = null
 ) {
-    val passwordsMismatch: Boolean
-        get() = confirmPassword.isNotEmpty() && newPassword != confirmPassword
+    val newPasswordError: String?
+        get() = if (newPassword.isBlank()) null else Validators.passwordError(newPassword)
+
+    val confirmPasswordError: String?
+        get() = if (confirmPassword.isBlank()) null
+        else Validators.confirmPasswordError(newPassword, confirmPassword)
 
     val canSubmit: Boolean
-        get() = newPassword.length >= 8 &&
-                newPassword == confirmPassword &&
-                !isLoading &&
-                !updated
+        get() = newPassword.isNotBlank() && newPasswordError == null &&
+                confirmPassword.isNotBlank() && confirmPasswordError == null &&
+                !isLoading && !updated
 }
 
 class SetNewPasswordViewModel(private val repository: AuthRepository) : ViewModel() {
