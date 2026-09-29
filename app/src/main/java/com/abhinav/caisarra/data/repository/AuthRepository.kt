@@ -9,16 +9,20 @@ import com.abhinav.caisarra.data.remote.dto.LoginRequest
 import com.abhinav.caisarra.data.remote.dto.RefreshTokenRequest
 import com.abhinav.caisarra.data.remote.dto.RegisterRequest
 import com.abhinav.caisarra.data.remote.dto.ResetPasswordRequest
+import com.abhinav.caisarra.data.remote.dto.VerifyRegistrationRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 
 class AuthRepository(context: Context) {
 
     private val tokenManager = TokenManager(context)
     private val service = RetrofitInstance.service
+    private var pendingRegistration: RegisterRequest? = null
+
     suspend fun register(username: String, email: String, password: String): AuthResult {
         try {
-            val response = service.register(RegisterRequest(username, email, password))
-            tokenManager.saveTokens(response.accessToken, response.refreshToken)
+            val request = RegisterRequest(username, email, password)
+            val response = service.register(request)
+            pendingRegistration = request
             return AuthResult.Success(response.message)
         } catch (e: Exception) {
             val message = ApiErrorInterpreter.toUserMessage(e)
@@ -26,6 +30,17 @@ class AuthRepository(context: Context) {
         }
     }
 
+    suspend fun resendRegistrationCode(): AuthResult {
+        val request = pendingRegistration
+            ?: return AuthResult.Error("Please sign up again.")
+        try {
+            val response = service.register(request)
+            return AuthResult.Success(response.message)
+        } catch (e: Exception) {
+            val message = ApiErrorInterpreter.toUserMessage(e)
+            return AuthResult.Error(message)
+        }
+    }
     suspend fun login(username: String, password: String): AuthResult {
         try {
             val response = service.login(LoginRequest(username, password))
@@ -105,6 +120,20 @@ class AuthRepository(context: Context) {
                 ResetPasswordRequest(token, newPassword, confirmPassword)
             )
             resetToken = null
+            return AuthResult.Success(response.message)
+        } catch (e: Exception) {
+            val message = ApiErrorInterpreter.toUserMessage(e)
+            return AuthResult.Error(message)
+        }
+    }
+
+
+
+    suspend fun verifyRegistration(email: String, code: String): AuthResult {
+        try {
+            val response = service.verifyRegistration(VerifyRegistrationRequest(email, code))
+            tokenManager.saveTokens(response.accessToken, response.refreshToken)
+            pendingRegistration = null
             return AuthResult.Success(response.message)
         } catch (e: Exception) {
             val message = ApiErrorInterpreter.toUserMessage(e)

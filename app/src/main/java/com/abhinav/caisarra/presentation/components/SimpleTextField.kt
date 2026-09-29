@@ -25,6 +25,7 @@ import com.caisaara.ui.theme.CyanLight
 import com.caisaara.ui.theme.Feildbackground
 import com.caisaara.ui.theme.Lablecolor
 import com.caisaara.ui.theme.PlaceholderColor
+import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.TextColor
 
 @Composable
@@ -34,6 +35,7 @@ fun SimpleTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "",
+    helperText: String? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -48,7 +50,10 @@ fun SimpleTextField(
                 .fillMaxWidth()
                 .height(48.dp)
                 .background(Feildbackground, RoundedCornerShape(12.dp))
-                .border(BorderStroke(1.dp, BorderColor), RoundedCornerShape(12.dp))
+                .border(
+                    BorderStroke(1.dp, if (helperText != null) RedNormal else BorderColor),
+                    RoundedCornerShape(12.dp)
+                )
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart
         ) {
@@ -68,6 +73,10 @@ fun SimpleTextField(
                 keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+        if (helperText != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = helperText, color = RedNormal, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

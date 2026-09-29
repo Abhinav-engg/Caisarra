@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,16 +29,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.ui.theme.AuthCardCornerRadius
 import com.abhinav.caisarra.ui.theme.AuthCardMaxWidth
-
-private val SubtleText = Color(0xFF82909E)
-private val LinkText = Color(0xFF00D5E9)
+import com.caisaara.ui.theme.CardBackground
+import com.caisaara.ui.theme.CardBorderNavy
+import com.caisaara.ui.theme.CyanLight
+import com.caisaara.ui.theme.LinkText
+import com.caisaara.ui.theme.SubtleText
+import com.caisaara.ui.theme.White
 
 @Composable
 fun AuthCard(
@@ -78,19 +81,18 @@ fun AuthCard(
                     .width(width)
                     .height(height)
                     .clip(shape)
-                    .background(Color(0xFF101A21))
+                    .background(CardBackground.copy(alpha = 0.60f))
                     .border(
-                        width = 1.dp,
+                        width = 1.5.dp,
                         brush = Brush.verticalGradient(
-                            0.0f to Color(0xFF008C9E),
-                            0.20f to Color(0xFF008C9E).copy(alpha = 0.35f),
-                            0.45f to Color(0xFF33414D).copy(alpha = 0.25f),
-                            1.0f to Color.Transparent
+                            0.0f to CyanLight.copy(alpha = 0.50f),
+                            0.5f to CardBorderNavy.copy(alpha = 0.20f),
+                            1.0f to White.copy(alpha = 0.10f)
                         ),
                         shape = shape
                     )
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
+                    .padding(top = 20.dp, bottom = 20.dp, start = 15.dp, end = 15.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 content = content
             )
@@ -102,9 +104,8 @@ fun AuthCard(
 fun AuthHeader(title: String, subtitle: String) {
     Text(
         text = title,
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color.White,
+        style = MaterialTheme.typography.headlineMedium,
+        color = White,
         textAlign = TextAlign.Center
     )
     Spacer(modifier = Modifier.height(6.dp))
@@ -126,7 +127,7 @@ fun AuthFooter(text: String, action: String, onClick: () -> Unit) {
             text = action,
             color = LinkText,
             fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.clickable { onClick() }
         )
     }
@@ -151,4 +152,3 @@ fun AuthMessage(text: String?, color: Color = Color(0xFFFF6B6B)) {
         }
     }
 }
-
