@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.data.repository
 
 import android.content.Context
+import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
@@ -61,7 +62,7 @@ class AuthRepository(context: Context) {
             tokenManager.saveAccessToken(response.accessToken)
             return AuthResult.Success("Token refreshed")
         } catch (e: Exception) {
-            tokenManager.clearTokens()
+            if (e is retrofit2.HttpException) tokenManager.clearTokens()
             val message = ApiErrorInterpreter.toUserMessage(e)
             return AuthResult.Error(message)
         }
@@ -136,5 +137,14 @@ class AuthRepository(context: Context) {
             val message = ApiErrorInterpreter.toUserMessage(e)
             return AuthResult.Error(message)
         }
+    }
+
+    suspend fun isLoggedIn(): Boolean {
+        val accessToken = tokenManager.getAccessToken()
+        if (accessToken != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(accessToken)) {
+            return true
+        }
+        refreshAccessToken()
+        return tokenManager.getRefreshToken() != null
     }
 }
