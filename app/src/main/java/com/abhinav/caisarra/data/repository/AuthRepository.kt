@@ -20,16 +20,13 @@ class AuthRepository(context: Context) {
 
     suspend fun register(username: String, email: String, password: String): AuthResult {
         try {
-            val request = RegisterRequest(username, email, password)
-            val response = service.register(request)
-            pendingRegistration = request
+            val response = service.register(RegisterRequest(username, email, password))
             return AuthResult.Success(response.message)
         } catch (e: Exception) {
             val message = ApiErrorInterpreter.toUserMessage(e)
             return AuthResult.Error(message)
         }
     }
-
     suspend fun resendRegistrationCode(): AuthResult {
         val request = pendingRegistration
             ?: return AuthResult.Error("Please sign up again.")
