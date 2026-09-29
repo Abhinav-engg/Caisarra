@@ -9,194 +9,157 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.components.AuthCard
 import com.abhinav.caisarra.presentation.components.AuthHeader
 import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.presentation.viewmodel.VerifyViewModel
+import com.abhinav.caisarra.ui.theme.VerifyCardHeight
+import com.caisaara.ui.theme.BorderColor
+import com.caisaara.ui.theme.Feildbackground
+import com.caisaara.ui.theme.Lablecolor
+import com.caisaara.ui.theme.TextColor
 
+private val ErrorRed = Color(0xFFFF3344)
 
 @Composable
 fun VerifyScreen(
-    onContinue: (String) -> Boolean = { false },
-    onResendCode: () -> Unit = {}
+    viewModel: VerifyViewModel,
+    onVerified: () -> Unit = {}
 ) {
-    var otp by remember { mutableStateOf("") }
-    var isError by remember { mutableStateOf(false) }
-    val isCodeComplete = otp.length == 6
-    AuthCard(
-        cardHeight = 350.dp
-    ) {
+    val state by viewModel.state.collectAsState()
 
-        AuthHeader(
-            "VERIFY",
-            "Enter the 6-digit verification code."
-        )
-        Spacer(modifier = Modifier.height(26.dp))
-        Text(text = "Enter Code",
-            color = Color(0xFFB5C0CC),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
+    AuthCard(cardHeight = VerifyCardHeight) {
+        AuthHeader("VERIFY", "Enter the 6-digit verification code.")
+
+        Text(
+            text = "Enter Code",
+            style = MaterialTheme.typography.titleMedium,
+            color = Lablecolor,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(4.dp))
 
         BasicTextField(
-            value = otp,
-            onValueChange = { value ->
-                val newOtp = value
-                    .filter {
-                        it.isDigit()
-                    }
-                    .take(6)
-                otp = newOtp
-                isError = false
-            },
+            value = state.otp,
+            onValueChange = viewModel::onOtpChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(42.dp),
-
-
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Number
-                ),
-
+                .height(48.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = TextStyle(color = Color.Transparent),
-
-            cursorBrush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        Color.Transparent
-                    )
-                ),
-
-
+            cursorBrush = SolidColor(Color.Transparent),
             singleLine = true,
-            decorationBox = { _ ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(7.dp)
-                ) {
-                    repeat(6) { index ->
-                        val digit = if (index < otp.length) {
-                                otp[index].toString()
-                            } else {
-                                ""
-                            }
-
-                        Box(modifier = Modifier
-                                .weight(1f)
-                                .height(42.dp)
-                                .border(
-                                    width = 1.dp,
-                                    color =
-                                        if (isError) {
-                                            Color(0xFFFF3344)
-                                        } else {
-                                            Color(0xFF24333F)
-                                        },
-                                    shape =
-                                        RoundedCornerShape(
-                                            9.dp
-                                        )
-                                )
-                                .background(
-                                    Color(0xFF0B1016),
-
-                                    RoundedCornerShape(
-                                        9.dp
-                                    )
-                                ),
-
-                            contentAlignment =
-                                Alignment.Center
-                        ) {
-                            if (
-                                isError &&
-                                digit.isNotEmpty()
-                            ) {
-                                Box(modifier = Modifier
-                                        .size(5.dp)
-                                        .background(
-                                            Color(0xFFFF3344),
-                                            RoundedCornerShape(
-                                                50
-                                            )
-                                        )
-                                )
-
-                            } else {
-                                Text(text = digit,
-                                    color = Color.White,
-                                    fontSize = 16.sp,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
+            decorationBox = { innerTextField ->
+                Box {
+                    Box(
+                        modifier = Modifier.matchParentSize(),
+                        propagateMinConstraints = true
+                    ) {
+                        innerTextField()
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        repeat(6) { index ->
+                            OtpBox(
+                                digit = state.otp.getOrNull(index)?.toString().orEmpty(),
+                                isError = state.error != null,
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                 }
             }
         )
-        Row(modifier = Modifier
+
+        Row(
+            modifier = Modifier
                 .fillMaxWidth()
-                .height(28.dp),
-
+                .heightIn(min = 28.dp),
             verticalAlignment = Alignment.CenterVertically,
-
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            if (isError) {
-                Text(text = "Invalid Code! Please retry.",
-                    color = Color(0xFFFF3344),
-                    fontSize = 11.sp
-                )
-
-            } else {
-                Spacer(modifier = Modifier.size(1.dp))
-            }
-            Text(text = "Resend Code",
-                color = Color(0xFF00D5E9),
-                fontSize = 12.sp,
-                modifier = Modifier.clickable {
-                    otp = ""
-                    isError = false
-                    onResendCode()
-                }
+            Text(
+                text = state.error.orEmpty(),
+                color = ErrorRed,
+                fontSize = 11.sp,
+                maxLines = 2,
+                modifier = Modifier.weight(1f)
             )
+            if (state.resendSeconds > 0) {
+                Text(
+                    text = buildAnnotatedString {
+                        append("Resend code in ")
+                        withStyle(SpanStyle(color = Color(0xFF00D5E9))) {
+                            append("00:%02d".format(state.resendSeconds))
+                        }
+                    },
+                    color = Color(0xFF82909E),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            } else {
+                Text(
+                    text = "Resend Code",
+                    color = Color(0xFF00D5E9),
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .clickable { viewModel.resend() }
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(40.dp))
 
         GeneralButton(
-            text = "Continue",
-            onClick = {
-                val isValid = onContinue(otp)
-                if (!isValid) {
-                    isError = true
-                }
-            },
-
-            enabled = isCodeComplete
+            text = if (state.isLoading) "Please wait..." else "Continue",
+            onClick = { viewModel.verify(onVerified) },
+            enabled = state.canSubmit
         )
+    }
+}
+
+@Composable
+private fun OtpBox(digit: String, isError: Boolean, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(10.dp)
+    Box(
+        modifier = modifier
+            .height(48.dp)
+            .background(Feildbackground, shape)
+            .border(1.dp, if (isError) ErrorRed else BorderColor, shape),
+        contentAlignment = Alignment.Center
+    ) {
+        if (digit.isNotEmpty()) {
+            if (isError) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(ErrorRed, CircleShape)
+                )
+            } else {
+                Text(text = digit, color = TextColor, fontSize = 18.sp)
+            }
+        }
     }
 }

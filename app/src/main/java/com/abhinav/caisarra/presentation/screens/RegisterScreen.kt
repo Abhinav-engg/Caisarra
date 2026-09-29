@@ -32,11 +32,13 @@ import com.abhinav.caisarra.presentation.components.SimpleTextField
 import com.abhinav.caisarra.presentation.components.TermsOfServiceDialog
 import com.abhinav.caisarra.presentation.viewmodel.SignUpViewModel
 import com.abhinav.caisarra.ui.theme.SignUpCardHeight
+import com.caisaara.ui.theme.LinkText
+import com.caisaara.ui.theme.SubtleText
 
 @Composable
 fun SignUpScreen(
     viewModel: SignUpViewModel,
-    onSignUpSuccess: () -> Unit = {},
+    onSignUpSuccess: (String) -> Unit = {},
     onSignInClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -44,7 +46,7 @@ fun SignUpScreen(
 
     val termsText = buildAnnotatedString {
         append("By creating an account, you agree to ")
-        withStyle(SpanStyle(color = Color(0xFF00D5E9))) {
+        withStyle(SpanStyle(color = LinkText)) {
             append("Terms & Privacy Policy.")
         }
     }
@@ -57,33 +59,38 @@ fun SignUpScreen(
                 label = "Username",
                 value = state.username,
                 onValueChange = viewModel::onUsernameChange,
-                placeholder = "e.g. Karan_gamer"
+                placeholder = "e.g. Karan_gamer",
+                helperText = state.usernameError
             )
             Spacer(modifier = Modifier.height(16.dp))
             SimpleTextField(
                 label = "Email",
                 value = state.email,
                 onValueChange = viewModel::onEmailChange,
-                placeholder = "yourname@gmail.com"
+                placeholder = "yourname@gmail.com",
+                helperText = state.emailError
             )
             Spacer(modifier = Modifier.height(16.dp))
             PasswordTextField(
                 label = "Password",
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
-                placeholder = "Enter password"
+                placeholder = "Enter password",
+                helperText = state.passwordError
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Password must be at least 8 characters long.",
-                color = Color(0xFF82909E),
-                fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (state.passwordError == null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Password must be at least 8 characters long.",
+                    color = SubtleText,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = termsText,
-                color = Color(0xFF82909E),
+                color = SubtleText,
                 fontSize = 12.sp,
                 modifier = Modifier
                     .fillMaxWidth()

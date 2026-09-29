@@ -37,6 +37,7 @@ import com.caisaara.ui.theme.CyanLight
 import com.caisaara.ui.theme.Feildbackground
 import com.caisaara.ui.theme.Lablecolor
 import com.caisaara.ui.theme.PlaceholderColor
+import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.TextColor
 
 @Composable
@@ -45,7 +46,8 @@ fun PasswordTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = ""
+    placeholder: String = "",
+    helperText: String? = null
 ) {
     var visible by remember { mutableStateOf(false) }
 
@@ -61,7 +63,10 @@ fun PasswordTextField(
                 .fillMaxWidth()
                 .height(48.dp)
                 .background(Feildbackground, RoundedCornerShape(12.dp))
-                .border(BorderStroke(1.dp, BorderColor), RoundedCornerShape(12.dp))
+                .border(
+                    BorderStroke(1.dp, if (helperText != null) RedNormal else BorderColor),
+                    RoundedCornerShape(12.dp)
+                )
                 .padding(start = 16.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -96,6 +101,10 @@ fun PasswordTextField(
                     tint = PlaceholderColor
                 )
             }
+        }
+        if (helperText != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = helperText, color = RedNormal, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

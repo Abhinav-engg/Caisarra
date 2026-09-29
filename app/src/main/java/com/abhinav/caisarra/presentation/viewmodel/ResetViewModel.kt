@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.AuthResult
+import com.abhinav.caisarra.domain.Validators
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,8 +17,11 @@ data class ResetPasswordUiState(
     val codeSent: Boolean = false,
     val error: String? = null
 ) {
+    val emailError: String?
+        get() = if (email.isBlank()) null else Validators.emailError(email)
+
     val canSubmit: Boolean
-        get() = email.isNotBlank() && !isLoading
+        get() = email.isNotBlank() && emailError == null && !isLoading
 }
 
 class ResetPasswordViewModel(private val repository: AuthRepository) : ViewModel() {
@@ -28,7 +32,7 @@ class ResetPasswordViewModel(private val repository: AuthRepository) : ViewModel
     fun onEmailChange(value: String) =
         _state.update { it.copy(email = value, error = null, codeSent = false) }
 
-    fun sendCode(onSuccess: () -> Unit) {
+    fun sendCode(onSuccess: (String) -> Unit) {
         val current = _state.value
         if (!current.canSubmit) return
         _state.update { it.copy(isLoading = true, error = null) }
@@ -36,7 +40,7 @@ class ResetPasswordViewModel(private val repository: AuthRepository) : ViewModel
             when (val result = repository.sendResetCode(current.email.trim())) {
                 is AuthResult.Success -> {
                     _state.update { it.copy(isLoading = false, codeSent = true) }
-                    onSuccess()
+                    onSuccess(current.email.trim())
                 }
                 is AuthResult.Error ->
                     _state.update { it.copy(isLoading = false, error = result.message) }
