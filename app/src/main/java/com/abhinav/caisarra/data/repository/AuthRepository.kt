@@ -28,7 +28,6 @@ class AuthRepository(context: Context) {
             return AuthResult.Error(message)
         }
     }
-
     suspend fun resendRegistrationCode(): AuthResult {
         val request = pendingRegistration
             ?: return AuthResult.Error("Please sign up again.")

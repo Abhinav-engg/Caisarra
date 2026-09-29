@@ -47,6 +47,23 @@ private fun NavController.goHome() {
 
 @Composable
 fun AppNavigation(authRepository: AuthRepository) {
+    var startDestination by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        startDestination =
+            if (authRepository.isLoggedIn()) AppRoutes.HOME else AppRoutes.LOGIN
+    }
+
+    val start = startDestination
+    if (start == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF071017))
+        )
+        return
+    }
+
     val navController = rememberNavController()
 
     NavHost(
