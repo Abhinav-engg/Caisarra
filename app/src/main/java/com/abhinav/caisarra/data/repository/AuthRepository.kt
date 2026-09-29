@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.data.repository
 
 import android.content.Context
+import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
@@ -15,14 +16,12 @@ import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 class AuthRepository(context: Context) {
 
     private val tokenManager = TokenManager(context)
-    private val service = RetrofitInstance.service
+    private val service = RetrofitInstance.createAuthService(tokenManager)
     private var pendingRegistration: RegisterRequest? = null
 
     suspend fun register(username: String, email: String, password: String): AuthResult {
         try {
-            val request = RegisterRequest(username, email, password)
-            val response = service.register(request)
-            pendingRegistration = request
+            val response = service.register(RegisterRequest(username, email, password))
             return AuthResult.Success(response.message)
         } catch (e: Exception) {
             val message = ApiErrorInterpreter.toUserMessage(e)
@@ -41,6 +40,7 @@ class AuthRepository(context: Context) {
             return AuthResult.Error(message)
         }
     }
+
     suspend fun login(username: String, password: String): AuthResult {
         try {
             val response = service.login(LoginRequest(username, password))
@@ -64,7 +64,7 @@ class AuthRepository(context: Context) {
             tokenManager.saveAccessToken(response.accessToken)
             return AuthResult.Success("Token refreshed")
         } catch (e: Exception) {
-            tokenManager.clearTokens()
+            if (e is retrofit2.HttpException) tokenManager.clearTokens()
             val message = ApiErrorInterpreter.toUserMessage(e)
             return AuthResult.Error(message)
         }
@@ -127,8 +127,6 @@ class AuthRepository(context: Context) {
         }
     }
 
-
-
     suspend fun verifyRegistration(email: String, code: String): AuthResult {
         try {
             val response = service.verifyRegistration(VerifyRegistrationRequest(email, code))
@@ -139,5 +137,14 @@ class AuthRepository(context: Context) {
             val message = ApiErrorInterpreter.toUserMessage(e)
             return AuthResult.Error(message)
         }
+    }
+
+    suspend fun isLoggedIn(): Boolean {
+        val accessToken = tokenManager.getAccessToken()
+        if (accessToken != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(accessToken)) {
+            return true
+        }
+        refreshAccessToken()
+        return tokenManager.getRefreshToken() != null
     }
 }

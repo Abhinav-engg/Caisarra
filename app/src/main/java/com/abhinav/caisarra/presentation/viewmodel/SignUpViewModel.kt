@@ -55,7 +55,7 @@ class SignUpViewModel(private val repository: AuthRepository) : ViewModel() {
             val result = repository.register(
                 current.username.trim(),
                 current.email.trim(),
-                current.password
+                current.password,
             )
             when (result) {
                 is AuthResult.Success -> {
