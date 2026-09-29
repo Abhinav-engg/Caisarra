@@ -24,10 +24,11 @@ import com.abhinav.caisarra.presentation.screens.VerifyScreen
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
 import com.abhinav.caisarra.presentation.viewmodel.ResetPasswordViewModel
 import com.abhinav.caisarra.presentation.viewmodel.SignUpViewModel
-
+import com.abhinav.caisarra.presentation.screens.GuestScreen
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
+    const val GUEST = "guest"
     const val RESET_PASSWORD = "reset_password"
     const val VERIFY = "verify"
     const val SET_NEW_PASSWORD = "set_new_password"
@@ -55,17 +56,34 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(route = AppRoutes.LOGIN) {
             LoginScreen(
                 viewModel = screenViewModel { LoginViewModel(authRepository) },
-                onLoginSuccess = { navController.goHome() },
+                onLoginSuccess = {navController.goHome() },
                 onForgotPasswordClick = { navController.navigate(AppRoutes.RESET_PASSWORD) },
-                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) }
+                onSignUpClick = {navController.navigate(AppRoutes.REGISTER) },
+                onContinueAsGuestClick = {navController.navigate(AppRoutes.GUEST) }
+            )
+        }
+        composable(route = AppRoutes.GUEST) {
+            GuestScreen(
+                onContinueClick = { username ->
+                    navController.goHome()
+                },
+                onSignUpClick = {navController.navigate(AppRoutes.REGISTER) }
             )
         }
 
         composable(route = AppRoutes.REGISTER) {
             SignUpScreen(
                 viewModel = screenViewModel { SignUpViewModel(authRepository) },
+
                 onSignUpSuccess = { navController.goHome() },
-                onSignInClick = { navController.popBackStack() }
+
+                onSignInClick = {
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(AppRoutes.REGISTER) {
+                            inclusive = true
+                        }
+                    }
+                }
             )
         }
 

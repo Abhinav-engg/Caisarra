@@ -29,7 +29,8 @@ fun LoginScreen(
     viewModel: LoginViewModel,
     onLoginSuccess: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {},
-    onSignUpClick: () -> Unit = {}
+    onSignUpClick: () -> Unit = {},
+    onContinueAsGuestClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -70,7 +71,32 @@ fun LoginScreen(
             onClick = { viewModel.login(onLoginSuccess) },
             enabled = state.canSubmit
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onContinueAsGuestClick()
+                },
+            horizontalArrangement = Arrangement.Center
+        ) {
+
+            Text(
+                text = "OR ",
+                color = Color(0xFF8D9AAA),
+                fontSize = 14.sp
+            )
+
+            Text(
+                text = "continue as guest",
+                color = Color(0xFF00D5E9),
+                fontSize = 14.sp
+            )
+        }
+
+        Spacer(
+            modifier = Modifier.height(20.dp)
+        )
 
         AuthFooter("Don't have an account?", "Sign Up", onSignUpClick)
     }

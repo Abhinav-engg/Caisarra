@@ -58,7 +58,7 @@ fun AuthCard(
                 .windowInsetsPadding(WindowInsets.safeDrawing)
         ) {
             val width = minOf(maxWidth * 0.88f, AuthCardMaxWidth)
-            val height = minOf(cardHeight, maxHeight - 24.dp)
+            val height = minOf(cardHeight+40.dp, maxHeight - 24.dp)
             val left = (maxWidth - width) / 2f
             val top = (maxHeight - height) / 2f
 

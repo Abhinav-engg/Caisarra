@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.data.repository
 
 import android.content.Context
+import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
@@ -9,16 +10,30 @@ import com.abhinav.caisarra.data.remote.dto.LoginRequest
 import com.abhinav.caisarra.data.remote.dto.RefreshTokenRequest
 import com.abhinav.caisarra.data.remote.dto.RegisterRequest
 import com.abhinav.caisarra.data.remote.dto.ResetPasswordRequest
+import com.abhinav.caisarra.data.remote.dto.VerifyRegistrationRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 
 class AuthRepository(context: Context) {
 
     private val tokenManager = TokenManager(context)
-    private val service = RetrofitInstance.service
+    private val service = RetrofitInstance.createAuthService(tokenManager)
+    private var pendingRegistration: RegisterRequest? = null
+
     suspend fun register(username: String, email: String, password: String): AuthResult {
         try {
             val response = service.register(RegisterRequest(username, email, password))
-            tokenManager.saveTokens(response.accessToken, response.refreshToken)
+            return AuthResult.Success(response.message)
+        } catch (e: Exception) {
+            val message = ApiErrorInterpreter.toUserMessage(e)
+            return AuthResult.Error(message)
+        }
+    }
+
+    suspend fun resendRegistrationCode(): AuthResult {
+        val request = pendingRegistration
+            ?: return AuthResult.Error("Please sign up again.")
+        try {
+            val response = service.register(request)
             return AuthResult.Success(response.message)
         } catch (e: Exception) {
             val message = ApiErrorInterpreter.toUserMessage(e)
@@ -49,7 +64,7 @@ class AuthRepository(context: Context) {
             tokenManager.saveAccessToken(response.accessToken)
             return AuthResult.Success("Token refreshed")
         } catch (e: Exception) {
-            tokenManager.clearTokens()
+            if (e is retrofit2.HttpException) tokenManager.clearTokens()
             val message = ApiErrorInterpreter.toUserMessage(e)
             return AuthResult.Error(message)
         }
@@ -110,5 +125,26 @@ class AuthRepository(context: Context) {
             val message = ApiErrorInterpreter.toUserMessage(e)
             return AuthResult.Error(message)
         }
+    }
+
+    suspend fun verifyRegistration(email: String, code: String): AuthResult {
+        try {
+            val response = service.verifyRegistration(VerifyRegistrationRequest(email, code))
+            tokenManager.saveTokens(response.accessToken, response.refreshToken)
+            pendingRegistration = null
+            return AuthResult.Success(response.message)
+        } catch (e: Exception) {
+            val message = ApiErrorInterpreter.toUserMessage(e)
+            return AuthResult.Error(message)
+        }
+    }
+
+    suspend fun isLoggedIn(): Boolean {
+        val accessToken = tokenManager.getAccessToken()
+        if (accessToken != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(accessToken)) {
+            return true
+        }
+        refreshAccessToken()
+        return tokenManager.getRefreshToken() != null
     }
 }
