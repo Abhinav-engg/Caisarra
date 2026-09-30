@@ -1,4 +1,3 @@
-
 package com.abhinav.caisarra.data.remote
 
 import com.abhinav.caisarra.data.local.TokenManager
@@ -12,7 +11,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.create
 
 object RetrofitInstance {
-    private const val BASE_URL = "http://3.149.56.137:8050/"
+    private const val BASE_URL = "https://caisaara.duckdns.org"
     val json = Json { ignoreUnknownKeys = true }
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -23,7 +22,7 @@ object RetrofitInstance {
         .addInterceptor(loggingInterceptor)
         .build()
 
-    private val plainService: AuthService = Retrofit.Builder()
+    val plainService: AuthService = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(plainClient)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))

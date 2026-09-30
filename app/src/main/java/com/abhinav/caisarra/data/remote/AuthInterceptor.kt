@@ -5,7 +5,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 
-private val PUBLIC_PATHS = setOf(
+internal val PUBLIC_PATHS = setOf(
     "register", "login", "refresh", "logout", "logout-all",
     "verify-registration",
     "auth/forgot-password", "auth/verify-reset-code", "auth/reset-password"

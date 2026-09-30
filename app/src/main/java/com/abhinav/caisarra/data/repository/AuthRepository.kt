@@ -13,7 +13,7 @@ import com.abhinav.caisarra.data.remote.dto.ResetPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyRegistrationRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 
-class AuthRepository(context: Context) {
+class AuthRepository private constructor(context: Context) {
 
     private val tokenManager = TokenManager(context)
     private val service = RetrofitInstance.createAuthService(tokenManager)
@@ -21,7 +21,9 @@ class AuthRepository(context: Context) {
 
     suspend fun register(username: String, email: String, password: String): AuthResult {
         try {
-            val response = service.register(RegisterRequest(username, email, password))
+            val request = RegisterRequest(username, email, password)
+            val response = service.register(request)
+            pendingRegistration = request
             return AuthResult.Success(response.message)
         } catch (e: Exception) {
             val message = ApiErrorInterpreter.toUserMessage(e)
@@ -59,11 +61,11 @@ class AuthRepository(context: Context) {
         }
 
         try {
-            val response = service.refresh(RefreshTokenRequest(refreshToken))
+            val response = RetrofitInstance.plainService.refresh(RefreshTokenRequest(refreshToken))
             tokenManager.saveAccessToken(response.accessToken)
             return AuthResult.Success("Token refreshed")
         } catch (e: Exception) {
-            if (e is retrofit2.HttpException) tokenManager.clearTokens()
+            if (e is retrofit2.HttpException && (e.code() == 401 || e.code() == 403)) tokenManager.clearTokens()
             val message = ApiErrorInterpreter.toUserMessage(e)
             return AuthResult.Error(message)
         }
@@ -145,5 +147,15 @@ class AuthRepository(context: Context) {
         }
         refreshAccessToken()
         return tokenManager.getRefreshToken() != null
+    }
+
+    companion object {
+        @Volatile
+        private var instance: AuthRepository? = null
+
+        fun get(context: Context): AuthRepository =
+            instance ?: synchronized(this) {
+                instance ?: AuthRepository(context.applicationContext).also { instance = it }
+            }
     }
 }

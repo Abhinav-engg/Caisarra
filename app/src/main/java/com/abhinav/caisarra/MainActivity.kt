@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstance)
         enableEdgeToEdge()
         setContent {
-            val authRepository = remember { AuthRepository(applicationContext) }
+            val authRepository = remember { AuthRepository.get(applicationContext) }
             AppNavigation(authRepository)
         }
 
