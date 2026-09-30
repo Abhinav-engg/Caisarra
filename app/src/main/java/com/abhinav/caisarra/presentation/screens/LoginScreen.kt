@@ -23,6 +23,7 @@ import com.abhinav.caisarra.presentation.components.PasswordTextField
 import com.abhinav.caisarra.presentation.components.SimpleTextField
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
 import com.abhinav.caisarra.ui.theme.LoginCardHeight
+import com.abhinav.caisarra.ui.theme.LoginCardVerticalBias
 
 @Composable
 fun LoginScreen(
@@ -34,7 +35,10 @@ fun LoginScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    AuthCard(cardHeight = LoginCardHeight) {
+    AuthCard(
+        cardHeight = LoginCardHeight,
+        verticalBias = LoginCardVerticalBias
+    ) {
         AuthHeader("WELCOME BACK", "Sign into your Caisarra account")
 
         SimpleTextField(
@@ -62,7 +66,6 @@ fun LoginScreen(
                 modifier = Modifier.clickable { onForgotPasswordClick() }
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
 
         AuthMessage(state.error)
 

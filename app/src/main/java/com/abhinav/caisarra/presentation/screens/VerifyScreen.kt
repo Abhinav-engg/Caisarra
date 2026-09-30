@@ -41,8 +41,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.components.AuthCard
+import com.abhinav.caisarra.presentation.components.AuthFooter
 import com.abhinav.caisarra.presentation.components.AuthHeader
 import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.presentation.viewmodel.VerifyPurpose
 import com.abhinav.caisarra.presentation.viewmodel.VerifyViewModel
 import com.abhinav.caisarra.ui.theme.VerifyCardHeight
 import com.caisaara.ui.theme.BorderColor
@@ -57,6 +59,9 @@ private val ErrorRed = Color(0xFFFF3344)
 @Composable
 fun VerifyScreen(
     viewModel: VerifyViewModel,
+    email: String,
+    purpose: VerifyPurpose,
+    onBack: () -> Unit = {},
     onVerified: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -72,7 +77,12 @@ fun VerifyScreen(
     }
 
     AuthCard(cardHeight = VerifyCardHeight) {
-        AuthHeader("VERIFY", "Enter the 6-digit verification code.")
+        val subtitle = if (purpose == VerifyPurpose.RESET_PASSWORD) {
+            "If an account exists for ${maskEmail(email)}, we've sent a 6-digit code."
+        } else {
+            "Enter the 6-digit code sent to ${maskEmail(email)}."
+        }
+        AuthHeader("VERIFY", subtitle)
 
         Text(
             text = "Enter Code",
@@ -166,6 +176,8 @@ fun VerifyScreen(
             onClick = { viewModel.verify(onVerified) },
             enabled = state.canSubmit
         )
+
+        AuthFooter("Wrong email?", "Go back", onBack)
     }
 }
 
@@ -191,4 +203,10 @@ private fun OtpBox(digit: String, isError: Boolean, modifier: Modifier = Modifie
             }
         }
     }
+}
+
+private fun maskEmail(email: String): String {
+    val at = email.indexOf('@')
+    if (at <= 0) return email
+    return "${email.first()}***${email.substring(at)}"
 }

@@ -141,6 +141,9 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
             VerifyScreen(
                 viewModel = screenViewModel { VerifyViewModel(authRepository, email, purpose) },
+                email = email,
+                purpose = purpose,
+                onBack = { navController.popBackStack() },
                 onVerified = {
                     if (purpose == VerifyPurpose.REGISTRATION) {
                         navController.goHome()
