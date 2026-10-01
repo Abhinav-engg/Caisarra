@@ -42,7 +42,7 @@ fun LoginScreen(
         AuthHeader("WELCOME BACK", "Sign into your Caisarra account")
 
         SimpleTextField(
-            label = "Username",
+            label = "Username/Email",
             value = state.username,
             onValueChange = viewModel::onUsernameChange,
             placeholder = "grandmaster_karan"

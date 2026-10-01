@@ -53,7 +53,7 @@ fun SignUpScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         AuthCard(cardHeight = SignUpCardHeight) {
-            AuthHeader("CREATE ACCOUNT", "Join to master.")
+            AuthHeader("CREATE ACCOUNT", "")
 
             SimpleTextField(
                 label = "Username",
