@@ -92,7 +92,7 @@ fun SignUpScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-            
+
 
 
             AuthMessage(state.error)
