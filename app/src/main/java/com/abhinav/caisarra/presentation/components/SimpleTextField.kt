@@ -15,8 +15,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -38,6 +43,10 @@ fun SimpleTextField(
     helperText: String? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(12.dp)
+    val hasError = helperText != null
+
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
@@ -49,10 +58,18 @@ fun SimpleTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .background(Feildbackground, RoundedCornerShape(12.dp))
+                .focusGlow(focused && !hasError, shape, CyanLight)
+                .background(Feildbackground, shape)
                 .border(
-                    BorderStroke(1.dp, if (helperText != null) RedNormal else BorderColor),
-                    RoundedCornerShape(12.dp)
+                    BorderStroke(
+                        1.dp,
+                        when {
+                            hasError -> RedNormal
+                            focused -> CyanLight
+                            else -> BorderColor
+                        }
+                    ),
+                    shape
                 )
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart
@@ -71,7 +88,9 @@ fun SimpleTextField(
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = TextColor),
                 cursorBrush = SolidColor(CyanLight),
                 keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focused = it.isFocused }
             )
         }
         if (helperText != null) {

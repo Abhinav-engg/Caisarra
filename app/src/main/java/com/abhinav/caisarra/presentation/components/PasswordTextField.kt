@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -50,6 +51,9 @@ fun PasswordTextField(
     helperText: String? = null
 ) {
     var visible by remember { mutableStateOf(false) }
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(12.dp)
+    val hasError = helperText != null
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -62,10 +66,18 @@ fun PasswordTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .background(Feildbackground, RoundedCornerShape(12.dp))
+                .focusGlow(focused && !hasError, shape, CyanLight)
+                .background(Feildbackground, shape)
                 .border(
-                    BorderStroke(1.dp, if (helperText != null) RedNormal else BorderColor),
-                    RoundedCornerShape(12.dp)
+                    BorderStroke(
+                        1.dp,
+                        when {
+                            hasError -> RedNormal
+                            focused -> CyanLight
+                            else -> BorderColor
+                        }
+                    ),
+                    shape
                 )
                 .padding(start = 16.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -90,7 +102,9 @@ fun PasswordTextField(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     visualTransformation = if (visible) VisualTransformation.None
                     else PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focused = it.isFocused }
                 )
             }
             IconButton(onClick = { visible = !visible }) {

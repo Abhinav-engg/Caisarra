@@ -1,8 +1,11 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -21,10 +24,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -33,26 +41,48 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.components.AuthCard
+import com.abhinav.caisarra.presentation.components.AuthFooter
 import com.abhinav.caisarra.presentation.components.AuthHeader
 import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.presentation.viewmodel.VerifyPurpose
 import com.abhinav.caisarra.presentation.viewmodel.VerifyViewModel
 import com.abhinav.caisarra.ui.theme.VerifyCardHeight
 import com.caisaara.ui.theme.BorderColor
 import com.caisaara.ui.theme.Feildbackground
 import com.caisaara.ui.theme.Lablecolor
 import com.caisaara.ui.theme.TextColor
+import kotlinx.coroutines.launch
 
 private val ErrorRed = Color(0xFFFF3344)
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VerifyScreen(
     viewModel: VerifyViewModel,
+    email: String,
+    purpose: VerifyPurpose,
+    onBack: () -> Unit = {},
     onVerified: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
+
+    val paste: () -> Unit = {
+        scope.launch {
+            val text = clipboard.getClipEntry()?.clipData?.getItemAt(0)?.text?.toString()
+            if (text != null) viewModel.onOtpChange(text)
+        }
+    }
 
     AuthCard(cardHeight = VerifyCardHeight) {
-        AuthHeader("VERIFY", "Enter the 6-digit verification code.")
+        val subtitle = if (purpose == VerifyPurpose.RESET_PASSWORD) {
+            "If an account exists for ${maskEmail(email)}, we've sent a 6-digit code."
+        } else {
+            "Enter the 6-digit code sent to ${maskEmail(email)}."
+        }
+        AuthHeader("VERIFY", subtitle)
 
         Text(
             text = "Enter Code",
@@ -67,7 +97,8 @@ fun VerifyScreen(
             onValueChange = viewModel::onOtpChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .height(48.dp)
+                .focusRequester(focusRequester),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = TextStyle(color = Color.Transparent),
             cursorBrush = SolidColor(Color.Transparent),
@@ -80,7 +111,15 @@ fun VerifyScreen(
                     ) {
                         innerTextField()
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.combinedClickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { focusRequester.requestFocus() },
+                            onLongClick = paste
+                        ),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         repeat(6) { index ->
                             OtpBox(
                                 digit = state.otp.getOrNull(index)?.toString().orEmpty(),
@@ -137,6 +176,8 @@ fun VerifyScreen(
             onClick = { viewModel.verify(onVerified) },
             enabled = state.canSubmit
         )
+
+        AuthFooter("Wrong email?", "Go back", onBack)
     }
 }
 
@@ -162,4 +203,10 @@ private fun OtpBox(digit: String, isError: Boolean, modifier: Modifier = Modifie
             }
         }
     }
+}
+
+private fun maskEmail(email: String): String {
+    val at = email.indexOf('@')
+    if (at <= 0) return email
+    return "${email.first()}***${email.substring(at)}"
 }

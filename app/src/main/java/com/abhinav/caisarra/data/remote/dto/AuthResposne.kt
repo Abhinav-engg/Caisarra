@@ -5,8 +5,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AuthResponse(
-    val message: String,
-    val username: String,
     @SerialName("access_token") val accessToken: String,
-    @SerialName("refresh_token") val refreshToken: String
+    @SerialName("refresh_token") val refreshToken: String? = null,
+    @SerialName("message") val message: String = "",
+    @SerialName("username") val username: String = ""
 )

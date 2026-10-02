@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +26,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.presentation.screens.GuestOptionsScreen
+import com.abhinav.caisarra.presentation.screens.GuestScreen
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.ResetPasswordScreen
 import com.abhinav.caisarra.presentation.screens.SetNewPasswordScreen
@@ -39,6 +40,9 @@ import com.abhinav.caisarra.presentation.viewmodel.SignUpViewModel
 import com.abhinav.caisarra.presentation.viewmodel.VerifyPurpose
 import com.abhinav.caisarra.presentation.viewmodel.VerifyViewModel
 import kotlinx.coroutines.launch
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import com.abhinav.caisarra.data.repository.AuthResult
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -47,6 +51,7 @@ object AppRoutes {
     const val VERIFY = "verify/{purpose}/{email}"
     const val NEW_PASSWORD = "new_password"
     const val HOME = "home"
+    const val GUEST_OPTIONS = "guest_options"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -58,7 +63,14 @@ private inline fun <reified VM : ViewModel> screenViewModel(crossinline create: 
 
 private fun NavController.goHome() {
     navigate(AppRoutes.HOME) {
-        popUpTo(AppRoutes.LOGIN) { inclusive = true }
+        popUpTo(graph.id) { inclusive = true }
+    }
+}
+
+private fun NavController.goToLogin() {
+    navigate(AppRoutes.LOGIN) {
+        popUpTo(AppRoutes.LOGIN) { inclusive = false }
+        launchSingleTop = true
     }
 }
 
@@ -67,8 +79,11 @@ fun AppNavigation(authRepository: AuthRepository) {
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        startDestination =
-            if (authRepository.isLoggedIn()) AppRoutes.HOME else AppRoutes.LOGIN
+        startDestination = when {
+            authRepository.isLoggedIn() -> AppRoutes.HOME
+            authRepository.isGuest() -> AppRoutes.GUEST_OPTIONS
+            else -> AppRoutes.LOGIN
+        }
     }
 
     val start = startDestination
@@ -82,6 +97,8 @@ fun AppNavigation(authRepository: AuthRepository) {
     }
 
     val navController = rememberNavController()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     NavHost(
         navController = navController,
@@ -92,7 +109,15 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = screenViewModel { LoginViewModel(authRepository) },
                 onLoginSuccess = { navController.goHome() },
                 onForgotPasswordClick = { navController.navigate(AppRoutes.RESET_PASSWORD) },
-                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) }
+                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
+                onContinueAsGuestClick = {
+                    scope.launch {
+                        when (val result = authRepository.guestLogin()) {
+                            is AuthResult.Success -> navController.navigate(AppRoutes.GUEST_OPTIONS)
+                            is AuthResult.Error -> Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             )
         }
 
@@ -102,7 +127,28 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onSignUpSuccess = { email ->
                     navController.navigate(AppRoutes.verify(email, VerifyPurpose.REGISTRATION))
                 },
-                onSignInClick = { navController.popBackStack() }
+                onSignInClick = { navController.goToLogin() }
+            )
+        }
+        composable(route = AppRoutes.GUEST_OPTIONS) {
+            var guestId by remember { mutableStateOf("") }
+
+            LaunchedEffect(Unit) {
+                guestId = authRepository.getGuestId().orEmpty()
+            }
+
+            GuestOptionsScreen(
+                guestId = guestId,
+                onLoginClick = { navController.goToLogin() },
+                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
+                onLogoutClick = {
+                    scope.launch {
+                        authRepository.logout()
+                        navController.navigate(AppRoutes.LOGIN) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
 
@@ -123,6 +169,9 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
             VerifyScreen(
                 viewModel = screenViewModel { VerifyViewModel(authRepository, email, purpose) },
+                email = email,
+                purpose = purpose,
+                onBack = { navController.popBackStack() },
                 onVerified = {
                     if (purpose == VerifyPurpose.REGISTRATION) {
                         navController.goHome()

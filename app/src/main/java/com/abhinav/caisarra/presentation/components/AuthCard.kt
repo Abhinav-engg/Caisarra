@@ -15,9 +15,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.ui.theme.AuthCardCornerRadius
+import com.abhinav.caisarra.ui.theme.AuthCardHorizontalPadding
 import com.abhinav.caisarra.ui.theme.AuthCardMaxWidth
 import com.caisaara.ui.theme.CardBackground
 import com.caisaara.ui.theme.CardBorderNavy
@@ -45,9 +47,11 @@ import com.caisaara.ui.theme.White
 @Composable
 fun AuthCard(
     cardHeight: Dp,
+    verticalBias: Float = 0.5f,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(AuthCardCornerRadius)
+    val insets = WindowInsets.safeDrawing.asPaddingValues()
 
     Box(
         modifier = Modifier
@@ -55,15 +59,13 @@ fun AuthCard(
             .background(Color(0xFF071017))
             .clearFocusOnTap()
     ) {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-        ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val topInset = insets.calculateTopPadding()
+            val availableHeight = maxHeight - topInset - insets.calculateBottomPadding()
             val width = minOf(maxWidth * 0.88f, AuthCardMaxWidth)
-            val height = minOf(cardHeight, maxHeight - 24.dp)
+            val height = minOf(cardHeight + 40.dp, availableHeight - 24.dp)
             val left = (maxWidth - width) / 2f
-            val top = (maxHeight - height) / 2f
+            val top = topInset + (availableHeight - height) * verticalBias
 
             LoginBackground(
                 modifier = Modifier.fillMaxSize(),
@@ -77,7 +79,7 @@ fun AuthCard(
 
             Column(
                 modifier = Modifier
-                    .align(Alignment.Center)
+                    .offset(x = left, y = top)
                     .width(width)
                     .height(height)
                     .clip(shape)
@@ -85,14 +87,19 @@ fun AuthCard(
                     .border(
                         width = 1.5.dp,
                         brush = Brush.verticalGradient(
-                            0.0f to CyanLight.copy(alpha = 0.50f),
+                            0.0f to CyanLight.copy(alpha = 0.60f),
                             0.5f to CardBorderNavy.copy(alpha = 0.20f),
                             1.0f to White.copy(alpha = 0.10f)
                         ),
                         shape = shape
                     )
                     .verticalScroll(rememberScrollState())
-                    .padding(top = 20.dp, bottom = 20.dp, start = 15.dp, end = 15.dp),
+                    .padding(
+                        top = 20.dp,
+                        bottom = 20.dp,
+                        start = AuthCardHorizontalPadding,
+                        end = AuthCardHorizontalPadding
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 content = content
             )

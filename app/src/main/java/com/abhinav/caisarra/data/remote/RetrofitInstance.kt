@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.data.remote
 
+import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.api.AuthService
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -10,22 +11,35 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.create
 
 object RetrofitInstance {
-    private const val BASE_URL = "http://3.149.56.137:8050/"
+    private const val BASE_URL = "https://caisaara.duckdns.org"
     val json = Json { ignoreUnknownKeys = true }
 
-    val client = OkHttpClient.Builder()
-        .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        })
+    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+
+    private val plainClient = OkHttpClient.Builder()
+        .addInterceptor(loggingInterceptor)
         .build()
 
-    val service: AuthService = Retrofit.Builder()
+    val plainService: AuthService = Retrofit.Builder()
         .baseUrl(BASE_URL)
-        .client(client)
+        .client(plainClient)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
         .create()
 
+    fun createAuthService(tokenManager: TokenManager): AuthService {
+        val client = plainClient.newBuilder()
+            .addInterceptor(AuthInterceptor(tokenManager))
+            .authenticator(TokenAuthenticator(tokenManager, plainService))
+            .build()
 
-
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(client)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create()
+    }
 }

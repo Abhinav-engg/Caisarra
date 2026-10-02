@@ -10,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.components.AuthCard
@@ -39,7 +40,7 @@ fun ResetPasswordScreen(
             label = "Email",
             value = state.email,
             onValueChange = viewModel::onEmailChange,
-            placeholder = "grandmaster@caisarra.com",
+            placeholder = "Enter your email",
             helperText = state.emailError
         )
         Spacer(modifier = Modifier.height(32.dp))
@@ -56,10 +57,8 @@ fun ResetPasswordScreen(
                 .height(28.dp),
             contentAlignment = Alignment.Center
         ) {
-            val message = state.error ?: if (state.codeSent) "Code Sent!" else null
-            val color = if (state.error != null) androidx.compose.ui.graphics.Color(0xFFFF6B6B) else EmeraldNormal
-            if (message != null) {
-                Text(text = message, color = color, fontSize = 12.sp)
+            state.error?.let {
+                Text(text = it, color = Color(0xFFFF6B6B), fontSize = 12.sp)
             }
         }
 
