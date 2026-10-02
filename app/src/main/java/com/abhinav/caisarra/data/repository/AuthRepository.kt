@@ -12,6 +12,7 @@ import com.abhinav.caisarra.data.remote.dto.RegisterRequest
 import com.abhinav.caisarra.data.remote.dto.ResetPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyRegistrationRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
+import kotlinx.coroutines.sync.withLock
 
 class AuthRepository private constructor(context: Context) {
 
@@ -53,21 +54,17 @@ class AuthRepository private constructor(context: Context) {
         }
     }
 
-    suspend fun refreshAccessToken(): AuthResult {
+    suspend fun refreshAccessToken(): AuthResult = tokenManager.refreshMutex.withLock {
         val refreshToken = tokenManager.getRefreshToken()
-
-        if (refreshToken == null) {
-            return AuthResult.Error("You are not logged in.")
-        }
+            ?: return@withLock AuthResult.Error("You are not logged in.")
 
         try {
             val response = RetrofitInstance.plainService.refresh(RefreshTokenRequest(refreshToken))
-            tokenManager.saveAccessToken(response.accessToken)
-            return AuthResult.Success("Token refreshed")
+            tokenManager.saveTokens(response.accessToken, response.refreshToken)
+            AuthResult.Success("Token refreshed")
         } catch (e: Exception) {
             if (e is retrofit2.HttpException && (e.code() == 401 || e.code() == 403)) tokenManager.clearTokens()
-            val message = ApiErrorInterpreter.toUserMessage(e)
-            return AuthResult.Error(message)
+            AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
         }
     }
 
@@ -140,6 +137,17 @@ class AuthRepository private constructor(context: Context) {
         }
     }
 
+    suspend fun guestLogin(): AuthResult {
+        tokenManager.getGuestId()?.let { return AuthResult.Success(it) }
+
+        return try {
+            val response = service.guestLogin()
+            tokenManager.saveGuestId(response.guestId)
+            AuthResult.Success(response.guestId)
+        } catch (e: Exception) {
+            AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
+        }
+    }
     suspend fun isLoggedIn(): Boolean {
         val accessToken = tokenManager.getAccessToken()
         if (accessToken != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(accessToken)) {
@@ -148,6 +156,10 @@ class AuthRepository private constructor(context: Context) {
         refreshAccessToken()
         return tokenManager.getRefreshToken() != null
     }
+
+    suspend fun isGuest(): Boolean = tokenManager.getGuestId() != null
+
+    suspend fun getGuestId(): String? = tokenManager.getGuestId()
 
     companion object {
         @Volatile

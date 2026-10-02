@@ -40,6 +40,9 @@ import com.abhinav.caisarra.presentation.viewmodel.SignUpViewModel
 import com.abhinav.caisarra.presentation.viewmodel.VerifyPurpose
 import com.abhinav.caisarra.presentation.viewmodel.VerifyViewModel
 import kotlinx.coroutines.launch
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import com.abhinav.caisarra.data.repository.AuthResult
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -48,7 +51,6 @@ object AppRoutes {
     const val VERIFY = "verify/{purpose}/{email}"
     const val NEW_PASSWORD = "new_password"
     const val HOME = "home"
-    const val GUEST = "guest"
     const val GUEST_OPTIONS = "guest_options"
 
     fun verify(email: String, purpose: VerifyPurpose) =
@@ -61,7 +63,7 @@ private inline fun <reified VM : ViewModel> screenViewModel(crossinline create: 
 
 private fun NavController.goHome() {
     navigate(AppRoutes.HOME) {
-        popUpTo(AppRoutes.LOGIN) { inclusive = true }
+        popUpTo(graph.id) { inclusive = true }
     }
 }
 
@@ -77,8 +79,11 @@ fun AppNavigation(authRepository: AuthRepository) {
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        startDestination =
-            if (authRepository.isLoggedIn()) AppRoutes.HOME else AppRoutes.LOGIN
+        startDestination = when {
+            authRepository.isLoggedIn() -> AppRoutes.HOME
+            authRepository.isGuest() -> AppRoutes.GUEST_OPTIONS
+            else -> AppRoutes.LOGIN
+        }
     }
 
     val start = startDestination
@@ -92,6 +97,8 @@ fun AppNavigation(authRepository: AuthRepository) {
     }
 
     val navController = rememberNavController()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     NavHost(
         navController = navController,
@@ -103,7 +110,14 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onLoginSuccess = { navController.goHome() },
                 onForgotPasswordClick = { navController.navigate(AppRoutes.RESET_PASSWORD) },
                 onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
-                onContinueAsGuestClick = { navController.navigate(AppRoutes.GUEST) }
+                onContinueAsGuestClick = {
+                    scope.launch {
+                        when (val result = authRepository.guestLogin()) {
+                            is AuthResult.Success -> navController.navigate(AppRoutes.GUEST_OPTIONS)
+                            is AuthResult.Error -> Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             )
         }
 
@@ -116,19 +130,25 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onSignInClick = { navController.goToLogin() }
             )
         }
-
-        composable(route = AppRoutes.GUEST) {
-            GuestScreen(
-                viewModel = screenViewModel { SignUpViewModel(authRepository) },
-                onContinueClick = { navController.navigate(AppRoutes.GUEST_OPTIONS) },
-                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) }
-            )
-        }
-
         composable(route = AppRoutes.GUEST_OPTIONS) {
+            var guestId by remember { mutableStateOf("") }
+
+            LaunchedEffect(Unit) {
+                guestId = authRepository.getGuestId().orEmpty()
+            }
+
             GuestOptionsScreen(
+                guestId = guestId,
                 onLoginClick = { navController.goToLogin() },
-                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) }
+                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
+                onLogoutClick = {
+                    scope.launch {
+                        authRepository.logout()
+                        navController.navigate(AppRoutes.LOGIN) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
 

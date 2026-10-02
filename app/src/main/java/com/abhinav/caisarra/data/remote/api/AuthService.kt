@@ -3,6 +3,7 @@ package com.abhinav.caisarra.data.remote.api
 import com.abhinav.caisarra.data.remote.dto.AccessTokenResponse
 import com.abhinav.caisarra.data.remote.dto.AuthResponse
 import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
+import com.abhinav.caisarra.data.remote.dto.GuestLoginResponse
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
 import com.abhinav.caisarra.data.remote.dto.MessageResponse
 import com.abhinav.caisarra.data.remote.dto.RegisterRequest
@@ -43,5 +44,8 @@ interface AuthService {
     suspend fun resetPassword(@Body body: ResetPasswordRequest): MessageResponse
     @POST("verify-registration")
     suspend fun verifyRegistration(@Body body: VerifyRegistrationRequest): VerifyRegistrationResponse
+
+    @POST("guest-login")
+    suspend fun guestLogin(): GuestLoginResponse
 
 }
