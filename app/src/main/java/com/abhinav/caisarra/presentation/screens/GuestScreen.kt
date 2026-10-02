@@ -51,6 +51,15 @@ fun GuestScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+        SimpleTextField(
+            label = "Username",
+            value = state.username,
+            onValueChange = viewModel::onUsernameChange,
+            placeholder = "Enter your username",
+            helperText = state.usernameError
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         GeneralButton(
             text = "Continue",

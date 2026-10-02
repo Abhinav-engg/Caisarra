@@ -13,6 +13,7 @@ import com.abhinav.caisarra.data.remote.dto.VerifyRegistrationRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyRegistrationResponse
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeResponse
+
 import retrofit2.http.Body
 import retrofit2.http.POST
 
@@ -42,6 +43,7 @@ interface AuthService {
 
     @POST("reset-password")
     suspend fun resetPassword(@Body body: ResetPasswordRequest): MessageResponse
+
     @POST("verify-registration")
     suspend fun verifyRegistration(@Body body: VerifyRegistrationRequest): VerifyRegistrationResponse
 

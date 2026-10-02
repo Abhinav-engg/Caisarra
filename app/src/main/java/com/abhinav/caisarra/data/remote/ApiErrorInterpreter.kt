@@ -4,7 +4,6 @@ import com.abhinav.caisarra.data.remote.dto.ApiError
 import retrofit2.HttpException
 import java.io.IOException
 
-
 object ApiErrorInterpreter {
 
     fun toUserMessage(error: Throwable): String {
