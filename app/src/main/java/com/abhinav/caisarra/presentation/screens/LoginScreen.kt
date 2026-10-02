@@ -39,7 +39,7 @@ fun LoginScreen(
         cardHeight = LoginCardHeight,
         verticalBias = LoginCardVerticalBias
     ) {
-        AuthHeader("WELCOME BACK", "Sign into your Caisarra account")
+        AuthHeader("WELCOME BACK", "Sign into your Mosaic account")
 
         SimpleTextField(
             label = "Username/Email",

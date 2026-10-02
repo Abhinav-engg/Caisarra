@@ -46,12 +46,7 @@ fun SignUpScreen(
     val state by viewModel.state.collectAsState()
     var showTerms by remember { mutableStateOf(false) }
 
-    val termsText = buildAnnotatedString {
-        append("By creating an account, you agree to ")
-        withStyle(SpanStyle(color = LinkText)) {
-            append("Terms & Privacy Policy.")
-        }
-    }
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         AuthCard(cardHeight = SignUpCardHeight) {
@@ -97,15 +92,7 @@ fun SignUpScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = termsText,
-                color = SubtleText,
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showTerms = true }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            
 
 
             AuthMessage(state.error)
