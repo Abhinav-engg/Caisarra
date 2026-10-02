@@ -9,7 +9,7 @@ val SignUpButtonDefaultCornerRadius = 12.dp
 
 
 val ResetCardMaxWidth = 420.dp
-val ResetCardHeight = 400.dp
+val ResetCardHeight = 340.dp
 val ResetCardCornerRadius = 20.dp
 
 val AuthCardMaxWidth = 420.dp
