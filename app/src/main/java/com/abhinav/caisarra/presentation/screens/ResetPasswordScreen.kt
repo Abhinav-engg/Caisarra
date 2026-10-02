@@ -30,7 +30,8 @@ fun ResetPasswordScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    AuthCard(cardHeight = ResetCardHeight) {
+    AuthCard(cardHeight = ResetCardHeight,
+        useContentHeight = true) {
         AuthHeader(
             "RESET PASSWORD",
             "Enter your registered email and we'll send a recovery code."
