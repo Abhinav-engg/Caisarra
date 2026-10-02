@@ -4,6 +4,7 @@ import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.api.AuthService
 import com.abhinav.caisarra.data.remote.dto.RefreshTokenRequest
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.withLock
 import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
@@ -15,38 +16,34 @@ class TokenAuthenticator(
     private val refreshService: AuthService
 ) : Authenticator {
 
-    private val lock = Any()
-
     override fun authenticate(route: Route?, response: Response): Request? {
         val path = response.request.url.encodedPath.trimStart('/')
         if (path in PUBLIC_PATHS) return null
         if (responseCount(response) >= 2) return null
 
-        synchronized(lock) {
-            val sentToken = response.request.header("Authorization")?.removePrefix("Bearer ")
-            val currentToken = runBlocking { tokenManager.getAccessToken() }
-            if (currentToken != null && currentToken != sentToken) {
-                return withToken(response, currentToken)
-            }
+        return runBlocking {
+            tokenManager.refreshMutex.withLock {
+                val sentToken = response.request.header("Authorization")?.removePrefix("Bearer ")
+                val currentToken = tokenManager.getAccessToken()
+                if (currentToken != null && currentToken != sentToken) {
+                    return@withLock withToken(response, currentToken)
+                }
 
-            val refreshToken = runBlocking { tokenManager.getRefreshToken() } ?: return null
+                val refreshToken = tokenManager.getRefreshToken() ?: return@withLock null
 
-            val newToken = try {
-                runBlocking {
+                try {
                     val refreshResponse = refreshService.refresh(RefreshTokenRequest(refreshToken))
-                    tokenManager.saveAccessToken(refreshResponse.accessToken)
-                    refreshResponse.accessToken
+                    tokenManager.saveTokens(refreshResponse.accessToken, refreshResponse.refreshToken)
+                    withToken(response, refreshResponse.accessToken)
+                } catch (e: HttpException) {
+                    if (e.code() == 401 || e.code() == 403) {
+                        tokenManager.clearTokens()
+                    }
+                    null
+                } catch (e: Exception) {
+                    null
                 }
-            } catch (e: HttpException) {
-                if (e.code() == 401 || e.code() == 403) {
-                    runBlocking { tokenManager.clearTokens() }
-                }
-                return null
-            } catch (e: Exception) {
-                return null
             }
-
-            return withToken(response, newToken)
         }
     }
 

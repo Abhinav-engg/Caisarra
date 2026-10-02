@@ -16,9 +16,12 @@ object Validators {
 
     fun passwordError(password: String): String? = when {
         password.length < 8 -> "Password must be at least 8 characters."
-        password.length > 64 -> "Password is too long."
+        password.length > 16 -> "Password is too long."
+        password.any { it.isWhitespace() } -> "Password cannot contain spaces."
+        !password.any { it.isUpperCase() } -> "Include at least one uppercase letter."
+        !password.any { it.isLowerCase() } -> "Include at least one lowercase letter."
         !password.any { it.isDigit() } -> "Include at least one number."
-        !password.any { it.isLetter() } -> "Include at least one letter."
+        !password.any { !it.isLetterOrDigit() } -> "Include at least one special character."
         else -> null
     }
 
