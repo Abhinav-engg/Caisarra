@@ -109,8 +109,8 @@ fun PasswordTextField(
             }
             IconButton(onClick = { visible = !visible }) {
                 Icon(
-                    imageVector = if (visible) Icons.Default.VisibilityOff
-                    else Icons.Default.Visibility,
+                    imageVector = if (visible) Icons.Default.Visibility
+                    else Icons.Default.VisibilityOff,
                     contentDescription = if (visible) "Hide password" else "Show password",
                     tint = PlaceholderColor
                 )
