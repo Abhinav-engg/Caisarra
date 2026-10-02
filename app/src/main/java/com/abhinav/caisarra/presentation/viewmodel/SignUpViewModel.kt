@@ -14,9 +14,11 @@ data class SignUpUiState(
     val username: String = "",
     val email: String = "",
     val password: String = "",
+    val confirmPassword: String = "",
     val isLoading: Boolean = false,
     val error: String? = null
 ) {
+
     val usernameError: String?
         get() = if (username.isBlank()) null else Validators.usernameError(username)
 
@@ -25,13 +27,32 @@ data class SignUpUiState(
 
     val passwordError: String?
         get() = if (password.isBlank()) null else Validators.passwordError(password)
+    val passwordRequirementsValid: Boolean
+        get() =
+            password.length in 8..16 && password.any { it.isDigit() } &&
+                    password.any { it.isUpperCase() } && password.any { it.isLowerCase() } &&
+                    password.any { !it.isLetterOrDigit() && !it.isWhitespace()} && !password.any { it.isWhitespace() }
+    val confirmPasswordError: String?
+        get() = if (confirmPassword.isBlank()) { null
+        } else if (password != confirmPassword) {
+            "Passwords do not match"
+        } else {
+            null
+        }
 
     val canSubmit: Boolean
-        get() = username.isNotBlank() && usernameError == null &&
-                email.isNotBlank() && emailError == null &&
-                password.isNotBlank() && passwordError == null &&
-                !isLoading
+        get() =
+            username.isNotBlank() &&
+                    usernameError == null &&
+                    email.isNotBlank() &&
+                    emailError == null &&
+                    password.isNotBlank() &&
+                    passwordRequirementsValid &&
+                    confirmPassword.isNotBlank() &&
+                    confirmPasswordError == null &&
+                    !isLoading
 }
+
 
 class SignUpViewModel(private val repository: AuthRepository) : ViewModel() {
 
@@ -46,6 +67,9 @@ class SignUpViewModel(private val repository: AuthRepository) : ViewModel() {
 
     fun onPasswordChange(value: String) =
         _state.update { it.copy(password = value, error = null) }
+
+    fun onConfirmPasswordChange(value: String) =
+        _state.update { it.copy(confirmPassword = value, error = null) }
 
     fun signUp(onSuccess: (String) -> Unit) {
         val current = _state.value

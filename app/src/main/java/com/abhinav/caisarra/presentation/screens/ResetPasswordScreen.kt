@@ -40,7 +40,7 @@ fun ResetPasswordScreen(
             label = "Email",
             value = state.email,
             onValueChange = viewModel::onEmailChange,
-            placeholder = "grandmaster@caisarra.com",
+            placeholder = "Enter your email",
             helperText = state.emailError
         )
         Spacer(modifier = Modifier.height(32.dp))

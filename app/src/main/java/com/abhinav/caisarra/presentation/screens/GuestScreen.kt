@@ -58,7 +58,7 @@ fun GuestScreen(
             label = "Username",
             value = state.username,
             onValueChange = viewModel::onUsernameChange,
-            placeholder = "grandmaster_karan",
+            placeholder = "Enter your username",
             helperText = state.usernameError
         )
 

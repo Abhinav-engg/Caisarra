@@ -45,14 +45,14 @@ fun LoginScreen(
             label = "Username/Email",
             value = state.username,
             onValueChange = viewModel::onUsernameChange,
-            placeholder = "grandmaster_karan"
+            placeholder = "Enter your username or email"
         )
         Spacer(modifier = Modifier.height(16.dp))
         PasswordTextField(
             label = "Password",
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
-            placeholder = "Password"
+            placeholder = "Enter your Password"
         )
         Spacer(modifier = Modifier.height(8.dp))
         Row(

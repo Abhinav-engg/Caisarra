@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -34,6 +35,7 @@ import com.abhinav.caisarra.presentation.viewmodel.SignUpViewModel
 import com.abhinav.caisarra.ui.theme.SignUpCardHeight
 import com.caisaara.ui.theme.LinkText
 import com.caisaara.ui.theme.SubtleText
+import com.abhinav.caisarra.presentation.components.PasswordRequirements
 
 @Composable
 fun SignUpScreen(
@@ -59,7 +61,7 @@ fun SignUpScreen(
                 label = "Username",
                 value = state.username,
                 onValueChange = viewModel::onUsernameChange,
-                placeholder = "e.g. Karan_gamer",
+                placeholder = "Enter your username",
                 helperText = state.usernameError
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -67,7 +69,7 @@ fun SignUpScreen(
                 label = "Email",
                 value = state.email,
                 onValueChange = viewModel::onEmailChange,
-                placeholder = "yourname@gmail.com",
+                placeholder = "Enter your email",
                 helperText = state.emailError
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -76,17 +78,24 @@ fun SignUpScreen(
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
                 placeholder = "Enter password",
-                helperText = state.passwordError
+                helperText = null
             )
-            if (state.passwordError == null) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Password must be at least 8 characters long.",
-                    color = SubtleText,
-                    fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+
+            PasswordRequirements(
+                password = state.password,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PasswordTextField(
+                label = "Confirm Password",
+                value = state.confirmPassword,
+                onValueChange = viewModel::onConfirmPasswordChange,
+                placeholder = "Re-enter password",
+                helperText = state.confirmPasswordError
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = termsText,
@@ -97,6 +106,7 @@ fun SignUpScreen(
                     .clickable { showTerms = true }
             )
             Spacer(modifier = Modifier.height(8.dp))
+
 
             AuthMessage(state.error)
 
