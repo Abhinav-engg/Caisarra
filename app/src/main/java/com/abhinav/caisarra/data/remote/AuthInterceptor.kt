@@ -8,7 +8,7 @@ import okhttp3.Response
 internal val PUBLIC_PATHS = setOf(
     "register", "login", "guest-login", "refresh", "logout", "logout-all",
     "verify-registration",
-    "auth/forgot-password", "auth/verify-reset-code", "auth/reset-password"
+    "forgot-password", "verify-reset-code", "reset-password"
 )
 
 class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {

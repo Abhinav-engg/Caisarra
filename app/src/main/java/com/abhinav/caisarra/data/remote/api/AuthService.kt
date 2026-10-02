@@ -34,13 +34,13 @@ interface AuthService {
     @POST("logout-all")
     suspend fun logoutAll(@Body body: RefreshTokenRequest): MessageResponse
 
-    @POST("auth/forgot-password")
+    @POST("forgot-password")
     suspend fun forgotPassword(@Body body: ForgotPasswordRequest): MessageResponse
 
-    @POST("auth/verify-reset-code")
+    @POST("verify-reset-code")
     suspend fun verifyResetCode(@Body body: VerifyResetCodeRequest): VerifyResetCodeResponse
 
-    @POST("auth/reset-password")
+    @POST("reset-password")
     suspend fun resetPassword(@Body body: ResetPasswordRequest): MessageResponse
     @POST("verify-registration")
     suspend fun verifyRegistration(@Body body: VerifyRegistrationRequest): VerifyRegistrationResponse
