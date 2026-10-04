@@ -7,5 +7,6 @@ import kotlinx.serialization.Serializable
 data class VerifyRegistrationResponse(
     @SerialName("access_token") val accessToken: String,
     @SerialName("refresh_token") val refreshToken: String? = null,
-    @SerialName("message") val message: String = ""
+    @SerialName("message") val message: String = "",
+    @SerialName("needs_rating") val needsRating: Boolean = false
 )

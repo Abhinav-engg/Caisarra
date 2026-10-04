@@ -43,6 +43,8 @@ import kotlinx.coroutines.launch
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import com.abhinav.caisarra.data.repository.AuthResult
+import com.abhinav.caisarra.presentation.screens.RatingScreen
+import com.abhinav.caisarra.presentation.viewmodel.RatingViewModel
 import com.abhinav.caisarra.data.local.RegistrationDataStore
 
 object AppRoutes {
@@ -53,6 +55,7 @@ object AppRoutes {
     const val NEW_PASSWORD = "new_password"
     const val HOME = "home"
     const val GUEST_OPTIONS = "guest_options"
+    const val RATING = "rating"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -178,13 +181,21 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onBack = { navController.popBackStack() },
                 onVerified = {
                     if (purpose == VerifyPurpose.REGISTRATION) {
-                        navController.goHome()
-                    } else {
+                    navController.navigate(AppRoutes.RATING) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                } else {
                         navController.navigate(AppRoutes.NEW_PASSWORD) {
                             popUpTo(AppRoutes.VERIFY) { inclusive = true }
                         }
                     }
                 }
+            )
+        }
+        composable(route = AppRoutes.RATING) {
+            RatingScreen(
+                viewModel = screenViewModel { RatingViewModel(authRepository) },
+                onRated = { navController.goHome() }
             )
         }
 

@@ -21,3 +21,5 @@ val SignUpCardHeight = 600.dp
 val VerifyCardHeight = 340.dp
 val SetNewPasswordCardHeight = 420.dp
 val GuestOptionsCardHeight = 220.dp
+
+val RatingCardHeight = 460.dp

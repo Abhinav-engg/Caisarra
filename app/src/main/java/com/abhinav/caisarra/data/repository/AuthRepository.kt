@@ -7,6 +7,7 @@ import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
+import com.abhinav.caisarra.data.remote.dto.RatingRequest
 import com.abhinav.caisarra.data.remote.dto.RefreshTokenRequest
 import com.abhinav.caisarra.data.remote.dto.RegisterRequest
 import com.abhinav.caisarra.data.remote.dto.ResetPasswordRequest
@@ -181,5 +182,14 @@ class AuthRepository private constructor(context: Context) {
             instance ?: synchronized(this) {
                 instance ?: AuthRepository(context.applicationContext).also { instance = it }
             }
+    }
+
+    suspend fun submitRating(rating: String): AuthResult {
+        return try {
+            service.submitRating(RatingRequest(rating))
+            AuthResult.Success("Rating saved")
+        } catch (e: Exception) {
+            AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
+        }
     }
 }
