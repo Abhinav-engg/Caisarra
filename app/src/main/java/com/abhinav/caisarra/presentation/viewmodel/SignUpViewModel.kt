@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.data.local.RegistrationDataStore
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.AuthResult
 import com.abhinav.caisarra.domain.Validators
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 data class SignUpUiState(
     val username: String = "",
     val email: String = "",
@@ -54,16 +56,55 @@ data class SignUpUiState(
 }
 
 
-class SignUpViewModel(private val repository: AuthRepository) : ViewModel() {
+class SignUpViewModel(private val repository: AuthRepository,private val registrationDataStore: RegistrationDataStore
+) : ViewModel() {
 
     private val _state = MutableStateFlow(SignUpUiState())
     val state: StateFlow<SignUpUiState> = _state.asStateFlow()
 
-    fun onUsernameChange(value: String) =
-        _state.update { it.copy(username = value, error = null) }
+    init {
+        loadSavedRegistrationData()
+    }
 
-    fun onEmailChange(value: String) =
-        _state.update { it.copy(email = value, error = null) }
+    private fun loadSavedRegistrationData() {
+        viewModelScope.launch {
+
+            val username = registrationDataStore.username.first()
+            val email = registrationDataStore.email.first()
+
+            _state.update {
+                it.copy(username = username,
+                    email = email
+                )
+            }
+        }
+    }
+
+    fun onUsernameChange(value: String) {
+        _state.update {
+            it.copy(
+                username = value,
+                error = null
+            )
+        }
+
+        viewModelScope.launch {
+            registrationDataStore.saveUsername(value)
+        }
+    }
+
+    fun onEmailChange(value: String) {
+        _state.update {
+            it.copy(
+                email = value,
+                error = null
+            )
+        }
+
+        viewModelScope.launch {
+            registrationDataStore.saveEmail(value)
+        }
+    }
 
     fun onPasswordChange(value: String) =
         _state.update { it.copy(password = value, error = null) }
@@ -83,7 +124,11 @@ class SignUpViewModel(private val repository: AuthRepository) : ViewModel() {
             )
             when (result) {
                 is AuthResult.Success -> {
-                    _state.update { it.copy(isLoading = false) }
+                    registrationDataStore.clear()
+                    _state.update {it.copy(
+                            isLoading = false
+                        )
+                    }
                     onSuccess(current.email.trim())
                 }
                 is AuthResult.Error ->
