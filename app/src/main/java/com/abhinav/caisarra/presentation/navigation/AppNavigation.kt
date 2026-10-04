@@ -43,6 +43,7 @@ import kotlinx.coroutines.launch
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import com.abhinav.caisarra.data.repository.AuthResult
+import com.abhinav.caisarra.data.local.RegistrationDataStore
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -123,7 +124,10 @@ fun AppNavigation(authRepository: AuthRepository) {
 
         composable(route = AppRoutes.REGISTER) {
             SignUpScreen(
-                viewModel = screenViewModel { SignUpViewModel(authRepository) },
+                viewModel = screenViewModel {SignUpViewModel(
+                        repository = authRepository,registrationDataStore = RegistrationDataStore(context.applicationContext)
+                    )
+                },
                 onSignUpSuccess = { email ->
                     navController.navigate(AppRoutes.verify(email, VerifyPurpose.REGISTRATION))
                 },
