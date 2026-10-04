@@ -6,6 +6,7 @@ import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.GuestLoginResponse
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
 import com.abhinav.caisarra.data.remote.dto.MessageResponse
+import com.abhinav.caisarra.data.remote.dto.RatingRequest
 import com.abhinav.caisarra.data.remote.dto.RefreshTokenRequest
 import com.abhinav.caisarra.data.remote.dto.RegisterRequest
 import com.abhinav.caisarra.data.remote.dto.ResetPasswordRequest
@@ -48,4 +49,7 @@ interface AuthService {
 
     @POST("guest-login")
     suspend fun guestLogin(): GuestLoginResponse
+
+    @POST("rating")
+    suspend fun submitRating(@Body request: RatingRequest)
 }
