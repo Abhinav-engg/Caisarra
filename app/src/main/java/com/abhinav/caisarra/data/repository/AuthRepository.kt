@@ -7,6 +7,7 @@ import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
+import com.abhinav.caisarra.data.remote.dto.RatingRequest
 import com.abhinav.caisarra.data.remote.dto.RefreshTokenRequest
 import com.abhinav.caisarra.data.remote.dto.RegisterRequest
 import com.abhinav.caisarra.data.remote.dto.ResetPasswordRequest
@@ -23,11 +24,18 @@ class AuthRepository private constructor(context: Context) {
     private var pendingRegistration: RegisterRequest? = null
     private var resetToken: String? = null
 
-    private fun refreshTokenFromCookie(headers: Headers): String? =
+    private fun cookieValue(headers: Headers, name: String): String? =
         headers.values("Set-Cookie")
-            .firstOrNull { it.startsWith("refresh_token=") }
-            ?.substringAfter("refresh_token=")
+            .firstOrNull { it.startsWith("$name=") }
+            ?.substringAfter("$name=")
             ?.substringBefore(";")
+
+    private suspend fun saveTokensFromCookies(headers: Headers): Boolean {
+        val accessToken = cookieValue(headers, "access_token") ?: return false
+        val refreshToken = cookieValue(headers, "refresh_token") ?: return false
+        tokenManager.saveTokens(accessToken, refreshToken)
+        return true
+    }
 
     suspend fun register(username: String, email: String, password: String): AuthResult {
         return try {
@@ -50,20 +58,15 @@ class AuthRepository private constructor(context: Context) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
         }
     }
-
     suspend fun verifyRegistration(email: String, code: String): AuthResult {
         return try {
             val response = service.verifyRegistration(VerifyRegistrationRequest(email, code))
             if (!response.isSuccessful) throw HttpException(response)
-
-            val body = response.body()
-                ?: return AuthResult.Error("Something went wrong. Please try again.")
-            val refreshToken = body.refreshToken ?: refreshTokenFromCookie(response.headers())
-            ?: return AuthResult.Error("Verification failed. Please try again.")
-
-            tokenManager.saveTokens(body.accessToken, refreshToken)
+            if (!saveTokensFromCookies(response.headers())) {
+                return AuthResult.Error("Verification failed. Please try again.")
+            }
             pendingRegistration = null
-            AuthResult.Success(body.message)
+            AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
         }
@@ -73,30 +76,18 @@ class AuthRepository private constructor(context: Context) {
         return try {
             val response = service.login(LoginRequest(username, password))
             if (!response.isSuccessful) throw HttpException(response)
-
-            val body = response.body()
-                ?: return AuthResult.Error("Something went wrong. Please try again.")
-            val refreshToken = body.refreshToken ?: refreshTokenFromCookie(response.headers())
-            ?: return AuthResult.Error("Login failed. Please try again.")
-
-            tokenManager.saveTokens(body.accessToken, refreshToken)
-            AuthResult.Success(body.message)
+            if (!saveTokensFromCookies(response.headers())) {
+                return AuthResult.Error("Login failed. Please try again.")
+            }
+            AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
         }
     }
 
-    suspend fun guestLogin(): AuthResult {
-        tokenManager.getGuestId()?.let { return AuthResult.Success(it) }
 
-        return try {
-            val response = service.guestLogin()
-            tokenManager.saveGuestId(response.guestId)
-            AuthResult.Success(response.guestId)
-        } catch (e: Exception) {
-            AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
-        }
-    }
+
+
 
     suspend fun refreshAccessToken(): AuthResult = tokenManager.refreshMutex.withLock {
         val refreshToken = tokenManager.getRefreshToken()
@@ -135,11 +126,34 @@ class AuthRepository private constructor(context: Context) {
         }
     }
 
+    suspend fun guestLogin(): AuthResult {
+        tokenManager.getGuestId()?.let { return AuthResult.Success(it) }
+
+        return try {
+            val guestId = service.guestLogin().data?.guestId
+                ?: return AuthResult.Error("Something went wrong. Please try again.")
+            tokenManager.saveGuestId(guestId)
+            AuthResult.Success(guestId)
+        } catch (e: Exception) {
+            AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
+        }
+    }
+
     suspend fun verifyResetCode(email: String, code: String): AuthResult {
         return try {
             val response = service.verifyResetCode(VerifyResetCodeRequest(email, code))
-            resetToken = response.resetToken
-            AuthResult.Success(response.message)
+            resetToken = response.data?.resetToken
+                ?: return AuthResult.Error("Something went wrong. Please try again.")
+            AuthResult.Success(response.message.orEmpty())
+        } catch (e: Exception) {
+            AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
+        }
+    }
+
+    suspend fun submitRating(level: String): AuthResult {
+        return try {
+            val response = service.submitRating(RatingRequest(level))
+            AuthResult.Success(response.message.orEmpty())
         } catch (e: Exception) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
         }
@@ -182,4 +196,5 @@ class AuthRepository private constructor(context: Context) {
                 instance ?: AuthRepository(context.applicationContext).also { instance = it }
             }
     }
+
 }
