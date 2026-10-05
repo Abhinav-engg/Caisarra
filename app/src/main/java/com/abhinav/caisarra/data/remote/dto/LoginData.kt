@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class VerifyResetCodeResponse(
-    @SerialName("reset_token") val resetToken: String
+data class LoginData(
+    val username: String,
+    @SerialName("needs_rating") val needsRating: Boolean
 )
