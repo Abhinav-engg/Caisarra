@@ -46,6 +46,8 @@ import com.abhinav.caisarra.data.repository.AuthResult
 import com.abhinav.caisarra.presentation.screens.RatingScreen
 import com.abhinav.caisarra.presentation.viewmodel.RatingViewModel
 import com.abhinav.caisarra.data.local.RegistrationDataStore
+import com.abhinav.caisarra.presentation.screens.HomeScreen
+import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -68,6 +70,7 @@ private inline fun <reified VM : ViewModel> screenViewModel(crossinline create: 
 private fun NavController.goHome() {
     navigate(AppRoutes.HOME) {
         popUpTo(graph.id) { inclusive = true }
+        launchSingleTop = true
     }
 }
 
@@ -209,21 +212,23 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable(route = AppRoutes.HOME) {
-            val scope = rememberCoroutineScope()
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                GeneralButton(
-                    text = "Log Out",
-                    modifier = Modifier.width(200.dp),
-                    onClick = {
-                        scope.launch {
-                            authRepository.logout()
-                            navController.navigate(AppRoutes.LOGIN) {
-                                popUpTo(AppRoutes.HOME) { inclusive = true }
-                            }
-                        }
-                    }
-                )
+
+            val homeViewModel = screenViewModel {
+                HomeViewModel(authRepository)
             }
+
+            HomeScreen(
+
+                viewModel = homeViewModel,
+
+                onStartChallenge = {
+                    // TODO: Navigate to challenge screen
+                },
+
+                onLogoutSuccess = {
+                    navController.goToLogin()
+                }
+            )
         }
     }
 }

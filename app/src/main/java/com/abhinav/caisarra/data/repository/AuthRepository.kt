@@ -65,6 +65,11 @@ class AuthRepository private constructor(context: Context) {
             if (!saveTokensFromCookies(response.headers())) {
                 return AuthResult.Error("Verification failed. Please try again.")
             }
+
+            val username = pendingRegistration?.username
+            if (!username.isNullOrBlank()) {
+                tokenManager.saveUsername(username.trim())
+            }
             pendingRegistration = null
             AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
@@ -79,6 +84,7 @@ class AuthRepository private constructor(context: Context) {
             if (!saveTokensFromCookies(response.headers())) {
                 return AuthResult.Error("Login failed. Please try again.")
             }
+            tokenManager.saveUsername(username.trim())
             AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
@@ -186,6 +192,9 @@ class AuthRepository private constructor(context: Context) {
     suspend fun isGuest(): Boolean = tokenManager.getGuestId() != null
 
     suspend fun getGuestId(): String? = tokenManager.getGuestId()
+    suspend fun getUsername(): String? {
+        return tokenManager.getUsername()
+    }
 
     companion object {
         @Volatile
