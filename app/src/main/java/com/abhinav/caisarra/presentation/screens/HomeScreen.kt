@@ -64,6 +64,7 @@ private val DashboardBorder = Color(0xFF304154)
 fun HomeScreen(
     viewModel: HomeViewModel,
     onStartChallenge: () -> Unit = {},
+    onResumeGame: () -> Unit = {},
     onLogoutSuccess: () -> Unit = {}
 ) {
 
@@ -101,6 +102,13 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 TodaysChallenge(onStartChallenge = onStartChallenge)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                GeneralButton(
+                    text = "RESUME GAME",
+                    onClick = onResumeGame,
+                    modifier = Modifier.width(200.dp)
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
                 GeneralButton(text = if (state.isLoggingOut) {
@@ -133,7 +141,7 @@ private fun DashboardHeader(username: String) {
     LaunchedEffect(Unit) {
         while (isActive) {
             currentTime = LocalTime.now()
-            delay(60_000L) // update every minute
+            delay(60_000L)
         }
     }
     val day = currentDate.dayOfMonth
