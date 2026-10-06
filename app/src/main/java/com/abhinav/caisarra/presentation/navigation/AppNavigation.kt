@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,10 +11,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -25,9 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.abhinav.caisarra.data.repository.AuthRepository
-import com.abhinav.caisarra.presentation.components.GeneralButton
 import com.abhinav.caisarra.presentation.screens.GuestOptionsScreen
-import com.abhinav.caisarra.presentation.screens.GuestScreen
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.ResetPasswordScreen
 import com.abhinav.caisarra.presentation.screens.SetNewPasswordScreen
@@ -48,6 +43,9 @@ import com.abhinav.caisarra.presentation.viewmodel.RatingViewModel
 import com.abhinav.caisarra.data.local.RegistrationDataStore
 import com.abhinav.caisarra.presentation.screens.HomeScreen
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
+import com.abhinav.caisarra.presentation.game.screens.GameScreen
+import com.abhinav.caisarra.presentation.game.screens.GameSetupScreen
+import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupViewModel
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -56,6 +54,8 @@ object AppRoutes {
     const val VERIFY = "verify/{purpose}/{email}"
     const val NEW_PASSWORD = "new_password"
     const val HOME = "home"
+    const val GAME_SETUP = "game_setup"
+    const val GAME = "game"
     const val GUEST_OPTIONS = "guest_options"
     const val RATING = "rating"
 
@@ -222,11 +222,62 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = homeViewModel,
 
                 onStartChallenge = {
-                    // TODO: Navigate to challenge screen
+                    navController.navigate(
+                        AppRoutes.GAME_SETUP
+                    )
+                },
+
+                onResumeGame = {
+                    navController.navigate(
+                        AppRoutes.GAME
+                    )
                 },
 
                 onLogoutSuccess = {
                     navController.goToLogin()
+                }
+            )
+        }
+        composable(route = AppRoutes.GAME_SETUP) {
+
+            val setupViewModel = screenViewModel {
+                GameSetupViewModel()
+            }
+
+            GameSetupScreen(
+                viewModel = setupViewModel,
+
+                onStartGame = { _, _, _ ->
+                    navController.navigate(
+                        AppRoutes.GAME
+                    )
+                },
+
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = AppRoutes.GAME) {
+
+            GameScreen(
+                onHome = {
+                    navController.navigate(AppRoutes.HOME) {
+                        popUpTo(AppRoutes.HOME) {
+                            inclusive = true
+                        }
+                    }
+                },
+
+                onNewGame = {
+                    navController.navigate(
+                        AppRoutes.GAME_SETUP
+                    ) {
+                        popUpTo(AppRoutes.GAME) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }
