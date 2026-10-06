@@ -21,6 +21,7 @@ class TokenManager(private val context: Context){
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
         val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
         val GUEST_ID = stringPreferencesKey("guest_id")
+        val USERNAME = stringPreferencesKey("username")
     }
 
     suspend fun getGuestId(): String? =
@@ -28,6 +29,13 @@ class TokenManager(private val context: Context){
 
     suspend fun saveGuestId(guestId: String) {
         context.tokenDataStore.edit { it[Keys.GUEST_ID] = guestId }
+    }
+    suspend fun saveUsername(
+        username: String
+    ) {
+        context.tokenDataStore.edit {
+            it[Keys.USERNAME] = username
+        }
     }
 
     val accessTokenFlow: Flow<String?> =
@@ -47,6 +55,14 @@ class TokenManager(private val context: Context){
             prefs.remove(Keys.GUEST_ID)
         }
     }
+    suspend fun getUsername(): String? {
+        return context.tokenDataStore.data
+            .map { preferences ->
+                preferences[Keys.USERNAME]
+            }
+            .first()
+    }
+
 
     suspend fun clearTokens() {
         context.tokenDataStore.edit { it.clear() }
