@@ -70,8 +70,6 @@ class FakeGameViewModel : ViewModel() {
             }
 
             GameIntent.Undo -> {
-                // Intentionally empty.
-                // Real undo belongs to the game/rules layer.
             }
 
             GameIntent.DismissResult -> {
@@ -163,17 +161,14 @@ class FakeGameViewModel : ViewModel() {
 
         val capturedPiece = current.board[to]
 
-        val newBoard =
-            current.board.toMutableMap()
+        val newBoard = current.board.toMutableMap()
 
         newBoard.remove(from)
         newBoard[to] = movingPiece
 
-        val newMoves =
-            current.moves.toMutableList()
+        val newMoves = current.moves.toMutableList()
 
-        val moveNumber =
-            newMoves.size + 1
+        val moveNumber = newMoves.size + 1
 
         val move = MoveUi(
             moveNumber = moveNumber,

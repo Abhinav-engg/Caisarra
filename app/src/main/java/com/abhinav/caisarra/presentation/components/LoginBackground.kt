@@ -56,7 +56,7 @@ fun LoginBackground(
 
         Image(
             painter = painterResource(
-                id = R.drawable.white_knight
+                id = R.drawable.white_knight_image
             ),
             contentDescription = null,
             modifier = Modifier

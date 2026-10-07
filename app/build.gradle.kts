@@ -96,5 +96,6 @@ dependencies {
     implementation("androidx.room:room-paging:$room_version")
 
     implementation("com.github.bhlangonijr:chesslib:1.3.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")
 
 }
