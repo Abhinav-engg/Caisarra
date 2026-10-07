@@ -72,4 +72,8 @@ class GameClock(
             onTimeout(color)
         }
     }
+
+    fun restore(whiteMs: Long, blackMs: Long) {
+        _times.value = whiteMs to blackMs
+    }
 }
