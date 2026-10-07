@@ -9,14 +9,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.presentation.game.model.Piece
+import com.abhinav.caisarra.presentation.game.model.PieceColor
+import com.abhinav.caisarra.presentation.game.model.PieceType
 import com.abhinav.caisarra.presentation.game.model.Square
 
 private val LightSquare = Color(0xFFE2E8F0)
@@ -39,81 +42,96 @@ fun ChessBoard(
     isFlipped: Boolean,
     onSquareClick: (Square) -> Unit
 ) {
+    // Fills whatever square the caller gives it (GameScreen wraps it in a fixed-size Box).
+    Column(modifier = Modifier.fillMaxSize()) {
 
+        repeat(8) { displayRow ->
 
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .fillMaxWidth()
-                .aspectRatio(1f)
-        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
 
-            repeat(8) { displayRow ->
+                repeat(8) { displayColumn ->
 
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
+                    val actualRow = if (isFlipped) 7 - displayRow else displayRow
+                    val actualColumn = if (isFlipped) 7 - displayColumn else displayColumn
 
-                    repeat(8) { displayColumn ->
+                    val square = Square(
+                        row = actualRow,
+                        column = actualColumn
+                    )
 
-                        val actualRow = if (isFlipped) 7 - displayRow else displayRow
+                    val piece = board[square]
 
-                        val actualColumn = if (isFlipped) 7 - displayColumn else displayColumn
+                    val isDark = (actualRow + actualColumn) % 2 == 1
+                    val isSelected = selectedSquare == square
+                    val isLegalMove = legalMoves.contains(square)
+                    val isLastMove = lastMoveFrom == square || lastMoveTo == square
 
-                        val square = Square(
-                            row = actualRow,
-                            column = actualColumn
-                        )
+                    // Only the KING of the side that is in check gets marked.
+                    // (Before, every piece of that colour matched, so the whole side turned red.)
+                    val isCheck = piece != null &&
+                            piece.type == PieceType.KING &&
+                            (
+                                    (piece.color == PieceColor.WHITE && isWhiteInCheck) ||
+                                            (piece.color == PieceColor.BLACK && isBlackInCheck)
+                                    )
 
-                        val piece = board[square]
+                    // Check is no longer part of this chain: it is drawn as a glow on top.
+                    val baseColor = when {
+                        isSelected -> SelectedColor
+                        isLastMove -> LastMoveColor
+                        isDark -> DarkSquare
+                        else -> LightSquare
+                    }
 
-                        val isDark = (actualRow + actualColumn) % 2 == 1
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .background(baseColor)
+                            .border(
+                                width = 0.5.dp,
+                                color = Color.Black.copy(alpha = 0.15f)
+                            )
+                            .clickable { onSquareClick(square) },
+                        contentAlignment = Alignment.Center
+                    ) {
 
-                        val isSelected = selectedSquare == square
-
-                        val isLegalMove = legalMoves.contains(square)
-
-                        val isLastMove = lastMoveFrom == square || lastMoveTo == square
-
-                        val isCheck = (isWhiteInCheck && piece?.color?.name == "WHITE") || (isBlackInCheck && piece?.color?.name == "BLACK")
-
-                        val baseColor = when {
-                                isCheck -> CheckColor
-                                isSelected -> SelectedColor
-                                isLastMove -> LastMoveColor
-                                isDark -> DarkSquare
-                                else -> LightSquare
-                            }
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .aspectRatio(1f)
-                                .background(baseColor)
-                                .border(width = 0.5.dp,
-                                    color = Color.Black.copy(alpha = 0.15f)
-                                )
-                                .clickable {onSquareClick(square)},
-                            contentAlignment = Alignment.Center
-                        ) {
-
-                            if (isLegalMove) {
-                                Box(modifier = Modifier
-                                        .size(12.dp)
-                                        .background(
-                                            LegalMoveColor,
-                                            shape = androidx.compose.foundation.shape.CircleShape
+                        if (isCheck) {
+                            // Soft red radial glow behind the king; the piece itself stays untinted.
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.radialGradient(
+                                            colors = listOf(
+                                                CheckColor.copy(alpha = 0.9f),
+                                                CheckColor.copy(alpha = 0f)
+                                            )
                                         )
-                                )
-                            }
+                                    )
+                            )
+                        }
 
-                            if (piece != null) {
-                                PieceView(piece = piece)
-                            }
+                        if (isLegalMove) {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .background(
+                                        LegalMoveColor,
+                                        shape = CircleShape
+                                    )
+                            )
+                        }
+
+                        if (piece != null) {
+                            PieceView(piece = piece)
                         }
                     }
                 }
             }
         }
-
+    }
 }
