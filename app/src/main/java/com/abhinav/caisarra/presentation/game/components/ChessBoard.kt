@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.Square
 
-private val LightSquare = Color(0xFFE8EDF2)
-private val DarkSquare = Color(0xFF506070)
+private val LightSquare = Color(0xFFE2E8F0)
+private val DarkSquare = Color(0xFF1E293B)
 
 private val SelectedColor = Color(0xFF10B981)
 private val LastMoveColor = Color(0xFFB9D65C)

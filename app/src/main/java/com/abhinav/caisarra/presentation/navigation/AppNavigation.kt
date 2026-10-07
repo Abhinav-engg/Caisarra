@@ -46,6 +46,10 @@ import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameScreen
 import com.abhinav.caisarra.presentation.game.screens.GameSetupScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupViewModel
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.abhinav.caisarra.data.repository.GameRepository
+import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -55,12 +59,42 @@ object AppRoutes {
     const val NEW_PASSWORD = "new_password"
     const val HOME = "home"
     const val GAME_SETUP = "game_setup"
-    const val GAME = "game"
+    //const val GAME = "game"
+    const val GAME = "game?resume={resume}" +
+                "&white={white}" +
+                "&black={black}" +
+                "&minutes={minutes}" +
+                "&flip={flip}" +
+                "&undo={undo}"
     const val GUEST_OPTIONS = "guest_options"
     const val RATING = "rating"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
+
+    fun newGame(
+        white: String,
+        black: String,
+        minutes: Int,
+        flip: Boolean,
+        undo: Boolean
+    ): String {
+        return "game" + "?resume=false" +
+                "&white=${Uri.encode(white)}" +
+                "&black=${Uri.encode(black)}" +
+                "&minutes=$minutes" +
+                "&flip=$flip" +
+                "&undo=$undo"
+    }
+
+    fun resumeGame(): String {
+        return "game" + "?resume=true" +
+                "&white=" +
+                "&black=" +
+                "&minutes=10" +
+                "&flip=false" +
+                "&undo=true"
+    }
 }
 
 @Composable
@@ -161,7 +195,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         }
-
         composable(route = AppRoutes.RESET_PASSWORD) {
             ResetPasswordScreen(
                 viewModel = screenViewModel { ResetPasswordViewModel(authRepository) },
@@ -171,7 +204,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onBackToSignIn = { navController.popBackStack() }
             )
         }
-
         composable(route = AppRoutes.VERIFY) { entry ->
             val email = entry.arguments?.getString("email").orEmpty()
             val purpose = VerifyPurpose.valueOf(
@@ -212,13 +244,11 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable(route = AppRoutes.HOME) {
-
             val homeViewModel = screenViewModel {
                 HomeViewModel(authRepository)
             }
 
             HomeScreen(
-
                 viewModel = homeViewModel,
 
                 onStartChallenge = {
@@ -226,30 +256,43 @@ fun AppNavigation(authRepository: AuthRepository) {
                         AppRoutes.GAME_SETUP
                     )
                 },
-
                 onResumeGame = {
                     navController.navigate(
-                        AppRoutes.GAME
+                        AppRoutes.resumeGame()
                     )
                 },
-
                 onLogoutSuccess = {
                     navController.goToLogin()
                 }
             )
         }
-        composable(route = AppRoutes.GAME_SETUP) {
+        composable(
+            route = AppRoutes.GAME_SETUP
+        ) {
 
-            val setupViewModel = screenViewModel {
-                GameSetupViewModel()
-            }
+            val setupViewModel =
+                screenViewModel {
+                    GameSetupViewModel()
+                }
 
             GameSetupScreen(
                 viewModel = setupViewModel,
 
-                onStartGame = { _, _, _ ->
+                onStartGame = {
+                        white,
+                        black,
+                        minutes,
+                        flip,
+                        undo ->
+
                     navController.navigate(
-                        AppRoutes.GAME
+                        AppRoutes.newGame(
+                            white = white,
+                            black = black,
+                            minutes = minutes,
+                            flip = flip,
+                            undo = undo
+                        )
                     )
                 },
 
@@ -259,12 +302,70 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-        composable(route = AppRoutes.GAME) {
+        composable(
+            route = AppRoutes.GAME,
+            arguments = listOf(
+
+                navArgument("resume") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument("white") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("black") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("minutes") {
+                    type = NavType.IntType
+                    defaultValue = 10
+                },
+                navArgument("flip") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument("undo") {
+                    type = NavType.BoolType
+                    defaultValue = true
+                }
+            )
+        ) { entry ->
+
+            val resume = entry.arguments?.getBoolean("resume") ?: false
+            val white = entry.arguments?.getString("white").orEmpty()
+            val black = entry.arguments?.getString("black").orEmpty()
+            val minutes = entry.arguments?.getInt("minutes") ?: 10
+            val flip = entry.arguments?.getBoolean("flip") ?: false
+            val undo = entry.arguments?.getBoolean("undo") ?: true
+
+            val gameViewModel =
+                screenViewModel {
+                    GameViewModel(
+                        gameRepository = GameRepository.get(
+                                context.applicationContext
+                            ),
+
+                        authRepository = authRepository,
+                        resumeGame = resume,
+                        newWhiteName = white,
+                        newBlackName = black,
+                        newTimeMinutes = minutes,
+                        newBoardFlipped = flip,
+                        newUndoEnabled = undo
+                    )
+                }
 
             GameScreen(
+                viewModel = gameViewModel,
                 onHome = {
-                    navController.navigate(AppRoutes.HOME) {
-                        popUpTo(AppRoutes.HOME) {
+                    navController.navigate(
+                        AppRoutes.HOME
+                    ) {
+                        popUpTo(
+                            AppRoutes.HOME
+                        ) {
                             inclusive = true
                         }
                     }
@@ -274,7 +375,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.navigate(
                         AppRoutes.GAME_SETUP
                     ) {
-                        popUpTo(AppRoutes.GAME) {
+                        popUpTo(
+                            AppRoutes.GAME
+                        ) {
                             inclusive = true
                         }
                     }

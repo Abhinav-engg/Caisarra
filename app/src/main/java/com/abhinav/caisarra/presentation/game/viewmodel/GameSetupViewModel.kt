@@ -9,6 +9,8 @@ data class GameSetupUiState(
     val whitePlayerName: String = "Player 1",
     val blackPlayerName: String = "Player 2",
     val timeMinutes: Int = 10,
+    val flipBoard: Boolean = false,
+    val undoEnabled: Boolean = true,
     val error: String? = null
 )
 
@@ -22,7 +24,9 @@ class GameSetupViewModel : ViewModel() {
     val state =
         _state.asStateFlow()
 
-    fun setWhitePlayerName(name: String) {
+    fun setWhitePlayerName(
+        name: String
+    ) {
         _state.update {
             it.copy(
                 whitePlayerName = name,
@@ -31,7 +35,9 @@ class GameSetupViewModel : ViewModel() {
         }
     }
 
-    fun setBlackPlayerName(name: String) {
+    fun setBlackPlayerName(
+        name: String
+    ) {
         _state.update {
             it.copy(
                 blackPlayerName = name,
@@ -40,11 +46,33 @@ class GameSetupViewModel : ViewModel() {
         }
     }
 
-    fun setTime(minutes: Int) {
+    fun setTime(
+        minutes: Int
+    ) {
         _state.update {
             it.copy(
                 timeMinutes = minutes,
                 error = null
+            )
+        }
+    }
+
+    fun setFlipBoard(
+        enabled: Boolean
+    ) {
+        _state.update {
+            it.copy(
+                flipBoard = enabled
+            )
+        }
+    }
+
+    fun setUndoEnabled(
+        enabled: Boolean
+    ) {
+        _state.update {
+            it.copy(
+                undoEnabled = enabled
             )
         }
     }
@@ -55,14 +83,14 @@ class GameSetupViewModel : ViewModel() {
             _state.value
 
         if (
-            current.whitePlayerName
-                .isBlank() ||
-            current.blackPlayerName
-                .isBlank()
+            current.whitePlayerName.isBlank() ||
+            current.blackPlayerName.isBlank()
         ) {
+
             _state.update {
                 it.copy(
-                    error = "Player names cannot be empty."
+                    error =
+                        "Player names cannot be empty."
                 )
             }
 
