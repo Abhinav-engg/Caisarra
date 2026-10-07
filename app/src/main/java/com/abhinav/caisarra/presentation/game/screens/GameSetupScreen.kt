@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupViewModel
+import androidx.compose.material3.Switch
 
 @Composable
 fun GameSetupScreen(
@@ -29,7 +31,9 @@ fun GameSetupScreen(
     onStartGame: (
         whitePlayer: String,
         blackPlayer: String,
-        minutes: Int
+        minutes: Int,
+        flipBoard: Boolean,
+        undoEnabled: Boolean
     ) -> Unit,
     onBack: () -> Unit
 ) {
@@ -58,7 +62,11 @@ fun GameSetupScreen(
             label = {
                 Text("White Player")
             },
-            singleLine = true
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(
+                color = Color.White
+            )
+
         )
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -70,7 +78,11 @@ fun GameSetupScreen(
             label = {
                 Text("Black Player")
             },
-            singleLine = true
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(
+                color = Color.White
+            )
+
         )
         Spacer(modifier = Modifier.height(22.dp))
 
@@ -83,7 +95,7 @@ fun GameSetupScreen(
 
         Row(
             horizontalArrangement =
-                Arrangement.spacedBy(8.dp)
+                Arrangement.spacedBy(5.dp)
         ) {
             listOf(3, 5, 10, 15).forEach { minutes ->
 
@@ -114,6 +126,45 @@ fun GameSetupScreen(
                 }
             }
         }
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            Text(
+                text = "Flip Board",
+                color = Color.White
+            )
+
+            Switch(
+                checked = state.flipBoard,
+                onCheckedChange = {
+                    viewModel.setFlipBoard(it)
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            Text(
+                text = "Enable Undo",
+                color = Color.White
+            )
+
+            Switch(
+                checked = state.undoEnabled,
+                onCheckedChange = {
+                    viewModel.setUndoEnabled(it)
+                }
+            )
+        }
 
         state.error?.let { error ->
             Spacer(modifier = Modifier.height(12.dp))
@@ -132,7 +183,9 @@ fun GameSetupScreen(
                     onStartGame(
                         state.whitePlayerName,
                         state.blackPlayerName,
-                        state.timeMinutes
+                        state.timeMinutes,
+                        state.flipBoard,
+                        state.undoEnabled
                     )
                 }
             },
