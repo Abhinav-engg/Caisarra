@@ -12,6 +12,7 @@ data class GameEntity(
     val timeControlMinutes: Int?,
     val incrementSeconds: Int,
     val moves: String,
+    val moveTimes: String = "",
     val whiteTimeMs: Long,
     val blackTimeMs: Long,
     val result: String?,

@@ -36,6 +36,7 @@ import com.abhinav.caisarra.presentation.viewmodel.VerifyPurpose
 import com.abhinav.caisarra.presentation.viewmodel.VerifyViewModel
 import kotlinx.coroutines.launch
 import android.widget.Toast
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import com.abhinav.caisarra.data.repository.AuthResult
 import com.abhinav.caisarra.presentation.screens.RatingScreen
@@ -50,6 +51,10 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.abhinav.caisarra.data.repository.GameRepository
 import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
+import com.abhinav.caisarra.presentation.screens.GuestHomeScreen
+import androidx.navigation.navArgument
+import com.abhinav.caisarra.presentation.game.screens.GameHistoryScreen
+import com.abhinav.caisarra.presentation.game.viewmodel.GameHistoryReviewViewModel
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -59,14 +64,14 @@ object AppRoutes {
     const val NEW_PASSWORD = "new_password"
     const val HOME = "home"
     const val GAME_SETUP = "game_setup"
-    //const val GAME = "game"
+    const val GAME_HISTORY = "game_history/{gameId}"
     const val GAME = "game?resume={resume}" +
                 "&white={white}" +
                 "&black={black}" +
                 "&minutes={minutes}" +
                 "&flip={flip}" +
                 "&undo={undo}"
-    const val GUEST_OPTIONS = "guest_options"
+    const val GUEST_HOME = "guest_options"
     const val RATING = "rating"
 
     fun verify(email: String, purpose: VerifyPurpose) =
@@ -95,6 +100,11 @@ object AppRoutes {
                 "&flip=false" +
                 "&undo=true"
     }
+    fun gameHistory(
+        gameId: String
+    ): String {
+        return "game_history/${Uri.encode(gameId)}"
+    }
 }
 
 @Composable
@@ -122,7 +132,7 @@ fun AppNavigation(authRepository: AuthRepository) {
     LaunchedEffect(Unit) {
         startDestination = when {
             authRepository.isLoggedIn() -> AppRoutes.HOME
-            authRepository.isGuest() -> AppRoutes.GUEST_OPTIONS
+            authRepository.isGuest() -> AppRoutes.GUEST_HOME
             else -> AppRoutes.LOGIN
         }
     }
@@ -154,8 +164,21 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onContinueAsGuestClick = {
                     scope.launch {
                         when (val result = authRepository.guestLogin()) {
-                            is AuthResult.Success -> navController.navigate(AppRoutes.GUEST_OPTIONS)
-                            is AuthResult.Error -> Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                            is AuthResult.Success -> {
+                                navController.navigate(AppRoutes.GUEST_HOME) {
+                                    popUpTo(AppRoutes.LOGIN) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                }
+                            }
+
+                            is AuthResult.Error -> {
+                                Toast.makeText(context,
+                                    result.message,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     }
                 }
@@ -174,25 +197,72 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onSignInClick = { navController.goToLogin() }
             )
         }
-        composable(route = AppRoutes.GUEST_OPTIONS) {
-            var guestId by remember { mutableStateOf("") }
+        composable(route = AppRoutes.GUEST_HOME) {
 
+            var guestId by remember {
+                mutableStateOf("")
+            }
+
+            var isLoggingOut by remember {
+                mutableStateOf(false)
+            }
+            val guestHomeViewModel =
+                screenViewModel {
+                    HomeViewModel(repository = authRepository,
+                        gameRepository = GameRepository.get(
+                                context.applicationContext
+                            )
+                    )
+                }
+
+            val guestHomeState by guestHomeViewModel.state.collectAsState()
             LaunchedEffect(Unit) {
                 guestId = authRepository.getGuestId().orEmpty()
             }
 
-            GuestOptionsScreen(
+            GuestHomeScreen(
                 guestId = guestId,
-                onLoginClick = { navController.goToLogin() },
-                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
-                onLogoutClick = {
-                    scope.launch {
-                        authRepository.logout()
-                        navController.navigate(AppRoutes.LOGIN) {
-                            popUpTo(navController.graph.id) { inclusive = true }
+                gameHistory = guestHomeState.gameHistory,
+                onPlayGame = {
+                    navController.navigate(
+                        AppRoutes.GAME_SETUP
+                    )
+                },
+                onReviewGame = { gameId ->
+                    navController.navigate(
+                        AppRoutes.gameHistory(gameId)
+                    )
+                },
+                onSignIn = {
+                    navController.goToLogin()
+                },
+                onSignUp = {
+                    navController.navigate(
+                        AppRoutes.REGISTER
+                    )
+                },
+                onLogout = {
+                    if (!isLoggingOut) {
+                        scope.launch {
+                            isLoggingOut = true
+
+                            authRepository.logout()
+
+                            navController.navigate(
+                                AppRoutes.LOGIN
+                            ) {
+                                popUpTo(
+                                    navController.graph.id
+                                ) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
                         }
                     }
-                }
+                },
+
+                isLoggingOut = isLoggingOut
             )
         }
         composable(route = AppRoutes.RESET_PASSWORD) {
@@ -245,12 +315,16 @@ fun AppNavigation(authRepository: AuthRepository) {
 
         composable(route = AppRoutes.HOME) {
             val homeViewModel = screenViewModel {
-                HomeViewModel(authRepository)
+
+                HomeViewModel(repository = authRepository,
+                    gameRepository = GameRepository.get(
+                            context.applicationContext
+                    )
+                )
             }
 
             HomeScreen(
                 viewModel = homeViewModel,
-
                 onStartChallenge = {
                     navController.navigate(
                         AppRoutes.GAME_SETUP
@@ -259,6 +333,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onResumeGame = {
                     navController.navigate(
                         AppRoutes.resumeGame()
+                    )
+                },
+                onReviewGame = { gameId ->
+                    navController.navigate(
+                        AppRoutes.gameHistory(gameId)
                     )
                 },
                 onLogoutSuccess = {
@@ -277,7 +356,6 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             GameSetupScreen(
                 viewModel = setupViewModel,
-
                 onStartGame = {
                         white,
                         black,
@@ -295,6 +373,38 @@ fun AppNavigation(authRepository: AuthRepository) {
                         )
                     )
                 },
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(
+            route = AppRoutes.GAME_HISTORY,
+
+            arguments = listOf(
+                navArgument("gameId") {
+                    type = NavType.StringType
+                }
+            )
+
+        ) { entry ->
+
+            val gameId = entry.arguments
+                    ?.getString("gameId")
+                    .orEmpty()
+
+            val historyViewModel = screenViewModel {
+                    GameHistoryReviewViewModel(
+                        repository = GameRepository.get(
+                                context.applicationContext
+                            ),
+
+                        gameId = gameId
+                    )
+                }
+
+            GameHistoryScreen(
+                viewModel = historyViewModel,
 
                 onBack = {
                     navController.popBackStack()
@@ -360,13 +470,25 @@ fun AppNavigation(authRepository: AuthRepository) {
             GameScreen(
                 viewModel = gameViewModel,
                 onHome = {
-                    navController.navigate(
-                        AppRoutes.HOME
-                    ) {
-                        popUpTo(
+                    scope.launch {
+
+                        val destination = if (authRepository.isGuest()) {
+                            AppRoutes.GUEST_HOME
+                        } else {
                             AppRoutes.HOME
-                        ) {
-                            inclusive = true
+                        }
+
+                        val popped = navController.popBackStack(
+                            destination,
+                            inclusive = false
+                        )
+                        if (!popped) {
+                            navController.navigate(destination) {
+                                popUpTo(navController.graph.id) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
                         }
                     }
                 },
