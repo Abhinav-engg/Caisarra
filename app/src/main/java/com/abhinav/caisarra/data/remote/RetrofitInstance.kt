@@ -9,9 +9,10 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.create
+import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
-    private const val BASE_URL = "https://caisaara.duckdns.org"
+    const val BASE_URL = "https://caisaara.duckdns.org"
     val json = Json { ignoreUnknownKeys = true }
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -22,6 +23,10 @@ object RetrofitInstance {
         .addInterceptor(loggingInterceptor)
         .build()
 
+    val socketClient: OkHttpClient = OkHttpClient.Builder()
+        .pingInterval(20, TimeUnit.SECONDS)
+        .build()
+
     val plainService: AuthService = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(plainClient)
@@ -29,7 +34,7 @@ object RetrofitInstance {
         .build()
         .create()
 
-    fun createAuthService(tokenManager: TokenManager): AuthService {
+    private fun authenticatedRetrofit(tokenManager: TokenManager): Retrofit {
         val client = plainClient.newBuilder()
             .addInterceptor(AuthInterceptor(tokenManager))
             .authenticator(TokenAuthenticator(tokenManager, plainService))
@@ -40,6 +45,11 @@ object RetrofitInstance {
             .client(client)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-            .create()
     }
+
+    fun createAuthService(tokenManager: TokenManager): AuthService =
+        authenticatedRetrofit(tokenManager).create()
+
+    fun createInviteService(tokenManager: TokenManager): InviteService =
+        authenticatedRetrofit(tokenManager).create()
 }
