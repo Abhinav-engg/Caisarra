@@ -15,7 +15,7 @@ object RetrofitInstance {
     val json = Json { ignoreUnknownKeys = true }
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        level = HttpLoggingInterceptor.Level.NONE
     }
 
     private val plainClient = OkHttpClient.Builder()
