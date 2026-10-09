@@ -42,7 +42,6 @@ fun ChessBoard(
     isFlipped: Boolean,
     onSquareClick: (Square) -> Unit
 ) {
-    // Fills whatever square the caller gives it (GameScreen wraps it in a fixed-size Box).
     Column(modifier = Modifier.fillMaxSize()) {
 
         repeat(8) { displayRow ->

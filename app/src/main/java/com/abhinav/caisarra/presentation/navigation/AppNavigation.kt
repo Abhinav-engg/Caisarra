@@ -55,6 +55,9 @@ import com.abhinav.caisarra.presentation.screens.GuestHomeScreen
 import androidx.navigation.navArgument
 import com.abhinav.caisarra.presentation.game.screens.GameHistoryScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameHistoryReviewViewModel
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -148,8 +151,28 @@ fun AppNavigation(authRepository: AuthRepository) {
     }
 
     val navController = rememberNavController()
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val gameRepository = remember {
+        GameRepository.get(context.applicationContext)
+    }
+
+    fun openPlayGame() {
+        scope.launch {
+            val ownerId = authRepository.getUsername()
+                ?: authRepository.getGuestId()
+                ?: "local-user"
+
+            val unfinishedGame = gameRepository.getUnfinished(ownerId)
+
+            if (unfinishedGame != null) {
+                navController.navigate(AppRoutes.resumeGame())
+            } else {
+                navController.navigate(AppRoutes.GAME_SETUP)
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -224,9 +247,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 guestId = guestId,
                 gameHistory = guestHomeState.gameHistory,
                 onPlayGame = {
-                    navController.navigate(
-                        AppRoutes.GAME_SETUP
-                    )
+                    openPlayGame()
                 },
                 onReviewGame = { gameId ->
                     navController.navigate(
@@ -326,15 +347,13 @@ fun AppNavigation(authRepository: AuthRepository) {
             HomeScreen(
                 viewModel = homeViewModel,
                 onStartChallenge = {
-                    navController.navigate(
-                        AppRoutes.GAME_SETUP
-                    )
+                    openPlayGame()
                 },
-                onResumeGame = {
-                    navController.navigate(
-                        AppRoutes.resumeGame()
-                    )
-                },
+//                onResumeGame = {
+//                    navController.navigate(
+//                        AppRoutes.resumeGame()
+//                    )
+//                },
                 onReviewGame = { gameId ->
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)

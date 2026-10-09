@@ -229,22 +229,12 @@ class FakeGameViewModel : ViewModel() {
     private fun promote(
         pieceType: PieceType
     ) {
-        val square =
-            _state.value.promotionPending
-                ?: return
+        val square = _state.value.promotionPending ?: return
+        val current = _state.value
+        val pawn = current.board[square] ?: return
+        val newBoard = current.board.toMutableMap()
 
-        val current =
-            _state.value
-
-        val pawn =
-            current.board[square]
-                ?: return
-
-        val newBoard =
-            current.board.toMutableMap()
-
-        newBoard[square] =
-            Piece(
+        newBoard[square] = Piece(
                 type = pieceType,
                 color = pawn.color
             )
@@ -297,7 +287,7 @@ class FakeGameViewModel : ViewModel() {
         val board =
             mutableMapOf<Square, Piece>()
 
-        // White pieces
+
         board[Square(7, 0)] =
             Piece(PieceType.ROOK, PieceColor.WHITE)
 
@@ -330,7 +320,7 @@ class FakeGameViewModel : ViewModel() {
                 )
         }
 
-        // Black pieces
+
         board[Square(0, 0)] =
             Piece(PieceType.ROOK, PieceColor.BLACK)
 

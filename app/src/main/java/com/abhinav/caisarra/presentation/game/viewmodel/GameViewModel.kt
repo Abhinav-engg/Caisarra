@@ -582,6 +582,27 @@ class GameViewModel(
         }
     }
 
+    fun pauseAndSaveGame() {
+        val currentGame = game ?: return
+        val id = gameId ?: return
+        clock?.stop()
+        if (currentGame.status.isOver) return
+        val times = clock?.times?.value ?: return
+        viewModelScope.launch {
+            gameRepository.saveProgress(
+                id = id,
+                moves = currentGame.moveList,
+                moveTimes = moveTimeSnapshots.toList(),
+                whiteTimeMs = times.first,
+                blackTimeMs = times.second
+            )
+        }
+    }
+
+    fun resumeClock() {
+        startClock()
+    }
+
     override fun onCleared() {
         clock?.stop()
         super.onCleared()
