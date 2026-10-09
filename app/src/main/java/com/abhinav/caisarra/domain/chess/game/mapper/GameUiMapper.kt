@@ -1,4 +1,4 @@
-package com.abhinav.caisarra.presentation.game.mapper
+package com.abhinav.caisarra.domain.chess.game.mapper
 
 import com.abhinav.caisarra.domain.chess.model.BoardPiece
 import com.abhinav.caisarra.domain.chess.model.GameStatus

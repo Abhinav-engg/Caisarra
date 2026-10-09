@@ -19,4 +19,5 @@ sealed interface GameIntent {
     data object FlipBoard : GameIntent
 
     data object DismissResult : GameIntent
+    data object Redo : GameIntent
 }

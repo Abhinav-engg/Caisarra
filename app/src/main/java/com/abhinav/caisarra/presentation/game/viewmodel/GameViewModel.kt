@@ -42,6 +42,7 @@ class GameViewModel(
     private var ownerId: String = ""
     private var clock: GameClock? = null
     private val moveTimeSnapshots = mutableListOf<Pair<Long, Long>>()
+    private val redoTimeSnapshots = mutableListOf<Pair<Long, Long>>()
     private var initialTimeMs = newTimeMinutes * 60_000L
     private var promotionFrom: DomainSquare? = null
     private var promotionTo: DomainSquare? = null
@@ -53,7 +54,7 @@ class GameViewModel(
     private fun loadGame() {
         viewModelScope.launch {
             ownerId = authRepository.getUsername()
-                    ?: authRepository.getGuestId() ?: "local-user"
+                ?: authRepository.getGuestId() ?: "local-user"
 
             if (resumeGame) {
                 loadExistingGame()
@@ -81,6 +82,7 @@ class GameViewModel(
         initialTimeMs = created.whiteTimeMs
 
         moveTimeSnapshots.clear()
+        redoTimeSnapshots.clear()
         game = PassAndPlayGame()
         createClock(
             whiteTime = created.whiteTimeMs,
@@ -111,6 +113,7 @@ class GameViewModel(
             (savedGame.timeControlMinutes ?: 0) * 60_000L
 
         moveTimeSnapshots.clear()
+        redoTimeSnapshots.clear()
 
         moveTimeSnapshots +=
             gameRepository.moveTimesOf(savedGame)
@@ -144,6 +147,7 @@ class GameViewModel(
             startClock()
         }
     }
+
     private fun createClock(
         whiteTime: Long,
         blackTime: Long,
@@ -199,6 +203,9 @@ class GameViewModel(
             }
             GameIntent.Undo -> {
                 undo()
+            }
+            GameIntent.Redo -> {
+                redo()
             }
             GameIntent.Resign -> {
                 resign()
@@ -271,7 +278,7 @@ class GameViewModel(
             return
         }
         val legalTargets = currentGame
-                .legalTargets(selectedDomain)
+            .legalTargets(selectedDomain)
 
         if (clickedSquare !in legalTargets) {
             val newPiece =
@@ -352,6 +359,7 @@ class GameViewModel(
         }
 
         clearSelection()
+        redoTimeSnapshots.clear()
         clock?.switchTo(
             currentGame.turn
         )
@@ -376,7 +384,7 @@ class GameViewModel(
         }
 
         if (moveTimeSnapshots.isNotEmpty()) {
-            moveTimeSnapshots.removeAt(
+            redoTimeSnapshots += moveTimeSnapshots.removeAt(
                 moveTimeSnapshots.lastIndex
             )
         }
@@ -398,8 +406,38 @@ class GameViewModel(
         persistAfterMove()
     }
 
+    private fun redo() {
+        if (!_state.value.canRedo) {
+            return
+        }
+
+        val currentGame = game ?: return
+        if (!currentGame.redo()) {
+            return
+        }
+
+        val times = redoTimeSnapshots.removeLastOrNull()
+        if (times != null) {
+            moveTimeSnapshots += times
+            clock?.restore(
+                whiteMs = times.first,
+                blackMs = times.second
+            )
+        }
+
+        clock?.revertTo(
+            currentGame.turn
+        )
+
+        updateUiState()
+        persistAfterMove()
+    }
+
     private fun resign() {
         val currentGame = game ?: return
+        if (currentGame.status.isOver) {
+            return
+        }
         currentGame.resign()
         clock?.stop()
         updateUiState()
@@ -410,6 +448,9 @@ class GameViewModel(
 
     private fun offerDraw() {
         val currentGame = game ?: return
+        if (currentGame.status.isOver) {
+            return
+        }
         currentGame.agreeDraw()
         clock?.stop()
         updateUiState()
@@ -480,75 +521,82 @@ class GameViewModel(
         val currentGame = game ?: return
         val domainPieces = currentGame.pieces
         val uiBoard = domainPieces.associate { piece ->
-                piece.square.toUiSquare() to
-                        piece.toUiPiece()
-            }
+            piece.square.toUiSquare() to
+                    piece.toUiPiece()
+        }
 
         val lastMove = currentGame.lastMove
 
         val uiMoves = currentGame.moveList
-                .mapIndexed { index, move ->
-                    val moveText = formatMove(move)
-                    val moveNumber = index / 2 + 1
+            .mapIndexed { index, move ->
+                val moveText = formatMove(move)
+                val moveNumber = index / 2 + 1
 
-                    if (index % 2 == 0) {
-                        MoveUi(
-                            moveNumber = moveNumber,
-                            whiteMove = moveText,
-                            blackMove = null
-                        )
+                if (index % 2 == 0) {
+                    MoveUi(
+                        moveNumber = moveNumber,
+                        whiteMove = moveText,
+                        blackMove = null
+                    )
 
-                    } else {
-                        MoveUi(
-                            moveNumber = moveNumber,
-                            whiteMove = null,
-                            blackMove = moveText
-                        )
-                    }
+                } else {
+                    MoveUi(
+                        moveNumber = moveNumber,
+                        whiteMove = null,
+                        blackMove = moveText
+                    )
                 }
-                .groupMoves()
+            }
+            .groupMoves()
 
         val capturedWhite = currentGame.captured
-                .filter {
-                    it.color == DomainPieceColor.White
-                }
-                .map {
-                    it.toUiPiece()
-                }
+            .filter {
+                it.color == DomainPieceColor.White
+            }
+            .map {
+                it.toUiPiece()
+            }
 
         val capturedBlack = currentGame.captured
-                .filter {
-                    it.color == DomainPieceColor.Black
-                }
-                .map {
-                    it.toUiPiece()
-                }
+            .filter {
+                it.color == DomainPieceColor.Black
+            }
+            .map {
+                it.toUiPiece()
+            }
 
         val checkSquare = currentGame.checkSquare
         val status = currentGame.status
         val result = status.toUiResult()
         _state.update {
+            val undoAllowed =
+                if (resumeGame) {
+                    it.undoEnabled
+                } else {
+                    newUndoEnabled
+                }
+
             it.copy(
                 isLoading = false,
                 errorMessage = null,
                 board = uiBoard,
                 whitePlayerName = it.whitePlayerName.ifBlank {
-                        newWhiteName
-                    },
+                    newWhiteName
+                },
                 blackPlayerName = it.blackPlayerName.ifBlank {
-                        newBlackName
-                    },
+                    newBlackName
+                },
 
                 isWhiteTurn = currentGame.turn == DomainPieceColor.White,
                 lastMoveFrom = lastMove?.from?.toUiSquare(),
                 lastMoveTo = lastMove?.to?.toUiSquare(),
                 isWhiteInCheck = checkSquare != null &&
-                            currentGame.turn ==
-                            DomainPieceColor.White,
+                        currentGame.turn ==
+                        DomainPieceColor.White,
 
                 isBlackInCheck = checkSquare != null &&
-                            currentGame.turn ==
-                            DomainPieceColor.Black,
+                        currentGame.turn ==
+                        DomainPieceColor.Black,
 
                 capturedWhitePieces = capturedWhite,
                 capturedBlackPieces = capturedBlack,
@@ -561,12 +609,9 @@ class GameViewModel(
                         newBoardFlipped
                     },
 
-                undoEnabled =
-                    if (resumeGame) {
-                        it.undoEnabled
-                    } else {
-                        newUndoEnabled
-                    }
+                undoEnabled = undoAllowed,
+                canUndo = undoAllowed && currentGame.canUndo,
+                canRedo = undoAllowed && currentGame.canRedo
             )
         }
     }
@@ -717,8 +762,8 @@ private fun List<MoveUi>.groupMoves(): List<MoveUi> {
     val grouped = mutableListOf<MoveUi>()
     for (move in this) {
         val existing = grouped.lastOrNull {
-                it.moveNumber == move.moveNumber
-            }
+            it.moveNumber == move.moveNumber
+        }
         if (existing == null) {
             grouped += move
 

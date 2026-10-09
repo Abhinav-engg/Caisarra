@@ -14,10 +14,10 @@ import com.abhinav.caisarra.domain.chess.engine.ChesslibEngine
 import com.abhinav.caisarra.domain.chess.game.GameClock
 import com.abhinav.caisarra.domain.chess.model.Move
 import com.abhinav.caisarra.domain.chess.model.PieceColor as DomainColor
-import com.abhinav.caisarra.presentation.game.mapper.toDomain
-import com.abhinav.caisarra.presentation.game.mapper.toMoveUi
-import com.abhinav.caisarra.presentation.game.mapper.toUi
-import com.abhinav.caisarra.presentation.game.mapper.toUiBoard
+import com.abhinav.caisarra.domain.chess.game.mapper.toDomain
+import com.abhinav.caisarra.domain.chess.game.mapper.toMoveUi
+import com.abhinav.caisarra.domain.chess.game.mapper.toUi
+import com.abhinav.caisarra.domain.chess.game.mapper.toUiBoard
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor

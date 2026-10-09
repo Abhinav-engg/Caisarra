@@ -36,5 +36,8 @@ data class GameUiState(
 
     val promotionPending: Square? = null,
 
-    val gameResult: GameResult? = null
+    val gameResult: GameResult? = null,
+    val redoEnabled: Boolean = false,
+    val canUndo: Boolean = false,
+    val canRedo: Boolean = false,
 )

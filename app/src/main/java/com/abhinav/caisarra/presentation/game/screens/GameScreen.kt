@@ -1,6 +1,5 @@
 package com.abhinav.caisarra.presentation.game.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,9 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.game.components.CapturedPieces
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ClockBar
+import com.abhinav.caisarra.presentation.game.components.GameBottomBar
 import com.abhinav.caisarra.presentation.game.components.GameResultDialog
 import com.abhinav.caisarra.presentation.game.components.MoveList
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
@@ -44,8 +42,6 @@ import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
 
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
-private val BorderColor = Color(0xFF1F2B38)
-private val Danger = Color(0xFFEF4444)
 
 @Composable
 fun GameScreen(
@@ -130,63 +126,55 @@ fun GameScreen(
                         capturedOnTop = true
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    ActionButtons(
-                        undoEnabled = state.undoEnabled,
-                        onUndo = { onIntent(GameIntent.Undo) },
-                        onDraw = { onIntent(GameIntent.OfferDraw) },
-                        onResign = { onIntent(GameIntent.Resign) }
-                    )
+                    GameActions(state = state, onIntent = onIntent)
                 }
             }
         } else {
 
             val boardSize = minOf(maxWidth - 24.dp, maxHeight * 0.5f)
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                TopBar(
-                    onHome = onHome,
-                    onFlip = { onIntent(GameIntent.FlipBoard) }
-                )
-                PlayerStrip(
-                    name = state.blackPlayerName,
-                    timeMillis = state.blackTimeMillis,
-                    isActive = !state.isWhiteTurn,
-                    captured = state.capturedBlackPieces,
-                    capturedOnTop = false,
-                    modifier = Modifier.width(boardSize)
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Box(modifier = Modifier.size(boardSize)) {
-                    Board(state = state, onIntent = onIntent)
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                PlayerStrip(
-                    name = state.whitePlayerName,
-                    timeMillis = state.whiteTimeMillis,
-                    isActive = state.isWhiteTurn,
-                    captured = state.capturedWhitePieces,
-                    capturedOnTop = true,
-                    modifier = Modifier.width(boardSize)
-                )
-                MoveList(
-                    moves = state.moves,
+            Column(modifier = Modifier.fillMaxSize()) {
+                Column(
                     modifier = Modifier
                         .weight(1f)
-                        .width(boardSize)
-                        .padding(vertical = 8.dp)
-                )
-                ActionButtons(
-                    undoEnabled = state.undoEnabled,
-                    onUndo = { onIntent(GameIntent.Undo) },
-                    onDraw = { onIntent(GameIntent.OfferDraw) },
-                    onResign = { onIntent(GameIntent.Resign) },
-                    modifier = Modifier.width(boardSize)
-                )
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TopBar(
+                        onHome = onHome,
+                        onFlip = { onIntent(GameIntent.FlipBoard) }
+                    )
+                    PlayerStrip(
+                        name = state.blackPlayerName,
+                        timeMillis = state.blackTimeMillis,
+                        isActive = !state.isWhiteTurn,
+                        captured = state.capturedBlackPieces,
+                        capturedOnTop = false,
+                        modifier = Modifier.width(boardSize)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(modifier = Modifier.size(boardSize)) {
+                        Board(state = state, onIntent = onIntent)
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    PlayerStrip(
+                        name = state.whitePlayerName,
+                        timeMillis = state.whiteTimeMillis,
+                        isActive = state.isWhiteTurn,
+                        captured = state.capturedWhitePieces,
+                        capturedOnTop = true,
+                        modifier = Modifier.width(boardSize)
+                    )
+                    MoveList(
+                        moves = state.moves,
+                        modifier = Modifier
+                            .weight(1f)
+                            .width(boardSize)
+                            .padding(vertical = 8.dp)
+                    )
+                }
+                GameActions(state = state, onIntent = onIntent)
             }
         }
     }
@@ -284,46 +272,21 @@ private fun PlayerStrip(
 }
 
 @Composable
-private fun ActionButtons(
-    undoEnabled: Boolean,
-    onUndo: () -> Unit,
-    onDraw: () -> Unit,
-    onResign: () -> Unit,
+private fun GameActions(
+    state: GameUiState,
+    onIntent: (GameIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        OutlinedButton(
-            onClick = onUndo,
-            enabled = undoEnabled,
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, BorderColor)
-        ) {
-            Text(
-                text = "Undo",
-                color = if (undoEnabled) Color.White else Color.Gray
-            )
-        }
-        OutlinedButton(
-            onClick = onDraw,
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, BorderColor)
-        ) {
-            Text(text = "Draw", color = Color.White)
-        }
-        OutlinedButton(
-            onClick = onResign,
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, Danger)
-        ) {
-            Text(text = "Resign", color = Danger)
-        }
-    }
+    GameBottomBar(
+        canUndo = state.canUndo,
+        canRedo = state.canRedo,
+        optionsEnabled = state.gameResult == null,
+        onUndo = { onIntent(GameIntent.Undo) },
+        onRedo = { onIntent(GameIntent.Redo) },
+        onOfferDraw = { onIntent(GameIntent.OfferDraw) },
+        onResign = { onIntent(GameIntent.Resign) },
+        modifier = modifier
+    )
 }
 
 @Composable

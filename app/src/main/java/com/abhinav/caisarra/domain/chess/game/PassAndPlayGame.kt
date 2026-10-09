@@ -23,6 +23,12 @@ class PassAndPlayGame(private val engine: ChessEngine = ChesslibEngine()) {
     val status: GameStatus get() = forcedStatus ?: engine.status()
     val fen: String get() = engine.fen()
 
+    private val redoStack = mutableListOf<Move>()
+
+    val canUndo: Boolean get() = moves.isNotEmpty() && !status.isOver
+    val canRedo: Boolean get() = redoStack.isNotEmpty() && !status.isOver
+
+
     fun legalTargets(square: Square): List<Square> =
         engine.legalMovesFrom(square).map { it.to }.distinct()
 
@@ -37,11 +43,26 @@ class PassAndPlayGame(private val engine: ChessEngine = ChesslibEngine()) {
         return true
     }
 
+    fun redo(): Boolean {
+        if (!canRedo) return false
+        if (!apply(redoStack.last())) return false
+        redoStack.removeAt(redoStack.lastIndex)
+        return true
+    }
+
     fun undo(): Boolean {
-        if (moves.isEmpty() || status.isOver) return false
+        if (!canUndo) return false
         if (!engine.undo()) return false
-        moves.removeAt(moves.lastIndex)
+        redoStack += moves.removeAt(moves.lastIndex)
         captures.removeAt(captures.lastIndex)
+        return true
+    }
+    private fun apply(move: Move): Boolean {
+        if (status.isOver) return false
+        val capturedPiece = engine.capturedBy(move)
+        if (!engine.play(move)) return false
+        moves += move
+        captures += capturedPiece
         return true
     }
 
@@ -61,6 +82,7 @@ class PassAndPlayGame(private val engine: ChessEngine = ChesslibEngine()) {
         engine.reset()
         moves.clear()
         captures.clear()
+        redoStack.clear()
         forcedStatus = null
     }
 }

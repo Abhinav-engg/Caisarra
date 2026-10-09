@@ -5,10 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.data.repository.GameRepository
 import com.abhinav.caisarra.domain.chess.game.PassAndPlayGame
+import com.abhinav.caisarra.domain.chess.game.mapper.toUi
+import com.abhinav.caisarra.domain.chess.game.mapper.toUiBoard
 import com.abhinav.caisarra.domain.chess.model.PieceColor
 import com.abhinav.caisarra.domain.chess.model.toMove
-import com.abhinav.caisarra.presentation.game.mapper.toUi
-import com.abhinav.caisarra.presentation.game.mapper.toUiBoard
 import com.abhinav.caisarra.presentation.game.model.MoveUi
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.Square
