@@ -32,10 +32,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.caisaara.ui.theme.CardBackground
 import com.caisaara.ui.theme.CardBorderNavy
+import com.caisaara.ui.theme.CyanLight
 import com.caisaara.ui.theme.PlaceholderColor
 import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.SubtleText
 import com.caisaara.ui.theme.TextColor
+
+private enum class ConfirmAction { Draw, Resign }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,10 +50,11 @@ fun GameBottomBar(
     onRedo: () -> Unit,
     onOfferDraw: () -> Unit,
     onResign: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    drawMessage: String = "Both players agree to end the game as a draw."
 ) {
     var showOptions by remember { mutableStateOf(false) }
-    var showResignConfirm by remember { mutableStateOf(false) }
+    var pendingAction by remember { mutableStateOf<ConfirmAction?>(null) }
 
     Column(modifier = modifier.fillMaxWidth().background(CardBackground)) {
         Box(
@@ -76,31 +80,40 @@ fun GameBottomBar(
         ) {
             OptionRow("Offer draw", TextColor) {
                 showOptions = false
-                onOfferDraw()
+                pendingAction = ConfirmAction.Draw
             }
             OptionRow("Resign", RedNormal) {
                 showOptions = false
-                showResignConfirm = true
+                pendingAction = ConfirmAction.Resign
             }
         }
     }
 
-    if (showResignConfirm) {
+    pendingAction?.let { action ->
+        val isResign = action == ConfirmAction.Resign
+        val confirmColor = if (isResign) RedNormal else CyanLight
+
         AlertDialog(
-            onDismissRequest = { showResignConfirm = false },
+            onDismissRequest = { pendingAction = null },
             containerColor = CardBackground,
             titleContentColor = TextColor,
             textContentColor = SubtleText,
-            title = { Text("Resign game?") },
-            text = { Text("This will end the game.") },
+            title = {
+                Text(if (isResign) "Do you want to resign?" else "Do you want to draw the game?")
+            },
+            text = {
+                Text(if (isResign) "You will lose the game." else drawMessage)
+            },
             confirmButton = {
                 TextButton(onClick = {
-                    showResignConfirm = false
-                    onResign()
-                }) { Text("Resign", color = RedNormal) }
+                    pendingAction = null
+                    if (isResign) onResign() else onOfferDraw()
+                }) {
+                    Text(if (isResign) "Resign" else "Draw", color = confirmColor)
+                }
             },
             dismissButton = {
-                TextButton(onClick = { showResignConfirm = false }) {
+                TextButton(onClick = { pendingAction = null }) {
                     Text("Cancel", color = TextColor)
                 }
             }
