@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -36,10 +37,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.presentation.components.clearFocusOnTap
 import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupViewModel
 import com.abhinav.caisarra.presentation.game.viewmodel.MAX_CUSTOM_MINUTES
 import com.abhinav.caisarra.presentation.game.viewmodel.MIN_CUSTOM_MINUTES
@@ -68,13 +72,15 @@ fun GameSetupScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(SetupColors.Background)
             .systemBarsPadding()
-            .imePadding(),
+            .imePadding()
+            .clearFocusOnTap(),
         contentAlignment = Alignment.TopCenter
     ) {
 
@@ -123,13 +129,19 @@ fun GameSetupScreen(
                         TimeChip(
                             label = "${minutes}m",
                             selected = !state.isCustomTime && state.timeMinutes == minutes,
-                            onClick = { viewModel.setTime(minutes) }
+                            onClick = {
+                                focusManager.clearFocus()
+                                viewModel.setTime(minutes)
+                            }
                         )
                     }
                     TimeChip(
                         label = "Custom",
                         selected = state.isCustomTime,
-                        onClick = viewModel::selectCustomTime
+                        onClick = {
+                            focusManager.clearFocus()
+                            viewModel.selectCustomTime()
+                        }
                     )
                 }
 
@@ -144,7 +156,13 @@ fun GameSetupScreen(
                         },
                         suffix = { Text("min") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { focusManager.clearFocus() }
+                        ),
                         shape = RoundedCornerShape(12.dp),
                         colors = setupFieldColors()
                     )
@@ -156,13 +174,19 @@ fun GameSetupScreen(
                     title = "Flip Board",
                     subtitle = "Rotate the board after every move",
                     checked = state.flipBoard,
-                    onCheckedChange = viewModel::setFlipBoard
+                    onCheckedChange = {
+                        focusManager.clearFocus()
+                        viewModel.setFlipBoard(it)
+                    }
                 )
                 SettingRow(
                     title = "Enable Undo",
                     subtitle = "Allow players to take back a move",
                     checked = state.undoEnabled,
-                    onCheckedChange = viewModel::setUndoEnabled
+                    onCheckedChange = {
+                        focusManager.clearFocus()
+                        viewModel.setUndoEnabled(it)
+                    }
                 )
             }
 
@@ -178,6 +202,7 @@ fun GameSetupScreen(
 
             Button(
                 onClick = {
+                    focusManager.clearFocus()
                     if (viewModel.validate()) {
                         onStartGame(
                             state.whitePlayerName,
@@ -202,7 +227,10 @@ fun GameSetupScreen(
             }
 
             OutlinedButton(
-                onClick = onBack,
+                onClick = {
+                    focusManager.clearFocus()
+                    onBack()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -248,12 +276,16 @@ private fun SetupTextField(
     onValueChange: (String) -> Unit,
     label: String
 ) {
+    val focusManager = LocalFocusManager.current
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = Modifier.fillMaxWidth(),
         label = { Text(label) },
         singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
         shape = RoundedCornerShape(12.dp),
         colors = setupFieldColors()
     )
