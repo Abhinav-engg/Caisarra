@@ -52,4 +52,7 @@ object RetrofitInstance {
 
     fun createInviteService(tokenManager: TokenManager): InviteService =
         authenticatedRetrofit(tokenManager).create()
+
+    fun createChatService(tokenManager: TokenManager): ChatService =
+        authenticatedRetrofit(tokenManager).create()
 }

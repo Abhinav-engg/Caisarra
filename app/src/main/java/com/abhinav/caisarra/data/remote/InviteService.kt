@@ -1,6 +1,5 @@
 package com.abhinav.caisarra.data.remote
 
-import com.abhinav.caisarra.data.remote.dto.ApiResponse
 import com.abhinav.caisarra.data.remote.dto.CreateInviteRequest
 import com.abhinav.caisarra.data.remote.dto.CreateInviteResponse
 import com.abhinav.caisarra.data.remote.dto.InvitePreviewResponse
@@ -13,11 +12,11 @@ import retrofit2.http.Path
 interface InviteService {
 
     @POST("api/invite")
-    suspend fun createInvite(@Body request: CreateInviteRequest): ApiResponse<CreateInviteResponse>
+    suspend fun createInvite(@Body request: CreateInviteRequest): CreateInviteResponse
 
     @GET("api/invite/{code}")
-    suspend fun previewInvite(@Path("code") code: String): ApiResponse<InvitePreviewResponse>
+    suspend fun previewInvite(@Path("code") code: String): InvitePreviewResponse
 
     @POST("api/invite/{code}/join")
-    suspend fun joinInvite(@Path("code") code: String): ApiResponse<JoinGameResponse>
+    suspend fun joinInvite(@Path("code") code: String): JoinGameResponse
 }

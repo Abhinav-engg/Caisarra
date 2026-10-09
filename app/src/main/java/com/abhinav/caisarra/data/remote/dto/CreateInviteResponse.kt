@@ -5,8 +5,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateInviteResponse(
-    val code: String,
-    @SerialName("creator_id") val creatorId: Long,
+    @SerialName("invite_code") val inviteCode: String,
+    @SerialName("game_id") val gameId: String,
+    val link: String,
     @SerialName("time_control_minutes") val timeControlMinutes: Int,
-    val color: String
+    @SerialName("increment_seconds") val incrementSeconds: Int,
+    val color: String,
+    val status: String
 )

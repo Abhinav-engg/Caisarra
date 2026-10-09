@@ -18,4 +18,5 @@ interface ChessEngine {
     fun checkSquare(): Square?
     fun fen(): String
     fun reset()
+    fun loadFen(fen: String)
 }

@@ -68,4 +68,8 @@ class ChesslibEngine : ChessEngine {
     override fun reset() {
         board = Board()
     }
+
+    override fun loadFen(fen: String) {
+        board = Board().apply { loadFromFen(fen) }
+    }
 }
