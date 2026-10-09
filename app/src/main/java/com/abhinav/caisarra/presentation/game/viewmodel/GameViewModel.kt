@@ -41,6 +41,8 @@ class GameViewModel(
     private var gameId: String? = null
     private var ownerId: String = ""
     private var clock: GameClock? = null
+    private val moveTimeSnapshots = mutableListOf<Pair<Long, Long>>()
+    private var initialTimeMs = newTimeMinutes * 60_000L
     private var promotionFrom: DomainSquare? = null
     private var promotionTo: DomainSquare? = null
 
@@ -76,6 +78,9 @@ class GameViewModel(
             )
 
         gameId = created.id
+        initialTimeMs = created.whiteTimeMs
+
+        moveTimeSnapshots.clear()
         game = PassAndPlayGame()
         createClock(
             whiteTime = created.whiteTimeMs,
@@ -102,6 +107,13 @@ class GameViewModel(
         }
 
         gameId = savedGame.id
+        initialTimeMs =
+            (savedGame.timeControlMinutes ?: 0) * 60_000L
+
+        moveTimeSnapshots.clear()
+
+        moveTimeSnapshots +=
+            gameRepository.moveTimesOf(savedGame)
         val restoredGame = PassAndPlayGame()
         val savedMoves = gameRepository.movesOf(savedGame)
 
@@ -343,6 +355,11 @@ class GameViewModel(
         clock?.switchTo(
             currentGame.turn
         )
+
+        clock?.times?.value?.let { times ->
+            moveTimeSnapshots += times.first to times.second
+        }
+
         updateUiState()
         persistAfterMove()
     }
@@ -358,9 +375,25 @@ class GameViewModel(
             return
         }
 
+        if (moveTimeSnapshots.isNotEmpty()) {
+            moveTimeSnapshots.removeAt(
+                moveTimeSnapshots.lastIndex
+            )
+        }
+
+        val previousTimes =
+            moveTimeSnapshots.lastOrNull()
+                ?: (initialTimeMs to initialTimeMs)
+
+        clock?.restore(
+            whiteMs = previousTimes.first,
+            blackMs = previousTimes.second
+        )
+
         clock?.revertTo(
             currentGame.turn
         )
+
         updateUiState()
         persistAfterMove()
     }
@@ -404,6 +437,7 @@ class GameViewModel(
         viewModelScope.launch {
 
             if (currentGame.status.isOver) {
+                clock?.stop()
                 finishGame(
                     status = currentGame.status
                 )
@@ -412,6 +446,7 @@ class GameViewModel(
                 gameRepository.saveProgress(
                     id = id,
                     moves = currentGame.moveList,
+                    moveTimes = moveTimeSnapshots.toList(),
                     whiteTimeMs = times.first,
                     blackTimeMs = times.second
                 )
@@ -431,6 +466,7 @@ class GameViewModel(
             gameRepository.finishGame(
                 id = id,
                 moves = currentGame.moveList,
+                moveTimes = moveTimeSnapshots.toList(),
                 whiteTimeMs = times.first,
                 blackTimeMs = times.second,
                 result = result.name,

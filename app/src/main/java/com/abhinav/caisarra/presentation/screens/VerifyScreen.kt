@@ -176,6 +176,7 @@ fun VerifyScreen(
             onClick = { viewModel.verify(onVerified) },
             enabled = state.canSubmit
         )
+        Spacer(modifier = Modifier.height(16.dp))
 
         AuthFooter("Wrong email?", "Go back", onBack)
     }
