@@ -41,6 +41,12 @@ import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
 
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+
+
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 
@@ -51,6 +57,31 @@ fun GameScreen(
     onNewGame: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    viewModel.pauseAndSaveGame()
+                }
+
+                Lifecycle.Event.ON_START -> {
+                    viewModel.resumeClock()
+                }
+
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
 
     if (state.isLoading) {
         CenteredColumn {

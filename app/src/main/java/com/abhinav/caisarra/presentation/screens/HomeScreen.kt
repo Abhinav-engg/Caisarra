@@ -108,12 +108,12 @@ fun HomeScreen(
                 TodaysChallenge(onStartChallenge = onStartChallenge)
                 Spacer(modifier = Modifier.height(12.dp))
 
-                GeneralButton(
-                    text = "RESUME GAME",
-                    onClick = onResumeGame,
-                    modifier = Modifier.width(200.dp)
-                )
-                Spacer(modifier = Modifier.height(20.dp))
+//                GeneralButton(
+//                    text = "RESUME GAME",
+//                    onClick = onResumeGame,
+//                    modifier = Modifier.width(200.dp)
+//                )
+//                Spacer(modifier = Modifier.height(20.dp))
 
                 GameHistorySection(
                     games = state.gameHistory,
@@ -362,7 +362,7 @@ private fun TodaysChallenge(
         ) {
 
             androidx.compose.material3.Text(
-                text = "TODAY'S CHALLENGE",
+                text = "READY TO PLAY?",
                 color = White,
                 fontFamily = JetBrainsMono,
                 fontSize = 12.sp,
@@ -373,7 +373,7 @@ private fun TodaysChallenge(
             Spacer(modifier = Modifier.height(6.dp))
 
             androidx.compose.material3.Text(
-                text = "CHECKMATE IN TWO MOVES",
+                text = "Make your move",
                 color = White,
                 fontFamily = JetBrainsMono,
                 fontSize = 16.sp,
@@ -382,25 +382,14 @@ private fun TodaysChallenge(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            androidx.compose.material3.Text(
-                text = "Solve the puzzle and boost your rating",
-                color = White,
-                fontFamily = JetBrainsMono,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(15.dp))
 
             GeneralButton(
-                text = "Start Challenge",
+                text = "Play Game",
 
                 onClick = onStartChallenge,
 
-                modifier = Modifier.width(230.dp)
+                modifier = Modifier.width(200.dp)
             )
         }
     }

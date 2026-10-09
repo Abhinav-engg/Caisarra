@@ -27,7 +27,10 @@ private val DarkSquare = Color(0xFF1E293B)
 
 private val SelectedColor = Color(0xFF10B981)
 private val LastMoveColor = Color(0xFFB9D65C)
-private val LegalMoveColor = Color(0x8010B981)
+
+private val LegalMoveDot = Color(0xFF00DFA2)
+private val LegalMoveRing = Color(0xFF00E5A0)
+private val LegalMoveOverlay = Color(0x3300E5A0)
 private val CheckColor = Color(0xFFEF4444)
 
 @Composable
@@ -42,7 +45,6 @@ fun ChessBoard(
     isFlipped: Boolean,
     onSquareClick: (Square) -> Unit
 ) {
-    // Fills whatever square the caller gives it (GameScreen wraps it in a fixed-size Box).
     Column(modifier = Modifier.fillMaxSize()) {
 
         repeat(8) { displayRow ->
@@ -68,9 +70,6 @@ fun ChessBoard(
                     val isSelected = selectedSquare == square
                     val isLegalMove = legalMoves.contains(square)
                     val isLastMove = lastMoveFrom == square || lastMoveTo == square
-
-                    // Only the KING of the side that is in check gets marked.
-                    // (Before, every piece of that colour matched, so the whole side turned red.)
                     val isCheck = piece != null &&
                             piece.type == PieceType.KING &&
                             (
@@ -78,7 +77,7 @@ fun ChessBoard(
                                             (piece.color == PieceColor.BLACK && isBlackInCheck)
                                     )
 
-                    // Check is no longer part of this chain: it is drawn as a glow on top.
+
                     val baseColor = when {
                         isSelected -> SelectedColor
                         isLastMove -> LastMoveColor
@@ -100,35 +99,60 @@ fun ChessBoard(
                     ) {
 
                         if (isCheck) {
-                            // Soft red radial glow behind the king; the piece itself stays untinted.
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(
                                         Brush.radialGradient(
                                             colors = listOf(
-                                                CheckColor.copy(alpha = 0.9f),
-                                                CheckColor.copy(alpha = 0f)
+                                                CheckColor.copy(alpha = 0.85f),
+                                                CheckColor.copy(alpha = 0.35f),
+                                                Color.Transparent
                                             )
                                         )
                                     )
                             )
                         }
-
-                        if (isLegalMove) {
-                            Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .background(
-                                        LegalMoveColor,
-                                        shape = CircleShape
-                                    )
-                            )
-                        }
-
                         if (piece != null) {
                             PieceView(piece = piece)
                         }
+
+                        if (isLegalMove) {
+
+                            if (piece == null) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .background(
+                                            color = LegalMoveDot,
+                                            shape = CircleShape
+                                        )
+                                        .border(
+                                            width = 1.5.dp,
+                                            color = Color.White.copy(
+                                                alpha = 0.85f
+                                            ),
+                                            shape = CircleShape
+                                        )
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize(0.82f)
+                                        .background(
+                                            color = LegalMoveOverlay,
+                                            shape = CircleShape
+                                        )
+                                        .border(
+                                            width = 3.dp,
+                                            color = LegalMoveRing,
+                                            shape = CircleShape
+                                        )
+                                )
+                            }
+                        }
+
+
                     }
                 }
             }

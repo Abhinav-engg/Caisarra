@@ -22,7 +22,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.abhinav.caisarra.data.repository.AuthRepository
-import com.abhinav.caisarra.presentation.screens.GuestOptionsScreen
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.ResetPasswordScreen
 import com.abhinav.caisarra.presentation.screens.SetNewPasswordScreen
@@ -52,9 +51,9 @@ import androidx.navigation.navArgument
 import com.abhinav.caisarra.data.repository.GameRepository
 import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
 import com.abhinav.caisarra.presentation.screens.GuestHomeScreen
-import androidx.navigation.navArgument
 import com.abhinav.caisarra.presentation.game.screens.GameHistoryScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameHistoryReviewViewModel
+import com.abhinav.caisarra.data.local.PendingOtpStore
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -127,10 +126,28 @@ private fun NavController.goToLogin() {
 
 @Composable
 fun AppNavigation(authRepository: AuthRepository) {
+    val context = LocalContext.current.applicationContext
+    val pendingOtpStore = remember {
+        PendingOtpStore(context)
+    }
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
+        val pending = pendingOtpStore.getPendingVerification()
         startDestination = when {
+            pending != null -> {
+                val purpose = runCatching {
+                    VerifyPurpose.valueOf(pending.purpose)
+                }.getOrNull()
+
+                if (purpose != null) {
+                    AppRoutes.verify(pending.email, purpose)
+                } else {
+                    pendingOtpStore.clear()
+                    AppRoutes.LOGIN
+                }
+            }
+
             authRepository.isLoggedIn() -> AppRoutes.HOME
             authRepository.isGuest() -> AppRoutes.GUEST_HOME
             else -> AppRoutes.LOGIN
@@ -149,7 +166,26 @@ fun AppNavigation(authRepository: AuthRepository) {
 
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+
+    val gameRepository = remember {
+        GameRepository.get(context.applicationContext)
+    }
+
+    fun openPlayGame() {
+        scope.launch {
+            val ownerId = authRepository.getUsername()
+                ?: authRepository.getGuestId()
+                ?: "local-user"
+
+            val unfinishedGame = gameRepository.getUnfinished(ownerId)
+
+            if (unfinishedGame != null) {
+                navController.navigate(AppRoutes.resumeGame())
+            } else {
+                navController.navigate(AppRoutes.GAME_SETUP)
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -187,14 +223,31 @@ fun AppNavigation(authRepository: AuthRepository) {
 
         composable(route = AppRoutes.REGISTER) {
             SignUpScreen(
-                viewModel = screenViewModel {SignUpViewModel(
-                        repository = authRepository,registrationDataStore = RegistrationDataStore(context.applicationContext)
+                viewModel = screenViewModel {
+                    SignUpViewModel(
+                        repository = authRepository,
+                        registrationDataStore =
+                            RegistrationDataStore(context.applicationContext)
                     )
                 },
-                onSignUpSuccess = { email ->
-                    navController.navigate(AppRoutes.verify(email, VerifyPurpose.REGISTRATION))
-                },
-                onSignInClick = { navController.goToLogin() }
+            onSignUpSuccess = { email ->
+                scope.launch {
+                    pendingOtpStore.save(
+                        email = email,
+                        purpose = VerifyPurpose.REGISTRATION.name
+                    )
+
+                    navController.navigate(
+                        AppRoutes.verify(
+                            email,
+                            VerifyPurpose.REGISTRATION
+                        )
+                    )
+                }
+            },
+                onSignInClick = {
+                    navController.goToLogin()
+                }
             )
         }
         composable(route = AppRoutes.GUEST_HOME) {
@@ -224,9 +277,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 guestId = guestId,
                 gameHistory = guestHomeState.gameHistory,
                 onPlayGame = {
-                    navController.navigate(
-                        AppRoutes.GAME_SETUP
-                    )
+                    openPlayGame()
                 },
                 onReviewGame = { gameId ->
                     navController.navigate(
@@ -269,7 +320,19 @@ fun AppNavigation(authRepository: AuthRepository) {
             ResetPasswordScreen(
                 viewModel = screenViewModel { ResetPasswordViewModel(authRepository) },
                 onSendCode = { email ->
-                    navController.navigate(AppRoutes.verify(email, VerifyPurpose.RESET_PASSWORD))
+                    scope.launch {
+                        pendingOtpStore.save(
+                            email = email,
+                            purpose = VerifyPurpose.RESET_PASSWORD.name
+                        )
+
+                        navController.navigate(
+                            AppRoutes.verify(
+                                email,
+                                VerifyPurpose.RESET_PASSWORD
+                            )
+                        )
+                    }
                 },
                 onBackToSignIn = { navController.popBackStack() }
             )
@@ -280,22 +343,39 @@ fun AppNavigation(authRepository: AuthRepository) {
                 entry.arguments?.getString("purpose") ?: VerifyPurpose.RESET_PASSWORD.name
             )
             VerifyScreen(
-                viewModel = screenViewModel { VerifyViewModel(authRepository, email, purpose) },
+                viewModel = screenViewModel {
+                    VerifyViewModel(
+                        repository = authRepository,
+                        email = email,
+                        purpose = purpose,
+                        pendingOtpStore = pendingOtpStore
+                    )
+                },
                 email = email,
                 purpose = purpose,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    scope.launch {
+                        pendingOtpStore.clear()
+                        navController.popBackStack()
+                    }
+                },
                 onVerified = {
                     if (purpose == VerifyPurpose.REGISTRATION) {
-                    navController.navigate(AppRoutes.RATING) {
-                        popUpTo(navController.graph.id) { inclusive = true }
-                    }
-                } else {
+                        navController.navigate(AppRoutes.RATING) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = true
+                            }
+                        }
+                    } else {
                         navController.navigate(AppRoutes.NEW_PASSWORD) {
-                            popUpTo(AppRoutes.VERIFY) { inclusive = true }
+                            popUpTo(AppRoutes.VERIFY) {
+                                inclusive = true
+                            }
                         }
                     }
                 }
             )
+
         }
         composable(route = AppRoutes.RATING) {
             RatingScreen(
@@ -326,15 +406,13 @@ fun AppNavigation(authRepository: AuthRepository) {
             HomeScreen(
                 viewModel = homeViewModel,
                 onStartChallenge = {
-                    navController.navigate(
-                        AppRoutes.GAME_SETUP
-                    )
+                    openPlayGame()
                 },
-                onResumeGame = {
-                    navController.navigate(
-                        AppRoutes.resumeGame()
-                    )
-                },
+//                onResumeGame = {
+//                    navController.navigate(
+//                        AppRoutes.resumeGame()
+//                    )
+//                },
                 onReviewGame = { gameId ->
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)
