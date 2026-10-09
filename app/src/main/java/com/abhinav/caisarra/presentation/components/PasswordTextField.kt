@@ -48,7 +48,8 @@ fun PasswordTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "",
-    helperText: String? = null
+    helperText: String? = null,
+    onFocusChange: (Boolean) -> Unit = {}
 ) {
     var visible by remember { mutableStateOf(false) }
     var focused by remember { mutableStateOf(false) }
@@ -104,7 +105,10 @@ fun PasswordTextField(
                     else PasswordVisualTransformation(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onFocusChanged { focused = it.isFocused }
+                        .onFocusChanged {
+                            focused = it.isFocused
+                            onFocusChange(it.isFocused)
+                        }
                 )
             }
             IconButton(onClick = { visible = !visible }) {

@@ -45,6 +45,7 @@ fun SignUpScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showTerms by remember { mutableStateOf(false) }
+    var isPasswordFocused by remember { mutableStateOf(false) }
 
 
 
@@ -73,11 +74,13 @@ fun SignUpScreen(
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
                 placeholder = "Enter password",
-                helperText = null
+                helperText = null,
+                onFocusChange = { isPasswordFocused = it }
             )
 
             PasswordRequirements(
                 password = state.password,
+                isPasswordFocused = isPasswordFocused,
                 modifier = Modifier.padding(top = 6.dp)
             )
 

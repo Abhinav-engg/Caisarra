@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.caisaara.ui.theme.Feildbackground
+import com.caisaara.ui.theme.EmeraldNormal
 import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.SubtleText
 import com.caisaara.ui.theme.BorderColor
@@ -21,10 +22,9 @@ import com.caisaara.ui.theme.BorderColor
 @Composable
 fun PasswordRequirements(
     password: String,
+    isPasswordFocused: Boolean,
     modifier: Modifier = Modifier
 ) {
-    if (password.isEmpty()) return
-
     val hasLength =
         password.length in 8..16
 
@@ -47,6 +47,8 @@ fun PasswordRequirements(
         hasLength && hasSpecial &&
                 hasNumber && hasUppercase &&
                 hasLowercase && hasNoSpaces
+
+    if (password.isEmpty() || (!isPasswordFocused && allValid)) return
 
     val borderColor =
         if (allValid) BorderColor else RedNormal
@@ -106,9 +108,8 @@ private fun RequirementText(
     text: String,
     fulfilled: Boolean
 ) {
-    Text(text = "• $text",
-        color = if (fulfilled) SubtleText else RedNormal,
+    Text(text = "${if (fulfilled) "✓" else "•"} $text",
+        color = if (fulfilled) EmeraldNormal else RedNormal,
         fontSize = 12.sp
     )
 }
-
