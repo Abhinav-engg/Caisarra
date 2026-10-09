@@ -105,26 +105,14 @@ fun GameScreen(
                         onHome = onHome,
                         onFlip = { onIntent(GameIntent.FlipBoard) }
                     )
-                    PlayerStrip(
-                        name = state.blackPlayerName,
-                        timeMillis = state.blackTimeMillis,
-                        isActive = !state.isWhiteTurn,
-                        captured = state.capturedBlackPieces,
-                        capturedOnTop = false
-                    )
+                    TopPlayerStrip(state = state)
                     MoveList(
                         moves = state.moves,
                         modifier = Modifier
                             .weight(1f)
                             .padding(vertical = 8.dp)
                     )
-                    PlayerStrip(
-                        name = state.whitePlayerName,
-                        timeMillis = state.whiteTimeMillis,
-                        isActive = state.isWhiteTurn,
-                        captured = state.capturedWhitePieces,
-                        capturedOnTop = true
-                    )
+                    BottomPlayerStrip(state = state)
                     Spacer(modifier = Modifier.height(8.dp))
                     GameActions(state = state, onIntent = onIntent)
                 }
@@ -145,12 +133,8 @@ fun GameScreen(
                         onHome = onHome,
                         onFlip = { onIntent(GameIntent.FlipBoard) }
                     )
-                    PlayerStrip(
-                        name = state.blackPlayerName,
-                        timeMillis = state.blackTimeMillis,
-                        isActive = !state.isWhiteTurn,
-                        captured = state.capturedBlackPieces,
-                        capturedOnTop = false,
+                    TopPlayerStrip(
+                        state = state,
                         modifier = Modifier.width(boardSize)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -158,12 +142,8 @@ fun GameScreen(
                         Board(state = state, onIntent = onIntent)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
-                    PlayerStrip(
-                        name = state.whitePlayerName,
-                        timeMillis = state.whiteTimeMillis,
-                        isActive = state.isWhiteTurn,
-                        captured = state.capturedWhitePieces,
-                        capturedOnTop = true,
+                    BottomPlayerStrip(
+                        state = state,
                         modifier = Modifier.width(boardSize)
                     )
                     MoveList(
@@ -239,6 +219,58 @@ private fun TopBar(
         TextButton(onClick = onFlip) {
             Text(text = "Flip", color = Color.White)
         }
+    }
+}
+
+@Composable
+private fun TopPlayerStrip(
+    state: GameUiState,
+    modifier: Modifier = Modifier
+) {
+    if (state.isBoardFlipped) {
+        PlayerStrip(
+            name = state.whitePlayerName,
+            timeMillis = state.whiteTimeMillis,
+            isActive = state.isWhiteTurn,
+            captured = state.capturedWhitePieces,
+            capturedOnTop = false,
+            modifier = modifier
+        )
+    } else {
+        PlayerStrip(
+            name = state.blackPlayerName,
+            timeMillis = state.blackTimeMillis,
+            isActive = !state.isWhiteTurn,
+            captured = state.capturedBlackPieces,
+            capturedOnTop = false,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun BottomPlayerStrip(
+    state: GameUiState,
+    modifier: Modifier = Modifier
+) {
+    if (state.isBoardFlipped) {
+        PlayerStrip(
+            name = state.blackPlayerName,
+            timeMillis = state.blackTimeMillis,
+            isActive = !state.isWhiteTurn,
+            captured = state.capturedBlackPieces,
+            capturedOnTop = true,
+            modifier = modifier
+        )
+    } else {
+        PlayerStrip(
+            name = state.whitePlayerName,
+            timeMillis = state.whiteTimeMillis,
+            isActive = state.isWhiteTurn,
+            captured = state.capturedWhitePieces,
+            capturedOnTop = true,
+            modifier = modifier
+        )
     }
 }
 

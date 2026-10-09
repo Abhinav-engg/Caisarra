@@ -46,6 +46,7 @@ class GameViewModel(
     private var initialTimeMs = newTimeMinutes * 60_000L
     private var promotionFrom: DomainSquare? = null
     private var promotionTo: DomainSquare? = null
+    private val autoFlip = !resumeGame && newBoardFlipped
 
     init {
         loadGame()
@@ -603,10 +604,10 @@ class GameViewModel(
                 moves = uiMoves,
                 gameResult = result,
                 isBoardFlipped =
-                    if (resumeGame) {
-                        it.isBoardFlipped
+                    if (autoFlip) {
+                        currentGame.turn == DomainPieceColor.Black
                     } else {
-                        newBoardFlipped
+                        it.isBoardFlipped
                     },
 
                 undoEnabled = undoAllowed,
