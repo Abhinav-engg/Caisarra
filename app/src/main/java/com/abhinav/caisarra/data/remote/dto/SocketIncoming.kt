@@ -28,7 +28,8 @@ sealed interface SocketIncoming {
         @SerialName("last_move") val lastMove: String? = null,
         val moves: List<String>? = null,
         val result: String? = null,
-        @SerialName("end_reason") val endReason: String? = null
+        @SerialName("end_reason") val endReason: String? = null,
+        @SerialName("draw_offered_by") val drawOfferedBy: Long? = null
     ) : SocketIncoming
 
     @OptIn(ExperimentalSerializationApi::class)

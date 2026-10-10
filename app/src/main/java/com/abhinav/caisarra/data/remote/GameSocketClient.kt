@@ -26,27 +26,33 @@ class GameSocketClient(context: Context) {
 
     private var socket: WebSocket? = null
 
+    @Volatile
+    private var generation = 0
+
     private val _incoming = MutableSharedFlow<SocketIncoming>(extraBufferCapacity = 64)
     val incoming: SharedFlow<SocketIncoming> = _incoming
 
     private val _connected = MutableStateFlow(false)
     val connected: StateFlow<Boolean> = _connected
 
-    suspend fun connect(gameId: String) {
+    suspend fun connect(gameId: String): Boolean {
         close()
         AuthRepository.get(appContext).isLoggedIn()
-        val token = TokenManager(appContext).getAccessToken() ?: return
+        val token = TokenManager(appContext).getAccessToken() ?: return false
 
         val url = RetrofitInstance.BASE_URL.toHttpUrl().newBuilder()
             .addPathSegment("ws")
+            .addPathSegment("games")
             .addPathSegment(gameId)
             .addQueryParameter("token", token)
             .build()
 
+        val id = ++generation
         socket = RetrofitInstance.socketClient.newWebSocket(
             Request.Builder().url(url).build(),
-            listener
+            listenerFor(id)
         )
+        return true
     }
 
     fun send(message: SocketOutgoing): Boolean {
@@ -55,18 +61,20 @@ class GameSocketClient(context: Context) {
     }
 
     fun close() {
+        generation++
         socket?.close(1000, null)
         socket = null
         _connected.value = false
     }
 
-    private val listener = object : WebSocketListener() {
+    private fun listenerFor(id: Int) = object : WebSocketListener() {
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            _connected.value = true
+            if (id == generation) _connected.value = true
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
+            if (id != generation) return
             try {
                 _incoming.tryEmit(json.decodeFromString(SocketIncoming.serializer(), text))
             } catch (e: Exception) {
@@ -74,11 +82,11 @@ class GameSocketClient(context: Context) {
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            _connected.value = false
+            if (id == generation) _connected.value = false
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            _connected.value = false
+            if (id == generation) _connected.value = false
         }
     }
 }

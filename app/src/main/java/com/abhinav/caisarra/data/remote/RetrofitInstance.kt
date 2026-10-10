@@ -57,4 +57,7 @@ object RetrofitInstance {
         authenticatedRetrofit(tokenManager).create()
     fun createGamesService(tokenManager: TokenManager): GamesService =
         authenticatedRetrofit(tokenManager).create()
+
+    fun createDrawService(tokenManager: TokenManager): DrawService =
+        authenticatedRetrofit(tokenManager).create()
 }

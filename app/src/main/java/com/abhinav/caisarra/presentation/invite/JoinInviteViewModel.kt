@@ -3,70 +3,89 @@ package com.abhinav.caisarra.presentation.invite
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.abhinav.caisarra.data.remote.dto.InvitePreviewResponse
+import com.abhinav.caisarra.data.local.TokenExpiryChecker
+import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.InviteRepository
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
-data class JoinInviteUiState(
-    val code: String = "",
-    val preview: InvitePreviewResponse? = null,
-    val gameId: String? = null,
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
+sealed interface JoinInviteState {
+    data object Loading : JoinInviteState
+    data class Error(val message: String) : JoinInviteState
+    data class Preview(
+        val inviterName: String,
+        val timeControlMinutes: Int,
+        val incrementSeconds: Int,
+        val yourColor: String,
+        val needsLogin: Boolean,
+        val joining: Boolean = false
+    ) : JoinInviteState
+}
 
-class JoinInviteViewModel(application: Application) : AndroidViewModel(application) {
+class JoinInviteViewModel(
+    application: Application,
+    private val code: String
+) : AndroidViewModel(application) {
 
-    private val repository = InviteRepository.get(application)
+    private val inviteRepository = InviteRepository.get(application)
+    private val authRepository = AuthRepository.get(application)
+    private val tokenManager = TokenManager(application)
 
-    private val _uiState = MutableStateFlow(JoinInviteUiState())
-    val uiState: StateFlow<JoinInviteUiState> = _uiState.asStateFlow()
+    private val _state = MutableStateFlow<JoinInviteState>(JoinInviteState.Loading)
+    val state: StateFlow<JoinInviteState> = _state.asStateFlow()
 
-    fun onCodeChange(value: String) {
-        _uiState.update {
-            it.copy(code = value.trim().lowercase().take(8), preview = null, error = null)
-        }
+    private val _gameReady = Channel<String>(Channel.BUFFERED)
+    val gameReady: Flow<String> = _gameReady.receiveAsFlow()
+
+    init {
+        load()
     }
 
-    fun previewInvite() {
-        val state = _uiState.value
-        if (state.isLoading) return
-        if (!state.code.matches(Regex("[0-9a-f]{8}"))) {
-            _uiState.update { it.copy(error = "Enter a valid 8-character code") }
-            return
-        }
-        _uiState.update { it.copy(isLoading = true, error = null) }
+    fun load() {
         viewModelScope.launch {
-            repository.previewInvite(state.code)
+            _state.value = JoinInviteState.Loading
+            inviteRepository.previewInvite(code)
                 .onSuccess { preview ->
-                    _uiState.update { it.copy(isLoading = false, preview = preview) }
+                    val loggedIn = authRepository.isLoggedIn()
+                    val myId = if (loggedIn) {
+                        tokenManager.getAccessToken()?.let { TokenExpiryChecker.getUserId(it) }
+                    } else null
+
+                    if (myId != null && myId == preview.inviter.id) {
+                        _gameReady.send(preview.gameId)
+                        return@onSuccess
+                    }
+
+                    _state.value = JoinInviteState.Preview(
+                        inviterName = preview.inviter.username,
+                        timeControlMinutes = preview.timeControlMinutes,
+                        incrementSeconds = preview.incrementSeconds,
+                        yourColor = when (preview.color) {
+                            "white" -> "Black"
+                            "black" -> "White"
+                            else -> "Random"
+                        },
+                        needsLogin = !loggedIn
+                    )
                 }
-                .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error.message) }
-                }
+                .onFailure { _state.value = JoinInviteState.Error(it.message.orEmpty()) }
         }
     }
 
-    fun joinGame() {
-        val state = _uiState.value
-        if (state.isLoading || state.preview == null) return
-        _uiState.update { it.copy(isLoading = true, error = null) }
+    fun join() {
+        val current = _state.value as? JoinInviteState.Preview ?: return
+        if (current.joining || current.needsLogin) return
         viewModelScope.launch {
-            repository.joinInvite(state.code)
-                .onSuccess { response ->
-                    _uiState.update { it.copy(isLoading = false, gameId = response.gameId) }
-                }
-                .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error.message) }
-                }
+            _state.value = current.copy(joining = true)
+            inviteRepository.joinInvite(code)
+                .onSuccess { _gameReady.send(it.gameId) }
+                .onFailure { _state.value = JoinInviteState.Error(it.message.orEmpty()) }
         }
-    }
-
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
     }
 }

@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.navigation
 
+import android.app.Application
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.ResetPasswordScreen
@@ -53,8 +55,15 @@ import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
 import com.abhinav.caisarra.presentation.screens.GuestHomeScreen
 import com.abhinav.caisarra.presentation.game.screens.GameHistoryScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameHistoryReviewViewModel
+import com.abhinav.caisarra.data.local.PendingInviteStore
 import com.abhinav.caisarra.data.local.PendingOtpStore
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
+import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
+import com.abhinav.caisarra.presentation.game.screens.OnlineGameScreen
+import com.abhinav.caisarra.presentation.invite.CreateInviteScreen
+import com.abhinav.caisarra.presentation.invite.CreateInviteViewModel
+import com.abhinav.caisarra.presentation.invite.JoinInviteScreen
+import com.abhinav.caisarra.presentation.invite.JoinInviteViewModel
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -66,13 +75,16 @@ object AppRoutes {
     const val GAME_SETUP = "game_setup"
     const val GAME_HISTORY = "game_history/{gameId}"
     const val GAME = "game?resume={resume}" +
-                "&white={white}" +
-                "&black={black}" +
-                "&minutes={minutes}" +
-                "&flip={flip}" +
-                "&undo={undo}"
+            "&white={white}" +
+            "&black={black}" +
+            "&minutes={minutes}" +
+            "&flip={flip}" +
+            "&undo={undo}"
     const val GUEST_HOME = "guest_options"
     const val RATING = "rating"
+    const val CREATE_INVITE = "create_invite"
+    const val JOIN_INVITE = "play/{code}"
+    const val ONLINE_GAME = "online_game/{gameId}"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -100,11 +112,16 @@ object AppRoutes {
                 "&flip=false" +
                 "&undo=true"
     }
+
     fun gameHistory(
         gameId: String
     ): String {
         return "game_history/${Uri.encode(gameId)}"
     }
+
+    fun onlineGame(gameId: String) = "online_game/${Uri.encode(gameId)}"
+
+    fun joinInvite(code: String) = "play/${Uri.encode(code)}"
 }
 
 @Composable
@@ -125,11 +142,20 @@ private fun NavController.goToLogin() {
     }
 }
 
+private fun NavController.goHomeThenPendingInvite(store: PendingInviteStore) {
+    val code = store.consume()
+    goHome()
+    if (code != null) navigate(AppRoutes.joinInvite(code))
+}
+
 @Composable
 fun AppNavigation(authRepository: AuthRepository) {
     val context = LocalContext.current.applicationContext
     val pendingOtpStore = remember {
         PendingOtpStore(context)
+    }
+    val pendingInviteStore = remember {
+        PendingInviteStore.get(context)
     }
     var startDestination by remember { mutableStateOf<String?>(null) }
 
@@ -195,7 +221,7 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(route = AppRoutes.LOGIN) {
             LoginScreen(
                 viewModel = screenViewModel { LoginViewModel(authRepository) },
-                onLoginSuccess = { navController.goHome() },
+                onLoginSuccess = { navController.goHomeThenPendingInvite(pendingInviteStore) },
                 onForgotPasswordClick = { navController.navigate(AppRoutes.RESET_PASSWORD) },
                 onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
                 onContinueAsGuestClick = {
@@ -211,7 +237,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                             }
 
                             is AuthResult.Error -> {
-                                Toast.makeText(context,
+                                Toast.makeText(
+                                    context,
                                     result.message,
                                     Toast.LENGTH_SHORT
                                 ).show()
@@ -231,26 +258,27 @@ fun AppNavigation(authRepository: AuthRepository) {
                             RegistrationDataStore(context.applicationContext)
                     )
                 },
-            onSignUpSuccess = { email ->
-                scope.launch {
-                    pendingOtpStore.save(
-                        email = email,
-                        purpose = VerifyPurpose.REGISTRATION.name
-                    )
-
-                    navController.navigate(
-                        AppRoutes.verify(
-                            email,
-                            VerifyPurpose.REGISTRATION
+                onSignUpSuccess = { email ->
+                    scope.launch {
+                        pendingOtpStore.save(
+                            email = email,
+                            purpose = VerifyPurpose.REGISTRATION.name
                         )
-                    )
-                }
-            },
+
+                        navController.navigate(
+                            AppRoutes.verify(
+                                email,
+                                VerifyPurpose.REGISTRATION
+                            )
+                        )
+                    }
+                },
                 onSignInClick = {
                     navController.goToLogin()
                 }
             )
         }
+
         composable(route = AppRoutes.GUEST_HOME) {
 
             var guestId by remember {
@@ -268,6 +296,13 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     remoteGameRepository = RemoteGameRepository(
                         authRepository.createGamesService()
+            val guestHomeViewModel =
+                screenViewModel {
+                    HomeViewModel(
+                        repository = authRepository,
+                        gameRepository = GameRepository.get(
+                            context.applicationContext
+                        )
                     )
                 )
             }
@@ -320,6 +355,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 isLoggingOut = isLoggingOut
             )
         }
+
         composable(route = AppRoutes.RESET_PASSWORD) {
             ResetPasswordScreen(
                 viewModel = screenViewModel { ResetPasswordViewModel(authRepository) },
@@ -341,6 +377,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onBackToSignIn = { navController.popBackStack() }
             )
         }
+
         composable(route = AppRoutes.VERIFY) { entry ->
             val email = entry.arguments?.getString("email").orEmpty()
             val purpose = VerifyPurpose.valueOf(
@@ -379,12 +416,12 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 }
             )
-
         }
+
         composable(route = AppRoutes.RATING) {
             RatingScreen(
                 viewModel = screenViewModel { RatingViewModel(authRepository) },
-                onRated = { navController.goHome() }
+                onRated = { navController.goHomeThenPendingInvite(pendingInviteStore) }
             )
         }
 
@@ -417,6 +454,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onStartChallenge = {
                     openPlayGame()
                 },
+                onPlayWithFriend = {
+                    navController.navigate(AppRoutes.CREATE_INVITE)
+                },
                 onReviewGame = { gameId ->
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)
@@ -427,6 +467,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         }
+
         composable(
             route = AppRoutes.GAME_SETUP
         ) {
@@ -459,6 +500,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         }
+
         composable(
             route = AppRoutes.GAME_HISTORY,
             arguments = listOf(
@@ -479,6 +521,18 @@ fun AppNavigation(authRepository: AuthRepository) {
                         gameId = gameId
                     )
                 }
+                ?.getString("gameId")
+                .orEmpty()
+
+            val historyViewModel = screenViewModel {
+                GameHistoryReviewViewModel(
+                    repository = GameRepository.get(
+                        context.applicationContext
+                    ),
+
+                    gameId = gameId
+                )
+            }
 
             GameHistoryScreen(
                 viewModel = historyViewModel,
@@ -529,6 +583,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                 screenViewModel {
                     GameViewModel(
                         gameRepository = GameRepository.get(context.applicationContext),
+                        gameRepository = GameRepository.get(
+                            context.applicationContext
+                        ),
+
                         authRepository = authRepository,
                         resumeGame = resume,
                         newWhiteName = white,
@@ -574,6 +632,71 @@ fun AppNavigation(authRepository: AuthRepository) {
                         }
                     }
                 }
+            )
+        }
+
+        composable(route = AppRoutes.CREATE_INVITE) {
+            val createViewModel = screenViewModel {
+                CreateInviteViewModel(context as Application)
+            }
+
+            CreateInviteScreen(
+                viewModel = createViewModel,
+                onGameReady = { gameId ->
+                    navController.navigate(AppRoutes.onlineGame(gameId)) {
+                        popUpTo(AppRoutes.CREATE_INVITE) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = AppRoutes.JOIN_INVITE,
+            arguments = listOf(
+                navArgument("code") { type = NavType.StringType }
+            ),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "https://caisaara.duckdns.org/play/{code}" }
+            )
+        ) { entry ->
+            val code = entry.arguments?.getString("code").orEmpty()
+            val joinViewModel = screenViewModel {
+                JoinInviteViewModel(context as Application, code)
+            }
+
+            JoinInviteScreen(
+                viewModel = joinViewModel,
+                onGameReady = { gameId ->
+                    navController.navigate(AppRoutes.onlineGame(gameId)) {
+                        popUpTo(AppRoutes.JOIN_INVITE) { inclusive = true }
+                    }
+                },
+                onLogin = {
+                    pendingInviteStore.save(code)
+                    navController.goToLogin()
+                },
+                onBack = {
+                    pendingInviteStore.clear()
+                    if (!navController.popBackStack()) navController.goHome()
+                }
+            )
+        }
+
+        composable(
+            route = AppRoutes.ONLINE_GAME,
+            arguments = listOf(
+                navArgument("gameId") { type = NavType.StringType }
+            )
+        ) { entry ->
+            val gameId = entry.arguments?.getString("gameId").orEmpty()
+            val onlineViewModel = screenViewModel {
+                OnlineGameViewModel(context as Application, gameId)
+            }
+
+            OnlineGameScreen(
+                viewModel = onlineViewModel,
+                onHome = { navController.goHome() }
             )
         }
     }

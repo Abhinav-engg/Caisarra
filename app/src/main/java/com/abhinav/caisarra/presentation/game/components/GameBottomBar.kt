@@ -51,7 +51,9 @@ fun GameBottomBar(
     onOfferDraw: () -> Unit,
     onResign: () -> Unit,
     modifier: Modifier = Modifier,
-    drawMessage: String = "Both players agree to end the game as a draw."
+    drawMessage: String = "Both players agree to end the game as a draw.",
+    showDraw: Boolean = true,
+    showUndoRedo: Boolean = true
 ) {
     var showOptions by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<ConfirmAction?>(null) }
@@ -68,8 +70,10 @@ fun GameBottomBar(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             BottomBarItem(Icons.Default.Menu, "Options", optionsEnabled, { showOptions = true }, Modifier.weight(1f))
-            BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Back", canUndo, onUndo, Modifier.weight(1f))
-            BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Forward", canRedo, onRedo, Modifier.weight(1f))
+            if (showUndoRedo) {
+                BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Back", canUndo, onUndo, Modifier.weight(1f))
+                BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Forward", canRedo, onRedo, Modifier.weight(1f))
+            }
         }
     }
 
@@ -78,9 +82,11 @@ fun GameBottomBar(
             onDismissRequest = { showOptions = false },
             containerColor = CardBackground
         ) {
-            OptionRow("Offer draw", TextColor) {
-                showOptions = false
-                pendingAction = ConfirmAction.Draw
+            if (showDraw) {
+                OptionRow("Offer draw", TextColor) {
+                    showOptions = false
+                    pendingAction = ConfirmAction.Draw
+                }
             }
             OptionRow("Resign", RedNormal) {
                 showOptions = false
