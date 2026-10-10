@@ -57,6 +57,7 @@ import com.abhinav.caisarra.presentation.game.screens.GameHistoryScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameHistoryReviewViewModel
 import com.abhinav.caisarra.data.local.PendingInviteStore
 import com.abhinav.caisarra.data.local.PendingOtpStore
+import com.abhinav.caisarra.data.repository.RemoteGameRepository
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
 import com.abhinav.caisarra.presentation.game.screens.OnlineGameScreen
 import com.abhinav.caisarra.presentation.invite.CreateInviteScreen
@@ -287,6 +288,14 @@ fun AppNavigation(authRepository: AuthRepository) {
             var isLoggingOut by remember {
                 mutableStateOf(false)
             }
+            val guestHomeViewModel = screenViewModel {
+                HomeViewModel(
+                    repository = authRepository,
+                    gameRepository = GameRepository.get(
+                        context.applicationContext
+                    ),
+                    remoteGameRepository = RemoteGameRepository(
+                        authRepository.createGamesService()
             val guestHomeViewModel =
                 screenViewModel {
                     HomeViewModel(
@@ -295,7 +304,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                             context.applicationContext
                         )
                     )
-                }
+                )
+            }
 
             val guestHomeState by guestHomeViewModel.state.collectAsState()
             LaunchedEffect(Unit) {
@@ -425,14 +435,19 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable(route = AppRoutes.HOME) {
+
             val homeViewModel = screenViewModel {
                 HomeViewModel(
                     repository = authRepository,
                     gameRepository = GameRepository.get(
                         context.applicationContext
+                    ),
+                    remoteGameRepository = RemoteGameRepository(
+                        gamesService = authRepository.createGamesService()
                     )
                 )
             }
+
 
             HomeScreen(
                 viewModel = homeViewModel,
@@ -470,7 +485,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                         minutes,
                         flip,
                         undo ->
-
                     navController.navigate(
                         AppRoutes.newGame(
                             white = white,
@@ -489,7 +503,6 @@ fun AppNavigation(authRepository: AuthRepository) {
 
         composable(
             route = AppRoutes.GAME_HISTORY,
-
             arguments = listOf(
                 navArgument("gameId") {
                     type = NavType.StringType
@@ -497,8 +510,17 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
 
         ) { entry ->
-
             val gameId = entry.arguments
+                    ?.getString("gameId")
+                    .orEmpty()
+            val historyViewModel = screenViewModel {
+                    GameHistoryReviewViewModel(
+                        repository = GameRepository.get(
+                                context.applicationContext
+                            ),
+                        gameId = gameId
+                    )
+                }
                 ?.getString("gameId")
                 .orEmpty()
 
@@ -514,7 +536,6 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             GameHistoryScreen(
                 viewModel = historyViewModel,
-
                 onBack = {
                     navController.popBackStack()
                 }
@@ -551,7 +572,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         ) { entry ->
-
             val resume = entry.arguments?.getBoolean("resume") ?: false
             val white = entry.arguments?.getString("white").orEmpty()
             val black = entry.arguments?.getString("black").orEmpty()
@@ -562,6 +582,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             val gameViewModel =
                 screenViewModel {
                     GameViewModel(
+                        gameRepository = GameRepository.get(context.applicationContext),
                         gameRepository = GameRepository.get(
                             context.applicationContext
                         ),
@@ -580,13 +601,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = gameViewModel,
                 onHome = {
                     scope.launch {
-
                         val destination = if (authRepository.isGuest()) {
                             AppRoutes.GUEST_HOME
                         } else {
                             AppRoutes.HOME
                         }
-
                         val popped = navController.popBackStack(
                             destination,
                             inclusive = false

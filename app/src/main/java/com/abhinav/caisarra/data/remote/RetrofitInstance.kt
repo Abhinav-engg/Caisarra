@@ -10,7 +10,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.create
 import java.util.concurrent.TimeUnit
-
+import com.abhinav.caisarra.data.remote.api.GamesService
 object RetrofitInstance {
     const val BASE_URL = "https://caisaara.duckdns.org"
     val json = Json { ignoreUnknownKeys = true }
@@ -54,6 +54,8 @@ object RetrofitInstance {
         authenticatedRetrofit(tokenManager).create()
 
     fun createChatService(tokenManager: TokenManager): ChatService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createGamesService(tokenManager: TokenManager): GamesService =
         authenticatedRetrofit(tokenManager).create()
 
     fun createDrawService(tokenManager: TokenManager): DrawService =
