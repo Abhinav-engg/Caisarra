@@ -55,4 +55,7 @@ object RetrofitInstance {
 
     fun createChatService(tokenManager: TokenManager): ChatService =
         authenticatedRetrofit(tokenManager).create()
+
+    fun createDrawService(tokenManager: TokenManager): DrawService =
+        authenticatedRetrofit(tokenManager).create()
 }

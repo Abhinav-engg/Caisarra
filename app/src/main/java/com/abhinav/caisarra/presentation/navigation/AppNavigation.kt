@@ -55,6 +55,7 @@ import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
 import com.abhinav.caisarra.presentation.screens.GuestHomeScreen
 import com.abhinav.caisarra.presentation.game.screens.GameHistoryScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameHistoryReviewViewModel
+import com.abhinav.caisarra.data.local.PendingInviteStore
 import com.abhinav.caisarra.data.local.PendingOtpStore
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
 import com.abhinav.caisarra.presentation.game.screens.OnlineGameScreen
@@ -110,6 +111,7 @@ object AppRoutes {
                 "&flip=false" +
                 "&undo=true"
     }
+
     fun gameHistory(
         gameId: String
     ): String {
@@ -117,6 +119,8 @@ object AppRoutes {
     }
 
     fun onlineGame(gameId: String) = "online_game/${Uri.encode(gameId)}"
+
+    fun joinInvite(code: String) = "play/${Uri.encode(code)}"
 }
 
 @Composable
@@ -137,11 +141,20 @@ private fun NavController.goToLogin() {
     }
 }
 
+private fun NavController.goHomeThenPendingInvite(store: PendingInviteStore) {
+    val code = store.consume()
+    goHome()
+    if (code != null) navigate(AppRoutes.joinInvite(code))
+}
+
 @Composable
 fun AppNavigation(authRepository: AuthRepository) {
     val context = LocalContext.current.applicationContext
     val pendingOtpStore = remember {
         PendingOtpStore(context)
+    }
+    val pendingInviteStore = remember {
+        PendingInviteStore.get(context)
     }
     var startDestination by remember { mutableStateOf<String?>(null) }
 
@@ -207,7 +220,7 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(route = AppRoutes.LOGIN) {
             LoginScreen(
                 viewModel = screenViewModel { LoginViewModel(authRepository) },
-                onLoginSuccess = { navController.goHome() },
+                onLoginSuccess = { navController.goHomeThenPendingInvite(pendingInviteStore) },
                 onForgotPasswordClick = { navController.navigate(AppRoutes.RESET_PASSWORD) },
                 onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
                 onContinueAsGuestClick = {
@@ -223,7 +236,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                             }
 
                             is AuthResult.Error -> {
-                                Toast.makeText(context,
+                                Toast.makeText(
+                                    context,
                                     result.message,
                                     Toast.LENGTH_SHORT
                                 ).show()
@@ -263,6 +277,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         }
+
         composable(route = AppRoutes.GUEST_HOME) {
 
             var guestId by remember {
@@ -274,7 +289,8 @@ fun AppNavigation(authRepository: AuthRepository) {
             }
             val guestHomeViewModel =
                 screenViewModel {
-                    HomeViewModel(repository = authRepository,
+                    HomeViewModel(
+                        repository = authRepository,
                         gameRepository = GameRepository.get(
                             context.applicationContext
                         )
@@ -329,6 +345,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 isLoggingOut = isLoggingOut
             )
         }
+
         composable(route = AppRoutes.RESET_PASSWORD) {
             ResetPasswordScreen(
                 viewModel = screenViewModel { ResetPasswordViewModel(authRepository) },
@@ -350,6 +367,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onBackToSignIn = { navController.popBackStack() }
             )
         }
+
         composable(route = AppRoutes.VERIFY) { entry ->
             val email = entry.arguments?.getString("email").orEmpty()
             val purpose = VerifyPurpose.valueOf(
@@ -388,12 +406,12 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 }
             )
-
         }
+
         composable(route = AppRoutes.RATING) {
             RatingScreen(
                 viewModel = screenViewModel { RatingViewModel(authRepository) },
-                onRated = { navController.goHome() }
+                onRated = { navController.goHomeThenPendingInvite(pendingInviteStore) }
             )
         }
 
@@ -408,8 +426,8 @@ fun AppNavigation(authRepository: AuthRepository) {
 
         composable(route = AppRoutes.HOME) {
             val homeViewModel = screenViewModel {
-
-                HomeViewModel(repository = authRepository,
+                HomeViewModel(
+                    repository = authRepository,
                     gameRepository = GameRepository.get(
                         context.applicationContext
                     )
@@ -424,11 +442,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onPlayWithFriend = {
                     navController.navigate(AppRoutes.CREATE_INVITE)
                 },
-//                onResumeGame = {
-//                    navController.navigate(
-//                        AppRoutes.resumeGame()
-//                    )
-//                },
                 onReviewGame = { gameId ->
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)
@@ -439,6 +452,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         }
+
         composable(
             route = AppRoutes.GAME_SETUP
         ) {
@@ -472,6 +486,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         }
+
         composable(
             route = AppRoutes.GAME_HISTORY,
 
@@ -638,8 +653,12 @@ fun AppNavigation(authRepository: AuthRepository) {
                         popUpTo(AppRoutes.JOIN_INVITE) { inclusive = true }
                     }
                 },
-                onLogin = { navController.goToLogin() },
+                onLogin = {
+                    pendingInviteStore.save(code)
+                    navController.goToLogin()
+                },
                 onBack = {
+                    pendingInviteStore.clear()
                     if (!navController.popBackStack()) navController.goHome()
                 }
             )
