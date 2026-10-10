@@ -66,6 +66,7 @@ private val DashboardBorder = Color(0xFF304154)
 fun HomeScreen(
     viewModel: HomeViewModel,
     onStartChallenge: () -> Unit = {},
+    onPlayWithFriend: () -> Unit = {},
     onResumeGame: () -> Unit = {},
     onReviewGame: (String) -> Unit = {},
     onLogoutSuccess: () -> Unit = {}
@@ -88,15 +89,15 @@ fun HomeScreen(
             )
 
             Column(modifier = Modifier
-                    .width(contentWidth)
-                    .align(Alignment.TopCenter)
-                    .safeDrawingPadding()
-                    .verticalScroll(
-                        rememberScrollState()
-                    )
-                    .padding(top = 28.dp,
-                        bottom = 32.dp
-                    ),
+                .width(contentWidth)
+                .align(Alignment.TopCenter)
+                .safeDrawingPadding()
+                .verticalScroll(
+                    rememberScrollState()
+                )
+                .padding(top = 28.dp,
+                    bottom = 32.dp
+                ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 DashboardHeader(username = state.username)
@@ -107,6 +108,13 @@ fun HomeScreen(
 
                 TodaysChallenge(onStartChallenge = onStartChallenge)
                 Spacer(modifier = Modifier.height(12.dp))
+
+                GeneralButton(
+                    text = "Play with a friend",
+                    onClick = onPlayWithFriend,
+                    modifier = Modifier.width(200.dp)
+                )
+                Spacer(modifier = Modifier.height(20.dp))
 
 //                GeneralButton(
 //                    text = "RESUME GAME",
@@ -121,10 +129,10 @@ fun HomeScreen(
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 GeneralButton(text = if (state.isLoggingOut) {
-                        "Logging Out..."
-                    } else {
-                        "Log Out"
-                    },
+                    "Logging Out..."
+                } else {
+                    "Log Out"
+                },
 
                     onClick = {
                         viewModel.logout(
@@ -192,21 +200,21 @@ private fun DashboardHeader(username: String) {
     }
 
     Box(modifier = Modifier
-            .fillMaxWidth()
-            .height(102.dp)
-            .clip(
-                RoundedCornerShape(16.dp)
-            )
-            .background(DashboardColor)
-            .border(
-                width = 1.dp,
-                color = DashboardBorder,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(
-                horizontal = 12.dp,
-                vertical = 10.dp
-            )
+        .fillMaxWidth()
+        .height(102.dp)
+        .clip(
+            RoundedCornerShape(16.dp)
+        )
+        .background(DashboardColor)
+        .border(
+            width = 1.dp,
+            color = DashboardBorder,
+            shape = RoundedCornerShape(16.dp)
+        )
+        .padding(
+            horizontal = 12.dp,
+            vertical = 10.dp
+        )
     ) {
 
         Row(modifier = Modifier.fillMaxSize(),
