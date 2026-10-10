@@ -54,6 +54,7 @@ import com.abhinav.caisarra.presentation.screens.GuestHomeScreen
 import com.abhinav.caisarra.presentation.game.screens.GameHistoryScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameHistoryReviewViewModel
 import com.abhinav.caisarra.data.local.PendingOtpStore
+import com.abhinav.caisarra.data.repository.RemoteGameRepository
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -259,14 +260,17 @@ fun AppNavigation(authRepository: AuthRepository) {
             var isLoggingOut by remember {
                 mutableStateOf(false)
             }
-            val guestHomeViewModel =
-                screenViewModel {
-                    HomeViewModel(repository = authRepository,
-                        gameRepository = GameRepository.get(
-                                context.applicationContext
-                            )
+            val guestHomeViewModel = screenViewModel {
+                HomeViewModel(
+                    repository = authRepository,
+                    gameRepository = GameRepository.get(
+                        context.applicationContext
+                    ),
+                    remoteGameRepository = RemoteGameRepository(
+                        authRepository.createGamesService()
                     )
-                }
+                )
+            }
 
             val guestHomeState by guestHomeViewModel.state.collectAsState()
             LaunchedEffect(Unit) {
@@ -394,25 +398,25 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable(route = AppRoutes.HOME) {
-            val homeViewModel = screenViewModel {
 
-                HomeViewModel(repository = authRepository,
+            val homeViewModel = screenViewModel {
+                HomeViewModel(
+                    repository = authRepository,
                     gameRepository = GameRepository.get(
-                            context.applicationContext
+                        context.applicationContext
+                    ),
+                    remoteGameRepository = RemoteGameRepository(
+                        gamesService = authRepository.createGamesService()
                     )
                 )
             }
+
 
             HomeScreen(
                 viewModel = homeViewModel,
                 onStartChallenge = {
                     openPlayGame()
                 },
-//                onResumeGame = {
-//                    navController.navigate(
-//                        AppRoutes.resumeGame()
-//                    )
-//                },
                 onReviewGame = { gameId ->
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)
@@ -440,7 +444,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                         minutes,
                         flip,
                         undo ->
-
                     navController.navigate(
                         AppRoutes.newGame(
                             white = white,
@@ -458,7 +461,6 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
         composable(
             route = AppRoutes.GAME_HISTORY,
-
             arguments = listOf(
                 navArgument("gameId") {
                     type = NavType.StringType
@@ -466,24 +468,20 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
 
         ) { entry ->
-
             val gameId = entry.arguments
                     ?.getString("gameId")
                     .orEmpty()
-
             val historyViewModel = screenViewModel {
                     GameHistoryReviewViewModel(
                         repository = GameRepository.get(
                                 context.applicationContext
                             ),
-
                         gameId = gameId
                     )
                 }
 
             GameHistoryScreen(
                 viewModel = historyViewModel,
-
                 onBack = {
                     navController.popBackStack()
                 }
@@ -520,7 +518,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         ) { entry ->
-
             val resume = entry.arguments?.getBoolean("resume") ?: false
             val white = entry.arguments?.getString("white").orEmpty()
             val black = entry.arguments?.getString("black").orEmpty()
@@ -531,10 +528,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             val gameViewModel =
                 screenViewModel {
                     GameViewModel(
-                        gameRepository = GameRepository.get(
-                                context.applicationContext
-                            ),
-
+                        gameRepository = GameRepository.get(context.applicationContext),
                         authRepository = authRepository,
                         resumeGame = resume,
                         newWhiteName = white,
@@ -549,13 +543,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = gameViewModel,
                 onHome = {
                     scope.launch {
-
                         val destination = if (authRepository.isGuest()) {
                             AppRoutes.GUEST_HOME
                         } else {
                             AppRoutes.HOME
                         }
-
                         val popped = navController.popBackStack(
                             destination,
                             inclusive = false

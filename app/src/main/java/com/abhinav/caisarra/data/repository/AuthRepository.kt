@@ -16,6 +16,7 @@ import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 import kotlinx.coroutines.sync.withLock
 import okhttp3.Headers
 import retrofit2.HttpException
+import com.abhinav.caisarra.data.remote.api.GamesService
 
 class AuthRepository private constructor(context: Context) {
 
@@ -204,6 +205,9 @@ class AuthRepository private constructor(context: Context) {
             instance ?: synchronized(this) {
                 instance ?: AuthRepository(context.applicationContext).also { instance = it }
             }
+    }
+    fun createGamesService(): GamesService {
+        return RetrofitInstance.createGamesService(tokenManager)
     }
 
 }

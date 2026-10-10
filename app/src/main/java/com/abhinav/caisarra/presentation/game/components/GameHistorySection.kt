@@ -39,13 +39,10 @@ private val Accent = Color(0xFF10B981)
 
 private val DateFormatter =
     DateTimeFormatter
-        .ofPattern(
-            "dd MMM yyyy • HH:mm",
+        .ofPattern("dd MMM yyyy • HH:mm",
             Locale.ENGLISH
         )
-        .withZone(
-            ZoneId.systemDefault()
-        )
+        .withZone(ZoneId.systemDefault())
 
 @Composable
 fun GameHistorySection(
@@ -70,7 +67,6 @@ fun GameHistorySection(
         )
 
         if (games.isEmpty()) {
-
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -93,16 +89,11 @@ fun GameHistorySection(
                     fontSize = 12.sp
                 )
             }
-
             return
         }
 
-        games.forEach { game ->
-            GameHistoryCard(
-                game = game,
-                onReview = {
-                    onReviewGame(game.id)
-                }
+        games.forEach { game -> GameHistoryCard(game = game,
+                onReview = {onReviewGame(game.id)}
             )
         }
     }
@@ -121,79 +112,64 @@ private fun GameHistoryCard(
                 it.isNotBlank()
             }
 
-    val resultText =
-        when (game.result) {
-            "WHITE_WINS" ->
-                "WHITE WINS"
+    val resultText = when {
+        game.status == com.abhinav.caisarra.data.local.entity.RecordStatus.InProgress -> "IN PROGRESS"
+        game.result == "WHITE_WINS" -> "WHITE WINS"
+        game.result == "BLACK_WINS" -> "BLACK WINS"
+        game.result == "DRAW" -> "DRAW"
+        else -> "FINISHED"
+    }
 
-            "BLACK_WINS" ->
-                "BLACK WINS"
-
-            "DRAW" ->
-                "DRAW"
-
-            else ->
-                "COMPLETED"
-        }
-
-    val dateText =
-        game.endedAt?.let {
+    val dateText = when {
+        game.status == com.abhinav.caisarra.data.local.entity.RecordStatus.InProgress -> "In progress"
+        game.endedAt != null ->
             DateFormatter.format(
-                Instant.ofEpochMilli(it)
+                Instant.ofEpochMilli(game.endedAt)
             )
-        } ?: "Finished"
+        else -> "Finished"
+    }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                CardColor,
+            .background(CardColor,
                 RoundedCornerShape(14.dp)
             )
-            .border(
-                1.dp,
+            .border(1.dp,
                 BorderColor,
                 RoundedCornerShape(14.dp)
             )
             .padding(12.dp),
-        verticalAlignment =
-            Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
 
-        Column(
-            modifier = Modifier.weight(1f)
+        Column(modifier = Modifier.weight(1f)
         ) {
 
-            Text(
-                text = "${game.whiteName}  vs  ${game.blackName}",
+            Text(text = "${game.whiteName}vs ${game.blackName}",
                 color = White,
-                fontFamily =
-                    JetBrainsMono,
+                fontFamily = JetBrainsMono,
                 fontSize = 12.sp,
-                fontWeight =
-                    FontWeight.Bold,
+                fontWeight = FontWeight.Bold,
                 maxLines = 1
             )
             Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
-                text = dateText,
+            Text(text = dateText,
                 color = Secondary,
-                fontFamily =
-                    JetBrainsMono,
+                fontFamily = JetBrainsMono,
                 fontSize = 10.sp
             )
             Spacer(modifier = Modifier.height(3.dp))
 
             Text(
-                text = "$resultText  •  " + "$moveCount moves  •  " + "${game.timeControlMinutes ?: 0} min",
+                text = "$resultText  •  ${game.timeControlMinutes ?: 0} min",
                 color = if (resultText == "DRAW") {
                         Secondary
                     } else {
                         Accent
                     },
-                fontFamily =
-                    JetBrainsMono,
+                fontFamily = JetBrainsMono,
                 fontSize = 10.sp
             )
         }
@@ -204,12 +180,10 @@ private fun GameHistoryCard(
             shape =
                 RoundedCornerShape(10.dp)
         ) {
-
             Text(
                 text = "REVIEW",
                 color = White,
-                fontFamily =
-                    JetBrainsMono,
+                fontFamily = JetBrainsMono,
                 fontSize = 10.sp
             )
         }
