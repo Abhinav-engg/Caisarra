@@ -1,4 +1,3 @@
-
 package com.abhinav.caisarra.data.repository
 
 import com.abhinav.caisarra.data.local.entity.GameEntity
@@ -19,6 +18,13 @@ class RemoteGameRepository(
             remote.toGameEntity(username)
         }
     }
+
+    suspend fun getGame(
+        gameId: String
+    ): GameHistoryDto {
+        return gamesService.getGame(gameId)
+    }
+
     suspend fun getGameMoves(
         gameId: String
     ): List<GameMoveDto> {

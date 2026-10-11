@@ -67,6 +67,7 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onStartChallenge: () -> Unit = {},
     onPlayWithFriend: () -> Unit = {},
+    onResumeGame: () -> Unit = {},
     onReviewGame: (String) -> Unit = {},
     onLogoutSuccess: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
@@ -116,6 +117,12 @@ fun HomeScreen(
                     modifier = Modifier.width(200.dp)
                 )
                 Spacer(modifier = Modifier.height(20.dp))
+//                GeneralButton(
+//                    text = "RESUME GAME",
+//                    onClick = onResumeGame,
+//                    modifier = Modifier.width(200.dp)
+//                )
+//                Spacer(modifier = Modifier.height(20.dp))
 
                 GameHistorySection(
                     games = state.gameHistory,

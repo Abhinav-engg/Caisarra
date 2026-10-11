@@ -40,6 +40,7 @@ import android.widget.Toast
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import com.abhinav.caisarra.data.repository.AuthResult
+import com.abhinav.caisarra.data.repository.ChatRepository
 import com.abhinav.caisarra.presentation.screens.RatingScreen
 import com.abhinav.caisarra.presentation.viewmodel.RatingViewModel
 import com.abhinav.caisarra.data.local.RegistrationDataStore
@@ -47,6 +48,7 @@ import com.abhinav.caisarra.presentation.screens.HomeScreen
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameScreen
 import com.abhinav.caisarra.presentation.game.screens.GameSetupScreen
+import com.abhinav.caisarra.presentation.game.screens.TimeControlsScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupViewModel
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -75,6 +77,7 @@ object AppRoutes {
     const val NEW_PASSWORD = "new_password"
     const val HOME = "home"
     const val GAME_SETUP = "game_setup"
+    const val TIME_CONTROLS = "time_controls"
     const val GAME_HISTORY = "game_history/{gameId}"
     const val GAME = "game?resume={resume}" +
             "&white={white}" +
@@ -196,23 +199,21 @@ fun AppNavigation(authRepository: AuthRepository) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
 
-    val gameRepository = remember {
-        GameRepository.get(context.applicationContext)
+    fun openPlayGame() {
+        navController.navigate(AppRoutes.GAME_SETUP)
     }
 
-    fun openPlayGame() {
-        scope.launch {
-            val ownerId = authRepository.getUsername()
-                ?: authRepository.getGuestId()
-                ?: "local-user"
-
-            val unfinishedGame = gameRepository.getUnfinished(ownerId)
-
-            if (unfinishedGame != null) {
-                navController.navigate(AppRoutes.resumeGame())
-            } else {
-                navController.navigate(AppRoutes.GAME_SETUP)
-            }
+    fun startLocalGame(minutes: Int) {
+        navController.navigate(
+            AppRoutes.newGame(
+                white = "Player 1",
+                black = "Player 2",
+                minutes = minutes,
+                flip = false,
+                undo = true
+            )
+        ) {
+            popUpTo(AppRoutes.GAME_SETUP) { inclusive = true }
         }
     }
 
@@ -302,6 +303,17 @@ fun AppNavigation(authRepository: AuthRepository) {
                 )
 
             }
+//            val guestHomeViewModel =
+//                screenViewModel {
+//                    HomeViewModel(
+//                        repository = authRepository,
+//                        gameRepository = GameRepository.get(
+//                            context.applicationContext
+//                        )
+//                    )
+//                }
+//            )
+
 
             val guestHomeState by guestHomeViewModel.state.collectAsState()
             LaunchedEffect(Unit) {
@@ -497,36 +509,30 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(
             route = AppRoutes.GAME_SETUP
         ) {
-
-            val setupViewModel =
-                screenViewModel {
-                    GameSetupViewModel()
-                }
+            val setupViewModel = screenViewModel { GameSetupViewModel() }
+            val setupState by setupViewModel.state.collectAsState()
 
             GameSetupScreen(
-                viewModel = setupViewModel,
-                onStartGame = {
-                        white,
-                        black,
-                        minutes,
-                        flip,
-                        undo ->
-                    navController.navigate(
-                        AppRoutes.newGame(
-                            white = white,
-                            black = black,
-                            minutes = minutes,
-                            flip = flip,
-                            undo = undo
-                        )
-                    )
-                },
+                state = setupState,
+                onOpenTimeControls = { navController.navigate(AppRoutes.TIME_CONTROLS) },
+                onPlayWithFriend = { navController.navigate(AppRoutes.CREATE_INVITE) },
+                onPassAndPlay = { startLocalGame(10) },
                 onBack = {
                     navController.popBackStack()
                 }
             )
         }
 
+        composable(route = AppRoutes.TIME_CONTROLS) {
+            val setupEntry = remember { navController.getBackStackEntry(AppRoutes.GAME_SETUP) }
+            val setupViewModel = viewModel<GameSetupViewModel>(viewModelStoreOwner = setupEntry)
+            val setupState by setupViewModel.state.collectAsState()
+            TimeControlsScreen(
+                state = setupState,
+                onEvent = setupViewModel::onEvent,
+                onBack = { navController.popBackStack() }
+            )
+        }
 
         composable(
             route = AppRoutes.GAME_HISTORY,
@@ -550,12 +556,24 @@ fun AppNavigation(authRepository: AuthRepository) {
                     authRepository = authRepository,
                     remoteGameRepository = RemoteGameRepository(
                         authRepository.createGamesService()
+                        gamesService = authRepository.createGamesService()
                     ),
                     chatRepository = ChatRepository.get(
                         context.applicationContext
                     )
                 )
             }
+
+
+//            val historyViewModel = screenViewModel {
+//                GameHistoryReviewViewModel(
+//                    repository = GameRepository.get(
+//                        context.applicationContext
+//                    ),
+//
+//                    gameId = gameId
+//                )
+//            }
 
             GameHistoryScreen(
                 viewModel = historyViewModel,
@@ -606,7 +624,11 @@ fun AppNavigation(authRepository: AuthRepository) {
             val gameViewModel =
                 screenViewModel {
                     GameViewModel(
-                        gameRepository = GameRepository.get(context.applicationContext),
+
+                        gameRepository = GameRepository.get(
+                            context.applicationContext
+                        ),
+
                         authRepository = authRepository,
                         resumeGame = resume,
                         newWhiteName = white,

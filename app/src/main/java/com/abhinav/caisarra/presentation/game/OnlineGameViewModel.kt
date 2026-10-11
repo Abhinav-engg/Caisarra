@@ -6,11 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.GameSocketClient
+import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.data.remote.dto.SocketIncoming
 import com.abhinav.caisarra.data.remote.dto.SocketOutgoing
-import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.ChatRepository
+import com.abhinav.caisarra.data.repository.RemoteGameRepository
 import com.abhinav.caisarra.domain.chess.engine.ChesslibEngine
 import com.abhinav.caisarra.domain.chess.game.GameClock
 import com.abhinav.caisarra.domain.chess.model.Move
@@ -42,6 +43,9 @@ class OnlineGameViewModel(
     private val engine = ChesslibEngine()
     private val socket = GameSocketClient(application)
     private val chatRepository = ChatRepository.get(application)
+    private val gameRepository = RemoteGameRepository(
+        RetrofitInstance.createGamesService(TokenManager(application))
+    )
     private val clock = GameClock(viewModelScope, 0L, 0L) { }
 
     private val _uiState = MutableStateFlow(GameUiState())
@@ -56,7 +60,6 @@ class OnlineGameViewModel(
     private val _myUserId = MutableStateFlow<Long?>(null)
     val myUserId: StateFlow<Long?> = _myUserId.asStateFlow()
 
-    private var myUsername: String? = null
     private var myColor: PieceColor? = null
     private var pendingPromotionFrom: Square? = null
     private var finished = false
@@ -104,7 +107,10 @@ class OnlineGameViewModel(
             var attempt = 0
             while (!finished && !socket.connected.value) {
                 _uiState.update { it.copy(errorMessage = "Connection lost. Reconnecting...") }
-                delay(minOf(2000L shl attempt.coerceAtMost(2), 8000L))
+                delay(
+                    if (_waitingForOpponent.value) 2000L
+                    else minOf(2000L shl attempt.coerceAtMost(2), 8000L)
+                )
                 if (!socket.connect(gameId)) break
                 withTimeoutOrNull(5000) { socket.connected.first { it } }
                 attempt++
@@ -208,6 +214,11 @@ class OnlineGameViewModel(
             is SocketIncoming.GameStart -> _waitingForOpponent.value = false
             is SocketIncoming.GameState -> applyState(message)
             is SocketIncoming.ChatMessage -> addChat(message)
+            is SocketIncoming.Waiting -> Unit
+            is SocketIncoming.Error -> {
+                awaitingServer = false
+                _uiState.update { it.copy(errorMessage = message.message) }
+            }
         }
     }
 
@@ -224,20 +235,18 @@ class OnlineGameViewModel(
 
     private suspend fun applyState(state: SocketIncoming.GameState) {
         awaitingServer = false
-        val me = myUsername ?: AuthRepository.get(getApplication()).getUsername().also { myUsername = it }
         val colorWasUnknown = myColor == null
-        if (colorWasUnknown) {
-            myColor = when {
-                me == null -> null
-                me == state.whiteUsername -> PieceColor.WHITE
-                me == state.blackUsername -> PieceColor.BLACK
-                else -> null
-            }
-        }
+        if (colorWasUnknown) myColor = resolveColor(state)
 
         engine.loadFen(state.position)
         finished = state.status == "finished"
-        if (state.status == "active" || finished) _waitingForOpponent.value = false
+        if (
+            state.status == "active" ||
+            finished ||
+            (state.whiteUsername != null && state.blackUsername != null)
+        ) {
+            _waitingForOpponent.value = false
+        }
 
         val turn = engine.turn()
         val inCheck = engine.checkSquare() != null
@@ -261,7 +270,7 @@ class OnlineGameViewModel(
                 lastMoveTo = state.lastMove?.let { m -> squareFrom(m.drop(2).take(2)) } ?: it.lastMoveTo,
                 isWhiteInCheck = inCheck && whiteTurn,
                 isBlackInCheck = inCheck && !whiteTurn,
-                moves = state.moves?.toMoveUi() ?: it.moves,
+                moves = state.moves?.map { m -> m.move }?.toMoveUi() ?: it.moves,
                 isBoardFlipped = if (colorWasUnknown) myColor == PieceColor.BLACK else it.isBoardFlipped,
                 undoEnabled = false,
                 gameResult = if (finished) resultFrom(state.result) else null
@@ -269,9 +278,25 @@ class OnlineGameViewModel(
         }
     }
 
+    private suspend fun resolveColor(state: SocketIncoming.GameState): PieceColor? {
+        val myId = _myUserId.value ?: return null
+        var white = state.whitePlayerId
+        var black = state.blackPlayerId
+        if (white == 0L && black == 0L) {
+            val game = runCatching { gameRepository.getGame(gameId) }.getOrNull() ?: return null
+            white = game.whitePlayerId.toLong()
+            black = game.blackPlayerId.toLong()
+        }
+        return when (myId) {
+            white -> PieceColor.WHITE
+            black -> PieceColor.BLACK
+            else -> null
+        }
+    }
+
     private fun resultFrom(result: String?) = when (result) {
-        "white" -> GameResult.WHITE_WINS
-        "black" -> GameResult.BLACK_WINS
+        "white", "white_win" -> GameResult.WHITE_WINS
+        "black", "black_win" -> GameResult.BLACK_WINS
         "draw" -> GameResult.DRAW
         else -> null
     }
