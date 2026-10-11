@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
-import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.InviteRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +33,6 @@ class JoinInviteViewModel(
 ) : AndroidViewModel(application) {
 
     private val inviteRepository = InviteRepository.get(application)
-    private val authRepository = AuthRepository.get(application)
     private val tokenManager = TokenManager(application)
 
     private val _state = MutableStateFlow<JoinInviteState>(JoinInviteState.Loading)
@@ -52,10 +50,9 @@ class JoinInviteViewModel(
             _state.value = JoinInviteState.Loading
             inviteRepository.previewInvite(code)
                 .onSuccess { preview ->
-                    val loggedIn = authRepository.isLoggedIn()
-                    val myId = if (loggedIn) {
-                        tokenManager.getAccessToken()?.let { TokenExpiryChecker.getUserId(it) }
-                    } else null
+                    val accessToken = tokenManager.getAccessToken()
+                    val loggedIn = accessToken != null
+                    val myId = accessToken?.let { TokenExpiryChecker.getUserId(it) }
 
                     if (myId != null && myId == preview.inviter.id) {
                         _gameReady.send(preview.gameId)

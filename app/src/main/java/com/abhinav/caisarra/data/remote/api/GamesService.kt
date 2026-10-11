@@ -1,4 +1,3 @@
-
 package com.abhinav.caisarra.data.remote.api
 
 import com.abhinav.caisarra.data.remote.dto.GameHistoryDto
@@ -10,6 +9,11 @@ interface GamesService {
 
     @GET("api/games/history")
     suspend fun getGameHistory(): List<GameHistoryDto>
+
+    @GET("api/games/{gameID}")
+    suspend fun getGame(
+        @Path("gameID") gameId: String
+    ): GameHistoryDto
 
     @GET("api/games/{gameID}/moves")
     suspend fun getGameMoves(

@@ -40,6 +40,7 @@ import android.widget.Toast
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import com.abhinav.caisarra.data.repository.AuthResult
+import com.abhinav.caisarra.data.repository.ChatRepository
 import com.abhinav.caisarra.presentation.screens.RatingScreen
 import com.abhinav.caisarra.presentation.viewmodel.RatingViewModel
 import com.abhinav.caisarra.data.local.RegistrationDataStore
@@ -296,16 +297,20 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     remoteGameRepository = RemoteGameRepository(
                         authRepository.createGamesService()
-            val guestHomeViewModel =
-                screenViewModel {
-                    HomeViewModel(
-                        repository = authRepository,
-                        gameRepository = GameRepository.get(
-                            context.applicationContext
-                        )
                     )
                 )
             }
+//            val guestHomeViewModel =
+//                screenViewModel {
+//                    HomeViewModel(
+//                        repository = authRepository,
+//                        gameRepository = GameRepository.get(
+//                            context.applicationContext
+//                        )
+//                    )
+//                }
+//            )
+
 
             val guestHomeState by guestHomeViewModel.state.collectAsState()
             LaunchedEffect(Unit) {
@@ -514,25 +519,31 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ?.getString("gameId")
                     .orEmpty()
             val historyViewModel = screenViewModel {
-                    GameHistoryReviewViewModel(
-                        repository = GameRepository.get(
-                                context.applicationContext
-                            ),
-                        gameId = gameId
-                    )
-                }
-                ?.getString("gameId")
-                .orEmpty()
-
-            val historyViewModel = screenViewModel {
                 GameHistoryReviewViewModel(
                     repository = GameRepository.get(
                         context.applicationContext
                     ),
-
-                    gameId = gameId
+                    gameId = gameId,
+                    authRepository = authRepository,
+                    remoteGameRepository = RemoteGameRepository(
+                        gamesService = authRepository.createGamesService()
+                    ),
+                    chatRepository = ChatRepository.get(
+                        context.applicationContext
+                    )
                 )
             }
+
+
+//            val historyViewModel = screenViewModel {
+//                GameHistoryReviewViewModel(
+//                    repository = GameRepository.get(
+//                        context.applicationContext
+//                    ),
+//
+//                    gameId = gameId
+//                )
+//            }
 
             GameHistoryScreen(
                 viewModel = historyViewModel,
@@ -582,7 +593,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             val gameViewModel =
                 screenViewModel {
                     GameViewModel(
-                        gameRepository = GameRepository.get(context.applicationContext),
+
                         gameRepository = GameRepository.get(
                             context.applicationContext
                         ),
