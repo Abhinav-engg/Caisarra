@@ -1,4 +1,3 @@
-
 package com.abhinav.caisarra.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -27,10 +26,10 @@ class HomeViewModel(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
-
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
     private var localHistory: List<GameEntity> = emptyList()
     private var remoteHistory: List<GameEntity> = emptyList()
+    private var signedInUser = false
 
     init {
         loadHomeData()
@@ -40,57 +39,72 @@ class HomeViewModel(
         viewModelScope.launch {
             val username = repository.getUsername()
                 ?.takeIf { it.isNotBlank() }
+
+            signedInUser = username != null
+
             _state.update {
-                it.copy(username = username.orEmpty(),
-                    error = null
+                it.copy(
+                    username = username.orEmpty(),
+                    error = null,
+                    gameHistory = emptyList()
                 )
             }
-            val ownerId = username ?: repository.getGuestId() ?: "local-user"
 
-            launch {
+            if (signedInUser) {
+                localHistory = emptyList()
+                try {
+                    remoteHistory =
+                        remoteGameRepository.getGameHistory(
+                            username = username!!
+                        )
+
+                    publishHistory()
+                } catch (e: Exception) {
+                    remoteHistory = emptyList()
+
+                    _state.update {
+                        it.copy(
+                            error = e.message
+                                ?: "Unable to load server game history."
+                        )
+                    }
+
+                    publishHistory()
+                }
+            } else {
+                remoteHistory = emptyList()
+
+                val guestId =
+                    repository.getGuestId() ?: "local-user"
+
                 gameRepository
-                    .observeFinished(ownerId)
+                    .observeFinished(guestId)
                     .collect { games ->
                         localHistory = games
                         publishHistory()
                     }
             }
-            if (username != null) {
-                launch {
-                    try {
-                        remoteHistory = remoteGameRepository.getGameHistory(username)
-                        _state.update {
-                            it.copy(error = null)
-                        }
-                        publishHistory()
-                    } catch (e: Exception) {
-                        _state.update {
-                            it.copy(
-                                error = e.message ?: "Unable to load server game history."
-                            )
-                        }
-                        publishHistory()
-                    }
-                }
-            } else {
-                remoteHistory = emptyList()
-                publishHistory()
-            }
         }
     }
 
     private fun publishHistory() {
-        val combinedHistory = (localHistory + remoteHistory)
+        val sourceHistory =
+            if (signedInUser) remoteHistory else localHistory
+
+        val history = sourceHistory
             .distinctBy { it.id }
-            .sortedByDescending { it.endedAt ?: it.startedAt }
+            .sortedByDescending {
+                it.endedAt ?: it.startedAt
+            }
 
         _state.update {
-            it.copy(gameHistory = combinedHistory)
+            it.copy(gameHistory = history)
         }
     }
 
     fun logout(onSuccess: () -> Unit) {
         if (_state.value.isLoggingOut) return
+
         _state.update {
             it.copy(
                 isLoggingOut = true,
@@ -101,6 +115,7 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 val result = repository.logout()
+
                 _state.update {
                     it.copy(isLoggingOut = false)
                 }
@@ -109,6 +124,7 @@ class HomeViewModel(
                     is com.abhinav.caisarra.data.repository.AuthResult.Success -> {
                         onSuccess()
                     }
+
                     is com.abhinav.caisarra.data.repository.AuthResult.Error -> {
                         _state.update {
                             it.copy(error = result.message)
@@ -119,7 +135,8 @@ class HomeViewModel(
                 _state.update {
                     it.copy(
                         isLoggingOut = false,
-                        error = e.message ?: "Unable to log out."
+                        error = e.message
+                            ?: "Unable to log out."
                     )
                 }
             }

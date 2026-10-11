@@ -66,6 +66,8 @@ import com.abhinav.caisarra.presentation.invite.CreateInviteScreen
 import com.abhinav.caisarra.presentation.invite.CreateInviteViewModel
 import com.abhinav.caisarra.presentation.invite.JoinInviteScreen
 import com.abhinav.caisarra.presentation.invite.JoinInviteViewModel
+import com.abhinav.caisarra.data.repository.ChatRepository
+import com.abhinav.caisarra.presentation.screens.AllGameHistoryScreen
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -88,6 +90,7 @@ object AppRoutes {
     const val CREATE_INVITE = "create_invite"
     const val JOIN_INVITE = "play/{code}"
     const val ONLINE_GAME = "online_game/{gameId}"
+    const val ALL_GAME_HISTORY = "all_game_history"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -121,7 +124,6 @@ object AppRoutes {
     ): String {
         return "game_history/${Uri.encode(gameId)}"
     }
-
     fun onlineGame(gameId: String) = "online_game/${Uri.encode(gameId)}"
 
     fun joinInvite(code: String) = "play/${Uri.encode(code)}"
@@ -299,6 +301,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                         authRepository.createGamesService()
                     )
                 )
+
             }
 //            val guestHomeViewModel =
 //                screenViewModel {
@@ -316,7 +319,6 @@ fun AppNavigation(authRepository: AuthRepository) {
             LaunchedEffect(Unit) {
                 guestId = authRepository.getGuestId().orEmpty()
             }
-
             GuestHomeScreen(
                 guestId = guestId,
                 gameHistory = guestHomeState.gameHistory,
@@ -327,6 +329,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)
                     )
+                },
+                onViewAllHistory = {
+                    navController.navigate(AppRoutes.ALL_GAME_HISTORY)
                 },
                 onSignIn = {
                     navController.goToLogin()
@@ -340,9 +345,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     if (!isLoggingOut) {
                         scope.launch {
                             isLoggingOut = true
-
                             authRepository.logout()
-
                             navController.navigate(
                                 AppRoutes.LOGIN
                             ) {
@@ -360,6 +363,33 @@ fun AppNavigation(authRepository: AuthRepository) {
                 isLoggingOut = isLoggingOut
             )
         }
+
+        composable(route = AppRoutes.ALL_GAME_HISTORY) {
+            val allHistoryViewModel = screenViewModel {
+                HomeViewModel(
+                    repository = authRepository,
+                    gameRepository = GameRepository.get(
+                        context.applicationContext
+                    ),
+                    remoteGameRepository = RemoteGameRepository(
+                        gamesService = authRepository.createGamesService()
+                    )
+                )
+            }
+
+            AllGameHistoryScreen(
+                viewModel = allHistoryViewModel,
+                onBack = {
+                    navController.popBackStack()
+                },
+                onReviewGame = { gameId ->
+                    navController.navigate(
+                        AppRoutes.gameHistory(gameId)
+                    )
+                }
+            )
+        }
+
 
         composable(route = AppRoutes.RESET_PASSWORD) {
             ResetPasswordScreen(
@@ -459,6 +489,12 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onStartChallenge = {
                     openPlayGame()
                 },
+                onPlayWithFriend = {
+                    navController.navigate(AppRoutes.CREATE_INVITE)
+                },
+                onViewAllHistory = {
+                    navController.navigate(AppRoutes.ALL_GAME_HISTORY)
+                },
                 onReviewGame = { gameId ->
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)
@@ -505,11 +541,12 @@ fun AppNavigation(authRepository: AuthRepository) {
                     type = NavType.StringType
                 }
             )
-
         ) { entry ->
+
             val gameId = entry.arguments
-                    ?.getString("gameId")
-                    .orEmpty()
+                ?.getString("gameId")
+                .orEmpty()
+
             val historyViewModel = screenViewModel {
                 GameHistoryReviewViewModel(
                     repository = GameRepository.get(
@@ -518,6 +555,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     gameId = gameId,
                     authRepository = authRepository,
                     remoteGameRepository = RemoteGameRepository(
+                        authRepository.createGamesService()
                         gamesService = authRepository.createGamesService()
                     ),
                     chatRepository = ChatRepository.get(
@@ -544,6 +582,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         }
+
 
         composable(
             route = AppRoutes.GAME,

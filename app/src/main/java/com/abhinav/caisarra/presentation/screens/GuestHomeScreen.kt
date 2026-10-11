@@ -65,6 +65,7 @@ fun GuestHomeScreen(
     onSignIn: () -> Unit = {},
     onSignUp: () -> Unit = {},
     onLogout: () -> Unit = {},
+    onViewAllHistory: () -> Unit = {},
     isLoggingOut: Boolean = false
 ) {
     Box(
@@ -110,7 +111,9 @@ fun GuestHomeScreen(
 
                 GameHistorySection(
                     games = gameHistory,
-                    onReviewGame = onReviewGame
+                    onReviewGame = onReviewGame,
+                    showViewAll = true,
+                    onViewAll = onViewAllHistory
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
