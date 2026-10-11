@@ -66,6 +66,7 @@ fun GuestHomeScreen(
     onSignUp: () -> Unit = {},
     onLogout: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
+    onOpenProfile: () -> Unit,
     isLoggingOut: Boolean = false
 ) {
     Box(
@@ -106,9 +107,14 @@ fun GuestHomeScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 GuestPlayGameCard(onPlayGame = onPlayGame)
+                Spacer(modifier = Modifier.height(24.dp))
 
+                GeneralButton(
+                    text = "My Profile",
+                    onClick = onOpenProfile,
+                    modifier = Modifier.width(200.dp)
+                )
                 Spacer(modifier = Modifier.height(16.dp))
-
                 GameHistorySection(
                     games = gameHistory,
                     onReviewGame = onReviewGame,

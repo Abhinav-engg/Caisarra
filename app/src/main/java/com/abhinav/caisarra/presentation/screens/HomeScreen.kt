@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -71,6 +73,7 @@ fun HomeScreen(
     onReviewGame: (String) -> Unit = {},
     onLogoutSuccess: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
+    onOpenProfile: () -> Unit
 ) {
 
     val state by viewModel.state.collectAsState()
@@ -104,6 +107,12 @@ fun HomeScreen(
             ) {
                 DashboardHeader(username = state.username)
                 Spacer(modifier = Modifier.height(24.dp))
+                GeneralButton(
+                    text = "My Profile",
+                    onClick = onOpenProfile,
+                    modifier = Modifier.width(200.dp)
+                )
+                Spacer(modifier = Modifier.height(24.dp))
                 DailyRating()
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -117,12 +126,6 @@ fun HomeScreen(
                     modifier = Modifier.width(200.dp)
                 )
                 Spacer(modifier = Modifier.height(20.dp))
-//                GeneralButton(
-//                    text = "RESUME GAME",
-//                    onClick = onResumeGame,
-//                    modifier = Modifier.width(200.dp)
-//                )
-//                Spacer(modifier = Modifier.height(20.dp))
 
                 GameHistorySection(
                     games = state.gameHistory,
@@ -241,6 +244,7 @@ private fun DashboardHeader(username: String) {
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
+
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally
