@@ -26,7 +26,6 @@ class GameSocketClient(context: Context) {
     private val appContext = context.applicationContext
     private val json = Json {
         ignoreUnknownKeys = true
-        coerceInputValues = true
         classDiscriminator = "type"
     }
 
@@ -62,6 +61,7 @@ class GameSocketClient(context: Context) {
 
     fun send(message: SocketOutgoing): Boolean {
         val text = json.encodeToString(SocketOutgoing.serializer(), message)
+        Log.d("GameSocketClient", "send=$text")
         return socket?.send(text) ?: false
     }
 
@@ -104,6 +104,17 @@ class GameSocketClient(context: Context) {
                     normalized.toString()
                 )
                 _incoming.tryEmit(message)
+                if (message is SocketIncoming.GameStart) {
+                    val asState = buildJsonObject {
+                        put("type", "game_state")
+                        objectMessage.forEach { (key, value) ->
+                            if (key != "type" && key != "event") put(key, value)
+                        }
+                    }
+                    _incoming.tryEmit(
+                        json.decodeFromString(SocketIncoming.serializer(), asState.toString())
+                    )
+                }
             } catch (e: Exception) {
                 Log.e("GameSocketClient", "decode failed", e)
                 val type = runCatching {
@@ -115,14 +126,21 @@ class GameSocketClient(context: Context) {
             }
         }
 
+        override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+            Log.d("GameSocketClient", "closing code=$code reason=$reason")
+            webSocket.close(code, reason)
+            if (id == generation) _connected.value = false
+        }
+
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+            Log.d("GameSocketClient", "closed code=$code reason=$reason")
             if (id == generation) _connected.value = false
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             if (id == generation) {
                 _connected.value = false
-                Log.e("GameSocketClient", "connection failed", t)
+                Log.e("GameSocketClient", "connection failed code=${response?.code}", t)
             }
         }
     }

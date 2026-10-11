@@ -214,6 +214,7 @@ class OnlineGameViewModel(
             is SocketIncoming.GameStart -> _waitingForOpponent.value = false
             is SocketIncoming.GameState -> applyState(message)
             is SocketIncoming.ChatMessage -> addChat(message)
+            is SocketIncoming.Waiting -> Unit
             is SocketIncoming.Error -> {
                 awaitingServer = false
                 _uiState.update { it.copy(errorMessage = message.message) }

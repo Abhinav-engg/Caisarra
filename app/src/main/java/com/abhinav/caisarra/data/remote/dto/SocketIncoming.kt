@@ -41,6 +41,12 @@ sealed interface SocketIncoming {
     ) : SocketIncoming
 
     @Serializable
+    @SerialName("waiting")
+    data class Waiting(
+        @SerialName("game_id") val gameId: String = ""
+    ) : SocketIncoming
+
+    @Serializable
     @SerialName("error")
     data class Error(
         val message: String = ""
