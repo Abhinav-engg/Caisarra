@@ -33,7 +33,8 @@ class GameViewModel(
     private val newBlackName: String,
     private val newTimeMinutes: Int,
     private val newBoardFlipped: Boolean,
-    private val newUndoEnabled: Boolean
+    private val newUndoEnabled: Boolean,
+    private var isGuest: Boolean = false
 ) : ViewModel() {
     private val _state = MutableStateFlow(GameUiState())
     val state = _state.asStateFlow()
@@ -54,8 +55,12 @@ class GameViewModel(
 
     private fun loadGame() {
         viewModelScope.launch {
+            // Resolve guest status before creating or loading a game.
+            isGuest = authRepository.isGuest()
+
             ownerId = authRepository.getUsername()
-                ?: authRepository.getGuestId() ?: "local-user"
+                ?: authRepository.getGuestId()
+                        ?: "local-user"
 
             if (resumeGame) {
                 loadExistingGame()
@@ -66,18 +71,24 @@ class GameViewModel(
     }
 
     private suspend fun createNewGame() {
-        val created =
+        val created = if (isGuest) {
+            // Guest games are persisted in Room.
             gameRepository.startGame(
                 ownerId = ownerId,
-                whiteName = newWhiteName.ifBlank {
-                    "Player 1"
-                },
-                blackName = newBlackName.ifBlank {
-                    "Player 2"
-                },
+                whiteName = newWhiteName.ifBlank { "Player 1" },
+                blackName = newBlackName.ifBlank { "Player 2" },
                 timeControlMinutes = newTimeMinutes,
                 incrementSeconds = 0
             )
+        } else {
+            gameRepository.createInMemoryGame(
+                ownerId = ownerId,
+                whiteName = newWhiteName.ifBlank { "Player 1" },
+                blackName = newBlackName.ifBlank { "Player 2" },
+                timeControlMinutes = newTimeMinutes,
+                incrementSeconds = 0
+            )
+        }
 
         gameId = created.id
         initialTimeMs = created.whiteTimeMs
@@ -90,6 +101,7 @@ class GameViewModel(
             blackTime = created.blackTimeMs,
             incrementSeconds = created.incrementSeconds
         )
+
         updateUiState()
         startClock()
     }
@@ -202,18 +214,10 @@ class GameViewModel(
             is GameIntent.Promote -> {
                 promote(intent.pieceType)
             }
-            GameIntent.Undo -> {
-                undo()
-            }
-            GameIntent.Redo -> {
-                redo()
-            }
-            GameIntent.Resign -> {
-                resign()
-            }
-            GameIntent.OfferDraw -> {
-                offerDraw()
-            }
+            GameIntent.Undo -> {undo()}
+            GameIntent.Redo -> {redo()}
+            GameIntent.Resign -> {resign()}
+            GameIntent.OfferDraw -> {offerDraw()}
             GameIntent.FlipBoard -> {
                 _state.update {
                     it.copy(
@@ -472,6 +476,7 @@ class GameViewModel(
     }
 
     private fun persistAfterMove() {
+        if (!isGuest) return
         val id = gameId ?: return
         val currentGame = game ?: return
         val times = clock?.times?.value ?: return
@@ -499,6 +504,7 @@ class GameViewModel(
     private fun finishGame(
         status: GameStatus
     ) {
+        if (!isGuest) return
         val id = gameId ?: return
         val currentGame = game ?: return
         val times = clock?.times?.value ?: return
@@ -630,8 +636,10 @@ class GameViewModel(
 
     fun pauseAndSaveGame() {
         val currentGame = game ?: return
-        val id = gameId ?: return
         clock?.stop()
+        if (!isGuest) return
+
+        val id = gameId ?: return
         if (currentGame.status.isOver) return
         val times = clock?.times?.value ?: return
         viewModelScope.launch {

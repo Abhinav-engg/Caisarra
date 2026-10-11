@@ -44,19 +44,19 @@ private val DateFormatter =
         )
         .withZone(ZoneId.systemDefault())
 
+
 @Composable
 fun GameHistorySection(
     games: List<GameEntity>,
     onReviewGame: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showViewAll: Boolean = true,
+    onViewAll: () -> Unit = {}
 ) {
-
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement =
-            Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-
         Text(
             text = "GAME HISTORY",
             color = White,
@@ -81,7 +81,6 @@ fun GameHistorySection(
                     )
                     .padding(16.dp)
             ) {
-
                 Text(
                     text = "No completed games yet.",
                     color = Secondary,
@@ -89,15 +88,39 @@ fun GameHistorySection(
                     fontSize = 12.sp
                 )
             }
-            return
+        } else {
+            val visibleGames = if (showViewAll) {
+                games.take(5)
+            } else {
+                games
+            }
+
+            visibleGames.forEach { game ->
+                GameHistoryCard(
+                    game = game,
+                    onReview = { onReviewGame(game.id) }
+                )
+            }
         }
 
-        games.forEach { game -> GameHistoryCard(game = game,
-                onReview = {onReviewGame(game.id)}
-            )
+        if (showViewAll && games.isNotEmpty()) {
+            OutlinedButton(
+                onClick = onViewAll,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "VIEW ALL GAMES",
+                    color = White,
+                    fontFamily = JetBrainsMono,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
         }
     }
 }
+
 
 @Composable
 private fun GameHistoryCard(

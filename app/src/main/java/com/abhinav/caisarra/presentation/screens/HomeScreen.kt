@@ -20,8 +20,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,19 +41,15 @@ import com.abhinav.caisarra.presentation.components.ChallengeCardBackground
 import com.abhinav.caisarra.presentation.components.DailyRatingBackground
 import com.abhinav.caisarra.presentation.components.GeneralButton
 import com.abhinav.caisarra.presentation.components.HomeBackground
+import com.abhinav.caisarra.presentation.game.components.GameHistorySection
 import com.abhinav.caisarra.presentation.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import com.abhinav.caisarra.presentation.game.components.GameHistorySection
 
 private val BackgroundColor = Color(0xFF080D13)
 
@@ -67,9 +67,9 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onStartChallenge: () -> Unit = {},
     onPlayWithFriend: () -> Unit = {},
-    onResumeGame: () -> Unit = {},
     onReviewGame: (String) -> Unit = {},
-    onLogoutSuccess: () -> Unit = {}
+    onLogoutSuccess: () -> Unit = {},
+    onViewAllHistory: () -> Unit = {},
 ) {
 
     val state by viewModel.state.collectAsState()
@@ -95,7 +95,8 @@ fun HomeScreen(
                 .verticalScroll(
                     rememberScrollState()
                 )
-                .padding(top = 28.dp,
+                .padding(
+                    top = 28.dp,
                     bottom = 32.dp
                 ),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -116,16 +117,11 @@ fun HomeScreen(
                 )
                 Spacer(modifier = Modifier.height(20.dp))
 
-//                GeneralButton(
-//                    text = "RESUME GAME",
-//                    onClick = onResumeGame,
-//                    modifier = Modifier.width(200.dp)
-//                )
-//                Spacer(modifier = Modifier.height(20.dp))
-
                 GameHistorySection(
                     games = state.gameHistory,
-                    onReviewGame = onReviewGame
+                    onReviewGame = onReviewGame,
+                    showViewAll = true,
+                    onViewAll = onViewAllHistory
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 GeneralButton(text = if (state.isLoggingOut) {
@@ -347,7 +343,7 @@ private fun DailyRating() {
 
 @Composable
 private fun TodaysChallenge(
-    onStartChallenge: () -> Unit
+    onStartChallenge: () -> Unit,
 ) {
 
     Box(

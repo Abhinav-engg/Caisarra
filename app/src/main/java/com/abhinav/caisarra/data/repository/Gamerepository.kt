@@ -19,42 +19,55 @@ class GameRepository(
         timeControlMinutes: Int?,
         incrementSeconds: Int
     ): GameEntity {
-
-        val initialMs =
-            (timeControlMinutes ?: 0) * 60_000L
-
+        val initialMs = (timeControlMinutes ?: 0) * 60_000L
         val game = GameEntity(
             id = UUID.randomUUID().toString(),
-
             ownerId = ownerId,
-
             whiteName = whiteName,
             blackName = blackName,
-
             timeControlMinutes = timeControlMinutes,
-
             incrementSeconds = incrementSeconds,
-
             moves = "",
-
             moveTimes = "",
-
             whiteTimeMs = initialMs,
             blackTimeMs = initialMs,
-
             result = null,
             endReason = null,
-
             startedAt = System.currentTimeMillis(),
-
             endedAt = null,
-
             status = RecordStatus.InProgress
         )
 
         dao.upsert(game)
-
         return game
+    }
+    fun createInMemoryGame(
+        ownerId: String,
+        whiteName: String,
+        blackName: String,
+        timeControlMinutes: Int?,
+        incrementSeconds: Int
+    ): GameEntity {
+
+        val initialMs = (timeControlMinutes ?: 0) * 60_000L
+
+        return GameEntity(
+            id = UUID.randomUUID().toString(),
+            ownerId = ownerId,
+            whiteName = whiteName,
+            blackName = blackName,
+            timeControlMinutes = timeControlMinutes,
+            incrementSeconds = incrementSeconds,
+            moves = "",
+            moveTimes = "",
+            whiteTimeMs = initialMs,
+            blackTimeMs = initialMs,
+            result = null,
+            endReason = null,
+            startedAt = System.currentTimeMillis(),
+            endedAt = null,
+            status = RecordStatus.InProgress
+        )
     }
 
     suspend fun saveProgress(
@@ -64,11 +77,7 @@ class GameRepository(
         whiteTimeMs: Long,
         blackTimeMs: Long
     ) {
-
-        val game =
-            dao.getById(id)
-                ?: return
-
+        val game = dao.getById(id) ?: return
         dao.upsert(
             game.copy(
 
@@ -92,11 +101,7 @@ class GameRepository(
         endReason: String,
         canSync: Boolean
     ) {
-
-        val game =
-            dao.getById(id)
-                ?: return
-
+        val game = dao.getById(id) ?: return
         dao.upsert(
             game.copy(
 
@@ -104,12 +109,9 @@ class GameRepository(
                 moveTimes = encodeMoveTimes(moveTimes),
                 whiteTimeMs = whiteTimeMs,
                 blackTimeMs = blackTimeMs,
-
                 result = result,
-
                 endReason = endReason,
                 endedAt = System.currentTimeMillis(),
-
                 status =
                     if (canSync) {
                         RecordStatus.Pending
@@ -120,8 +122,7 @@ class GameRepository(
         )
     }
 
-    suspend fun getById(
-        id: String
+    suspend fun getById(id: String
     ): GameEntity? =
         dao.getById(id)
 
@@ -143,26 +144,17 @@ class GameRepository(
     suspend fun getPending(
         ownerId: String
     ): List<GameEntity> =
-        dao.getByStatus(
-            ownerId,
-            RecordStatus.Pending
-        )
+        dao.getByStatus(ownerId,RecordStatus.Pending)
 
     suspend fun markSynced(
         id: String
     ) =
-        dao.updateStatus(
-            id,
-            RecordStatus.Synced
-        )
+        dao.updateStatus(id,RecordStatus.Synced)
 
     suspend fun markFailed(
         id: String
     ) =
-        dao.updateStatus(
-            id,
-            RecordStatus.Failed
-        )
+        dao.updateStatus(id, RecordStatus.Failed)
 
     fun movesOf(
         game: GameEntity
@@ -191,13 +183,8 @@ class GameRepository(
                 if (values.size != 2) {
                     return@mapNotNull null
                 }
-
-                val white = values[0].toLongOrNull()
-                        ?: return@mapNotNull null
-
-                val black = values[1].toLongOrNull()
-                        ?: return@mapNotNull null
-
+                val white = values[0].toLongOrNull() ?: return@mapNotNull null
+                val black = values[1].toLongOrNull() ?: return@mapNotNull null
                 white to black
             }
     }
@@ -222,7 +209,6 @@ class GameRepository(
         fun get(
             context: Context
         ): GameRepository =
-
             instance ?: synchronized(this) {
 
                 instance ?: GameRepository(
