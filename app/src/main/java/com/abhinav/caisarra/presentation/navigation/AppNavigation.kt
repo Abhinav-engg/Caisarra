@@ -65,8 +65,13 @@ import com.abhinav.caisarra.presentation.invite.CreateInviteScreen
 import com.abhinav.caisarra.presentation.invite.CreateInviteViewModel
 import com.abhinav.caisarra.presentation.invite.JoinInviteScreen
 import com.abhinav.caisarra.presentation.invite.JoinInviteViewModel
-import com.abhinav.caisarra.data.repository.ChatRepository
 import com.abhinav.caisarra.presentation.screens.AllGameHistoryScreen
+import com.abhinav.caisarra.data.repository.ProfileRepository
+import com.abhinav.caisarra.presentation.screens.ProfileScreen
+import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -90,6 +95,7 @@ object AppRoutes {
     const val JOIN_INVITE = "play/{code}"
     const val ONLINE_GAME = "online_game/{gameId}"
     const val ALL_GAME_HISTORY = "all_game_history"
+    const val PROFILE = "profile"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -302,16 +308,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                 )
 
             }
-//            val guestHomeViewModel =
-//                screenViewModel {
-//                    HomeViewModel(
-//                        repository = authRepository,
-//                        gameRepository = GameRepository.get(
-//                            context.applicationContext
-//                        )
-//                    )
-//                }
-//            )
 
 
             val guestHomeState by guestHomeViewModel.state.collectAsState()
@@ -359,7 +355,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
 
-                isLoggingOut = isLoggingOut
+                isLoggingOut = isLoggingOut,
+                onOpenProfile = {
+                    navController.navigate(AppRoutes.PROFILE)
+                }
             )
         }
 
@@ -501,6 +500,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
                 onLogoutSuccess = {
                     navController.goToLogin()
+                },
+                onOpenProfile = {
+                    navController.navigate(AppRoutes.PROFILE)
                 }
             )
         }
@@ -522,14 +524,27 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-        composable(route = AppRoutes.TIME_CONTROLS) {
-            val setupEntry = remember { navController.getBackStackEntry(AppRoutes.GAME_SETUP) }
-            val setupViewModel = viewModel<GameSetupViewModel>(viewModelStoreOwner = setupEntry)
+
+        composable(route = AppRoutes.TIME_CONTROLS) { timeControlsEntry ->
+
+            val setupEntry = remember(timeControlsEntry) {
+                navController.getBackStackEntry(
+                    AppRoutes.GAME_SETUP
+                )
+            }
+
+            val setupViewModel: GameSetupViewModel = viewModel(
+                viewModelStoreOwner = setupEntry
+            )
+
             val setupState by setupViewModel.state.collectAsState()
+
             TimeControlsScreen(
                 state = setupState,
                 onEvent = setupViewModel::onEvent,
-                onBack = { navController.popBackStack() }
+                onBack = {
+                    navController.popBackStack()
+                }
             )
         }
 
@@ -739,5 +754,32 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onHome = { navController.goHome() }
             )
         }
+
+        composable(route = AppRoutes.PROFILE) {
+            val profileViewModel = screenViewModel {
+                ProfileViewModel(
+                    ProfileRepository(
+                        authRepository.createProfileService()
+                    )
+                )
+            }
+
+            var isGuest by remember {
+                mutableStateOf(false)
+            }
+
+            LaunchedEffect(Unit) {
+                isGuest = authRepository.isGuest()
+            }
+
+            ProfileScreen(
+                viewModel = profileViewModel,
+                isGuest = isGuest,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
     }
 }
