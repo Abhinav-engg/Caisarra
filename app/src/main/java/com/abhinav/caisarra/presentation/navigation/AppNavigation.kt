@@ -40,7 +40,6 @@ import android.widget.Toast
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import com.abhinav.caisarra.data.repository.AuthResult
-import com.abhinav.caisarra.data.repository.ChatRepository
 import com.abhinav.caisarra.presentation.screens.RatingScreen
 import com.abhinav.caisarra.presentation.viewmodel.RatingViewModel
 import com.abhinav.caisarra.data.local.RegistrationDataStore
@@ -110,14 +109,14 @@ object AppRoutes {
                 "&undo=$undo"
     }
 
-    fun resumeGame(): String {
-        return "game" + "?resume=true" +
-                "&white=" +
-                "&black=" +
-                "&minutes=10" +
-                "&flip=false" +
-                "&undo=true"
-    }
+//    fun resumeGame(): String {
+//        return "game" + "?resume=true" +
+//                "&white=" +
+//                "&black=" +
+//                "&minutes=10" +
+//                "&flip=false" +
+//                "&undo=true"
+//    }
 
     fun gameHistory(
         gameId: String
@@ -556,7 +555,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                     authRepository = authRepository,
                     remoteGameRepository = RemoteGameRepository(
                         authRepository.createGamesService()
-                        gamesService = authRepository.createGamesService()
                     ),
                     chatRepository = ChatRepository.get(
                         context.applicationContext

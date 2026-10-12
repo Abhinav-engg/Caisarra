@@ -25,4 +25,8 @@ sealed interface SocketOutgoing {
     @Serializable
     @SerialName("accept_draw")
     data object AcceptDraw : SocketOutgoing
+
+    @Serializable
+    @SerialName("decline_draw")
+    data object DeclineDraw : SocketOutgoing
 }

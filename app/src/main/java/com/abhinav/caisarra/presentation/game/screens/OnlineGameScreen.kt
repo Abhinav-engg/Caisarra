@@ -42,6 +42,8 @@ import com.abhinav.caisarra.presentation.game.components.ChatPanel
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ClockBar
 import com.abhinav.caisarra.presentation.game.components.GameBottomBar
+import com.abhinav.caisarra.presentation.game.components.GameDecision
+import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.GameResultDialog
 import com.abhinav.caisarra.presentation.game.components.MoveList
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
@@ -50,7 +52,9 @@ import com.abhinav.caisarra.presentation.game.model.GameUiState
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
+private val Danger = Color(0xFFEF4444)
 private val BannerBg = Color(0xFF3B1F24)
+private val InfoBannerBg = Color(0xFF1F2B38)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +66,7 @@ fun OnlineGameScreen(
     val waiting by viewModel.waitingForOpponent.collectAsState()
     val chat by viewModel.chat.collectAsState()
     val myUserId by viewModel.myUserId.collectAsState()
+    val drawOfferedBy by viewModel.drawOfferedBy.collectAsState()
 
     var showChat by remember { mutableStateOf(false) }
     var seenCount by remember { mutableIntStateOf(0) }
@@ -70,6 +75,9 @@ fun OnlineGameScreen(
         if (showChat) seenCount = chat.size
     }
     val unread = if (showChat) 0 else chat.drop(seenCount).count { it.senderId != myUserId }
+    val gameOngoing = state.gameResult == null
+    val incomingDrawOffer = gameOngoing && drawOfferedBy != null && drawOfferedBy != myUserId
+    val drawOfferSent = gameOngoing && drawOfferedBy != null && drawOfferedBy == myUserId
 
     if (!state.isLoading && state.board.isEmpty() && state.errorMessage != null) {
         CenteredColumn {
@@ -128,14 +136,15 @@ fun OnlineGameScreen(
                 )
 
                 state.errorMessage?.let { message ->
-                    Text(
-                        text = message,
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        modifier = Modifier
-                            .width(boardSize)
-                            .background(BannerBg, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    Banner(text = message, background = BannerBg, modifier = Modifier.width(boardSize))
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                if (drawOfferSent) {
+                    Banner(
+                        text = "Draw offer sent. Waiting for your opponent...",
+                        background = InfoBannerBg,
+                        modifier = Modifier.width(boardSize)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                 }
@@ -170,12 +179,12 @@ fun OnlineGameScreen(
             GameBottomBar(
                 canUndo = false,
                 canRedo = false,
-                optionsEnabled = state.gameResult == null,
+                optionsEnabled = gameOngoing,
                 onUndo = {},
                 onRedo = {},
-                onOfferDraw = {},
+                onOfferDraw = viewModel::offerDraw,
                 onResign = viewModel::resign,
-                showDraw = false,
+                showDraw = true,
                 showUndoRedo = false
             )
         }
@@ -198,6 +207,15 @@ fun OnlineGameScreen(
         }
     }
 
+    if (incomingDrawOffer) {
+        GameDecisionDialog(
+            decision = GameDecision.IncomingDraw,
+            opponentName = if (state.whitePlayerName == "You") state.blackPlayerName else state.whitePlayerName,
+            onConfirm = viewModel::acceptDraw,
+            onDismiss = viewModel::declineDraw
+        )
+    }
+
     state.promotionPending?.let {
         PromotionDialog(onPieceSelected = viewModel::onPromote)
     }
@@ -209,6 +227,18 @@ fun OnlineGameScreen(
             onHome = onHome
         )
     }
+}
+
+@Composable
+private fun Banner(text: String, background: Color, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        color = Color.White,
+        fontSize = 12.sp,
+        modifier = modifier
+            .background(background, RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    )
 }
 
 @Composable

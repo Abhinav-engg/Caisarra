@@ -47,6 +47,18 @@ sealed interface SocketIncoming {
     ) : SocketIncoming
 
     @Serializable
+    @SerialName("draw_offer")
+    data class DrawOffer(
+        @SerialName("offered_by") val offeredBy: Long = 0L
+    ) : SocketIncoming
+
+    @Serializable
+    @SerialName("draw_declined")
+    data class DrawDeclined(
+        @SerialName("declined_by") val declinedBy: Long = 0L
+    ) : SocketIncoming
+
+    @Serializable
     @SerialName("error")
     data class Error(
         val message: String = ""
