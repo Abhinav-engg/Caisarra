@@ -242,7 +242,7 @@ private fun TopBar(
             Text(text = "Home", color = Color.White)
         }
         Text(
-            text = "CAISARRA",
+            text = "MOSAIC",
             color = Color.White,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,

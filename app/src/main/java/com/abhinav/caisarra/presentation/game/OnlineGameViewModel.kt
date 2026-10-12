@@ -57,8 +57,14 @@ class OnlineGameViewModel(
     private val _chat = MutableStateFlow<List<ChatMessageDto>>(emptyList())
     val chat: StateFlow<List<ChatMessageDto>> = _chat.asStateFlow()
 
+    private val _chatMuted = MutableStateFlow(false)
+    val chatMuted: StateFlow<Boolean> = _chatMuted.asStateFlow()
+
     private val _myUserId = MutableStateFlow<Long?>(null)
     val myUserId: StateFlow<Long?> = _myUserId.asStateFlow()
+
+    private val _drawOfferedBy = MutableStateFlow<Long?>(null)
+    val drawOfferedBy: StateFlow<Long?> = _drawOfferedBy.asStateFlow()
 
     private var myColor: PieceColor? = null
     private var pendingPromotionFrom: Square? = null
@@ -153,18 +159,29 @@ class OnlineGameViewModel(
         }
     }
 
+    fun toggleChatMute() {
+        _chatMuted.update { !it }
+    }
+
     fun resign() {
         if (finished) return
         socket.send(SocketOutgoing.Resign)
     }
 
     fun offerDraw() {
-        if (finished) return
+        val me = _myUserId.value
+        if (finished || (me != null && _drawOfferedBy.value == me)) return
         socket.send(SocketOutgoing.OfferDraw)
     }
 
     fun acceptDraw() {
+        if (finished) return
         socket.send(SocketOutgoing.AcceptDraw)
+    }
+
+    fun declineDraw() {
+        if (finished) return
+        socket.send(SocketOutgoing.DeclineDraw)
     }
 
     fun flipBoard() {
@@ -215,6 +232,13 @@ class OnlineGameViewModel(
             is SocketIncoming.GameState -> applyState(message)
             is SocketIncoming.ChatMessage -> addChat(message)
             is SocketIncoming.Waiting -> Unit
+            is SocketIncoming.DrawOffer -> _drawOfferedBy.value = message.offeredBy
+            is SocketIncoming.DrawDeclined -> {
+                _drawOfferedBy.value = null
+                if (message.declinedBy != _myUserId.value) {
+                    _uiState.update { it.copy(errorMessage = "Draw offer declined") }
+                }
+            }
             is SocketIncoming.Error -> {
                 awaitingServer = false
                 _uiState.update { it.copy(errorMessage = message.message) }
@@ -240,6 +264,7 @@ class OnlineGameViewModel(
 
         engine.loadFen(state.position)
         finished = state.status == "finished"
+        _drawOfferedBy.value = if (finished) null else state.drawOfferedBy?.takeIf { it != 0L }
         if (
             state.status == "active" ||
             finished ||

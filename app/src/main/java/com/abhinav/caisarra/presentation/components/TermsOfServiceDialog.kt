@@ -164,7 +164,7 @@ fun TermsOfServiceDialog(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            text = "By creating an account or accessing the CAISARRA chess " +
+                            text = "By creating an account or accessing the MOSAIC chess " +
                                         "platform, you agree to be bound by these Terms of Service, " +
                                         "all applicable laws, and regulations. If you do not agree " +
                                         "with any of these terms, you are prohibited from using or " +
@@ -187,7 +187,7 @@ fun TermsOfServiceDialog(
                         Text(
                             text = "You are responsible for maintaining the confidentiality " +
                                         "of your account credentials and for all activities that " +
-                                        "occur under your account. CAISARRA reserves the right " +
+                                        "occur under your account. MOSAIC reserves the right " +
                                         "to suspend or terminate accounts that exhibit suspicious " +
                                         "activity, credential sharing, or unauthorized automated access.",
 
@@ -207,7 +207,7 @@ fun TermsOfServiceDialog(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            text = "CAISARRA maintains a zero-tolerance policy regarding " +
+                            text = "MOSAIC maintains a zero-tolerance policy regarding " +
                                         "engine assistance, external calculation tools, third-party " +
                                         "software analysis during active matches, and rating manipulation " +
                                         "(sandbagging or boosting). All games are continuously monitored " +
@@ -230,7 +230,7 @@ fun TermsOfServiceDialog(
 
                         Text(
                             text = "All content, designs, software, graphics, trademarks, " +
-                                        "and other materials provided by CAISARRA are protected " +
+                                        "and other materials provided by MOSAIC are protected " +
                                         "by applicable intellectual property and privacy laws. " +
                                         "Users may not copy, distribute, modify, or reproduce " +
                                         "protected content without authorization.",

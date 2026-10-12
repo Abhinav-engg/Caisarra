@@ -87,6 +87,7 @@ class AuthRepository private constructor(context: Context) {
                 return AuthResult.Error("Login failed. Please try again.")
             }
             tokenManager.saveUsername(username.trim())
+
             AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))

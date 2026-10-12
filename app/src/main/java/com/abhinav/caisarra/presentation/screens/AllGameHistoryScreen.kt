@@ -23,6 +23,10 @@ import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
 import com.abhinav.caisarra.presentation.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
 
 private val HistoryBackground = Color(0xFF080D13)
 private val HistoryWhite = Color(0xFFF5F5F5)
@@ -62,20 +66,51 @@ fun AllGameHistoryScreen(
         )
 
         Spacer(Modifier.height(20.dp))
-        if (state.error != null && state.gameHistory.isEmpty()) {
-            Text(
-                text = state.error ?: "Unable to load game history.",
-                color = HistoryWhite,
-                fontFamily = JetBrainsMono,
-                fontSize = 12.sp
-            )
-        } else {
-            GameHistorySection(
-                games = state.gameHistory,
-                onReviewGame = onReviewGame,
-                modifier = Modifier.fillMaxWidth(),
-                showViewAll = false
-            )
+
+        when {
+            state.isLoadingHistory -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFF10B981))
+
+                        Text(
+                            text = "Loading all game history...",
+                            color = HistoryWhite,
+                            fontFamily = JetBrainsMono,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
+            state.error != null &&
+                    state.gameHistory.isEmpty() -> {
+                Text(
+                    text = state.error
+                        ?: "Unable to load game history.",
+                    color = HistoryWhite,
+                    fontFamily = JetBrainsMono,
+                    fontSize = 12.sp
+                )
+            }
+
+            else -> {
+                GameHistorySection(
+                    games = state.gameHistory,
+                    onReviewGame = onReviewGame,
+                    modifier = Modifier.fillMaxWidth(),
+                    showViewAll = false,
+                    isLoading = false
+                )
+            }
         }
     }
 }

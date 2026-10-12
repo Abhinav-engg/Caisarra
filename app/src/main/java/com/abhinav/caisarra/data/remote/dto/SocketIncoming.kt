@@ -47,6 +47,18 @@ sealed interface SocketIncoming {
     ) : SocketIncoming
 
     @Serializable
+    @SerialName("draw_offer")
+    data class DrawOffer(
+        @SerialName("offered_by") val offeredBy: Long = 0L
+    ) : SocketIncoming
+
+    @Serializable
+    @SerialName("draw_declined")
+    data class DrawDeclined(
+        @SerialName("declined_by") val declinedBy: Long = 0L
+    ) : SocketIncoming
+
+    @Serializable
     @SerialName("error")
     data class Error(
         val message: String = ""
@@ -54,7 +66,7 @@ sealed interface SocketIncoming {
 
     @OptIn(ExperimentalSerializationApi::class)
     @Serializable
-    @SerialName("chat_message")
+    @SerialName("chat")
     data class ChatMessage(
         val id: String,
         @SerialName("game_id") val gameId: String,
