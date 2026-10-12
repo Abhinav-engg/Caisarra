@@ -66,7 +66,7 @@ sealed interface SocketIncoming {
 
     @OptIn(ExperimentalSerializationApi::class)
     @Serializable
-    @SerialName("chat_message")
+    @SerialName("chat")
     data class ChatMessage(
         val id: String,
         @SerialName("game_id") val gameId: String,

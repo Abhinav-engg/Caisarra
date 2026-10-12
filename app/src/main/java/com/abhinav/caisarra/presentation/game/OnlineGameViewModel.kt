@@ -57,6 +57,9 @@ class OnlineGameViewModel(
     private val _chat = MutableStateFlow<List<ChatMessageDto>>(emptyList())
     val chat: StateFlow<List<ChatMessageDto>> = _chat.asStateFlow()
 
+    private val _chatMuted = MutableStateFlow(false)
+    val chatMuted: StateFlow<Boolean> = _chatMuted.asStateFlow()
+
     private val _myUserId = MutableStateFlow<Long?>(null)
     val myUserId: StateFlow<Long?> = _myUserId.asStateFlow()
 
@@ -154,6 +157,10 @@ class OnlineGameViewModel(
         if (!socket.send(SocketOutgoing.Chat(message))) {
             _uiState.update { it.copy(errorMessage = "Connection lost. Message not sent.") }
         }
+    }
+
+    fun toggleChatMute() {
+        _chatMuted.update { !it }
     }
 
     fun resign() {

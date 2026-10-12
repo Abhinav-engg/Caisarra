@@ -1,26 +1,33 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,10 +40,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
 import com.abhinav.caisarra.presentation.game.components.ChatPanel
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
@@ -55,8 +66,9 @@ private val Accent = Color(0xFF10B981)
 private val Danger = Color(0xFFEF4444)
 private val BannerBg = Color(0xFF3B1F24)
 private val InfoBannerBg = Color(0xFF1F2B38)
+private val Scrim = Color(0x99000000)
+private val HandleColor = Color(0xFF4A5560)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnlineGameScreen(
     viewModel: OnlineGameViewModel,
@@ -65,16 +77,20 @@ fun OnlineGameScreen(
     val state by viewModel.uiState.collectAsState()
     val waiting by viewModel.waitingForOpponent.collectAsState()
     val chat by viewModel.chat.collectAsState()
+    val chatMuted by viewModel.chatMuted.collectAsState()
     val myUserId by viewModel.myUserId.collectAsState()
     val drawOfferedBy by viewModel.drawOfferedBy.collectAsState()
 
     var showChat by remember { mutableStateOf(false) }
     var seenCount by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(showChat, chat.size) {
-        if (showChat) seenCount = chat.size
+    LaunchedEffect(showChat, chatMuted, chat.size) {
+        if (showChat || chatMuted) seenCount = chat.size
     }
-    val unread = if (showChat) 0 else chat.drop(seenCount).count { it.senderId != myUserId }
+
+    BackHandler(enabled = showChat) { showChat = false }
+
+    val unread = if (showChat || chatMuted) 0 else chat.drop(seenCount).count { it.senderId != myUserId }
     val gameOngoing = state.gameResult == null
     val incomingDrawOffer = gameOngoing && drawOfferedBy != null && drawOfferedBy != myUserId
     val drawOfferSent = gameOngoing && drawOfferedBy != null && drawOfferedBy == myUserId
@@ -112,97 +128,94 @@ fun OnlineGameScreen(
         return
     }
 
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ScreenBg)
-            .systemBarsPadding()
-    ) {
-        val boardSize = minOf(maxWidth - 24.dp, maxHeight * 0.5f)
+    Box(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ScreenBg)
+                .systemBarsPadding()
+        ) {
+            val boardSize = minOf(maxWidth - 24.dp, maxHeight * 0.5f)
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                OnlineTopBar(
-                    unread = unread,
-                    onHome = onHome,
-                    onFlip = viewModel::flipBoard,
-                    onChat = { showChat = true }
-                )
-
-                state.errorMessage?.let { message ->
-                    Banner(text = message, background = BannerBg, modifier = Modifier.width(boardSize))
-                    Spacer(modifier = Modifier.height(6.dp))
-                }
-
-                if (drawOfferSent) {
-                    Banner(
-                        text = "Draw offer sent. Waiting for your opponent...",
-                        background = InfoBannerBg,
-                        modifier = Modifier.width(boardSize)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                }
-
-                TopClock(state = state, modifier = Modifier.width(boardSize))
-                Spacer(modifier = Modifier.height(6.dp))
-                Box(modifier = Modifier.size(boardSize)) {
-                    ChessBoard(
-                        board = state.board,
-                        selectedSquare = state.selectedSquare,
-                        legalMoves = state.legalMoves,
-                        lastMoveFrom = state.lastMoveFrom,
-                        lastMoveTo = state.lastMoveTo,
-                        isWhiteInCheck = state.isWhiteInCheck,
-                        isBlackInCheck = state.isBlackInCheck,
-                        isFlipped = state.isBoardFlipped,
-                        onSquareClick = viewModel::onSquareClick
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                BottomClock(state = state, modifier = Modifier.width(boardSize))
-
-                MoveList(
-                    moves = state.moves,
+            Column(modifier = Modifier.fillMaxSize()) {
+                Column(
                     modifier = Modifier
                         .weight(1f)
-                        .width(boardSize)
-                        .padding(vertical = 8.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    OnlineTopBar(
+                        unread = unread,
+                        muted = chatMuted,
+                        onHome = onHome,
+                        onFlip = viewModel::flipBoard,
+                        onChat = { showChat = true }
+                    )
+
+                    state.errorMessage?.let { message ->
+                        Banner(text = message, background = BannerBg, modifier = Modifier.width(boardSize))
+                        Spacer(modifier = Modifier.height(6.dp))
+                    }
+
+                    if (drawOfferSent) {
+                        Banner(
+                            text = "Draw offer sent. Waiting for your opponent...",
+                            background = InfoBannerBg,
+                            modifier = Modifier.width(boardSize)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                    }
+
+                    TopClock(state = state, modifier = Modifier.width(boardSize))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(modifier = Modifier.size(boardSize)) {
+                        ChessBoard(
+                            board = state.board,
+                            selectedSquare = state.selectedSquare,
+                            legalMoves = state.legalMoves,
+                            lastMoveFrom = state.lastMoveFrom,
+                            lastMoveTo = state.lastMoveTo,
+                            isWhiteInCheck = state.isWhiteInCheck,
+                            isBlackInCheck = state.isBlackInCheck,
+                            isFlipped = state.isBoardFlipped,
+                            onSquareClick = viewModel::onSquareClick
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    BottomClock(state = state, modifier = Modifier.width(boardSize))
+
+                    MoveList(
+                        moves = state.moves,
+                        modifier = Modifier
+                            .weight(1f)
+                            .width(boardSize)
+                            .padding(vertical = 8.dp)
+                    )
+                }
+
+                GameBottomBar(
+                    canUndo = false,
+                    canRedo = false,
+                    optionsEnabled = gameOngoing,
+                    onUndo = {},
+                    onRedo = {},
+                    onOfferDraw = viewModel::offerDraw,
+                    onResign = viewModel::resign,
+                    showDraw = true,
+                    showUndoRedo = false
                 )
             }
-
-            GameBottomBar(
-                canUndo = false,
-                canRedo = false,
-                optionsEnabled = gameOngoing,
-                onUndo = {},
-                onRedo = {},
-                onOfferDraw = viewModel::offerDraw,
-                onResign = viewModel::resign,
-                showDraw = true,
-                showUndoRedo = false
-            )
         }
-    }
 
-    if (showChat) {
-        ModalBottomSheet(
-            onDismissRequest = { showChat = false },
-            containerColor = SheetBg
-        ) {
-            ChatPanel(
-                messages = chat,
+        if (showChat) {
+            ChatOverlay(
+                chat = chat,
                 myUserId = myUserId,
+                muted = chatMuted,
+                onToggleMute = viewModel::toggleChatMute,
                 onSend = viewModel::sendChat,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.7f)
-                    .imePadding()
+                onDismiss = { showChat = false }
             )
         }
     }
@@ -230,6 +243,68 @@ fun OnlineGameScreen(
 }
 
 @Composable
+private fun ChatOverlay(
+    chat: List<ChatMessageDto>,
+    myUserId: Long?,
+    muted: Boolean,
+    onToggleMute: () -> Unit,
+    onSend: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val density = LocalDensity.current
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
+    val heightFraction by animateFloatAsState(targetValue = if (imeVisible) 1f else 0.7f, label = "chatHeight")
+    val noRipple = remember { MutableInteractionSource() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Scrim)
+            .clickable(interactionSource = noRipple, indication = null, onClick = onDismiss)
+            .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.systemBars))
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(heightFraction)
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(SheetBg)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(Unit) {
+                        var total = 0f
+                        detectVerticalDragGestures(
+                            onDragStart = { total = 0f },
+                            onVerticalDrag = { _, delta -> total += delta },
+                            onDragEnd = { if (total > 120f) onDismiss() }
+                        )
+                    }
+                    .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 32.dp, height = 4.dp)
+                        .background(HandleColor, RoundedCornerShape(2.dp))
+                )
+            }
+            ChatPanel(
+                messages = chat,
+                myUserId = myUserId,
+                muted = muted,
+                onToggleMute = onToggleMute,
+                onSend = onSend,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
 private fun Banner(text: String, background: Color, modifier: Modifier = Modifier) {
     Text(
         text = text,
@@ -244,6 +319,7 @@ private fun Banner(text: String, background: Color, modifier: Modifier = Modifie
 @Composable
 private fun OnlineTopBar(
     unread: Int,
+    muted: Boolean,
     onHome: () -> Unit,
     onFlip: () -> Unit,
     onChat: () -> Unit
@@ -257,7 +333,7 @@ private fun OnlineTopBar(
             Text(text = "Home", color = Color.White)
         }
         Text(
-            text = "CAISARRA",
+            text = "MOSAIC",
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
@@ -269,7 +345,11 @@ private fun OnlineTopBar(
             }
             TextButton(onClick = onChat) {
                 Text(
-                    text = if (unread > 0) "Chat ($unread)" else "Chat",
+                    text = when {
+                        muted -> "Chat (muted)"
+                        unread > 0 -> "Chat ($unread)"
+                        else -> "Chat"
+                    },
                     color = if (unread > 0) Accent else Color.White
                 )
             }

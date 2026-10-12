@@ -97,5 +97,6 @@ dependencies {
 
     implementation("com.github.bhlangonijr:chesslib:1.3.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")
+    implementation("androidx.compose.material:material-icons-extended")
 
 }
