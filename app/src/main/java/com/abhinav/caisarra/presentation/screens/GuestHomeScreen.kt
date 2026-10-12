@@ -60,6 +60,7 @@ private val DashboardBorder = Color(0xFF304154)
 fun GuestHomeScreen(
     guestId: String,
     gameHistory: List<GameEntity> = emptyList(),
+    isLoadingHistory: Boolean = true,
     onPlayGame: () -> Unit = {},
     onReviewGame: (String) -> Unit = {},
     onSignIn: () -> Unit = {},
@@ -119,7 +120,8 @@ fun GuestHomeScreen(
                     games = gameHistory,
                     onReviewGame = onReviewGame,
                     showViewAll = true,
-                    onViewAll = onViewAllHistory
+                    onViewAll = onViewAllHistory,
+                    isLoading = isLoadingHistory
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))

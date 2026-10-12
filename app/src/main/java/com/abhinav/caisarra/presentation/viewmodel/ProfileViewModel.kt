@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 data class ProfileUiState(
     val profile: ProfileData? = null,
-    val loading: Boolean = false,
+    val loading: Boolean = true,
     val saving: Boolean = false,
     val error: String? = null,
     val message: String? = null

@@ -304,7 +304,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     remoteGameRepository = RemoteGameRepository(
                         authRepository.createGamesService()
+                    ),
+                    profileRepository = ProfileRepository(
+                        service = authRepository.createProfileService()
                     )
+
                 )
 
             }
@@ -317,6 +321,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             GuestHomeScreen(
                 guestId = guestId,
                 gameHistory = guestHomeState.gameHistory,
+                isLoadingHistory = guestHomeState.isLoadingHistory,
                 onPlayGame = {
                     openPlayGame()
                 },
@@ -371,7 +376,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     remoteGameRepository = RemoteGameRepository(
                         gamesService = authRepository.createGamesService()
+                    ),
+                    profileRepository = ProfileRepository(
+                        service = authRepository.createProfileService()
                     )
+
                 )
             }
 
@@ -477,7 +486,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     remoteGameRepository = RemoteGameRepository(
                         gamesService = authRepository.createGamesService()
+                    ),
+                    profileRepository = ProfileRepository(
+                        service = authRepository.createProfileService()
                     )
+
                 )
             }
 

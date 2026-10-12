@@ -69,7 +69,6 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onStartChallenge: () -> Unit = {},
     onPlayWithFriend: () -> Unit = {},
-    onResumeGame: () -> Unit = {},
     onReviewGame: (String) -> Unit = {},
     onLogoutSuccess: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
@@ -131,7 +130,8 @@ fun HomeScreen(
                     games = state.gameHistory,
                     onReviewGame = onReviewGame,
                     showViewAll = true,
-                    onViewAll = onViewAllHistory
+                    onViewAll = onViewAllHistory,
+                    isLoading = state.isLoadingHistory
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 GeneralButton(text = if (state.isLoggingOut) {
