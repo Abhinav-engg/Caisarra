@@ -57,14 +57,17 @@ class OnlineGameViewModel(
     private val _chat = MutableStateFlow<List<ChatMessageDto>>(emptyList())
     val chat: StateFlow<List<ChatMessageDto>> = _chat.asStateFlow()
 
-    private val _chatMuted = MutableStateFlow(false)
-    val chatMuted: StateFlow<Boolean> = _chatMuted.asStateFlow()
-
     private val _myUserId = MutableStateFlow<Long?>(null)
     val myUserId: StateFlow<Long?> = _myUserId.asStateFlow()
 
     private val _drawOfferedBy = MutableStateFlow<Long?>(null)
     val drawOfferedBy: StateFlow<Long?> = _drawOfferedBy.asStateFlow()
+
+    private val _chatMuted = MutableStateFlow(false)
+    val chatMuted: StateFlow<Boolean> = _chatMuted.asStateFlow()
+
+    private val _opponentName = MutableStateFlow("Your opponent")
+    val opponentName: StateFlow<String> = _opponentName.asStateFlow()
 
     private var myColor: PieceColor? = null
     private var pendingPromotionFrom: Square? = null
@@ -159,10 +162,6 @@ class OnlineGameViewModel(
         }
     }
 
-    fun toggleChatMute() {
-        _chatMuted.update { !it }
-    }
-
     fun resign() {
         if (finished) return
         socket.send(SocketOutgoing.Resign)
@@ -182,6 +181,10 @@ class OnlineGameViewModel(
     fun declineDraw() {
         if (finished) return
         socket.send(SocketOutgoing.DeclineDraw)
+    }
+
+    fun toggleChatMute() {
+        _chatMuted.update { !it }
     }
 
     fun flipBoard() {
@@ -262,6 +265,22 @@ class OnlineGameViewModel(
         val colorWasUnknown = myColor == null
         if (colorWasUnknown) myColor = resolveColor(state)
 
+        val whiteName = state.whiteUsername?.takeIf { it.isNotBlank() } ?: when (myColor) {
+            PieceColor.WHITE -> "You"
+            PieceColor.BLACK -> "Opponent"
+            else -> null
+        }
+        val blackName = state.blackUsername?.takeIf { it.isNotBlank() } ?: when (myColor) {
+            PieceColor.BLACK -> "You"
+            PieceColor.WHITE -> "Opponent"
+            else -> null
+        }
+        _opponentName.value = when (myColor) {
+            PieceColor.WHITE -> blackName
+            PieceColor.BLACK -> whiteName
+            else -> null
+        } ?: _opponentName.value
+
         engine.loadFen(state.position)
         finished = state.status == "finished"
         _drawOfferedBy.value = if (finished) null else state.drawOfferedBy?.takeIf { it != 0L }
@@ -285,8 +304,8 @@ class OnlineGameViewModel(
                 isLoading = false,
                 errorMessage = null,
                 board = engine.pieces().toUiBoard(),
-                whitePlayerName = state.whiteUsername ?: it.whitePlayerName,
-                blackPlayerName = state.blackUsername ?: it.blackPlayerName,
+                whitePlayerName = whiteName ?: it.whitePlayerName,
+                blackPlayerName = blackName ?: it.blackPlayerName,
                 isWhiteTurn = whiteTurn,
                 selectedSquare = null,
                 legalMoves = emptyList(),

@@ -26,7 +26,7 @@ fun GameSetupScreen(state: GameSetupUiState, onOpenTimeControls: () -> Unit, onP
     SetupPage {
         SetupHeader("New Game", onBack)
         Spacer(Modifier.height(24.dp))
-        TimeControlRow("Rapid · ${state.minutes.toInt()} min", onOpenTimeControls)
+        TimeControlRow("${state.mode.label} · ${state.selectedControl}", onOpenTimeControls)
         Spacer(Modifier.height(20.dp))
         GeneralButton("START MATCH", {})
         Spacer(Modifier.height(28.dp))
