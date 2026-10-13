@@ -17,7 +17,6 @@ import com.caisaara.ui.theme.Feildbackground
 import com.caisaara.ui.theme.EmeraldNormal
 import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.SubtleText
-import com.caisaara.ui.theme.BorderColor
 
 @Composable
 fun PasswordRequirements(
@@ -25,91 +24,59 @@ fun PasswordRequirements(
     isPasswordFocused: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val hasLength =
-        password.length in 8..16
+    val hasLength = password.length in 8..16
 
-    val hasSpecial =
-        password.any { !it.isLetterOrDigit() && !it.isWhitespace() }
+    val hasSpecial = password.any {
+        !it.isLetterOrDigit() && !it.isWhitespace()
+    }
 
-    val hasNumber =
-        password.any { it.isDigit() }
+    val hasNumber = password.any { it.isDigit() }
+    val hasUppercase = password.any { it.isUpperCase() }
+    val hasLowercase = password.any { it.isLowerCase() }
+    val hasNoSpaces = !password.any { it.isWhitespace() }
 
-    val hasUppercase =
-        password.any { it.isUpperCase() }
-
-    val hasLowercase =
-        password.any { it.isLowerCase() }
-
-    val hasNoSpaces =
-        !password.any { it.isWhitespace() }
-
-    val allValid =
-        hasLength && hasSpecial &&
-                hasNumber && hasUppercase &&
-                hasLowercase && hasNoSpaces
-
-    if (password.isEmpty() || (!isPasswordFocused && allValid)) return
-
-    val borderColor =
-        if (allValid) BorderColor else RedNormal
+    val remainingRequirements = listOf(
+        "8–16 Characters" to hasLength,
+        "Special character" to hasSpecial,
+        "Number" to hasNumber,
+        "Uppercase letter" to hasUppercase,
+        "Lowercase letter" to hasLowercase,
+        "No spaces" to hasNoSpaces
+    ).filter { (_, fulfilled) -> !fulfilled }
+    if (password.isEmpty() || remainingRequirements.isEmpty()) {
+        return
+    }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(color = Feildbackground,
+            .background(
+                color = Feildbackground,
                 shape = RoundedCornerShape(12.dp)
             )
             .border(
                 width = 1.dp,
-                color = borderColor,
+                color = RedNormal,
                 shape = RoundedCornerShape(12.dp)
             )
-            .padding(horizontal = 12.dp,
+            .padding(
+                horizontal = 12.dp,
                 vertical = 8.dp
             )
     ) {
-
-        Text(text = "Password must include:",
+        Text(
+            text = "Password Requirements",
             color = SubtleText,
             fontSize = 12.sp
         )
 
-        Spacer(modifier = Modifier.height(2.dp))
-
-        RequirementText(text = "8–16 Characters",
-            fulfilled = hasLength
-        )
-
-        RequirementText(text = "Special character",
-            fulfilled = hasSpecial
-        )
-
-        RequirementText(text = "Number",
-            fulfilled = hasNumber
-        )
-
-        RequirementText(text = "Uppercase letter",
-            fulfilled = hasUppercase
-        )
-
-        RequirementText(text = "Lowercase letter",
-            fulfilled = hasLowercase
-        )
-
-        RequirementText(
-            text = "No spaces",
-            fulfilled = hasNoSpaces
-        )
+        Spacer(modifier = Modifier.height(4.dp))
+        remainingRequirements.forEach { (requirement, _) ->
+            Text(
+                text = "• $requirement",
+                color = RedNormal,
+                fontSize = 12.sp
+            )
+        }
     }
-}
-
-@Composable
-private fun RequirementText(
-    text: String,
-    fulfilled: Boolean
-) {
-    Text(text = "${if (fulfilled) "✓" else "•"} $text",
-        color = if (fulfilled) EmeraldNormal else RedNormal,
-        fontSize = 12.sp
-    )
 }
