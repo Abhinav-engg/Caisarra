@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 import com.abhinav.caisarra.data.remote.api.GamesService
 import com.abhinav.caisarra.data.remote.api.ProfileService
 import com.abhinav.caisarra.data.remote.api.RatingService
+import com.abhinav.caisarra.data.remote.api.MatchmakingService
 object RetrofitInstance {
     const val BASE_URL = "https://caisaara.duckdns.org"
     val json = Json { ignoreUnknownKeys = true }
@@ -65,5 +66,7 @@ object RetrofitInstance {
     fun createDrawService(tokenManager: TokenManager): DrawService =
         authenticatedRetrofit(tokenManager).create()
     fun createRatingService(tokenManager: TokenManager): RatingService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createMatchmakingService(tokenManager: TokenManager): MatchmakingService =
         authenticatedRetrofit(tokenManager).create()
 }
