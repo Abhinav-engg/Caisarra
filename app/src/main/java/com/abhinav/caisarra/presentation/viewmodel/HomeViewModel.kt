@@ -17,6 +17,8 @@ import com.abhinav.caisarra.data.repository.ProfileRepository
 
 data class HomeUiState(
     val username: String = "",
+    val rating: Int? = null,
+    val provisional: Boolean = true,
     val isLoggingOut: Boolean = false,
     val error: String? = null,
     val gameHistory: List<GameEntity> = emptyList(),
@@ -54,20 +56,23 @@ class HomeViewModel(
             val savedUsername = repository.getUsername()
                 ?.takeIf { it.isNotBlank() }
             signedInUser = savedUsername != null
-            val displayUsername = if (signedInUser) {
+            val profile = if (signedInUser) {
                 try {
-                    profileRepository.getMyProfile().username.takeIf { it.isNotBlank() } ?: "Player"
+                    profileRepository.getMyProfile()
                 } catch (e: Exception) {
-                    savedUsername
-                        ?.takeUnless { it.contains("@") }
-                        ?: "Player"
+                    null
                 }
-            } else {
-                "Guest"
-            }
+            } else null
+            val displayUsername = profile?.username?.takeIf { it.isNotBlank() }
+                ?: savedUsername?.takeUnless { it.contains("@") }
+                ?: "Guest"
 
             _state.update {
-                it.copy(username = displayUsername)
+                it.copy(
+                    username = displayUsername,
+                    rating = profile?.rating,
+                    provisional = profile?.provisional ?: true
+                )
             }
 
             if (signedInUser) {

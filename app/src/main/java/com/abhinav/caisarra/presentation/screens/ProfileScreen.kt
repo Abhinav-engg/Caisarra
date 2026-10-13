@@ -42,6 +42,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
+import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
@@ -410,23 +411,18 @@ fun ProfileScreen(
                     subtitle = "Your strength across game modes"
                 )
 
-                val modes = listOf(
-                    "bullet" to "Bullet",
-                    "blitz" to "Blitz",
-                    "rapid" to "Rapid",
-                    "daily" to "Daily"
-                )
+                val modes = GameMode.entries
 
                 modes.chunked(2).forEach { rowModes ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        rowModes.forEach { (key, title) ->
-                            val rating = profile.ratings?.get(key)
+                        rowModes.forEach { mode ->
+                            val rating = profile.ratings?.get(mode.ratingKey)
 
                             RatingModeCard(
-                                title = title,
+                                title = mode.label,
                                 rating = rating?.rating,
                                 provisional = rating?.provisional ?: false,
                                 modifier = Modifier.weight(1f)

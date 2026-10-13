@@ -29,9 +29,9 @@ fun CustomClockCard(minutes: Float, bonus: Float, onMinutesChange: (Float) -> Un
             Text("Initial Time", color = SetupColors.Secondary, fontSize = 14.sp)
             Text("${minutes.toInt()} min", color = SetupColors.Accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
-        Slider(minutes, onMinutesChange, valueRange = 1f..120f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = SetupColors.Accent, inactiveTrackColor = Color(0xFF253241)))
+        Slider(minutes, onMinutesChange, valueRange = 1f..60f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = SetupColors.Accent, inactiveTrackColor = Color(0xFF253241)))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            listOf("0", "15m", "60m", "120m").forEach { Text(it, color = Color(0xFF71839B), fontSize = 12.sp) }
+            listOf("1m", "15m", "30m", "60m").forEach { Text(it, color = Color(0xFF71839B), fontSize = 12.sp) }
         }
         Spacer(Modifier.height(24.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

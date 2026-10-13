@@ -190,8 +190,7 @@ class AuthRepository private constructor(context: Context) {
         if (accessToken != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(accessToken)) {
             return true
         }
-        refreshAccessToken()
-        return tokenManager.getRefreshToken() != null
+        return refreshAccessToken() is AuthResult.Success
     }
 
     suspend fun isGuest(): Boolean = tokenManager.getGuestId() != null

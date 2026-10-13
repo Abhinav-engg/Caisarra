@@ -65,6 +65,7 @@ import com.abhinav.caisarra.presentation.invite.CreateInviteScreen
 import com.abhinav.caisarra.presentation.invite.CreateInviteViewModel
 import com.abhinav.caisarra.presentation.invite.JoinInviteScreen
 import com.abhinav.caisarra.presentation.invite.JoinInviteViewModel
+import com.abhinav.caisarra.presentation.invite.PlayWithFriendScreen
 import com.abhinav.caisarra.presentation.screens.AllGameHistoryScreen
 import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.presentation.screens.ProfileScreen
@@ -72,6 +73,9 @@ import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import com.abhinav.caisarra.data.repository.ChatRepository
 import com.abhinav.caisarra.presentation.game.screens.MatchmakingScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.MatchmakingViewModel
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.abhinav.caisarra.presentation.game.screens.BotSetupScreen
 
 
 object AppRoutes {
@@ -93,12 +97,15 @@ object AppRoutes {
     const val GUEST_HOME = "guest_options"
     const val RATING = "rating"
     const val CREATE_INVITE = "create_invite"
+    const val PLAY_WITH_FRIEND = "play_with_friend"
     const val JOIN_INVITE = "play/{code}"
     const val ONLINE_GAME = "online_game/{gameId}"
     const val ALL_GAME_HISTORY = "all_game_history"
     const val PROFILE = "profile"
     const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
 
+
+    const val BOT_SETUP = "bot_setup"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -504,6 +511,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onStartChallenge = {openPlayGame()},
                 onPlayWithFriend = {navController.navigate(AppRoutes.CREATE_INVITE)},
                 onViewAllHistory = {navController.navigate(AppRoutes.ALL_GAME_HISTORY)},
+              
+           
+               
                 onReviewGame = { gameId ->
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)
@@ -563,7 +573,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
 
-                onPlayWithFriend = { navController.navigate(AppRoutes.CREATE_INVITE) },
+               
+                onPlayWithFriend = { navController.navigate(AppRoutes.PLAY_WITH_FRIEND) },
+                onPlayBots = { navController.navigate(AppRoutes.BOT_SETUP) },
                 onPassAndPlay = { startLocalGame(10) },
                 onBack = {
                     navController.popBackStack()
@@ -635,6 +647,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             TimeControlsScreen(
                 state = setupState,
                 onEvent = setupViewModel::onEvent,
+                onConfirm = { navController.popBackStack() },
                 onBack = {
                     navController.popBackStack()
                 }
@@ -783,6 +796,13 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
+        composable(route = AppRoutes.PLAY_WITH_FRIEND) {
+            PlayWithFriendScreen(
+                onCreateMatchLink = { navController.navigate(AppRoutes.CREATE_INVITE) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
         composable(route = AppRoutes.CREATE_INVITE) {
             val createViewModel = screenViewModel {
                 CreateInviteViewModel(context as Application)
@@ -790,7 +810,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             CreateInviteScreen(
                 viewModel = createViewModel,
-                onGameReady = { gameId ->
+                onEnterWaitingBoard = { gameId ->
                     navController.navigate(AppRoutes.onlineGame(gameId)) {
                         popUpTo(AppRoutes.CREATE_INVITE) { inclusive = true }
                     }
@@ -871,6 +891,13 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onBack = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+        composable(route = AppRoutes.BOT_SETUP) {
+            BotSetupScreen(
+                onStart = {},
+                onBack = { navController.popBackStack() }
             )
         }
 
