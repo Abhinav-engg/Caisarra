@@ -18,6 +18,7 @@ import okhttp3.Headers
 import retrofit2.HttpException
 import com.abhinav.caisarra.data.remote.api.GamesService
 import com.abhinav.caisarra.data.remote.api.ProfileService
+import com.abhinav.caisarra.data.remote.api.RatingService
 
 class AuthRepository private constructor(context: Context) {
 
@@ -213,6 +214,9 @@ class AuthRepository private constructor(context: Context) {
     }
     fun createProfileService(): ProfileService {
         return RetrofitInstance.createProfileService(tokenManager)
+    }
+    fun createRatingService(): RatingService {
+        return RetrofitInstance.createRatingService(tokenManager)
     }
 
 }
