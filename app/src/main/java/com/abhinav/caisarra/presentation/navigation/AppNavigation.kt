@@ -73,6 +73,7 @@ import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.abhinav.caisarra.data.repository.ChatRepository
+import com.abhinav.caisarra.presentation.game.screens.BotSetupScreen
 
 
 object AppRoutes {
@@ -99,6 +100,8 @@ object AppRoutes {
     const val ONLINE_GAME = "online_game/{gameId}"
     const val ALL_GAME_HISTORY = "all_game_history"
     const val PROFILE = "profile"
+
+    const val BOT_SETUP = "bot_setup"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -533,6 +536,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 state = setupState,
                 onOpenTimeControls = { navController.navigate(AppRoutes.TIME_CONTROLS) },
                 onPlayWithFriend = { navController.navigate(AppRoutes.PLAY_WITH_FRIEND) },
+                onPlayBots = { navController.navigate(AppRoutes.BOT_SETUP) },
                 onPassAndPlay = { startLocalGame(10) },
                 onBack = {
                     navController.popBackStack()
@@ -802,6 +806,13 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onBack = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+        composable(route = AppRoutes.BOT_SETUP) {
+            BotSetupScreen(
+                onStart = {},
+                onBack = { navController.popBackStack() }
             )
         }
 

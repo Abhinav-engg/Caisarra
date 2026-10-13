@@ -22,7 +22,7 @@ import com.abhinav.caisarra.presentation.game.components.setup.TimeControlRow
 import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupUiState
 
 @Composable
-fun GameSetupScreen(state: GameSetupUiState, onOpenTimeControls: () -> Unit, onPlayWithFriend: () -> Unit, onPassAndPlay: () -> Unit, onBack: () -> Unit) {
+fun GameSetupScreen(state: GameSetupUiState, onOpenTimeControls: () -> Unit, onPlayWithFriend: () -> Unit, onPlayBots: () -> Unit, onPassAndPlay: () -> Unit, onBack: () -> Unit) {
     SetupPage {
         SetupHeader("New Game", onBack)
         Spacer(Modifier.height(24.dp))
@@ -36,7 +36,7 @@ fun GameSetupScreen(state: GameSetupUiState, onOpenTimeControls: () -> Unit, onP
         Spacer(Modifier.height(12.dp))
         GameModeRow("Play a Friend", Icons.Default.Group, onPlayWithFriend)
         Spacer(Modifier.height(12.dp))
-        GameModeRow("Play Bots", Icons.Default.Computer)
+        GameModeRow("Play Bots", Icons.Default.Computer, onPlayBots)
         Spacer(Modifier.height(12.dp))
         GameModeRow("Pass and Play", Icons.Default.PhoneAndroid, onPassAndPlay)
     }
