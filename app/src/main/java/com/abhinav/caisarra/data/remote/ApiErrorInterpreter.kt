@@ -21,8 +21,6 @@ object ApiErrorInterpreter {
                 } catch (e: Exception) {
                 }
             }
-
-
             val code = error.code()
             if (code == 400) return "That request wasn't valid. Please check your input."
             if (code == 401) return "Incorrect username or password."
@@ -31,8 +29,6 @@ object ApiErrorInterpreter {
             if (code == 500) return "Server error. Please try again in a moment."
             return "Something went wrong (code $code)."
         }
-
-
         return "Something went wrong. Please try again."
     }
 }

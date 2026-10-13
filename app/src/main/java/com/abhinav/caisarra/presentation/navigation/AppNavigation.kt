@@ -70,9 +70,11 @@ import com.abhinav.caisarra.presentation.screens.AllGameHistoryScreen
 import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.presentation.screens.ProfileScreen
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
+import com.abhinav.caisarra.data.repository.ChatRepository
+import com.abhinav.caisarra.presentation.game.screens.MatchmakingScreen
+import com.abhinav.caisarra.presentation.game.viewmodel.MatchmakingViewModel
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.abhinav.caisarra.data.repository.ChatRepository
 import com.abhinav.caisarra.presentation.game.screens.BotSetupScreen
 
 
@@ -100,6 +102,8 @@ object AppRoutes {
     const val ONLINE_GAME = "online_game/{gameId}"
     const val ALL_GAME_HISTORY = "all_game_history"
     const val PROFILE = "profile"
+    const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
+
 
     const val BOT_SETUP = "bot_setup"
 
@@ -138,6 +142,8 @@ object AppRoutes {
     fun onlineGame(gameId: String) = "online_game/${Uri.encode(gameId)}"
 
     fun joinInvite(code: String) = "play/${Uri.encode(code)}"
+    fun matchmaking(minutes: Int, incrementSeconds: Int) = "matchmaking/$minutes/$incrementSeconds"
+
 }
 
 @Composable
@@ -500,18 +506,14 @@ fun AppNavigation(authRepository: AuthRepository) {
                 )
             }
 
-
             HomeScreen(
                 viewModel = homeViewModel,
-                onStartChallenge = {
-                    openPlayGame()
-                },
-                onPlayWithFriend = {
-                    navController.navigate(AppRoutes.PLAY_WITH_FRIEND)
-                },
-                onViewAllHistory = {
-                    navController.navigate(AppRoutes.ALL_GAME_HISTORY)
-                },
+                onStartChallenge = {openPlayGame()},
+                onPlayWithFriend = {navController.navigate(AppRoutes.CREATE_INVITE)},
+                onViewAllHistory = {navController.navigate(AppRoutes.ALL_GAME_HISTORY)},
+              
+           
+               
                 onReviewGame = { gameId ->
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)
@@ -526,15 +528,52 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-        composable(
-            route = AppRoutes.GAME_SETUP
+        composable(route = AppRoutes.GAME_SETUP
         ) {
             val setupViewModel = screenViewModel { GameSetupViewModel() }
             val setupState by setupViewModel.state.collectAsState()
-
             GameSetupScreen(
                 state = setupState,
                 onOpenTimeControls = { navController.navigate(AppRoutes.TIME_CONTROLS) },
+                onStartMatch = {
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()
+                        ) {
+                            Toast.makeText(context,
+                                "Online matchmaking requires a registered account.",
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            navController.navigate(AppRoutes.LOGIN)
+                            return@launch
+                        }
+                        val minutes = setupState.minutes.toInt()
+                        val increment = setupState.bonusSeconds.toInt()
+                        val allowedControls = setOf(
+                            1 to 0, 1 to 1, 2 to 1,
+                            3 to 0, 3 to 2, 5 to 0,
+                            5 to 2, 5 to 5, 10 to 0,
+                            10 to 5, 15 to 10, 20 to 0,
+                            30 to 0, 60 to 0,
+                            1440 to 0, 2880 to 0,
+                            4320 to 0, 7200 to 0,
+                            10080 to 0, 20160 to 0
+                        )
+                        if ((minutes to increment) !in allowedControls) {
+                            Toast.makeText(
+                                context,
+                                "Please select a supported time control.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            return@launch
+                        }
+                        navController.navigate(
+                            AppRoutes.matchmaking(minutes, increment)
+                        )
+                    }
+                },
+
+               
                 onPlayWithFriend = { navController.navigate(AppRoutes.PLAY_WITH_FRIEND) },
                 onPlayBots = { navController.navigate(AppRoutes.BOT_SETUP) },
                 onPassAndPlay = { startLocalGame(10) },
@@ -543,6 +582,52 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         }
+
+        composable(
+            route = AppRoutes.MATCHMAKING,
+            arguments = listOf(
+                navArgument("minutes") {
+                    type = NavType.IntType
+                },
+                navArgument("incrementSeconds") {
+                    type = NavType.IntType
+                }
+            )
+        ) { entry ->
+
+            val minutes = entry.arguments?.getInt("minutes") ?: 10
+            val increment = entry.arguments?.getInt("incrementSeconds") ?: 0
+
+            val matchmakingViewModel = screenViewModel {
+                MatchmakingViewModel(
+                    authRepository.createMatchmakingService()
+                )
+            }
+
+            LaunchedEffect(matchmakingViewModel, minutes, increment) {
+                matchmakingViewModel.startMatch(
+                    minutes = minutes,
+                    incrementSeconds = increment,
+                    rated = true
+                )
+            }
+
+            MatchmakingScreen(
+                viewModel = matchmakingViewModel,
+                minutes = minutes,
+                incrementSeconds = increment,
+                onMatched = { gameId ->
+                    navController.navigate(AppRoutes.onlineGame(gameId)) {
+                        popUpTo(AppRoutes.MATCHMAKING) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                },
+                onBack = {navController.popBackStack()}
+            )
+        }
+
 
 
         composable(route = AppRoutes.TIME_CONTROLS) { timeControlsEntry ->
