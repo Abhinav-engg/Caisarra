@@ -63,7 +63,6 @@ import com.abhinav.caisarra.presentation.game.model.GameUiState
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
-private val Danger = Color(0xFFEF4444)
 private val BannerBg = Color(0xFF3B1F24)
 private val InfoBannerBg = Color(0xFF1F2B38)
 private val Scrim = Color(0x99000000)
@@ -80,6 +79,7 @@ fun OnlineGameScreen(
     val chatMuted by viewModel.chatMuted.collectAsState()
     val myUserId by viewModel.myUserId.collectAsState()
     val drawOfferedBy by viewModel.drawOfferedBy.collectAsState()
+    val opponentName by viewModel.opponentName.collectAsState()
 
     var showChat by remember { mutableStateOf(false) }
     var seenCount by remember { mutableIntStateOf(0) }
@@ -105,7 +105,6 @@ fun OnlineGameScreen(
         }
         return
     }
-
     if (waiting) {
         CenteredColumn {
             CircularProgressIndicator(color = Accent)
@@ -184,6 +183,25 @@ fun OnlineGameScreen(
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     BottomClock(state = state, modifier = Modifier.width(boardSize))
+                    if (state.isDailyMode) {
+                        state.lastMoveAccepted?.let { accepted ->
+                            Text(
+                                text = if (accepted) {
+                                    "✓ Move accepted"
+                                } else {
+                                    "✕ Move not accepted"
+                                },
+                                color = if (accepted) {
+                                    Color(0xFF10B981)
+                                } else {
+                                    Color(0xFFEF4444)
+                                },
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                    }
 
                     MoveList(
                         moves = state.moves,
@@ -223,7 +241,7 @@ fun OnlineGameScreen(
     if (incomingDrawOffer) {
         GameDecisionDialog(
             decision = GameDecision.IncomingDraw,
-            opponentName = if (state.whitePlayerName == "You") state.blackPlayerName else state.whitePlayerName,
+            opponentName = opponentName,
             onConfirm = viewModel::acceptDraw,
             onDismiss = viewModel::declineDraw
         )
@@ -232,7 +250,6 @@ fun OnlineGameScreen(
     state.promotionPending?.let {
         PromotionDialog(onPieceSelected = viewModel::onPromote)
     }
-
     state.gameResult?.let { result ->
         GameResultDialog(
             result = result,
@@ -364,6 +381,7 @@ private fun TopClock(state: GameUiState, modifier: Modifier = Modifier) {
             playerName = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
+            isDailyMode = state.isDailyMode,
             modifier = modifier
         )
     } else {
@@ -371,6 +389,7 @@ private fun TopClock(state: GameUiState, modifier: Modifier = Modifier) {
             playerName = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
+            isDailyMode = state.isDailyMode,
             modifier = modifier
         )
     }
@@ -383,6 +402,7 @@ private fun BottomClock(state: GameUiState, modifier: Modifier = Modifier) {
             playerName = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
+            isDailyMode = state.isDailyMode,
             modifier = modifier
         )
     } else {
@@ -390,7 +410,8 @@ private fun BottomClock(state: GameUiState, modifier: Modifier = Modifier) {
             playerName = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
-            modifier = modifier
+            isDailyMode = state.isDailyMode,
+                                                                                                                                                                                                                                                                                                                                                                                  modifier = modifier
         )
     }
 }

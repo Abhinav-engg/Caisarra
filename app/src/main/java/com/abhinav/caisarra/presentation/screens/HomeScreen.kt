@@ -112,18 +112,21 @@ fun HomeScreen(
                     modifier = Modifier.width(200.dp)
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                DailyRating()
+                RatingCard(
+                    rating = state.rating,
+                    provisional = state.provisional
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 TodaysChallenge(onStartChallenge = onStartChallenge)
                 Spacer(modifier = Modifier.height(12.dp))
 
-//                GeneralButton(
-//                    text = "Play with a friend",
-//                    onClick = onPlayWithFriend,
-//                    modifier = Modifier.width(200.dp)
-//                )
+                GeneralButton(
+                    text = "Play with a friend",
+                    onClick = onPlayWithFriend,
+                    modifier = Modifier.width(200.dp)
+                )
                 Spacer(modifier = Modifier.height(20.dp))
 
                 GameHistorySection(
@@ -278,7 +281,7 @@ private fun DashboardHeader(username: String) {
 
 
 @Composable
-private fun DailyRating() {
+private fun RatingCard(rating: Int?, provisional: Boolean) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,7 +304,7 @@ private fun DailyRating() {
         ) {
 
             androidx.compose.material3.Text(
-                text = "DAILY RATING",
+                text = "CURRENT RATING",
                 color = White,
                 fontFamily = JetBrainsMono,
                 fontSize = 13.sp,
@@ -310,7 +313,7 @@ private fun DailyRating() {
             )
 
             androidx.compose.material3.Text(
-                text = "1350",
+                text = rating?.toString() ?: "—",
                 color = White,
                 fontFamily = JetBrainsMono,
                 fontSize = 48.sp,
@@ -319,8 +322,8 @@ private fun DailyRating() {
             )
 
             androidx.compose.material3.Text(
-                text = "+16",
-                color = Green,
+                text = if (provisional) "PROVISIONAL" else "ESTABLISHED",
+                color = if (provisional) Green else SecondaryText,
                 fontFamily = JetBrainsMono,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,

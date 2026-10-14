@@ -40,6 +40,7 @@ class OnlineGameViewModel(
 ) : AndroidViewModel(application) {
 
     private var awaitingServer = false
+
     private val engine = ChesslibEngine()
     private val socket = GameSocketClient(application)
     private val chatRepository = ChatRepository.get(application)
@@ -47,25 +48,21 @@ class OnlineGameViewModel(
         RetrofitInstance.createGamesService(TokenManager(application))
     )
     private val clock = GameClock(viewModelScope, 0L, 0L) { }
-
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
-
     private val _waitingForOpponent = MutableStateFlow(true)
     val waitingForOpponent: StateFlow<Boolean> = _waitingForOpponent.asStateFlow()
-
     private val _chat = MutableStateFlow<List<ChatMessageDto>>(emptyList())
     val chat: StateFlow<List<ChatMessageDto>> = _chat.asStateFlow()
 
-    private val _chatMuted = MutableStateFlow(false)
-    val chatMuted: StateFlow<Boolean> = _chatMuted.asStateFlow()
-
     private val _myUserId = MutableStateFlow<Long?>(null)
     val myUserId: StateFlow<Long?> = _myUserId.asStateFlow()
-
     private val _drawOfferedBy = MutableStateFlow<Long?>(null)
     val drawOfferedBy: StateFlow<Long?> = _drawOfferedBy.asStateFlow()
-
+    private val _chatMuted = MutableStateFlow(false)
+    val chatMuted: StateFlow<Boolean> = _chatMuted.asStateFlow()
+    private val _opponentName = MutableStateFlow("Your opponent")
+    val opponentName: StateFlow<String> = _opponentName.asStateFlow()
     private var myColor: PieceColor? = null
     private var pendingPromotionFrom: Square? = null
     private var finished = false
@@ -77,7 +74,16 @@ class OnlineGameViewModel(
         }
         viewModelScope.launch {
             clock.times.collect { (white, black) ->
-                _uiState.update { it.copy(whiteTimeMillis = white, blackTimeMillis = black) }
+                _uiState.update { state ->
+                    if (state.isDailyMode) {
+                        state
+                    } else {
+                        state.copy(
+                            whiteTimeMillis = white,
+                            blackTimeMillis = black
+                        )
+                    }
+                }
             }
         }
         viewModelScope.launch {
@@ -128,19 +134,37 @@ class OnlineGameViewModel(
     fun onSquareClick(square: Square) {
         val state = _uiState.value
         val color = myColor ?: return
+
         if (finished || awaitingServer || state.promotionPending != null) return
         if (state.isWhiteTurn != (color == PieceColor.WHITE)) return
 
         val selected = state.selectedSquare
+
         when {
-            selected != null && square in state.legalMoves -> move(selected, square)
-            state.board[square]?.color == color -> _uiState.update {
-                it.copy(
-                    selectedSquare = square,
-                    legalMoves = engine.legalMovesFrom(square.toDomain()).map { m -> m.to.toUi() }.distinct()
-                )
+            selected != null && square in state.legalMoves -> {
+                move(selected, square)
             }
-            else -> _uiState.update { it.copy(selectedSquare = null, legalMoves = emptyList()) }
+
+            state.board[square]?.color == color -> {
+                _uiState.update {
+                    it.copy(
+                        selectedSquare = square,
+                        legalMoves = engine.legalMovesFrom(square.toDomain())
+                            .map { legalMove -> legalMove.to.toUi() }
+                            .distinct()
+                    )
+                }
+            }
+
+            else -> {
+                _uiState.update {
+                    it.copy(
+                        selectedSquare = null,
+                        legalMoves = emptyList(),
+                        lastMoveAccepted = if (it.isDailyMode) false else null
+                    )
+                }
+            }
         }
     }
 
@@ -157,10 +181,6 @@ class OnlineGameViewModel(
         if (!socket.send(SocketOutgoing.Chat(message))) {
             _uiState.update { it.copy(errorMessage = "Connection lost. Message not sent.") }
         }
-    }
-
-    fun toggleChatMute() {
-        _chatMuted.update { !it }
     }
 
     fun resign() {
@@ -184,6 +204,10 @@ class OnlineGameViewModel(
         socket.send(SocketOutgoing.DeclineDraw)
     }
 
+    fun toggleChatMute() {
+        _chatMuted.update { !it }
+    }
+
     fun flipBoard() {
         _uiState.update { it.copy(isBoardFlipped = !it.isBoardFlipped) }
     }
@@ -201,30 +225,80 @@ class OnlineGameViewModel(
         }
     }
 
-    private fun send(from: Square, to: Square, promotion: PieceType?) {
-        val move = Move(from.toDomain(), to.toDomain(), promotion?.toDomain())
-        val legal = engine.legalMovesFrom(move.from).any { it.to == move.to && it.promotion == move.promotion }
+    private fun send(
+        from: Square,
+        to: Square,
+        promotion: PieceType?
+    ) {
+        val move = Move(
+            from.toDomain(),
+            to.toDomain(),
+            promotion?.toDomain()
+        )
+
+        val legal = engine.legalMovesFrom(move.from).any {
+            it.to == move.to && it.promotion == move.promotion
+        }
+
         if (!legal) {
-            _uiState.update { it.copy(selectedSquare = null, legalMoves = emptyList(), promotionPending = null) }
+            _uiState.update {
+                it.copy(
+                    selectedSquare = null,
+                    legalMoves = emptyList(),
+                    promotionPending = null,
+                    lastMoveAccepted = if (it.isDailyMode) false else null
+                )
+            }
             return
         }
+
         val sent = socket.send(SocketOutgoing.Move(move.uci))
         awaitingServer = sent
+
         if (sent) {
             viewModelScope.launch {
                 delay(3000)
-                awaitingServer = false
+                if (awaitingServer) {
+                    awaitingServer = false
+                    _uiState.update {
+                        it.copy(
+                            lastMoveAccepted = if (it.isDailyMode) {
+                                false
+                            } else {
+                                null
+                            },
+                            errorMessage = if (it.isDailyMode) {
+                                "Move confirmation timed out. Check connection."
+                            } else {
+                                it.errorMessage
+                            }
+                        )
+                    }
+                }
             }
         }
+
         _uiState.update {
             it.copy(
                 selectedSquare = null,
                 legalMoves = emptyList(),
                 promotionPending = null,
-                errorMessage = if (sent) it.errorMessage else "Connection lost. Move not sent."
+                lastMoveAccepted = if (it.isDailyMode) {
+                    if (sent) null else false
+                } else {
+                    null
+                },
+                errorMessage = if (sent) {
+                    it.errorMessage
+                } else {
+                    "Connection lost. Move not sent."
+                }
             )
         }
     }
+
+
+
 
     private suspend fun handle(message: SocketIncoming) {
         when (message) {
@@ -258,13 +332,41 @@ class OnlineGameViewModel(
     }
 
     private suspend fun applyState(state: SocketIncoming.GameState) {
+        val moveWasAwaitingServer = awaitingServer
         awaitingServer = false
+
         val colorWasUnknown = myColor == null
         if (colorWasUnknown) myColor = resolveColor(state)
 
+        val whiteName = state.whiteUsername?.takeIf { it.isNotBlank() }
+            ?: when (myColor) {
+                PieceColor.WHITE -> "You"
+                PieceColor.BLACK -> "Opponent"
+                else -> null
+            }
+
+        val blackName = state.blackUsername?.takeIf { it.isNotBlank() }
+            ?: when (myColor) {
+                PieceColor.BLACK -> "You"
+                PieceColor.WHITE -> "Opponent"
+                else -> null
+            }
+
+        _opponentName.value = when (myColor) {
+            PieceColor.WHITE -> blackName
+            PieceColor.BLACK -> whiteName
+            else -> null
+        } ?: _opponentName.value
+
         engine.loadFen(state.position)
         finished = state.status == "finished"
-        _drawOfferedBy.value = if (finished) null else state.drawOfferedBy?.takeIf { it != 0L }
+
+        _drawOfferedBy.value = if (finished) {
+            null
+        } else {
+            state.drawOfferedBy?.takeIf { it != 0L }
+        }
+
         if (
             state.status == "active" ||
             finished ||
@@ -277,28 +379,82 @@ class OnlineGameViewModel(
         val inCheck = engine.checkSquare() != null
         val whiteTurn = turn == DomainColor.White
 
-        clock.restore(state.whiteTimeMs, state.blackTimeMs)
-        if (finished) clock.stop() else clock.start(turn)
+        val dailyMode = state.timeControlMinutes >= 1440
 
-        _uiState.update {
-            it.copy(
+        val daysPerMove = if (dailyMode) {
+            (state.timeControlMinutes + 1439) / 1440
+        } else {
+            0
+        }
+
+        if (dailyMode || finished) {
+            clock.stop()
+        } else {
+            clock.restore(
+                state.whiteTimeMs,
+                state.blackTimeMs
+            )
+            clock.start(turn)
+        }
+
+        _uiState.update { previous ->
+            previous.copy(
                 isLoading = false,
                 errorMessage = null,
                 board = engine.pieces().toUiBoard(),
-                whitePlayerName = state.whiteUsername ?: it.whitePlayerName,
-                blackPlayerName = state.blackUsername ?: it.blackPlayerName,
+
+                whitePlayerName = whiteName
+                    ?: previous.whitePlayerName,
+                blackPlayerName = blackName
+                    ?: previous.blackPlayerName,
+
+                whiteTimeMillis = state.whiteTimeMs,
+                blackTimeMillis = state.blackTimeMs,
+
+                isDailyMode = dailyMode,
+                dailyDaysPerMove = daysPerMove,
+
+                lastMoveAccepted = if (
+                    dailyMode && moveWasAwaitingServer
+                ) {
+                    true
+                } else {
+                    null
+                },
+
                 isWhiteTurn = whiteTurn,
                 selectedSquare = null,
                 legalMoves = emptyList(),
                 promotionPending = null,
-                lastMoveFrom = state.lastMove?.let { m -> squareFrom(m.take(2)) } ?: it.lastMoveFrom,
-                lastMoveTo = state.lastMove?.let { m -> squareFrom(m.drop(2).take(2)) } ?: it.lastMoveTo,
+
+                lastMoveFrom = state.lastMove?.let {
+                    squareFrom(it.take(2))
+                } ?: previous.lastMoveFrom,
+
+                lastMoveTo = state.lastMove?.let {
+                    squareFrom(it.drop(2).take(2))
+                } ?: previous.lastMoveTo,
+
                 isWhiteInCheck = inCheck && whiteTurn,
                 isBlackInCheck = inCheck && !whiteTurn,
-                moves = state.moves?.map { m -> m.move }?.toMoveUi() ?: it.moves,
-                isBoardFlipped = if (colorWasUnknown) myColor == PieceColor.BLACK else it.isBoardFlipped,
+
+                moves = state.moves
+                    ?.map { it.move }
+                    ?.toMoveUi()
+                    ?: previous.moves,
+
+                isBoardFlipped = if (colorWasUnknown) {
+                    myColor == PieceColor.BLACK
+                } else {
+                    previous.isBoardFlipped
+                },
+
                 undoEnabled = false,
-                gameResult = if (finished) resultFrom(state.result) else null
+                gameResult = if (finished) {
+                    resultFrom(state.result)
+                } else {
+                    null
+                }
             )
         }
     }

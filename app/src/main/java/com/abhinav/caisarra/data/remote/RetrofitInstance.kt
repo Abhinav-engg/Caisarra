@@ -52,21 +52,20 @@ object RetrofitInstance {
 
     fun createAuthService(tokenManager: TokenManager): AuthService =
         authenticatedRetrofit(tokenManager).create()
-
     fun createInviteService(tokenManager: TokenManager): InviteService =
         authenticatedRetrofit(tokenManager).create()
-
     fun createChatService(tokenManager: TokenManager): ChatService =
         authenticatedRetrofit(tokenManager).create()
     fun createGamesService(tokenManager: TokenManager): GamesService =
         authenticatedRetrofit(tokenManager).create()
     fun createProfileService(tokenManager: TokenManager): ProfileService =
         authenticatedRetrofit(tokenManager).create()
-
     fun createDrawService(tokenManager: TokenManager): DrawService =
         authenticatedRetrofit(tokenManager).create()
     fun createRatingService(tokenManager: TokenManager): RatingService =
         authenticatedRetrofit(tokenManager).create()
     fun createMatchmakingService(tokenManager: TokenManager): MatchmakingService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createBotGameService(tokenManager: TokenManager): BotGameService =
         authenticatedRetrofit(tokenManager).create()
 }
