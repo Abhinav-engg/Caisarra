@@ -22,13 +22,13 @@ import com.abhinav.caisarra.presentation.game.components.setup.TimeControlRow
 import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupUiState
 
 @Composable
-fun GameSetupScreen(state: GameSetupUiState, onOpenTimeControls: () -> Unit, onPlayWithFriend: () -> Unit, onPassAndPlay: () -> Unit, onBack: () -> Unit) {
+fun GameSetupScreen(state: GameSetupUiState, onOpenTimeControls: () -> Unit,onStartMatch: () -> Unit, onPlayWithFriend: () -> Unit, onPlayBots: () -> Unit, onPassAndPlay: () -> Unit, onBack: () -> Unit) {
     SetupPage {
         SetupHeader("New Game", onBack)
         Spacer(Modifier.height(24.dp))
-        TimeControlRow("Rapid · ${state.minutes.toInt()} min", onOpenTimeControls)
+        TimeControlRow("${state.mode.label} · ${state.selectedControl}", onOpenTimeControls)
         Spacer(Modifier.height(20.dp))
-        GeneralButton("START MATCH", {})
+        GeneralButton("START MATCH",onClick=onStartMatch)
         Spacer(Modifier.height(28.dp))
         Text("EXPLORE OTHER MODES", color = SetupColors.Secondary, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Spacer(Modifier.height(14.dp))
@@ -36,7 +36,7 @@ fun GameSetupScreen(state: GameSetupUiState, onOpenTimeControls: () -> Unit, onP
         Spacer(Modifier.height(12.dp))
         GameModeRow("Play a Friend", Icons.Default.Group, onPlayWithFriend)
         Spacer(Modifier.height(12.dp))
-        GameModeRow("Play Bots", Icons.Default.Computer)
+        GameModeRow("Play Bots", Icons.Default.Computer, onPlayBots)
         Spacer(Modifier.height(12.dp))
         GameModeRow("Pass and Play", Icons.Default.PhoneAndroid, onPassAndPlay)
     }

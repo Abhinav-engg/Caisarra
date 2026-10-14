@@ -63,7 +63,6 @@ import com.abhinav.caisarra.presentation.game.model.GameUiState
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
-private val Danger = Color(0xFFEF4444)
 private val BannerBg = Color(0xFF3B1F24)
 private val InfoBannerBg = Color(0xFF1F2B38)
 private val Scrim = Color(0x99000000)
@@ -80,6 +79,7 @@ fun OnlineGameScreen(
     val chatMuted by viewModel.chatMuted.collectAsState()
     val myUserId by viewModel.myUserId.collectAsState()
     val drawOfferedBy by viewModel.drawOfferedBy.collectAsState()
+    val opponentName by viewModel.opponentName.collectAsState()
 
     var showChat by remember { mutableStateOf(false) }
     var seenCount by remember { mutableIntStateOf(0) }
@@ -223,7 +223,7 @@ fun OnlineGameScreen(
     if (incomingDrawOffer) {
         GameDecisionDialog(
             decision = GameDecision.IncomingDraw,
-            opponentName = if (state.whitePlayerName == "You") state.blackPlayerName else state.whitePlayerName,
+            opponentName = opponentName,
             onConfirm = viewModel::acceptDraw,
             onDismiss = viewModel::declineDraw
         )

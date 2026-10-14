@@ -18,6 +18,8 @@ import okhttp3.Headers
 import retrofit2.HttpException
 import com.abhinav.caisarra.data.remote.api.GamesService
 import com.abhinav.caisarra.data.remote.api.ProfileService
+import com.abhinav.caisarra.data.remote.api.RatingService
+import com.abhinav.caisarra.data.remote.api.MatchmakingService
 
 class AuthRepository private constructor(context: Context) {
 
@@ -188,8 +190,7 @@ class AuthRepository private constructor(context: Context) {
         if (accessToken != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(accessToken)) {
             return true
         }
-        refreshAccessToken()
-        return tokenManager.getRefreshToken() != null
+        return refreshAccessToken() is AuthResult.Success
     }
 
     suspend fun isGuest(): Boolean = tokenManager.getGuestId() != null
@@ -214,5 +215,10 @@ class AuthRepository private constructor(context: Context) {
     fun createProfileService(): ProfileService {
         return RetrofitInstance.createProfileService(tokenManager)
     }
+    fun createRatingService(): RatingService {
+        return RetrofitInstance.createRatingService(tokenManager)
+    }
+    fun createMatchmakingService(): MatchmakingService =
+        RetrofitInstance.createMatchmakingService(tokenManager)
 
 }

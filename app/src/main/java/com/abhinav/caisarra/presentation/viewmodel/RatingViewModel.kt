@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class ExperienceLevel(val label: String) {
+    NEW("New"),
     BEGINNER("Beginner"),
-    COMPETENT("Competent"),
     INTERMEDIATE("Intermediate"),
     ADVANCED("Advanced");
 
