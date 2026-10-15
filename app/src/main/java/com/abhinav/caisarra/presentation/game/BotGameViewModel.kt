@@ -47,6 +47,7 @@ class BotGameViewModel(
     private var awaitingServer = false
     private var finished = false
     private var reconnecting = false
+    private var moveCount = 0
 
     init {
         viewModelScope.launch {
@@ -121,6 +122,13 @@ class BotGameViewModel(
         socket.send(BotSocketOutgoing.Resign)
     }
 
+    private fun resignIfUntouched() {
+        val color = myColor ?: return
+        val botOpening = if (color == PieceColor.BLACK) 1 else 0
+        if (finished || moveCount > botOpening) return
+        socket.send(BotSocketOutgoing.Resign)
+    }
+
     fun flipBoard() {
         _uiState.update { it.copy(isBoardFlipped = !it.isBoardFlipped) }
     }
@@ -186,6 +194,7 @@ class BotGameViewModel(
 
         engine.loadFen(game.position)
         finished = game.status == "finished"
+        moveCount = game.moves.size
 
         val turn = engine.turn()
         val inCheck = engine.checkSquare() != null
@@ -230,6 +239,7 @@ class BotGameViewModel(
         Square(row = 8 - name[1].digitToInt(), column = name[0] - 'a')
 
     override fun onCleared() {
+        resignIfUntouched()
         socket.close()
     }
 }
