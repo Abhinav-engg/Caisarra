@@ -37,7 +37,8 @@ sealed interface SocketIncoming {
         val moves: List<SocketMove>? = null,
         val result: String? = null,
         @SerialName("end_reason") val endReason: String? = null,
-        @SerialName("draw_offered_by") val drawOfferedBy: Long? = null
+        @SerialName("draw_offered_by") val drawOfferedBy: Long? = null,
+        @SerialName("time_control_minutes") val timeControlMinutes: Int = 10
     ) : SocketIncoming
 
     @Serializable

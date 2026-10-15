@@ -3,7 +3,8 @@ package com.abhinav.caisarra.presentation.game.viewmodel
 enum class GameMode(val label: String, val ratingKey: String) {
     BULLET("Bullet", "bullet"),
     BLITZ("Blitz", "blitz"),
-    RAPID("Rapid", "rapid")
+    RAPID("Rapid", "rapid"),
+    DAILY("Daily", "daily")
 }
 
 data class GameSetupUiState(
