@@ -351,7 +351,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 gameHistory = guestHomeState.gameHistory,
                 isLoadingHistory = guestHomeState.isLoadingHistory,
                 onPlayGame = {
-                    openPlayGame()
+                    navController.navigate(AppRoutes.PASS_AND_PLAY_SETUP)
                 },
                 onReviewGame = { gameId ->
                     navController.navigate(
@@ -525,7 +525,6 @@ fun AppNavigation(authRepository: AuthRepository) {
             HomeScreen(
                 viewModel = homeViewModel,
                 onStartChallenge = {openPlayGame()},
-                onPlayWithFriend = {navController.navigate(AppRoutes.CREATE_INVITE)},
                 onViewAllHistory = {navController.navigate(AppRoutes.ALL_GAME_HISTORY)},
               
            
@@ -614,7 +613,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                                     white = "Player 1",
                                     black = "Player 2",
                                     minutes = setupState.minutes.toInt(),
-                                    flip = false,
+                                    flip = setupState.autoFlip,
                                     undo = true,
                                     clockEnabled = setupState.clockEnabled
                                 )

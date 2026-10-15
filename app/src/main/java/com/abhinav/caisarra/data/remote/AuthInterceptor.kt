@@ -1,7 +1,7 @@
 package com.abhinav.caisarra.data.remote
 
-import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
+import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.dto.RefreshTokenRequest
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.withLock
@@ -11,8 +11,7 @@ import retrofit2.HttpException
 
 internal val PUBLIC_PATHS = setOf(
     "register", "login", "guest-login", "refresh", "logout", "logout-all",
-    "verify-registration",
-    "forgot-password", "verify-reset-code", "reset-password"
+    "verify-registration", "forgot-password", "verify-reset-code", "reset-password"
 )
 
 class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
@@ -27,7 +26,9 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
 
         val accessToken = runBlocking { validAccessToken() }
         val authorizedRequest = if (accessToken != null) {
-            request.newBuilder().header("Authorization", "Bearer $accessToken").build()
+            request.newBuilder()
+                .header("Authorization", "Bearer $accessToken")
+                .build()
         } else {
             request
         }

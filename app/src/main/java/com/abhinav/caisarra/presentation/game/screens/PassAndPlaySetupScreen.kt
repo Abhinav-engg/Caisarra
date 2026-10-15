@@ -64,6 +64,34 @@ fun PassAndPlaySetupScreen(
             )
         }
 
+        Spacer(Modifier.height(20.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            androidx.compose.foundation.layout.Column {
+                Text(
+                    text = "Auto-flip board",
+                    color = SetupColors.Text,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "Rotate the board after each move",
+                    color = SetupColors.Secondary,
+                    fontSize = 13.sp
+                )
+            }
+            Switch(
+                checked = state.autoFlip,
+                onCheckedChange = {
+                    onEvent(PassAndPlaySetupEvent.AutoFlipChanged(it))
+                }
+            )
+        }
+
         if (state.clockEnabled) {
             Spacer(Modifier.height(28.dp))
             TimeControlSection(
@@ -89,7 +117,8 @@ fun PassAndPlaySetupScreen(
                 onMinutesChange = {
                     onEvent(PassAndPlaySetupEvent.TimeChanged(it))
                 },
-                onBonusChange = {}
+                onBonusChange = {},
+                showBonus = false
             )
         }
 

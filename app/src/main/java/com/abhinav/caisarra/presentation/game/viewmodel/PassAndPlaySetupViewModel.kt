@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.update
 
 data class PassAndPlaySetupUiState(
     val clockEnabled: Boolean = false,
-    val minutes: Float = 10f
+    val minutes: Float = 10f,
+    val autoFlip: Boolean = false
 )
 
 class PassAndPlaySetupViewModel : ViewModel() {
@@ -19,6 +20,10 @@ class PassAndPlaySetupViewModel : ViewModel() {
             when (event) {
                 is PassAndPlaySetupEvent.ClockChanged -> current.copy(
                     clockEnabled = event.enabled
+                )
+
+                is PassAndPlaySetupEvent.AutoFlipChanged -> current.copy(
+                    autoFlip = event.enabled
                 )
 
                 is PassAndPlaySetupEvent.TimeChanged -> current.copy(
