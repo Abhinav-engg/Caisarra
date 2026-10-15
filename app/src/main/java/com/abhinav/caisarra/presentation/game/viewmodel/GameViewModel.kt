@@ -34,6 +34,7 @@ class GameViewModel(
     private val newTimeMinutes: Int,
     private val newBoardFlipped: Boolean,
     private val newUndoEnabled: Boolean,
+    private val clockEnabled: Boolean = true,
     private var isGuest: Boolean = false
 ) : ViewModel() {
     private val _state = MutableStateFlow(GameUiState())
@@ -77,7 +78,7 @@ class GameViewModel(
                 ownerId = ownerId,
                 whiteName = newWhiteName.ifBlank { "Player 1" },
                 blackName = newBlackName.ifBlank { "Player 2" },
-                timeControlMinutes = newTimeMinutes,
+                timeControlMinutes = if (clockEnabled) newTimeMinutes else null,
                 incrementSeconds = 0
             )
         } else {
@@ -85,7 +86,7 @@ class GameViewModel(
                 ownerId = ownerId,
                 whiteName = newWhiteName.ifBlank { "Player 1" },
                 blackName = newBlackName.ifBlank { "Player 2" },
-                timeControlMinutes = newTimeMinutes,
+                timeControlMinutes = if (clockEnabled) newTimeMinutes else null,
                 incrementSeconds = 0
             )
         }
@@ -96,14 +97,18 @@ class GameViewModel(
         moveTimeSnapshots.clear()
         redoTimeSnapshots.clear()
         game = PassAndPlayGame()
-        createClock(
-            whiteTime = created.whiteTimeMs,
-            blackTime = created.blackTimeMs,
-            incrementSeconds = created.incrementSeconds
-        )
+        if (clockEnabled) {
+            createClock(
+                whiteTime = created.whiteTimeMs,
+                blackTime = created.blackTimeMs,
+                incrementSeconds = created.incrementSeconds
+            )
+        }
 
-        updateUiState()
-        startClock()
+        updateUiState(clockEnabled = clockEnabled)
+        if (clockEnabled) {
+            startClock()
+        }
     }
 
     private suspend fun loadExistingGame() {
@@ -144,19 +149,22 @@ class GameViewModel(
             restoredGame.play(move)
         }
         game = restoredGame
-        createClock(
-            whiteTime = savedGame.whiteTimeMs,
-            blackTime = savedGame.blackTimeMs,
-            incrementSeconds = savedGame.incrementSeconds
-        )
+        val savedClockEnabled = savedGame.timeControlMinutes != null
+        if (savedClockEnabled) {
+            createClock(
+                whiteTime = savedGame.whiteTimeMs,
+                blackTime = savedGame.blackTimeMs,
+                incrementSeconds = savedGame.incrementSeconds
+            )
+        }
         _state.update {
             it.copy(
                 isBoardFlipped = false,
                 undoEnabled = true
             )
         }
-        updateUiState()
-        if (!restoredGame.status.isOver) {
+        updateUiState(clockEnabled = savedClockEnabled)
+        if (savedClockEnabled && !restoredGame.status.isOver) {
             startClock()
         }
     }
@@ -479,7 +487,7 @@ class GameViewModel(
         if (!isGuest) return
         val id = gameId ?: return
         val currentGame = game ?: return
-        val times = clock?.times?.value ?: return
+        val times = clock?.times?.value ?: (0L to 0L)
 
         viewModelScope.launch {
 
@@ -507,7 +515,7 @@ class GameViewModel(
         if (!isGuest) return
         val id = gameId ?: return
         val currentGame = game ?: return
-        val times = clock?.times?.value ?: return
+        val times = clock?.times?.value ?: (0L to 0L)
         val result = status.toUiResult() ?: return
 
         viewModelScope.launch {
@@ -524,7 +532,7 @@ class GameViewModel(
         }
     }
 
-    private fun updateUiState() {
+    private fun updateUiState(clockEnabled: Boolean = this.clockEnabled) {
         val currentGame = game ?: return
         val domainPieces = currentGame.pieces
         val uiBoard = domainPieces.associate { piece ->
@@ -585,6 +593,7 @@ class GameViewModel(
 
             it.copy(
                 isLoading = false,
+                hasClock = clockEnabled,
                 errorMessage = null,
                 board = uiBoard,
                 whitePlayerName = it.whitePlayerName.ifBlank {
@@ -641,7 +650,7 @@ class GameViewModel(
 
         val id = gameId ?: return
         if (currentGame.status.isOver) return
-        val times = clock?.times?.value ?: return
+        val times = clock?.times?.value ?: (0L to 0L)
         viewModelScope.launch {
             gameRepository.saveProgress(
                 id = id,

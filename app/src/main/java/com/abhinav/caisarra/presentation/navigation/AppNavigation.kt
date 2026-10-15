@@ -79,6 +79,8 @@ import com.abhinav.caisarra.presentation.game.screens.BotSetupScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.BotSetupViewModel
 import com.abhinav.caisarra.presentation.game.BotGameViewModel
 import com.abhinav.caisarra.presentation.game.screens.BotGameScreen
+import com.abhinav.caisarra.presentation.game.screens.PassAndPlaySetupScreen
+import com.abhinav.caisarra.presentation.game.viewmodel.PassAndPlaySetupViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
 
 
@@ -97,7 +99,8 @@ object AppRoutes {
             "&black={black}" +
             "&minutes={minutes}" +
             "&flip={flip}" +
-            "&undo={undo}"
+            "&undo={undo}" +
+            "&clock={clock}"
     const val GUEST_HOME = "guest_options"
     const val RATING = "rating"
     const val CREATE_INVITE = "create_invite"
@@ -112,6 +115,7 @@ object AppRoutes {
 
     const val BOT_SETUP = "bot_setup"
     const val BOT_GAME = "bot_game/{gameId}"
+    const val PASS_AND_PLAY_SETUP = "pass_and_play_setup"
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -121,14 +125,16 @@ object AppRoutes {
         black: String,
         minutes: Int,
         flip: Boolean,
-        undo: Boolean
+        undo: Boolean,
+        clockEnabled: Boolean
     ): String {
         return "game" + "?resume=false" +
                 "&white=${Uri.encode(white)}" +
                 "&black=${Uri.encode(black)}" +
                 "&minutes=$minutes" +
                 "&flip=$flip" +
-                "&undo=$undo"
+                "&undo=$undo" +
+                "&clock=$clockEnabled"
     }
 
 //    fun resumeGame(): String {
@@ -236,7 +242,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                 black = "Player 2",
                 minutes = minutes,
                 flip = false,
-                undo = true
+                undo = true,
+                clockEnabled = true
             )
         ) {
             popUpTo(AppRoutes.GAME_SETUP) { inclusive = true }
@@ -585,11 +592,40 @@ fun AppNavigation(authRepository: AuthRepository) {
                
                 onPlayWithFriend = { navController.navigate(AppRoutes.PLAY_WITH_FRIEND) },
                 onPlayBots = { navController.navigate(AppRoutes.BOT_SETUP) },
-                onPassAndPlay = { startLocalGame(10) },
+                onPassAndPlay = {
+                    navController.navigate(AppRoutes.PASS_AND_PLAY_SETUP)
+                },
                 onBack = {
                     navController.popBackStack()
                 }
             )
+        }
+
+        composable(route = AppRoutes.PASS_AND_PLAY_SETUP) {
+                    val setupViewModel = screenViewModel { PassAndPlaySetupViewModel() }
+                    val setupState by setupViewModel.state.collectAsState()
+
+                    PassAndPlaySetupScreen(
+                        state = setupState,
+                        onEvent = setupViewModel::onEvent,
+                        onStart = {
+                            navController.navigate(
+                                AppRoutes.newGame(
+                                    white = "Player 1",
+                                    black = "Player 2",
+                                    minutes = setupState.minutes.toInt(),
+                                    flip = false,
+                                    undo = true,
+                                    clockEnabled = setupState.clockEnabled
+                                )
+                            ) {
+                                popUpTo(AppRoutes.PASS_AND_PLAY_SETUP) {
+                                    inclusive = true
+                                }
+                            }
+                        },
+                        onBack = { navController.popBackStack() }
+                    )
         }
 
         composable(
@@ -739,6 +775,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                 navArgument("undo") {
                     type = NavType.BoolType
                     defaultValue = true
+                },
+                navArgument("clock") {
+                    type = NavType.BoolType
+                    defaultValue = true
                 }
             )
         ) { entry ->
@@ -748,6 +788,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             val minutes = entry.arguments?.getInt("minutes") ?: 10
             val flip = entry.arguments?.getBoolean("flip") ?: false
             val undo = entry.arguments?.getBoolean("undo") ?: true
+            val clockEnabled = entry.arguments?.getBoolean("clock") ?: true
 
             val gameViewModel =
                 screenViewModel {
@@ -763,7 +804,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                         newBlackName = black,
                         newTimeMinutes = minutes,
                         newBoardFlipped = flip,
-                        newUndoEnabled = undo
+                        newUndoEnabled = undo,
+                        clockEnabled = clockEnabled
                     )
                 }
 

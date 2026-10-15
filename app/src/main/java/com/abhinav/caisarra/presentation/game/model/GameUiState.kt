@@ -17,6 +17,7 @@ data class GameUiState(
     val isRated: Boolean = false,
     val timeControlMinutes: Int = 10,
     val incrementSeconds: Int = 0,
+    val hasClock: Boolean = true,
 
     val whiteTimeMillis: Long = 10 * 60 * 1000L,
     val blackTimeMillis: Long = 10 * 60 * 1000L,

@@ -266,6 +266,7 @@ private fun TopPlayerStrip(
             name = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
+            hasClock = state.hasClock,
             captured = state.capturedWhitePieces,
             capturedOnTop = false,
             modifier = modifier
@@ -275,6 +276,7 @@ private fun TopPlayerStrip(
             name = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
+            hasClock = state.hasClock,
             captured = state.capturedBlackPieces,
             capturedOnTop = false,
             modifier = modifier
@@ -292,6 +294,7 @@ private fun BottomPlayerStrip(
             name = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
+            hasClock = state.hasClock,
             captured = state.capturedBlackPieces,
             capturedOnTop = true,
             modifier = modifier
@@ -301,6 +304,7 @@ private fun BottomPlayerStrip(
             name = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
+            hasClock = state.hasClock,
             captured = state.capturedWhitePieces,
             capturedOnTop = true,
             modifier = modifier
@@ -313,6 +317,7 @@ private fun PlayerStrip(
     name: String,
     timeMillis: Long,
     isActive: Boolean,
+    hasClock: Boolean,
     captured: List<Piece>,
     capturedOnTop: Boolean,
     modifier: Modifier = Modifier
@@ -326,11 +331,21 @@ private fun PlayerStrip(
         if (capturedOnTop) {
             CapturedPieces(pieces = captured, modifier = capturedModifier)
         }
-        ClockBar(
-            playerName = name,
-            timeMillis = timeMillis,
-            isActive = isActive
-        )
+        if (hasClock) {
+            ClockBar(
+                playerName = name,
+                timeMillis = timeMillis,
+                isActive = isActive
+            )
+        } else {
+            Text(
+                text = name,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(vertical = 10.dp)
+            )
+        }
         if (!capturedOnTop) {
             CapturedPieces(pieces = captured, modifier = capturedModifier)
         }
