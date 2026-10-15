@@ -165,6 +165,27 @@ object AppRoutes {
 private inline fun <reified VM : ViewModel> screenViewModel(crossinline create: () -> VM): VM =
     viewModel(factory = viewModelFactory { initializer { create() } })
 
+/**
+ * Navigate back safely. If the current destination has no previous entry,
+ * replace the navigation stack with the supplied fallback route.
+ */
+private fun NavController.safeBack(fallbackRoute: String) {
+    if (currentDestination?.route == fallbackRoute) return
+
+    val popped = runCatching { popBackStack() }.getOrDefault(false)
+    if (!popped) {
+        runCatching {
+            navigate(fallbackRoute) {
+                popUpTo(graph.id) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+}
+
+private suspend fun homeRoute(authRepository: AuthRepository): String =
+    if (authRepository.isGuest()) AppRoutes.GUEST_HOME else AppRoutes.HOME
+
 private fun NavController.goHome() {
     navigate(AppRoutes.HOME) {
         popUpTo(graph.id) { inclusive = true }
@@ -415,7 +436,9 @@ fun AppNavigation(authRepository: AuthRepository) {
             AllGameHistoryScreen(
                 viewModel = allHistoryViewModel,
                 onBack = {
-                    navController.popBackStack()
+                    scope.launch {
+                        navController.safeBack(homeRoute(authRepository))
+                    }
                 },
                 onReviewGame = { gameId ->
                     navController.navigate(
@@ -444,7 +467,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                         )
                     }
                 },
-                onBackToSignIn = { navController.popBackStack() }
+                onBackToSignIn = { navController.safeBack(AppRoutes.LOGIN) }
             )
         }
 
@@ -467,7 +490,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onBack = {
                     scope.launch {
                         pendingOtpStore.clear()
-                        navController.popBackStack()
+                        navController.safeBack(AppRoutes.LOGIN)
                     }
                 },
                 onVerified = {
@@ -526,9 +549,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = homeViewModel,
                 onStartChallenge = {openPlayGame()},
                 onViewAllHistory = {navController.navigate(AppRoutes.ALL_GAME_HISTORY)},
-              
-           
-               
+
+
+
                 onReviewGame = { gameId ->
                     navController.navigate(
                         AppRoutes.gameHistory(gameId)
@@ -588,43 +611,45 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
 
-               
+
                 onPlayWithFriend = { navController.navigate(AppRoutes.PLAY_WITH_FRIEND) },
                 onPlayBots = { navController.navigate(AppRoutes.BOT_SETUP) },
                 onPassAndPlay = {
                     navController.navigate(AppRoutes.PASS_AND_PLAY_SETUP)
                 },
                 onBack = {
-                    navController.popBackStack()
+                    scope.launch {
+                        navController.safeBack(homeRoute(authRepository))
+                    }
                 }
             )
         }
 
         composable(route = AppRoutes.PASS_AND_PLAY_SETUP) {
-                    val setupViewModel = screenViewModel { PassAndPlaySetupViewModel() }
-                    val setupState by setupViewModel.state.collectAsState()
+            val setupViewModel = screenViewModel { PassAndPlaySetupViewModel() }
+            val setupState by setupViewModel.state.collectAsState()
 
-                    PassAndPlaySetupScreen(
-                        state = setupState,
-                        onEvent = setupViewModel::onEvent,
-                        onStart = {
-                            navController.navigate(
-                                AppRoutes.newGame(
-                                    white = "Player 1",
-                                    black = "Player 2",
-                                    minutes = setupState.minutes.toInt(),
-                                    flip = setupState.autoFlip,
-                                    undo = true,
-                                    clockEnabled = setupState.clockEnabled
-                                )
-                            ) {
-                                popUpTo(AppRoutes.PASS_AND_PLAY_SETUP) {
-                                    inclusive = true
-                                }
-                            }
-                        },
-                        onBack = { navController.popBackStack() }
-                    )
+            PassAndPlaySetupScreen(
+                state = setupState,
+                onEvent = setupViewModel::onEvent,
+                onStart = {
+                    navController.navigate(
+                        AppRoutes.newGame(
+                            white = "Player 1",
+                            black = "Player 2",
+                            minutes = setupState.minutes.toInt(),
+                            flip = setupState.autoFlip,
+                            undo = true,
+                            clockEnabled = setupState.clockEnabled
+                        )
+                    ) {
+                        popUpTo(AppRoutes.PASS_AND_PLAY_SETUP) {
+                            inclusive = true
+                        }
+                    }
+                },
+                onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
+            )
         }
 
         composable(
@@ -668,34 +693,39 @@ fun AppNavigation(authRepository: AuthRepository) {
                         launchSingleTop = true
                     }
                 },
-                onBack = {navController.popBackStack()}
+                onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
             )
         }
 
 
 
         composable(route = AppRoutes.TIME_CONTROLS) { timeControlsEntry ->
-
-            val setupEntry = remember(timeControlsEntry) {
-                navController.getBackStackEntry(
-                    AppRoutes.GAME_SETUP
-                )
+            val setupEntry = remember(timeControlsEntry, navController) {
+                runCatching {
+                    navController.getBackStackEntry(AppRoutes.GAME_SETUP)
+                }.getOrNull()
             }
 
-            val setupViewModel: GameSetupViewModel = viewModel(
-                viewModelStoreOwner = setupEntry
-            )
-
-            val setupState by setupViewModel.state.collectAsState()
-
-            TimeControlsScreen(
-                state = setupState,
-                onEvent = setupViewModel::onEvent,
-                onConfirm = { navController.popBackStack() },
-                onBack = {
-                    navController.popBackStack()
+            if (setupEntry == null) {
+                LaunchedEffect(timeControlsEntry) {
+                    navController.navigate(AppRoutes.GAME_SETUP) {
+                        popUpTo(AppRoutes.TIME_CONTROLS) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
-            )
+            } else {
+                val setupViewModel: GameSetupViewModel = viewModel(
+                    viewModelStoreOwner = setupEntry
+                )
+                val setupState by setupViewModel.state.collectAsState()
+
+                TimeControlsScreen(
+                    state = setupState,
+                    onEvent = setupViewModel::onEvent,
+                    onConfirm = { navController.safeBack(AppRoutes.GAME_SETUP) },
+                    onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
+                )
+            }
         }
 
         composable(
@@ -741,7 +771,9 @@ fun AppNavigation(authRepository: AuthRepository) {
             GameHistoryScreen(
                 viewModel = historyViewModel,
                 onBack = {
-                    navController.popBackStack()
+                    scope.launch {
+                        navController.safeBack(homeRoute(authRepository))
+                    }
                 }
             )
         }
@@ -849,7 +881,7 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(route = AppRoutes.PLAY_WITH_FRIEND) {
             PlayWithFriendScreen(
                 onCreateMatchLink = { navController.navigate(AppRoutes.CREATE_INVITE) },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
             )
         }
 
@@ -865,7 +897,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                         popUpTo(AppRoutes.CREATE_INVITE) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.safeBack(AppRoutes.PLAY_WITH_FRIEND) }
             )
         }
 
@@ -896,7 +928,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
                 onBack = {
                     pendingInviteStore.clear()
-                    if (!navController.popBackStack()) navController.goHome()
+                    scope.launch {
+                        navController.safeBack(homeRoute(authRepository))
+                    }
                 }
             )
         }
@@ -937,7 +971,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             route = AppRoutes.GAME_ANALYSIS,
             arguments = listOf(navArgument("gameId") { type = NavType.StringType })
         ) {
-            GameAnalysisScreen(onBack = { navController.popBackStack() })
+            GameAnalysisScreen(onBack = { navController.safeBack(AppRoutes.ONLINE_GAME) })
         }
 
         composable(route = AppRoutes.PROFILE) {
@@ -961,7 +995,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = profileViewModel,
                 isGuest = isGuest,
                 onBack = {
-                    navController.popBackStack()
+                    scope.launch {
+                        navController.safeBack(homeRoute(authRepository))
+                    }
                 }
             )
         }
@@ -978,7 +1014,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                         popUpTo(AppRoutes.BOT_SETUP) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
             )
         }
 
