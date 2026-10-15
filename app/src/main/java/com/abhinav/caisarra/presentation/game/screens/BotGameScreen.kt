@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -76,9 +77,36 @@ fun BotGameScreen(
             .background(ScreenBg)
             .systemBarsPadding()
     ) {
-        val boardSize = minOf(maxWidth - 24.dp, maxHeight * 0.5f)
+        val isWide = maxWidth > maxHeight && maxWidth >= 600.dp
+        val boardSize = if (isWide) {
+            minOf(maxHeight - 24.dp, maxWidth * 0.55f)
+        } else {
+            minOf(maxWidth - 24.dp, maxHeight * 0.5f)
+        }
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        if (isWide) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.size(boardSize)) {
+                    BotBoard(state, viewModel::onSquareClick)
+                }
+                Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    BotTopBar(onHome, viewModel::flipBoard)
+                    state.errorMessage?.let { message ->
+                        Text(message, color = Color.White, fontSize = 12.sp, modifier = Modifier.background(BannerBg, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp))
+                        Spacer(Modifier.height(6.dp))
+                    }
+                    TopPlayer(state, thinking)
+                    MoveList(state.moves, Modifier.weight(1f).padding(vertical = 8.dp))
+                    BottomPlayer(state, thinking)
+                    Spacer(Modifier.height(8.dp))
+                    BotActions(state.gameResult == null, viewModel::resign)
+                }
+            }
+        } else Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -104,17 +132,7 @@ fun BotGameScreen(
                 TopPlayer(state = state, thinking = thinking, modifier = Modifier.width(boardSize))
                 Spacer(modifier = Modifier.height(6.dp))
                 Box(modifier = Modifier.size(boardSize)) {
-                    ChessBoard(
-                        board = state.board,
-                        selectedSquare = state.selectedSquare,
-                        legalMoves = state.legalMoves,
-                        lastMoveFrom = state.lastMoveFrom,
-                        lastMoveTo = state.lastMoveTo,
-                        isWhiteInCheck = state.isWhiteInCheck,
-                        isBlackInCheck = state.isBlackInCheck,
-                        isFlipped = state.isBoardFlipped,
-                        onSquareClick = viewModel::onSquareClick
-                    )
+                    BotBoard(state, viewModel::onSquareClick)
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 BottomPlayer(state = state, thinking = thinking, modifier = Modifier.width(boardSize))
@@ -128,17 +146,7 @@ fun BotGameScreen(
                 )
             }
 
-            GameBottomBar(
-                canUndo = false,
-                canRedo = false,
-                optionsEnabled = state.gameResult == null,
-                onUndo = {},
-                onRedo = {},
-                onOfferDraw = {},
-                onResign = viewModel::resign,
-                showDraw = false,
-                showUndoRedo = false
-            )
+            BotActions(state.gameResult == null, viewModel::resign)
         }
     }
 
@@ -150,9 +158,41 @@ fun BotGameScreen(
         GameResultDialog(
             result = result,
             onNewGame = onNewGame,
-            onHome = onHome
+            onHome = onHome,
+            whitePlayerName = state.whitePlayerName,
+            blackPlayerName = state.blackPlayerName
         )
     }
+}
+
+@Composable
+private fun BotBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra.presentation.game.model.Square) -> Unit) {
+    ChessBoard(
+        board = state.board,
+        selectedSquare = state.selectedSquare,
+        legalMoves = state.legalMoves,
+        lastMoveFrom = state.lastMoveFrom,
+        lastMoveTo = state.lastMoveTo,
+        isWhiteInCheck = state.isWhiteInCheck,
+        isBlackInCheck = state.isBlackInCheck,
+        isFlipped = state.isBoardFlipped,
+        onSquareClick = onSquareClick
+    )
+}
+
+@Composable
+private fun BotActions(gameOngoing: Boolean, onResign: () -> Unit) {
+    GameBottomBar(
+        canUndo = false,
+        canRedo = false,
+        optionsEnabled = gameOngoing,
+        onUndo = {},
+        onRedo = {},
+        onOfferDraw = {},
+        onResign = onResign,
+        showDraw = false,
+        showUndoRedo = false
+    )
 }
 
 @Composable

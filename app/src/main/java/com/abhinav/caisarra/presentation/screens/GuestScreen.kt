@@ -12,10 +12,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.components.AuthCard
-import com.abhinav.caisarra.presentation.components.AuthFooter
-import com.abhinav.caisarra.presentation.components.GeneralButton
-import com.abhinav.caisarra.presentation.components.GuestIdHeader
+import com.abhinav.caisarra.core.ui.components.AuthCard
+import com.abhinav.caisarra.core.ui.components.AuthFooter
+import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.backgrounds.GuestIdHeader
 
 @Composable
 fun GuestScreen(

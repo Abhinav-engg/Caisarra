@@ -1,4 +1,4 @@
-package com.abhinav.caisarra.ui.theme
+package com.abhinav.caisarra.core.ui.theme
 
 import androidx.compose.ui.unit.dp
 

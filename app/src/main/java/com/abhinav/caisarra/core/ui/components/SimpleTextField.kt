@@ -1,4 +1,4 @@
-package com.abhinav.caisarra.presentation.components
+package com.abhinav.caisarra.core.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -25,6 +25,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.abhinav.caisarra.core.ui.backgrounds.focusGlow
 import com.caisaara.ui.theme.BorderColor
 import com.caisaara.ui.theme.CyanLight
 import com.caisaara.ui.theme.Feildbackground

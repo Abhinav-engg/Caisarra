@@ -8,6 +8,15 @@ data class GameUiState(
 
     val whitePlayerName: String = "White",
     val blackPlayerName: String = "Black",
+    val myColor: PieceColor? = null,
+    val playerRating: Int? = null,
+    val ratingChange: Int? = null,
+    val opponentRating: Int? = null,
+    val whiteRating: Int? = null,
+    val blackRating: Int? = null,
+    val isRated: Boolean = false,
+    val timeControlMinutes: Int = 10,
+    val incrementSeconds: Int = 0,
 
     val whiteTimeMillis: Long = 10 * 60 * 1000L,
     val blackTimeMillis: Long = 10 * 60 * 1000L,

@@ -39,7 +39,7 @@ import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ClockBar
 import com.abhinav.caisarra.presentation.game.model.MoveUi
 import com.abhinav.caisarra.presentation.game.viewmodel.GameHistoryReviewViewModel
-import com.abhinav.caisarra.presentation.theme.JetBrainsMono
+import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 
 private val ScreenBg = Color(0xFF080D13)
 private val CardBg = Color(0xFF151F2B)

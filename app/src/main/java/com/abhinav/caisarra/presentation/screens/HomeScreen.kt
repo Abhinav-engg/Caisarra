@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,12 +37,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.R
-import com.abhinav.caisarra.presentation.components.ChallengeCardBackground
-import com.abhinav.caisarra.presentation.components.DailyRatingBackground
-import com.abhinav.caisarra.presentation.components.GeneralButton
-import com.abhinav.caisarra.presentation.components.HomeBackground
+import com.abhinav.caisarra.core.ui.backgrounds.ChallengeCardBackground
+import com.abhinav.caisarra.core.ui.backgrounds.DailyRatingBackground
+import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.backgrounds.HomeBackground
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
-import com.abhinav.caisarra.presentation.theme.JetBrainsMono
+import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive

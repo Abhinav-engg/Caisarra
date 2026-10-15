@@ -1,4 +1,4 @@
-package com.abhinav.caisarra.presentation.components
+package com.abhinav.caisarra.core.ui.backgrounds
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.R
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
+import com.abhinav.caisarra.core.ui.components.ChessNotation
 
 @Composable
 fun LoginBackground(

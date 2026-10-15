@@ -79,6 +79,7 @@ import com.abhinav.caisarra.presentation.game.screens.BotSetupScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.BotSetupViewModel
 import com.abhinav.caisarra.presentation.game.BotGameViewModel
 import com.abhinav.caisarra.presentation.game.screens.BotGameScreen
+import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
 
 
 object AppRoutes {
@@ -106,6 +107,7 @@ object AppRoutes {
     const val ALL_GAME_HISTORY = "all_game_history"
     const val PROFILE = "profile"
     const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
+    const val GAME_ANALYSIS = "game_analysis/{gameId}"
 
 
     const val BOT_SETUP = "bot_setup"
@@ -149,6 +151,7 @@ object AppRoutes {
 
     fun joinInvite(code: String) = "play/${Uri.encode(code)}"
     fun matchmaking(minutes: Int, incrementSeconds: Int) = "matchmaking/$minutes/$incrementSeconds"
+    fun gameAnalysis(gameId: String) = "game_analysis/${Uri.encode(gameId)}"
 
 }
 
@@ -870,8 +873,30 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             OnlineGameScreen(
                 viewModel = onlineViewModel,
-                onHome = { navController.goHome() }
+                onHome = { navController.goHome() },
+                onNewOpponent = { minutes, increment ->
+                    navController.navigate(AppRoutes.matchmaking(minutes, increment)) {
+                        popUpTo(AppRoutes.ONLINE_GAME) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onRematchStarted = { rematchGameId, _, _ ->
+                    navController.navigate(AppRoutes.onlineGame(rematchGameId)) {
+                        popUpTo(AppRoutes.ONLINE_GAME) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onStartAnalysis = {
+                    navController.navigate(AppRoutes.gameAnalysis(gameId))
+                }
             )
+        }
+
+        composable(
+            route = AppRoutes.GAME_ANALYSIS,
+            arguments = listOf(navArgument("gameId") { type = NavType.StringType })
+        ) {
+            GameAnalysisScreen(onBack = { navController.popBackStack() })
         }
 
         composable(route = AppRoutes.PROFILE) {

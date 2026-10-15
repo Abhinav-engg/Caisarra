@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.game.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,7 +24,8 @@ fun ClockBar(
     timeMillis: Long,
     isActive: Boolean,
     modifier: Modifier = Modifier,
-    isDailyMode: Boolean = false
+    isDailyMode: Boolean = false,
+    rating: Int? = null
 ) {
     val daily = isDailyMode || timeMillis >= DAY_MILLIS
 
@@ -71,12 +73,22 @@ fun ClockBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = playerName,
-            color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Column {
+            Text(
+                text = playerName,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+            rating?.let {
+                Text(
+                    text = "Rating $it",
+                    color = Color(0xFF9FB0C3),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
         Text(
             text = timeText,
             color = if (isActive) {

@@ -9,7 +9,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.presentation.game.components.setup.CustomClockCard
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
 import com.abhinav.caisarra.presentation.game.components.setup.SetupHeader

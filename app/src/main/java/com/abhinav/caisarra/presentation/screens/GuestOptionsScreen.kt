@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.abhinav.caisarra.presentation.components.AuthCard
-import com.abhinav.caisarra.presentation.components.GeneralButton
-import com.abhinav.caisarra.presentation.components.GuestIdHeader
-import com.abhinav.caisarra.ui.theme.GuestOptionsCardHeight
+import com.abhinav.caisarra.core.ui.components.AuthCard
+import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.backgrounds.GuestIdHeader
+import com.abhinav.caisarra.core.ui.theme.GuestOptionsCardHeight
 
 @Composable
 fun GuestOptionsScreen(

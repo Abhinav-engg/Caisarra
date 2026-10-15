@@ -36,7 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
 import com.abhinav.caisarra.presentation.game.components.setup.SetupHeader
 import com.abhinav.caisarra.presentation.game.components.setup.SetupPage
@@ -75,9 +75,25 @@ fun CreateInviteScreen(
                 .border(1.dp, InviteBorder, RoundedCornerShape(18.dp))
                 .padding(horizontal = 14.dp)
         ) {
-            InviteSwitchRow("Allow Takebacks", "Permit friendly undo requests", Icons.AutoMirrored.Filled.Undo, false)
+            InviteSwitchRow(
+                title = "Allow Takebacks",
+                subtitle = if (state.allowTakebacks) {
+                    "This friendly game will be unrated"
+                } else {
+                    "Rated by default - turn on for an unrated game"
+                },
+                icon = Icons.AutoMirrored.Filled.Undo,
+                checked = state.allowTakebacks,
+                onCheckedChange = viewModel::onTakebacksChanged
+            )
             Box(Modifier.fillMaxWidth().height(1.dp).background(InviteBorder))
-            InviteSwitchRow("Public Spectators", "Friends can watch match live", Icons.Default.RemoveRedEye, true)
+            InviteSwitchRow(
+                "Public Spectators",
+                "Friends can watch match live",
+                Icons.Default.RemoveRedEye,
+                true,
+                onCheckedChange = {}
+            )
         }
         state.error?.let {
             Spacer(Modifier.height(14.dp))
@@ -130,7 +146,8 @@ private fun InviteSwitchRow(
     title: String,
     subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    checked: Boolean
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
@@ -148,7 +165,7 @@ private fun InviteSwitchRow(
         }
         Switch(
             checked = checked,
-            onCheckedChange = {},
+            onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = SetupColors.Accent,
                 checkedTrackColor = Color(0xFF176B6B),

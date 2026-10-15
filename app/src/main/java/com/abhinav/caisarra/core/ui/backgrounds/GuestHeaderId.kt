@@ -1,4 +1,4 @@
-package com.abhinav.caisarra.presentation.components
+package com.abhinav.caisarra.core.ui.backgrounds
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding

@@ -47,7 +47,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
-import com.abhinav.caisarra.presentation.components.clearFocusOnTap
+import com.abhinav.caisarra.core.ui.components.clearFocusOnTap
 
 private val Accent = Color(0xFF27C7E8)
 private val Panel = Color(0xFF0C141B)

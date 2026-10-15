@@ -1,4 +1,4 @@
-package com.abhinav.caisarra.presentation.components
+package com.abhinav.caisarra.core.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable

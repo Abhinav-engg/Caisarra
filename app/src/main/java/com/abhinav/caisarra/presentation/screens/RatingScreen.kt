@@ -12,12 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.components.AuthCard
-import com.abhinav.caisarra.presentation.components.AuthHeader
-import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.AuthCard
+import com.abhinav.caisarra.core.ui.components.AuthHeader
+import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.presentation.viewmodel.ExperienceLevel
 import com.abhinav.caisarra.presentation.viewmodel.RatingViewModel
-import com.abhinav.caisarra.ui.theme.RatingCardHeight
+import com.abhinav.caisarra.core.ui.theme.RatingCardHeight
 
 private val ErrorRed = Color(0xFFFF3344)
 

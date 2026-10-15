@@ -11,7 +11,10 @@ import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.data.remote.dto.SocketIncoming
 import com.abhinav.caisarra.data.remote.dto.SocketOutgoing
 import com.abhinav.caisarra.data.repository.ChatRepository
+import com.abhinav.caisarra.data.repository.InviteRepository
+import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
+import com.abhinav.caisarra.data.remote.dto.CreateInviteResponse
 import com.abhinav.caisarra.domain.chess.engine.ChesslibEngine
 import com.abhinav.caisarra.domain.chess.game.GameClock
 import com.abhinav.caisarra.domain.chess.model.Move
@@ -47,8 +50,16 @@ class OnlineGameViewModel(
     private val gameRepository = RemoteGameRepository(
         RetrofitInstance.createGamesService(TokenManager(application))
     )
+    private val profileRepository = ProfileRepository(
+        RetrofitInstance.createProfileService(TokenManager(application))
+    )
+    private val ratingService = RetrofitInstance.createRatingService(TokenManager(application))
+    private val inviteRepository = InviteRepository.get(application)
     private val clock = GameClock(viewModelScope, 0L, 0L) { }
-    private val _uiState = MutableStateFlow(GameUiState())
+
+    // Matchmaking and invitations are rated unless the server marks the game as friendly.
+    private val _uiState = MutableStateFlow(GameUiState(isRated = true))
+    
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
     private val _waitingForOpponent = MutableStateFlow(true)
     val waitingForOpponent: StateFlow<Boolean> = _waitingForOpponent.asStateFlow()
@@ -67,6 +78,10 @@ class OnlineGameViewModel(
     private var pendingPromotionFrom: Square? = null
     private var finished = false
     private var reconnecting = false
+    private var mode: String? = null
+    private var ratingWasRefreshed = false
+    private var rematchInFlight = false
+    private var lastOpponentUsername: String? = null
 
     init {
         viewModelScope.launch {
@@ -110,6 +125,85 @@ class OnlineGameViewModel(
                 _chat.update { current -> (history + current).distinctBy { it.id }.sortedBy { it.createdAt } }
             }
         }
+        viewModelScope.launch { loadGameDetailsAndRating() }
+    }
+
+    private suspend fun loadGameDetailsAndRating() {
+        val game = runCatching { gameRepository.getGame(gameId) }.getOrNull()
+        mode = game?.timeControlMode?.lowercase()
+        _uiState.update { current ->
+            current.copy(
+                isRated = game?.rated ?: current.isRated,
+                timeControlMinutes = game?.timeControlMinutes ?: current.timeControlMinutes,
+                incrementSeconds = game?.incrementMs?.div(1000L)?.toInt() ?: current.incrementSeconds
+            )
+        }
+        refreshRating(captureChange = false)
+    }
+
+    private suspend fun refreshRating(captureChange: Boolean) {
+        val profile = runCatching { profileRepository.getMyProfile() }.getOrNull() ?: return
+        val currentRating = mode
+            ?.let { profile.ratings?.get(it)?.rating }
+            ?: profile.rating
+        _uiState.update { current ->
+            val change = if (captureChange && current.playerRating != null && currentRating != null) {
+                currentRating - current.playerRating
+            } else {
+                current.ratingChange
+            }
+            current.copy(
+                ratingChange = change,
+                playerRating = currentRating
+            ).withSideRatings()
+        }
+    }
+
+    fun pgn(): String {
+        val state = _uiState.value
+        val result = when (state.gameResult) {
+            GameResult.WHITE_WINS -> "1-0"
+            GameResult.BLACK_WINS -> "0-1"
+            GameResult.DRAW -> "1/2-1/2"
+            null -> "*"
+        }
+        val moveText = state.moves.joinToString(" ") { move ->
+            buildString {
+                append(move.moveNumber)
+                append('.')
+                move.whiteMove?.let { append(' ').append(it) }
+                move.blackMove?.let { append(' ').append(it) }
+            }
+        }
+        return buildString {
+            appendLine("[Event \"Caisaara Rated\"]")
+            appendLine("[Site \"Caisaara\"]")
+            appendLine("[White \"${state.whitePlayerName}\"]")
+            appendLine("[Black \"${state.blackPlayerName}\"]")
+            appendLine("[Result \"$result\"]")
+            appendLine("[TimeControl \"${state.timeControlMinutes}+${state.incrementSeconds}\"]")
+            appendLine()
+            append(moveText)
+            if (moveText.isNotBlank()) append(' ')
+            append(result)
+        }
+    }
+
+    suspend fun createRematch(): Result<CreateInviteResponse> {
+        if (rematchInFlight) return Result.failure(IllegalStateException("Rematch already started"))
+        rematchInFlight = true
+        val state = _uiState.value
+        val myColorChoice = when (state.myColor) {
+            PieceColor.WHITE -> "black"
+            PieceColor.BLACK -> "white"
+            null -> "random"
+        }
+        return inviteRepository.createInvite(
+            timeControlMinutes = state.timeControlMinutes.coerceAtLeast(1),
+            incrementSeconds = state.incrementSeconds.coerceAtLeast(0),
+            color = myColorChoice,
+            rated = true
+        ).also { rematchInFlight = false }
     }
 
     private fun reconnect() {
@@ -338,25 +432,28 @@ class OnlineGameViewModel(
         val colorWasUnknown = myColor == null
         if (colorWasUnknown) myColor = resolveColor(state)
 
-        val whiteName = state.whiteUsername?.takeIf { it.isNotBlank() }
-            ?: when (myColor) {
-                PieceColor.WHITE -> "You"
-                PieceColor.BLACK -> "Opponent"
-                else -> null
-            }
-
-        val blackName = state.blackUsername?.takeIf { it.isNotBlank() }
-            ?: when (myColor) {
-                PieceColor.BLACK -> "You"
-                PieceColor.WHITE -> "Opponent"
-                else -> null
-            }
-
-        _opponentName.value = when (myColor) {
+        val whiteName = state.whiteUsername?.takeIf { it.isNotBlank() } ?: when (myColor) {
+            PieceColor.WHITE -> "You"
+            PieceColor.BLACK -> "Opponent"
+            else -> null
+        }
+        val blackName = state.blackUsername?.takeIf { it.isNotBlank() } ?: when (myColor) {
+            PieceColor.BLACK -> "You"
+            PieceColor.WHITE -> "Opponent"
+            else -> null
+        }
+        val resolvedOpponent = when (myColor) {
             PieceColor.WHITE -> blackName
             PieceColor.BLACK -> whiteName
             else -> null
-        } ?: _opponentName.value
+        }
+        if (!resolvedOpponent.isNullOrBlank()) {
+            _opponentName.value = resolvedOpponent
+            if (lastOpponentUsername != resolvedOpponent) {
+                lastOpponentUsername = resolvedOpponent
+                viewModelScope.launch { loadOpponentRating(resolvedOpponent) }
+            }
+        }
 
         engine.loadFen(state.position)
         finished = state.status == "finished"
@@ -422,6 +519,7 @@ class OnlineGameViewModel(
                     null
                 },
 
+                myColor = myColor,
                 isWhiteTurn = whiteTurn,
                 selectedSquare = null,
                 legalMoves = emptyList(),
@@ -450,13 +548,42 @@ class OnlineGameViewModel(
                 },
 
                 undoEnabled = false,
-                gameResult = if (finished) {
-                    resultFrom(state.result)
-                } else {
-                    null
-                }
-            )
+                gameResult = if (finished) resultFrom(state.result) else null
+            ).withSideRatings()
         }
+        if (finished && _uiState.value.isRated && !ratingWasRefreshed) {
+            ratingWasRefreshed = true
+            viewModelScope.launch {
+                refreshRating(captureChange = true)
+                lastOpponentUsername?.let { loadOpponentRating(it) }
+            }
+        }
+    }
+
+    private suspend fun loadOpponentRating(username: String) {
+        if (username.equals("You", true) || username.equals("Opponent", true)) return
+        val profile = runCatching { ratingService.getPublicProfile(username).data }.getOrNull() ?: return
+        val rating = mode?.let { profile.ratings?.get(it)?.rating } ?: profile.rating
+        _uiState.update { current ->
+            current.copy(opponentRating = rating ?: current.opponentRating).withSideRatings()
+        }
+    }
+
+    private fun GameUiState.withSideRatings(): GameUiState {
+        val mine = playerRating
+        val theirs = opponentRating
+        return copy(
+            whiteRating = when (myColor) {
+                PieceColor.WHITE -> mine
+                PieceColor.BLACK -> theirs
+                null -> whiteRating
+            },
+            blackRating = when (myColor) {
+                PieceColor.BLACK -> mine
+                PieceColor.WHITE -> theirs
+                null -> blackRating
+            }
+        )
     }
 
     private suspend fun resolveColor(state: SocketIncoming.GameState): PieceColor? {

@@ -1,4 +1,4 @@
-package com.abhinav.caisarra.presentation.components
+package com.abhinav.caisarra.core.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,9 +34,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.ui.theme.AuthCardCornerRadius
-import com.abhinav.caisarra.ui.theme.AuthCardHorizontalPadding
-import com.abhinav.caisarra.ui.theme.AuthCardMaxWidth
+import com.abhinav.caisarra.core.ui.theme.AuthCardCornerRadius
+import com.abhinav.caisarra.core.ui.theme.AuthCardHorizontalPadding
+import com.abhinav.caisarra.core.ui.theme.AuthCardMaxWidth
+import com.abhinav.caisarra.core.ui.backgrounds.LoginBackground
 import com.caisaara.ui.theme.CardBackground
 import com.caisaara.ui.theme.CardBorderNavy
 import com.caisaara.ui.theme.CyanLight

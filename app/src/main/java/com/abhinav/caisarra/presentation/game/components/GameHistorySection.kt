@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.data.local.entity.GameEntity
-import com.abhinav.caisarra.presentation.theme.JetBrainsMono
+import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

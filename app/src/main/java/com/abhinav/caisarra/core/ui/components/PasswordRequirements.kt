@@ -1,4 +1,4 @@
-package com.abhinav.caisarra.presentation.components
+package com.abhinav.caisarra.core.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.caisaara.ui.theme.Feildbackground
-import com.caisaara.ui.theme.EmeraldNormal
 import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.SubtleText
 

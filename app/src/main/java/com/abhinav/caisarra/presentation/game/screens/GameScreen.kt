@@ -203,7 +203,9 @@ fun GameScreen(
         GameResultDialog(
             result = result,
             onNewGame = onNewGame,
-            onHome = onHome
+            onHome = onHome,
+            whitePlayerName = state.whitePlayerName,
+            blackPlayerName = state.blackPlayerName
         )
     }
 }

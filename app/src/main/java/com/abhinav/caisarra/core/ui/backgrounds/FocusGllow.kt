@@ -1,6 +1,5 @@
-package com.abhinav.caisarra.presentation.components
+package com.abhinav.caisarra.core.ui.backgrounds
 
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color

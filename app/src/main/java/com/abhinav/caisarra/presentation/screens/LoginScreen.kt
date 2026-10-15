@@ -14,16 +14,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.components.AuthCard
-import com.abhinav.caisarra.presentation.components.AuthFooter
-import com.abhinav.caisarra.presentation.components.AuthHeader
-import com.abhinav.caisarra.presentation.components.AuthMessage
-import com.abhinav.caisarra.presentation.components.GeneralButton
-import com.abhinav.caisarra.presentation.components.PasswordTextField
-import com.abhinav.caisarra.presentation.components.SimpleTextField
+import com.abhinav.caisarra.core.ui.components.AuthCard
+import com.abhinav.caisarra.core.ui.components.AuthFooter
+import com.abhinav.caisarra.core.ui.components.AuthHeader
+import com.abhinav.caisarra.core.ui.components.AuthMessage
+import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.PasswordTextField
+import com.abhinav.caisarra.core.ui.components.SimpleTextField
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
-import com.abhinav.caisarra.ui.theme.LoginCardHeight
-import com.abhinav.caisarra.ui.theme.LoginCardVerticalBias
+import com.abhinav.caisarra.core.ui.theme.LoginCardHeight
+import com.abhinav.caisarra.core.ui.theme.LoginCardVerticalBias
 
 @Composable
 fun LoginScreen(

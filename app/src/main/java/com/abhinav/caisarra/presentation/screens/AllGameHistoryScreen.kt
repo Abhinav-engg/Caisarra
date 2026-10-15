@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
-import com.abhinav.caisarra.presentation.theme.JetBrainsMono
+import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

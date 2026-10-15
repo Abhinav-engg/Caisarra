@@ -16,9 +16,19 @@ class InviteRepository private constructor(context: Context) {
     suspend fun createInvite(
         timeControlMinutes: Int,
         incrementSeconds: Int,
-        color: String
+        color: String,
+        rated: Boolean
     ): Result<CreateInviteResponse> =
-        call { service.createInvite(CreateInviteRequest(timeControlMinutes, incrementSeconds, color)) }
+        call {
+            service.createInvite(
+                CreateInviteRequest(
+                    timeControlMinutes = timeControlMinutes,
+                    incrementSeconds = incrementSeconds,
+                    color = color,
+                    rated = rated
+                )
+            )
+        }
 
     suspend fun previewInvite(code: String): Result<InvitePreviewResponse> =
         call { service.previewInvite(code) }

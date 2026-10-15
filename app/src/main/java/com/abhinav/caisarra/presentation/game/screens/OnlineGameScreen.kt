@@ -1,5 +1,10 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -37,8 +42,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -58,7 +65,10 @@ import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.GameResultDialog
 import com.abhinav.caisarra.presentation.game.components.MoveList
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
+import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
+import com.abhinav.caisarra.presentation.game.model.PieceColor
+import kotlinx.coroutines.launch
 
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
@@ -71,9 +81,15 @@ private val HandleColor = Color(0xFF4A5560)
 @Composable
 fun OnlineGameScreen(
     viewModel: OnlineGameViewModel,
-    onHome: () -> Unit
+    onHome: () -> Unit,
+    onNewOpponent: (minutes: Int, incrementSeconds: Int) -> Unit = { _, _ -> onHome() },
+    onRematchStarted: (gameId: String, shareLink: String, opponentName: String) -> Unit = { _, _, _ -> },
+    onStartAnalysis: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var rematchBusy by remember { mutableStateOf(false) }
     val waiting by viewModel.waitingForOpponent.collectAsState()
     val chat by viewModel.chat.collectAsState()
     val chatMuted by viewModel.chatMuted.collectAsState()
@@ -88,7 +104,9 @@ fun OnlineGameScreen(
         if (showChat || chatMuted) seenCount = chat.size
     }
 
-    BackHandler(enabled = showChat) { showChat = false }
+    BackHandler(enabled = showChat || state.gameResult != null) {
+        if (showChat) showChat = false else onHome()
+    }
 
     val unread = if (showChat || chatMuted) 0 else chat.drop(seenCount).count { it.senderId != myUserId }
     val gameOngoing = state.gameResult == null
@@ -134,9 +152,40 @@ fun OnlineGameScreen(
                 .background(ScreenBg)
                 .systemBarsPadding()
         ) {
-            val boardSize = minOf(maxWidth - 24.dp, maxHeight * 0.5f)
+            val isWide = maxWidth > maxHeight && maxWidth >= 600.dp
+            val boardSize = if (isWide) {
+                minOf(maxHeight - 24.dp, maxWidth * 0.55f)
+            } else {
+                minOf(maxWidth - 24.dp, maxHeight * 0.5f)
+            }
 
-            Column(modifier = Modifier.fillMaxSize()) {
+            if (isWide) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.size(boardSize)) {
+                        OnlineBoard(state, viewModel::onSquareClick)
+                    }
+                    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        OnlineTopBar(state.isRated, unread, chatMuted, onHome, viewModel::flipBoard) { showChat = true }
+                        state.errorMessage?.let { Banner(it, BannerBg); Spacer(Modifier.height(6.dp)) }
+                        if (drawOfferSent) {
+                            Banner("Draw offer sent. Waiting for your opponent...", InfoBannerBg)
+                            Spacer(Modifier.height(6.dp))
+                        }
+                        TopClock(state)
+                        MoveList(
+                            moves = state.moves,
+                            modifier = Modifier.weight(1f).padding(vertical = 8.dp)
+                        )
+                        BottomClock(state)
+                        Spacer(Modifier.height(8.dp))
+                        OnlineActions(gameOngoing, viewModel::offerDraw, viewModel::resign)
+                    }
+                }
+            } else Column(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -145,6 +194,7 @@ fun OnlineGameScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     OnlineTopBar(
+                        isRated = state.isRated,
                         unread = unread,
                         muted = chatMuted,
                         onHome = onHome,
@@ -169,17 +219,7 @@ fun OnlineGameScreen(
                     TopClock(state = state, modifier = Modifier.width(boardSize))
                     Spacer(modifier = Modifier.height(6.dp))
                     Box(modifier = Modifier.size(boardSize)) {
-                        ChessBoard(
-                            board = state.board,
-                            selectedSquare = state.selectedSquare,
-                            legalMoves = state.legalMoves,
-                            lastMoveFrom = state.lastMoveFrom,
-                            lastMoveTo = state.lastMoveTo,
-                            isWhiteInCheck = state.isWhiteInCheck,
-                            isBlackInCheck = state.isBlackInCheck,
-                            isFlipped = state.isBoardFlipped,
-                            onSquareClick = viewModel::onSquareClick
-                        )
+                        OnlineBoard(state, viewModel::onSquareClick)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     BottomClock(state = state, modifier = Modifier.width(boardSize))
@@ -212,17 +252,7 @@ fun OnlineGameScreen(
                     )
                 }
 
-                GameBottomBar(
-                    canUndo = false,
-                    canRedo = false,
-                    optionsEnabled = gameOngoing,
-                    onUndo = {},
-                    onRedo = {},
-                    onOfferDraw = viewModel::offerDraw,
-                    onResign = viewModel::resign,
-                    showDraw = true,
-                    showUndoRedo = false
-                )
+                OnlineActions(gameOngoing, viewModel::offerDraw, viewModel::resign)
             }
         }
 
@@ -251,12 +281,129 @@ fun OnlineGameScreen(
         PromotionDialog(onPieceSelected = viewModel::onPromote)
     }
     state.gameResult?.let { result ->
-        GameResultDialog(
-            result = result,
-            onNewGame = onHome,
-            onHome = onHome
-        )
+        if (state.isRated) {
+            RatedGameResultScreen(
+                state = state,
+                result = result,
+                rematchBusy = rematchBusy,
+                onClose = onHome,
+                onShare = { shareGame(context, viewModel.pgn(), resultShareText(state, result)) },
+                onStartAnalysis = onStartAnalysis,
+                onRematch = {
+                    if (rematchBusy) return@RatedGameResultScreen
+                    rematchBusy = true
+                    scope.launch {
+                        viewModel.createRematch()
+                            .onSuccess { invite ->
+                                copyText(context, invite.link, "Rematch link copied — share it with $opponentName")
+                                shareGame(
+                                    context,
+                                    invite.link,
+                                    "Rematch on Caisaara with $opponentName: ${invite.link}"
+                                )
+                                onRematchStarted(invite.gameId, invite.link, opponentName)
+                            }
+                            .onFailure { error ->
+                                rematchBusy = false
+                                Toast.makeText(
+                                    context,
+                                    error.message ?: "Could not start a rematch with this opponent.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    }
+                },
+                onNewOpponent = {
+                    onNewOpponent(state.timeControlMinutes, state.incrementSeconds)
+                },
+                onSavePgn = { savePgn(context, viewModel.pgn()) }
+            )
+        } else {
+            GameResultDialog(
+                result = result,
+                onNewGame = { onNewOpponent(state.timeControlMinutes, state.incrementSeconds) },
+                onHome = onHome,
+                playerColor = state.myColor,
+                playerRating = state.playerRating,
+                ratingChange = state.ratingChange,
+                isRated = state.isRated,
+                whitePlayerName = state.whitePlayerName,
+                blackPlayerName = state.blackPlayerName
+            )
+        }
     }
+}
+
+private fun resultShareText(state: GameUiState, result: GameResult): String {
+    val outcome = when (result) {
+        GameResult.DRAW -> "drew"
+        GameResult.WHITE_WINS -> if (state.myColor == PieceColor.BLACK) "lost to" else "beat"
+        GameResult.BLACK_WINS -> if (state.myColor == PieceColor.BLACK) "beat" else "lost to"
+    }
+    val opponent = when (state.myColor) {
+        PieceColor.WHITE -> state.blackPlayerName
+        PieceColor.BLACK -> state.whitePlayerName
+        null -> "my opponent"
+    }
+    val rating = state.playerRating?.let { rating ->
+        val change = state.ratingChange?.let { change ->
+            if (change > 0) " (+$change)" else " ($change)"
+        }.orEmpty()
+        " Rating $rating$change."
+    }.orEmpty()
+    return "I just $outcome $opponent on Caisaara.$rating"
+}
+
+private fun savePgn(context: Context, pgn: String) {
+    copyText(context, pgn, "PGN copied")
+}
+
+private fun copyText(context: Context, text: String, toast: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText("caisaara", text))
+    Toast.makeText(context, toast, Toast.LENGTH_SHORT).show()
+}
+
+private fun shareGame(context: Context, pgn: String, summary: String) {
+    context.startActivity(
+        Intent.createChooser(
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, "$summary\n\n$pgn")
+            },
+            null
+        )
+    )
+}
+
+@Composable
+private fun OnlineBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra.presentation.game.model.Square) -> Unit) {
+    ChessBoard(
+        board = state.board,
+        selectedSquare = state.selectedSquare,
+        legalMoves = state.legalMoves,
+        lastMoveFrom = state.lastMoveFrom,
+        lastMoveTo = state.lastMoveTo,
+        isWhiteInCheck = state.isWhiteInCheck,
+        isBlackInCheck = state.isBlackInCheck,
+        isFlipped = state.isBoardFlipped,
+        onSquareClick = onSquareClick
+    )
+}
+
+@Composable
+private fun OnlineActions(gameOngoing: Boolean, onOfferDraw: () -> Unit, onResign: () -> Unit) {
+    GameBottomBar(
+        canUndo = false,
+        canRedo = false,
+        optionsEnabled = gameOngoing,
+        onUndo = {},
+        onRedo = {},
+        onOfferDraw = onOfferDraw,
+        onResign = onResign,
+        showDraw = true,
+        showUndoRedo = false
+    )
 }
 
 @Composable
@@ -335,6 +482,7 @@ private fun Banner(text: String, background: Color, modifier: Modifier = Modifie
 
 @Composable
 private fun OnlineTopBar(
+    isRated: Boolean,
     unread: Int,
     muted: Boolean,
     onHome: () -> Unit,
@@ -349,13 +497,22 @@ private fun OnlineTopBar(
         TextButton(onClick = onHome) {
             Text(text = "Home", color = Color.White)
         }
-        Text(
-            text = "MOSAIC",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "MOSAIC",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = if (isRated) "RATED" else "UNRATED",
+                color = if (isRated) Accent else Color(0xFFA6C1D4),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+        }
         Row {
             TextButton(onClick = onFlip) {
                 Text(text = "Flip", color = Color.White)
@@ -402,6 +559,7 @@ private fun BottomClock(state: GameUiState, modifier: Modifier = Modifier) {
             playerName = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
+            rating = state.playerRating,
             isDailyMode = state.isDailyMode,
             modifier = modifier
         )
@@ -411,7 +569,8 @@ private fun BottomClock(state: GameUiState, modifier: Modifier = Modifier) {
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
             isDailyMode = state.isDailyMode,
-                                                                                                                                                                                                                                                                                                                                                                                  modifier = modifier
+            rating = state.playerRating,
+            modifier = modifier
         )
     }
 }

@@ -10,13 +10,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.components.AuthCard
-import com.abhinav.caisarra.presentation.components.AuthHeader
-import com.abhinav.caisarra.presentation.components.AuthMessage
-import com.abhinav.caisarra.presentation.components.GeneralButton
-import com.abhinav.caisarra.presentation.components.PasswordTextField
+import com.abhinav.caisarra.core.ui.components.AuthCard
+import com.abhinav.caisarra.core.ui.components.AuthHeader
+import com.abhinav.caisarra.core.ui.components.AuthMessage
+import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.PasswordTextField
 import com.abhinav.caisarra.presentation.viewmodel.SetNewPasswordViewModel
-import com.abhinav.caisarra.ui.theme.SetNewPasswordCardHeight
+import com.abhinav.caisarra.core.ui.theme.SetNewPasswordCardHeight
 import com.caisaara.ui.theme.EmeraldNormal
 import com.caisaara.ui.theme.SubtleText
 
