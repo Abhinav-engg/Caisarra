@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.data.remote
 
 import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.data.remote.api.AnalysisService
 import com.abhinav.caisarra.data.remote.api.AuthService
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -67,5 +68,8 @@ object RetrofitInstance {
     fun createMatchmakingService(tokenManager: TokenManager): MatchmakingService =
         authenticatedRetrofit(tokenManager).create()
     fun createBotGameService(tokenManager: TokenManager): BotGameService =
+        authenticatedRetrofit(tokenManager).create()
+
+    fun createAnalysisService(tokenManager: TokenManager): AnalysisService =
         authenticatedRetrofit(tokenManager).create()
 }

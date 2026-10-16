@@ -5,6 +5,7 @@ import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
+import com.abhinav.caisarra.data.remote.api.AnalysisService
 import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
 import com.abhinav.caisarra.data.remote.dto.RatingRequest
@@ -220,5 +221,8 @@ class AuthRepository private constructor(context: Context) {
     }
     fun createMatchmakingService(): MatchmakingService =
         RetrofitInstance.createMatchmakingService(tokenManager)
+
+    fun createAnalysisService(): AnalysisService =
+        RetrofitInstance.createAnalysisService(tokenManager)
 
 }

@@ -75,6 +75,7 @@ import com.abhinav.caisarra.presentation.game.screens.MatchmakingScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.MatchmakingViewModel
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.abhinav.caisarra.data.repository.GameAnalysisRepository
 import com.abhinav.caisarra.presentation.game.screens.BotSetupScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.BotSetupViewModel
 import com.abhinav.caisarra.presentation.game.BotGameViewModel
@@ -82,6 +83,7 @@ import com.abhinav.caisarra.presentation.game.screens.BotGameScreen
 import com.abhinav.caisarra.presentation.game.screens.PassAndPlaySetupScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.PassAndPlaySetupViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
+import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 
 
 object AppRoutes {
@@ -970,8 +972,18 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(
             route = AppRoutes.GAME_ANALYSIS,
             arguments = listOf(navArgument("gameId") { type = NavType.StringType })
-        ) {
-            GameAnalysisScreen(onBack = { navController.safeBack(AppRoutes.ONLINE_GAME) })
+        ) { entry ->
+            val gameId = entry.arguments?.getString("gameId").orEmpty()
+            val analysisViewModel = screenViewModel {
+                GameAnalysisViewModel(
+                    repository = GameAnalysisRepository(authRepository.createAnalysisService()),
+                    gameId = gameId
+                )
+            }
+            GameAnalysisScreen(
+                viewModel = analysisViewModel,
+                onBack = { navController.safeBack(AppRoutes.ONLINE_GAME) }
+            )
         }
 
         composable(route = AppRoutes.PROFILE) {
