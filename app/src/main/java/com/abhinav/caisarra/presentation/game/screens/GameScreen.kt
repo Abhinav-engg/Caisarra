@@ -224,6 +224,7 @@ private fun Board(
         isWhiteInCheck = state.isWhiteInCheck,
         isBlackInCheck = state.isBlackInCheck,
         isFlipped = state.isBoardFlipped,
+        moveAnimationEvent = state.moveAnimationEvent,
         onSquareClick = { square ->
             onIntent(GameIntent.SquareClicked(square))
         }

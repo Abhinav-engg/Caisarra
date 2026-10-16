@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
+import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 class GameViewModel(
     private val gameRepository: GameRepository,
     private val authRepository: AuthRepository,
@@ -48,6 +48,8 @@ class GameViewModel(
     private var initialTimeMs = newTimeMinutes * 60_000L
     private var promotionFrom: DomainSquare? = null
     private var promotionTo: DomainSquare? = null
+    private var moveAnimationId = 0L
+
     private val autoFlip = !resumeGame && newBoardFlipped
 
     init {
@@ -56,7 +58,6 @@ class GameViewModel(
 
     private fun loadGame() {
         viewModelScope.launch {
-            // Resolve guest status before creating or loading a game.
             isGuest = authRepository.isGuest()
 
             ownerId = authRepository.getUsername()
@@ -73,7 +74,6 @@ class GameViewModel(
 
     private suspend fun createNewGame() {
         val created = if (isGuest) {
-            // Guest games are persisted in Room.
             gameRepository.startGame(
                 ownerId = ownerId,
                 whiteName = newWhiteName.ifBlank { "Player 1" },
@@ -360,30 +360,40 @@ class GameViewModel(
         promotionTo = null
     }
 
-    private fun playMove(
-        move: Move
-    ) {
+    private fun playMove(move: Move) {
         val currentGame = game ?: return
+        val movingPieceBeforeMove = currentGame.pieces
+            .firstOrNull { it.square == move.from }
+            ?.toUiPiece()
         val played = currentGame.play(move)
 
         if (!played) {
             clearSelection()
             return
         }
-
+        val animationEvent = movingPieceBeforeMove?.let { piece ->
+            PieceMoveAnimationEvent(
+                id = ++moveAnimationId,
+                piece = piece,
+                from = move.from.toUiSquare(),
+                to = move.to.toUiSquare()
+            )
+        }
         clearSelection()
         redoTimeSnapshots.clear()
-        clock?.switchTo(
-            currentGame.turn
-        )
+
+        clock?.switchTo(currentGame.turn)
 
         clock?.times?.value?.let { times ->
             moveTimeSnapshots += times.first to times.second
         }
+        updateUiState(
+            moveAnimationEvent = animationEvent
+        )
 
-        updateUiState()
         persistAfterMove()
     }
+
 
     private fun undo() {
 
@@ -532,7 +542,8 @@ class GameViewModel(
         }
     }
 
-    private fun updateUiState(clockEnabled: Boolean = this.clockEnabled) {
+    private fun updateUiState(clockEnabled: Boolean = this.clockEnabled,moveAnimationEvent: PieceMoveAnimationEvent? =
+        _state.value.moveAnimationEvent) {
         val currentGame = game ?: return
         val domainPieces = currentGame.pieces
         val uiBoard = domainPieces.associate { piece ->
@@ -596,12 +607,14 @@ class GameViewModel(
                 hasClock = clockEnabled,
                 errorMessage = null,
                 board = uiBoard,
+                moveAnimationEvent = moveAnimationEvent,
                 whitePlayerName = it.whitePlayerName.ifBlank {
                     newWhiteName
                 },
                 blackPlayerName = it.blackPlayerName.ifBlank {
                     newBlackName
                 },
+
 
                 isWhiteTurn = currentGame.turn == DomainPieceColor.White,
                 lastMoveFrom = lastMove?.from?.toUiSquare(),
@@ -628,6 +641,7 @@ class GameViewModel(
                 undoEnabled = undoAllowed,
                 canUndo = undoAllowed && currentGame.canUndo,
                 canRedo = undoAllowed && currentGame.canRedo
+
             )
         }
     }
