@@ -84,6 +84,8 @@ import com.abhinav.caisarra.presentation.game.screens.PassAndPlaySetupScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.PassAndPlaySetupViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
+import com.abhinav.caisarra.presentation.screens.EditProfileScreen
+import androidx.navigation.compose.currentBackStackEntryAsState
 
 
 object AppRoutes {
@@ -111,6 +113,7 @@ object AppRoutes {
     const val ONLINE_GAME = "online_game/{gameId}"
     const val ALL_GAME_HISTORY = "all_game_history"
     const val PROFILE = "profile"
+    const val EDIT_PROFILE = "edit_profile"
     const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
     const val GAME_ANALYSIS = "game_analysis/{gameId}"
 
@@ -759,17 +762,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                 )
             }
 
-
-//            val historyViewModel = screenViewModel {
-//                GameHistoryReviewViewModel(
-//                    repository = GameRepository.get(
-//                        context.applicationContext
-//                    ),
-//
-//                    gameId = gameId
-//                )
-//            }
-
             GameHistoryScreen(
                 viewModel = historyViewModel,
                 onBack = {
@@ -1009,6 +1001,26 @@ fun AppNavigation(authRepository: AuthRepository) {
             LaunchedEffect(Unit) {
                 isGuest = authRepository.isGuest()
             }
+            val currentBackStackEntry by navController.currentBackStackEntryAsState()
+
+            val profileEntry = currentBackStackEntry
+                ?.takeIf { it.destination.route == AppRoutes.PROFILE }
+
+            val refreshRequested by (
+                    profileEntry?.savedStateHandle
+                        ?.getStateFlow("profile_refresh_requested", false)
+                        ?: remember {
+                            kotlinx.coroutines.flow.MutableStateFlow(false)
+                        }
+                    ).collectAsState()
+
+            LaunchedEffect(refreshRequested, profileEntry) {
+                if (refreshRequested) {
+                    profileViewModel.loadProfile()
+                    profileEntry?.savedStateHandle
+                        ?.set("profile_refresh_requested", false)
+                }
+            }
 
             ProfileScreen(
                 viewModel = profileViewModel,
@@ -1017,9 +1029,39 @@ fun AppNavigation(authRepository: AuthRepository) {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
                     }
+                },
+                onEditProfile = {
+                        navController.navigate(AppRoutes.EDIT_PROFILE){
+                            launchSingleTop = true
+                        }
+
                 }
             )
         }
+
+        composable(route = AppRoutes.EDIT_PROFILE) {
+            val editProfileViewModel = screenViewModel {
+                ProfileViewModel(
+                    ProfileRepository(
+                        authRepository.createProfileService()
+                    )
+                )
+            }
+
+            EditProfileScreen(
+                viewModel = editProfileViewModel,
+                onBack = {
+                    navController.safeBack(AppRoutes.PROFILE)
+                },
+                onSaved = {
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("profile_refresh_requested", true)
+                    navController.safeBack(AppRoutes.PROFILE)
+                }
+            )
+        }
+
 
         composable(route = AppRoutes.BOT_SETUP) {
             val botSetupViewModel = screenViewModel {
