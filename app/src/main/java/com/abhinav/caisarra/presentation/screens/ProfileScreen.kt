@@ -42,6 +42,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -59,6 +61,11 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+
+
 
 private val ProfileBackground = Color(0xFF080D13)
 private val ProfileCard = Color(0xFF161F2D)
@@ -74,7 +81,8 @@ private val ProfileError = Color(0xFFFF7777)
 fun ProfileScreen(
     viewModel: ProfileViewModel,
     isGuest: Boolean,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEditProfile: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -174,6 +182,67 @@ fun ProfileScreen(
                     fontSize = 12.sp
                 )
             }
+
+            var settingsExpanded by remember { mutableStateOf(false) }
+            Box {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(ProfileCard)
+                        .border(
+                            width = 1.dp,
+                            color = ProfileBorder,
+                            shape = RoundedCornerShape(14.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    IconButton(
+                        onClick = { settingsExpanded = true },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Profile settings",
+                            tint = ProfileWhite,
+                            modifier = Modifier.size(23.dp)
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = settingsExpanded,
+                    onDismissRequest = { settingsExpanded = false },
+                    modifier = Modifier .clip(RoundedCornerShape(18.dp))
+                        .background(ProfileCard)
+                        .border(
+                            width = 1.dp,
+                            color = ProfileBorder,
+                            shape = RoundedCornerShape(18.dp)),
+                    containerColor = ProfileCard,
+                    shape = RoundedCornerShape(18.dp),
+                    shadowElevation = 10.dp,
+                    tonalElevation = 0.dp
+
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Edit Profile",
+                                color = ProfileWhite,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        },
+                        enabled = !isGuest,
+                        onClick = {
+                            settingsExpanded = false
+                            onEditProfile()
+                        },
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
+            }
+
         }
         if (state.loading && state.profile == null) {
             Box(
@@ -251,6 +320,20 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Bold,
                             color = ProfileBackground
                         )
+
+                        profile.avatarUrl
+                            ?.trim()
+                            ?.takeIf { it.startsWith("https://", ignoreCase = true) }
+                            ?.let { url ->
+                                AsyncImage(
+                                    model = url,
+                                    contentDescription = "Profile picture",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(76.dp)
+                                        .clip(CircleShape)
+                                )
+                            }
                     }
 
                     Column(
@@ -470,160 +553,6 @@ fun ProfileScreen(
                         fontSize = 15.sp,
                         lineHeight = 22.sp
                     )
-                }
-            }
-
-            if (!isGuest) {
-                if (!editing) {
-                    GradientActionButton(
-                        text = "EDIT PROFILE",
-                        onClick = {
-                            validationError = null
-                            editing = true
-                        }
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(ProfileCard)
-                            .border(
-                                1.dp,
-                                ProfileBorder,
-                                RoundedCornerShape(24.dp)
-                            )
-                            .padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        SectionHeading(
-                            title = "EDIT YOUR PROFILE",
-                            subtitle = "Update your player information"
-                        )
-
-                        ProfileInput(
-                            value = displayName,
-                            onValueChange = {
-                                displayName = it
-                                validationError = null
-                            },
-                            label = "Display name",
-                            singleLine = true
-                        )
-
-                        ProfileInput(
-                            value = country,
-                            onValueChange = {
-                                country = it
-                                validationError = null
-                            },
-                            label = "Country code (e.g. IN)",
-                            singleLine = true,
-                            capitalization = KeyboardCapitalization.Characters
-                        )
-
-                        ProfileInput(
-                            value = bio,
-                            onValueChange = {
-                                bio = it
-                                validationError = null
-                            },
-                            label = "Bio",
-                            supportingText = "${bio.length}/160"
-                        )
-
-                        ProfileInput(
-                            value = avatarUrl,
-                            onValueChange = {
-                                avatarUrl = it
-                                validationError = null
-                            },
-                            label = "Avatar HTTPS URL",
-                            singleLine = true,
-                            keyboardType = KeyboardType.Uri
-                        )
-
-                        validationError?.let {
-                            Text(
-                                text = it,
-                                color = ProfileError,
-                                fontSize = 13.sp
-                            )
-                        }
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                GradientActionButton(
-                                    text = if (state.saving) {
-                                        "SAVING..."
-                                    } else {
-                                        "SAVE CHANGES"
-                                    },
-                                    enabled = !state.saving
-                                ) {
-                                    validationError = when {
-                                        displayName.length > 30 ->
-                                            "Display name must be at most 30 characters."
-
-                                        displayName.any {
-                                            it == '\n' || it == '\t' || it == '\r'
-                                        } ->
-                                            "Display name must be a single line."
-
-                                        bio.length > 160 ->
-                                            "Bio must be at most 160 characters."
-
-                                        country.isNotBlank() &&
-                                                !country.trim().matches(
-                                                    Regex("[A-Za-z]{2}")
-                                                ) ->
-                                            "Enter a valid two-letter country code."
-
-                                        avatarUrl.isNotBlank() &&
-                                                !avatarUrl.trim().startsWith("https://") ->
-                                            "Avatar URL must start with https://."
-
-                                        avatarUrl.length > 500 ->
-                                            "Avatar URL must be at most 500 characters."
-
-                                        else -> null
-                                    }
-
-                                    if (validationError == null) {
-                                        viewModel.updateProfile(
-                                            displayName = displayName,
-                                            country = country,
-                                            bio = bio,
-                                            avatarUrl = avatarUrl
-                                        )
-                                        editing = false
-                                    }
-                                }
-                            }
-                        }
-
-                        TextButton(
-                            onClick = {
-                                editing = false
-                                validationError = null
-                                state.profile?.let {
-                                    displayName = it.displayName.orEmpty()
-                                    country = it.country.orEmpty()
-                                    bio = it.bio.orEmpty()
-                                    avatarUrl = it.avatarUrl.orEmpty()
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                "CANCEL",
-                                color = ProfileMuted,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                 }
             }
 
