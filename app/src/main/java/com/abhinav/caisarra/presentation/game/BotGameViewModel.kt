@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 
 class BotGameViewModel(
     application: Application,
@@ -48,6 +49,8 @@ class BotGameViewModel(
     private var finished = false
     private var reconnecting = false
     private var moveCount = 0
+    private var animationSequence = 0L
+    private var lastAnimatedMoveKey: String? = null
 
     init {
         viewModelScope.launch {
@@ -192,9 +195,40 @@ class BotGameViewModel(
             myColor = if (game.playerColor == "white") PieceColor.WHITE else PieceColor.BLACK
         }
 
+        val previousBoard = _uiState.value.board
+        val lastMove = game.moves.lastOrNull()
+        val moveKey = lastMove?.let { "$it:${game.moves.size}" }
+
+        val animationEvent = if (
+            previousBoard.isNotEmpty() &&
+            lastMove != null &&
+            moveKey != lastAnimatedMoveKey &&
+            lastMove.length >= 4
+        ) {
+            val from = squareFrom(lastMove.take(2))
+            val to = squareFrom(lastMove.drop(2).take(2))
+            val movingPiece = previousBoard[from]
+
+            if (movingPiece != null) {
+                PieceMoveAnimationEvent(
+                    id = ++animationSequence,
+                    piece = movingPiece,
+                    from = from,
+                    to = to
+                )
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+
+        lastAnimatedMoveKey = moveKey
+
         engine.loadFen(game.position)
         finished = game.status == "finished"
         moveCount = game.moves.size
+
 
         val turn = engine.turn()
         val inCheck = engine.checkSquare() != null
@@ -203,13 +237,12 @@ class BotGameViewModel(
         _botThinking.value = !finished && !myTurn
 
         val botName = "Bot (${game.botRating})"
-        val lastMove = game.moves.lastOrNull()
-
         _uiState.update {
             it.copy(
                 isLoading = false,
                 errorMessage = null,
                 board = engine.pieces().toUiBoard(),
+                moveAnimationEvent = animationEvent ?: it.moveAnimationEvent,
                 whitePlayerName = if (myColor == PieceColor.WHITE) "You" else botName,
                 blackPlayerName = if (myColor == PieceColor.BLACK) "You" else botName,
                 isWhiteTurn = whiteTurn,

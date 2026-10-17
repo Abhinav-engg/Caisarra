@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 
 class OnlineGameViewModel(
     application: Application,
@@ -57,7 +58,6 @@ class OnlineGameViewModel(
     private val inviteRepository = InviteRepository.get(application)
     private val clock = GameClock(viewModelScope, 0L, 0L) { }
 
-    // Matchmaking and invitations are rated unless the server marks the game as friendly.
     private val _uiState = MutableStateFlow(GameUiState(isRated = true))
     
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
@@ -82,6 +82,8 @@ class OnlineGameViewModel(
     private var ratingWasRefreshed = false
     private var rematchInFlight = false
     private var lastOpponentUsername: String? = null
+    private var animationSequence = 0L
+    private var lastAnimatedMoveKey: String? = null
 
     init {
         viewModelScope.launch {
@@ -455,6 +457,37 @@ class OnlineGameViewModel(
             }
         }
 
+        val previousBoard = _uiState.value.board
+        val moveKey = state.lastMove?.let {
+            "$it:${state.moves?.size ?: 0}"
+        }
+
+        val animationEvent = if (
+            previousBoard.isNotEmpty() &&
+            !state.lastMove.isNullOrBlank() &&
+            moveKey != lastAnimatedMoveKey &&
+            state.lastMove.length >= 4
+        ) {
+            val from = squareFrom(state.lastMove.take(2))
+            val to = squareFrom(state.lastMove.drop(2).take(2))
+            val movingPiece = previousBoard[from]
+
+            if (movingPiece != null) {
+                PieceMoveAnimationEvent(
+                    id = ++animationSequence,
+                    piece = movingPiece,
+                    from = from,
+                    to = to
+                )
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+
+        lastAnimatedMoveKey = moveKey
+
         engine.loadFen(state.position)
         finished = state.status == "finished"
 
@@ -499,6 +532,7 @@ class OnlineGameViewModel(
                 isLoading = false,
                 errorMessage = null,
                 board = engine.pieces().toUiBoard(),
+                moveAnimationEvent = animationEvent ?: previous.moveAnimationEvent,
 
                 whitePlayerName = whiteName
                     ?: previous.whitePlayerName,

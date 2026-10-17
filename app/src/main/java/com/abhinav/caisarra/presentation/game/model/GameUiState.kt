@@ -46,4 +46,5 @@ data class GameUiState(
     val redoEnabled: Boolean = false,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
+    val moveAnimationEvent: PieceMoveAnimationEvent? = null
 )

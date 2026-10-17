@@ -387,6 +387,7 @@ private fun OnlineBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra
         isWhiteInCheck = state.isWhiteInCheck,
         isBlackInCheck = state.isBlackInCheck,
         isFlipped = state.isBoardFlipped,
+        moveAnimationEvent = state.moveAnimationEvent,
         onSquareClick = onSquareClick
     )
 }

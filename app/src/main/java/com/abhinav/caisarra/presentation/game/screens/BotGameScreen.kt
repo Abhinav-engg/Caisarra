@@ -176,6 +176,7 @@ private fun BotBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra.pr
         isWhiteInCheck = state.isWhiteInCheck,
         isBlackInCheck = state.isBlackInCheck,
         isFlipped = state.isBoardFlipped,
+        moveAnimationEvent = state.moveAnimationEvent,
         onSquareClick = onSquareClick
     )
 }
