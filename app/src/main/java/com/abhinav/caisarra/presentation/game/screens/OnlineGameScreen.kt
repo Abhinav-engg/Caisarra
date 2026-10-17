@@ -68,6 +68,7 @@ import com.abhinav.caisarra.presentation.game.components.PromotionDialog
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
+import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 import kotlinx.coroutines.launch
 
 private val ScreenBg = Color(0xFF080D13)
@@ -81,6 +82,7 @@ private val HandleColor = Color(0xFF4A5560)
 @Composable
 fun OnlineGameScreen(
     viewModel: OnlineGameViewModel,
+    analysisViewModel: GameAnalysisViewModel,
     onHome: () -> Unit,
     onNewOpponent: (minutes: Int, incrementSeconds: Int) -> Unit = { _, _ -> onHome() },
     onRematchStarted: (gameId: String, shareLink: String, opponentName: String) -> Unit = { _, _, _ -> },
@@ -316,7 +318,8 @@ fun OnlineGameScreen(
                 onNewOpponent = {
                     onNewOpponent(state.timeControlMinutes, state.incrementSeconds)
                 },
-                onSavePgn = { savePgn(context, viewModel.pgn()) }
+                onSavePgn = { savePgn(context, viewModel.pgn()) },
+                analysisViewModel = analysisViewModel
             )
         } else {
             GameResultDialog(

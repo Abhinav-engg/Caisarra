@@ -32,6 +32,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,10 +46,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.data.remote.dto.AnalysisSummaryStatsDto
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
-import com.abhinav.caisarra.presentation.game.model.HardcodedGameAnalysis
 import com.abhinav.caisarra.presentation.game.model.PieceColor
+import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 
 private val ScreenBg = Color(0xFF0B1218)
 private val Card = Color(0xFF121A22)
@@ -70,8 +74,12 @@ fun RatedGameResultScreen(
     onStartAnalysis: () -> Unit,
     onRematch: () -> Unit,
     onNewOpponent: () -> Unit,
-    onSavePgn: () -> Unit
+    onSavePgn: () -> Unit,
+    analysisViewModel: GameAnalysisViewModel
 ) {
+    val analysis by analysisViewModel.state.collectAsState()
+    LaunchedEffect(Unit) { analysisViewModel.start() }
+
     val outcome = outcomeFor(result, state.myColor)
     val accent = when (outcome) {
         ResultOutcome.VICTORY -> Win
@@ -149,7 +157,7 @@ fun RatedGameResultScreen(
                 accent = accent
             )
             Spacer(Modifier.height(14.dp))
-            StatsRow()
+            StatsRow(analysis.summary?.summaryStats, iAmWhite)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -332,11 +340,15 @@ private fun PlayerCard(
 }
 
 @Composable
-private fun StatsRow() {
+private fun StatsRow(stats: AnalysisSummaryStatsDto?, iAmWhite: Boolean) {
+    val accuracy = stats?.let { if (iAmWhite) it.accuracyWhite else it.accuracyBlack }
+    val best = stats?.let { if (iAmWhite) it.bestWhite else it.bestBlack }
+    val blunders = stats?.let { if (iAmWhite) it.blundersWhite else it.blundersBlack }
+
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatCard("ACCURACY", "${HardcodedGameAnalysis.accuracyPercent}%", Win, Modifier.weight(1f))
-        StatCard("BRILLIANT", HardcodedGameAnalysis.brilliantCount.toString(), Win, Modifier.weight(1f))
-        StatCard("BEST MOVES", HardcodedGameAnalysis.bestMoveCount.toString(), TextMain, Modifier.weight(1f))
+        StatCard("ACCURACY", accuracy?.let { "%.1f%%".format(it) } ?: "—", Win, Modifier.weight(1f))
+        StatCard("BEST MOVES", best?.toString() ?: "—", TextMain, Modifier.weight(1f))
+        StatCard("BLUNDERS", blunders?.toString() ?: "—", Loss, Modifier.weight(1f))
     }
 }
 

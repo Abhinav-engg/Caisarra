@@ -30,7 +30,11 @@ class GameAnalysisViewModel(
     private val _state = MutableStateFlow(GameAnalysisUiState())
     val state: StateFlow<GameAnalysisUiState> = _state.asStateFlow()
 
-    init {
+    private var started = false
+
+    fun start() {
+        if (started) return
+        started = true
         viewModelScope.launch {
             if (repository.summary(gameId).getOrNull() == null) {
                 repository.requestAnalysis(gameId).onFailure {
@@ -60,8 +64,11 @@ class GameAnalysisViewModel(
     }
 
     private suspend fun poll() {
+        var lastError: String? = null
         repeat(MAX_POLLS) {
-            val summary = repository.summary(gameId).getOrNull()
+            val result = repository.summary(gameId)
+            val summary = result.getOrNull()
+            lastError = result.exceptionOrNull()?.message
             when (summary?.analysis?.status) {
                 "completed" -> {
                     val moves = repository.moves(gameId).getOrNull().orEmpty()
@@ -79,7 +86,7 @@ class GameAnalysisViewModel(
             }
             delay(POLL_INTERVAL_MS)
         }
-        fail("Analysis is taking too long. Please try again.")
+        fail(lastError ?: "Analysis is taking too long. Please try again.")
     }
 
     private fun fail(message: String?) {
