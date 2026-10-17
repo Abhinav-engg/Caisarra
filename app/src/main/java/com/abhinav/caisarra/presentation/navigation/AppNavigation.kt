@@ -761,7 +761,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     )
                 )
             }
-            
+
             GameHistoryScreen(
                 viewModel = historyViewModel,
                 onBack = {
@@ -1024,9 +1024,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
                 onEditProfile = {
-                    if (!isGuest) {
-                        navController.navigate(AppRoutes.EDIT_PROFILE)
-                    }
+                        navController.navigate(AppRoutes.EDIT_PROFILE){
+                            launchSingleTop = true
+                        }
+
                 }
             )
         }

@@ -318,7 +318,7 @@ private fun RatingCard(rating: Int?, provisional: Boolean) {
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(
-                    start = 78.dp
+                    start = 10.dp
                 )
             )
         }
