@@ -42,7 +42,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.abhinav.caisarra.presentation.game.components.GameDecision
 import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
-
+import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 private val BannerBg = Color(0xFF3B1F24)
@@ -54,6 +54,11 @@ fun BotGameScreen(
     onNewGame: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    ChessMoveSound(
+        board = state.board,
+        moveEventId = state.moveAnimationEvent?.id,
+        moveTo = state.moveAnimationEvent?.to
+    )
     val thinking by viewModel.botThinking.collectAsState()
     var showHomeResignDialog by remember {
         mutableStateOf(false)

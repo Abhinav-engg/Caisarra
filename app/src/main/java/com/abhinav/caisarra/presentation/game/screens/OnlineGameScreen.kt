@@ -70,9 +70,7 @@ import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
@@ -91,6 +89,11 @@ fun OnlineGameScreen(
     onStartAnalysis: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
+    ChessMoveSound(
+        board = state.board,
+        moveEventId = state.moveAnimationEvent?.id,
+        moveTo = state.moveAnimationEvent?.to
+    )
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var rematchBusy by remember { mutableStateOf(false) }
