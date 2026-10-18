@@ -50,7 +50,7 @@ import androidx.compose.runtime.setValue
 import com.abhinav.caisarra.presentation.game.components.GameDecision
 import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
-
+import com.abhinav.caisarra.presentation.game.components.MoveTicker
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 
@@ -130,6 +130,7 @@ fun GameScreen(
 
             val boardSize = minOf(maxHeight - 24.dp, maxWidth * 0.55f)
 
+
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -150,6 +151,12 @@ fun GameScreen(
                         onHome = requestHome,
                         onFlip = { onIntent(GameIntent.FlipBoard) }
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    MoveTicker(
+                        moves = state.moves,
+                        modifier = Modifier.width(boardSize)
+                    )
                     TopPlayerStrip(state = state)
                     MoveList(
                         moves = state.moves,
@@ -162,46 +169,59 @@ fun GameScreen(
                     GameActions(state = state, onIntent = onIntent)
                 }
             }
+
         } else {
+            val boardSize = maxWidth - 24.dp
 
-            val boardSize = minOf(maxWidth - 24.dp, maxHeight * 0.5f)
-
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     TopBar(
                         onHome = requestHome,
-                        onFlip = { onIntent(GameIntent.FlipBoard) }
+                        onFlip = {
+                            onIntent(GameIntent.FlipBoard)
+                        }
                     )
-                    TopPlayerStrip(
-                        state = state,
-                        modifier = Modifier.width(boardSize)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Box(modifier = Modifier.size(boardSize)) {
-                        Board(state = state, onIntent = onIntent)
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    BottomPlayerStrip(
-                        state = state,
-                        modifier = Modifier.width(boardSize)
-                    )
-                    MoveList(
+
+                    Spacer(modifier = Modifier.height(2.dp))
+                    MoveTicker(
                         moves = state.moves,
                         modifier = Modifier
-                            .weight(1f)
-                            .width(boardSize)
-                            .padding(vertical = 8.dp)
+                            .fillMaxWidth()
+                            .height(36.dp)
                     )
                 }
-                GameActions(state = state, onIntent = onIntent)
+                TopPlayerStrip(
+                    state = state,
+                    modifier = Modifier.width(boardSize)
+                )
+                Box(
+                    modifier = Modifier.size(boardSize)
+                ) {
+                    Board(
+                        state = state,
+                        onIntent = onIntent
+                    )
+                }
+                BottomPlayerStrip(
+                    state = state,
+                    modifier = Modifier.width(boardSize)
+                )
+                GameActions(
+                    state = state,
+                    onIntent = onIntent
+                )
             }
         }
+
     }
 
     state.promotionPending?.let {
