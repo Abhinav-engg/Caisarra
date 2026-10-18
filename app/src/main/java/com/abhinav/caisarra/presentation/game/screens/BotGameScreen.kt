@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import com.abhinav.caisarra.presentation.game.components.GameDecision
 import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
+import com.abhinav.caisarra.presentation.game.components.MoveTicker
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 private val BannerBg = Color(0xFF3B1F24)
@@ -99,13 +100,12 @@ fun BotGameScreen(
             .systemBarsPadding()
     ) {
         val isWide = maxWidth > maxHeight && maxWidth >= 600.dp
-        val boardSize = if (isWide) {
-            minOf(maxHeight - 24.dp, maxWidth * 0.55f)
-        } else {
-            minOf(maxWidth - 24.dp, maxHeight * 0.5f)
-        }
 
         if (isWide) {
+            val boardSize = minOf(
+                maxHeight - 24.dp,
+                maxWidth * 0.55f
+            )
             Row(
                 modifier = Modifier.fillMaxSize().padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -116,6 +116,12 @@ fun BotGameScreen(
                 }
                 Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     BotTopBar(requestHome, viewModel::flipBoard)
+                    MoveTicker(
+                        moves = state.moves,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                    )
                     state.errorMessage?.let { message ->
                         Text(message, color = Color.White, fontSize = 12.sp, modifier = Modifier.background(BannerBg, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp))
                         Spacer(Modifier.height(6.dp))
@@ -127,49 +133,75 @@ fun BotGameScreen(
                     BotActions(state.gameResult == null, viewModel::resign)
                 }
             }
-        } else Column(modifier = Modifier.fillMaxSize()) {
+        }
+        else {
+            val boardSize = maxWidth - 24.dp
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                BotTopBar(onHome = requestHome, onFlip = viewModel::flipBoard)
-
-                state.errorMessage?.let { message ->
-                    Text(
-                        text = message,
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        modifier = Modifier
-                            .width(boardSize)
-                            .background(BannerBg, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    BotTopBar(
+                        onHome = requestHome,
+                        onFlip = viewModel::flipBoard
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(Modifier.height(2.dp))
+                    MoveTicker(
+                        moves = state.moves,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                    )
+                    state.errorMessage?.let { message ->
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = message,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    BannerBg,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(
+                                    horizontal = 12.dp,
+                                    vertical = 6.dp
+                                )
+                        )
+                    }
                 }
 
-                TopPlayer(state = state, thinking = thinking, modifier = Modifier.width(boardSize))
-                Spacer(modifier = Modifier.height(6.dp))
+                TopPlayer(
+                    state = state,
+                    thinking = thinking,
+                    modifier = Modifier.width(boardSize)
+                )
+
                 Box(modifier = Modifier.size(boardSize)) {
                     BotBoard(state, viewModel::onSquareClick)
                 }
-                Spacer(modifier = Modifier.height(6.dp))
-                BottomPlayer(state = state, thinking = thinking, modifier = Modifier.width(boardSize))
 
-                MoveList(
-                    moves = state.moves,
-                    modifier = Modifier
-                        .weight(1f)
-                        .width(boardSize)
-                        .padding(vertical = 8.dp)
+                BottomPlayer(
+                    state = state,
+                    thinking = thinking,
+                    modifier = Modifier.width(boardSize)
+                )
+
+                BotActions(
+                    gameOngoing = state.gameResult == null,
+                    onResign = viewModel::resign
                 )
             }
-
-            BotActions(state.gameResult == null, viewModel::resign)
         }
     }
+
 
     state.promotionPending?.let {
         PromotionDialog(onPieceSelected = viewModel::onPromote)

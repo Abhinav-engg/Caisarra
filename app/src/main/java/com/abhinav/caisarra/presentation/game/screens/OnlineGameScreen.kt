@@ -71,6 +71,7 @@ import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 import kotlinx.coroutines.launch
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
+import com.abhinav.caisarra.presentation.game.components.MoveTicker
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
@@ -171,7 +172,7 @@ fun OnlineGameScreen(
             val boardSize = if (isWide) {
                 minOf(maxHeight - 24.dp, maxWidth * 0.55f)
             } else {
-                minOf(maxWidth - 24.dp, maxHeight * 0.5f)
+                maxWidth - 24.dp
             }
 
             if (isWide) {
@@ -200,77 +201,92 @@ fun OnlineGameScreen(
                         OnlineActions(gameOngoing, viewModel::offerDraw, viewModel::resign)
                     }
                 }
-            } else Column(modifier = Modifier.fillMaxSize()) {
-                Column(
+            }
+         else {
+        val portraitBoardSize = maxWidth - 24.dp
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OnlineTopBar(
+                    isRated = state.isRated,
+                    unread = unread,
+                    muted = chatMuted,
+                    onHome = requestHome,
+                    onFlip = viewModel::flipBoard,
+                    onChat = { showChat = true }
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+                MoveTicker(
+                    moves = state.moves,
                     modifier = Modifier
-                        .weight(1f)
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    OnlineTopBar(
-                        isRated = state.isRated,
-                        unread = unread,
-                        muted = chatMuted,
-                        onHome = requestHome,
-                        onFlip = viewModel::flipBoard,
-                        onChat = { showChat = true }
-                    )
+                        .height(36.dp)
+                )
 
-                    state.errorMessage?.let { message ->
-                        Banner(text = message, background = BannerBg, modifier = Modifier.width(boardSize))
-                        Spacer(modifier = Modifier.height(6.dp))
-                    }
-
-                    if (drawOfferSent) {
-                        Banner(
-                            text = "Draw offer sent. Waiting for your opponent...",
-                            background = InfoBannerBg,
-                            modifier = Modifier.width(boardSize)
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                    }
-
-                    TopClock(state = state, modifier = Modifier.width(boardSize))
+                state.errorMessage?.let { message ->
                     Spacer(modifier = Modifier.height(6.dp))
-                    Box(modifier = Modifier.size(boardSize)) {
-                        OnlineBoard(state, viewModel::onSquareClick)
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    BottomClock(state = state, modifier = Modifier.width(boardSize))
-                    if (state.isDailyMode) {
-                        state.lastMoveAccepted?.let { accepted ->
-                            Text(
-                                text = if (accepted) {
-                                    "✓ Move accepted"
-                                } else {
-                                    "✕ Move not accepted"
-                                },
-                                color = if (accepted) {
-                                    Color(0xFF10B981)
-                                } else {
-                                    Color(0xFFEF4444)
-                                },
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            )
-                        }
-                    }
-
-                    MoveList(
-                        moves = state.moves,
-                        modifier = Modifier
-                            .weight(1f)
-                            .width(boardSize)
-                            .padding(vertical = 8.dp)
+                    Banner(
+                        text = message,
+                        background = BannerBg,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                OnlineActions(gameOngoing, viewModel::offerDraw, viewModel::resign)
+                if (drawOfferSent) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Banner(
+                        text = "Draw offer sent. Waiting for your opponent...",
+                        background = InfoBannerBg,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
-        }
+            TopClock(state = state, modifier = Modifier.width(portraitBoardSize))
 
+            Box(modifier = Modifier.size(portraitBoardSize)) {
+                OnlineBoard(state, viewModel::onSquareClick)
+            }
+
+            BottomClock(state = state, modifier = Modifier.width(portraitBoardSize))
+
+            if (state.isDailyMode) {
+                state.lastMoveAccepted?.let { accepted ->
+                    Text(
+                        text = if (accepted) {
+                            "✓ Move accepted"
+                        } else {
+                            "✕ Move not accepted"
+                        },
+                        color = if (accepted) {
+                            Color(0xFF10B981)
+                        } else {
+                            Color(0xFFEF4444)
+                        },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            OnlineActions(
+                gameOngoing,
+                viewModel::offerDraw,
+                viewModel::resign
+            )
+        }
+    }
+        }
         if (showChat) {
             ChatOverlay(
                 chat = chat,
@@ -303,9 +319,7 @@ fun OnlineGameScreen(
         )
     }
 
-    state.promotionPending?.let {
-        PromotionDialog(onPieceSelected = viewModel::onPromote)
-    }
+    state.promotionPending?.let {PromotionDialog(onPieceSelected = viewModel::onPromote)}
     state.gameResult?.let { result ->
         if (state.isRated) {
             RatedGameResultScreen(
