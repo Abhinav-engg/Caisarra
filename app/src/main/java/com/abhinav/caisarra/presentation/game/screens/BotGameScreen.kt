@@ -37,6 +37,11 @@ import com.abhinav.caisarra.presentation.game.components.GameResultDialog
 import com.abhinav.caisarra.presentation.game.components.MoveList
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
 import com.abhinav.caisarra.presentation.game.model.GameUiState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.abhinav.caisarra.presentation.game.components.GameDecision
+import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
@@ -50,6 +55,17 @@ fun BotGameScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val thinking by viewModel.botThinking.collectAsState()
+    var showHomeResignDialog by remember {
+        mutableStateOf(false)
+    }
+
+    val requestHome = {
+        if (state.gameResult == null) {
+            showHomeResignDialog = true
+        } else {
+            onHome()
+        }
+    }
 
     if (!state.isLoading && state.board.isEmpty() && state.errorMessage != null) {
         CenteredColumn {
@@ -94,7 +110,7 @@ fun BotGameScreen(
                     BotBoard(state, viewModel::onSquareClick)
                 }
                 Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    BotTopBar(onHome, viewModel::flipBoard)
+                    BotTopBar(requestHome, viewModel::flipBoard)
                     state.errorMessage?.let { message ->
                         Text(message, color = Color.White, fontSize = 12.sp, modifier = Modifier.background(BannerBg, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp))
                         Spacer(Modifier.height(6.dp))
@@ -114,7 +130,7 @@ fun BotGameScreen(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                BotTopBar(onHome = onHome, onFlip = viewModel::flipBoard)
+                BotTopBar(onHome = requestHome, onFlip = viewModel::flipBoard)
 
                 state.errorMessage?.let { message ->
                     Text(
@@ -152,6 +168,16 @@ fun BotGameScreen(
 
     state.promotionPending?.let {
         PromotionDialog(onPieceSelected = viewModel::onPromote)
+    }
+    if (showHomeResignDialog) {
+        GameDecisionDialog(
+            decision = GameDecision.Resign,
+            onConfirm = {
+                showHomeResignDialog = false
+                viewModel.resign()
+            },
+            onDismiss = {showHomeResignDialog = false}
+        )
     }
 
     state.gameResult?.let { result ->

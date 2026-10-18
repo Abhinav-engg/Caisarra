@@ -72,4 +72,6 @@ object RetrofitInstance {
 
     fun createAnalysisService(tokenManager: TokenManager): AnalysisService =
         authenticatedRetrofit(tokenManager).create()
+    fun createTournamentService(tokenManager: TokenManager): TournamentService =
+        authenticatedRetrofit(tokenManager).create()
 }

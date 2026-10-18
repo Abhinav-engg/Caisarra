@@ -939,9 +939,16 @@ fun AppNavigation(authRepository: AuthRepository) {
             val onlineViewModel = screenViewModel {
                 OnlineGameViewModel(context as Application, gameId)
             }
+            val analysisViewModel = screenViewModel {
+                GameAnalysisViewModel(
+                    repository = GameAnalysisRepository(authRepository.createAnalysisService()),
+                    gameId = gameId
+                )
+            }
 
             OnlineGameScreen(
                 viewModel = onlineViewModel,
+                analysisViewModel = analysisViewModel,
                 onHome = { navController.goHome() },
                 onNewOpponent = { minutes, increment ->
                     navController.navigate(AppRoutes.matchmaking(minutes, increment)) {

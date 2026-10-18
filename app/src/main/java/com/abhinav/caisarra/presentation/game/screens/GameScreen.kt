@@ -40,11 +40,15 @@ import com.abhinav.caisarra.presentation.game.model.GameIntent
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
-
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.abhinav.caisarra.presentation.game.components.GameDecision
+import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 
 
 private val ScreenBg = Color(0xFF080D13)
@@ -57,6 +61,10 @@ fun GameScreen(
     onNewGame: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    var showHomeResignDialog by remember { mutableStateOf(false) }
+    val requestHome = {
+        if (state.gameResult == null) showHomeResignDialog = true else onHome()
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -134,7 +142,7 @@ fun GameScreen(
                         .fillMaxHeight()
                 ) {
                     TopBar(
-                        onHome = onHome,
+                        onHome = requestHome,
                         onFlip = { onIntent(GameIntent.FlipBoard) }
                     )
                     TopPlayerStrip(state = state)
@@ -162,7 +170,7 @@ fun GameScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     TopBar(
-                        onHome = onHome,
+                        onHome = requestHome,
                         onFlip = { onIntent(GameIntent.FlipBoard) }
                     )
                     TopPlayerStrip(
@@ -196,6 +204,16 @@ fun GameScreen(
             onPieceSelected = { pieceType ->
                 onIntent(GameIntent.Promote(pieceType))
             }
+        )
+    }
+    if (showHomeResignDialog) {
+        GameDecisionDialog(
+            decision = GameDecision.Resign,
+            onConfirm = {
+                showHomeResignDialog = false
+                onIntent(GameIntent.Resign)
+            },
+            onDismiss = { showHomeResignDialog = false }
         )
     }
 

@@ -68,8 +68,11 @@ import com.abhinav.caisarra.presentation.game.components.PromotionDialog
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
+import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 import kotlinx.coroutines.launch
-
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
@@ -81,6 +84,7 @@ private val HandleColor = Color(0xFF4A5560)
 @Composable
 fun OnlineGameScreen(
     viewModel: OnlineGameViewModel,
+    analysisViewModel: GameAnalysisViewModel,
     onHome: () -> Unit,
     onNewOpponent: (minutes: Int, incrementSeconds: Int) -> Unit = { _, _ -> onHome() },
     onRematchStarted: (gameId: String, shareLink: String, opponentName: String) -> Unit = { _, _, _ -> },
@@ -98,6 +102,14 @@ fun OnlineGameScreen(
     val opponentName by viewModel.opponentName.collectAsState()
 
     var showChat by remember { mutableStateOf(false) }
+    var showHomeResignDialog by remember { mutableStateOf(false) }
+    val requestHome = {
+        if (state.gameResult == null && !waiting) {
+            showHomeResignDialog = true
+        } else {
+            onHome()
+        }
+    }
     var seenCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(showChat, chatMuted, chat.size) {
@@ -169,7 +181,7 @@ fun OnlineGameScreen(
                         OnlineBoard(state, viewModel::onSquareClick)
                     }
                     Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        OnlineTopBar(state.isRated, unread, chatMuted, onHome, viewModel::flipBoard) { showChat = true }
+                        OnlineTopBar(state.isRated, unread, chatMuted, requestHome, viewModel::flipBoard) { showChat = true }
                         state.errorMessage?.let { Banner(it, BannerBg); Spacer(Modifier.height(6.dp)) }
                         if (drawOfferSent) {
                             Banner("Draw offer sent. Waiting for your opponent...", InfoBannerBg)
@@ -197,7 +209,7 @@ fun OnlineGameScreen(
                         isRated = state.isRated,
                         unread = unread,
                         muted = chatMuted,
-                        onHome = onHome,
+                        onHome = requestHome,
                         onFlip = viewModel::flipBoard,
                         onChat = { showChat = true }
                     )
@@ -267,6 +279,17 @@ fun OnlineGameScreen(
             )
         }
     }
+    if (showHomeResignDialog) {
+        GameDecisionDialog(
+            decision = GameDecision.Resign,
+            opponentName = opponentName,
+            onConfirm = {
+                showHomeResignDialog = false
+                viewModel.resign()
+            },
+            onDismiss = { showHomeResignDialog = false }
+        )
+    }
 
     if (incomingDrawOffer) {
         GameDecisionDialog(
@@ -316,7 +339,8 @@ fun OnlineGameScreen(
                 onNewOpponent = {
                     onNewOpponent(state.timeControlMinutes, state.incrementSeconds)
                 },
-                onSavePgn = { savePgn(context, viewModel.pgn()) }
+                onSavePgn = { savePgn(context, viewModel.pgn()) },
+                analysisViewModel = analysisViewModel
             )
         } else {
             GameResultDialog(
