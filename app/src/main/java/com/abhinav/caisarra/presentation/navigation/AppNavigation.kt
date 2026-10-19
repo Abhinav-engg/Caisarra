@@ -794,6 +794,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
                     }
+                },
+                onAnalyze = {
+                    navController.navigate(AppRoutes.gameAnalysis(gameId))
                 }
             )
         }
@@ -1112,9 +1115,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
                 onEditProfile = {
-                        navController.navigate(AppRoutes.EDIT_PROFILE){
-                            launchSingleTop = true
-                        }
+                    navController.navigate(AppRoutes.EDIT_PROFILE){
+                        launchSingleTop = true
+                    }
 
                 }
             )
