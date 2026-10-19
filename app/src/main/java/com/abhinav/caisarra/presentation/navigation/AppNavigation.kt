@@ -1,5 +1,10 @@
 package com.abhinav.caisarra.presentation.navigation
-
+import com.abhinav.caisarra.presentation.tournament.CreateTournamentScreen
+import com.abhinav.caisarra.presentation.tournament.CreateTournamentViewModel
+import com.abhinav.caisarra.presentation.tournament.TournamentDetailScreen
+import com.abhinav.caisarra.presentation.tournament.TournamentDetailViewModel
+import com.abhinav.caisarra.presentation.tournament.TournamentListScreen
+import com.abhinav.caisarra.presentation.tournament.TournamentListViewModel
 import android.app.Application
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -121,6 +126,13 @@ object AppRoutes {
     const val BOT_SETUP = "bot_setup"
     const val BOT_GAME = "bot_game/{gameId}"
     const val PASS_AND_PLAY_SETUP = "pass_and_play_setup"
+    const val TOURNAMENTS = "tournaments"
+    const val CREATE_TOURNAMENT = "create_tournament"
+    const val TOURNAMENT_DETAIL = "tournament/{id}?code={code}"
+
+    fun tournamentDetail(id: String, inviteCode: String? = null): String =
+        "tournament/${Uri.encode(id)}" +
+                (inviteCode?.let { "?code=${Uri.encode(it)}" } ?: "")
 
     fun verify(email: String, purpose: VerifyPurpose) =
         "verify/${purpose.name}/${Uri.encode(email)}"
@@ -618,6 +630,20 @@ fun AppNavigation(authRepository: AuthRepository) {
 
 
                 onPlayWithFriend = { navController.navigate(AppRoutes.PLAY_WITH_FRIEND) },
+                onTournaments = {
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Tournaments require a registered account.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            navController.navigate(AppRoutes.LOGIN)
+                            return@launch
+                        }
+                        navController.navigate(AppRoutes.TOURNAMENTS)
+                    }
+                },
                 onPlayBots = { navController.navigate(AppRoutes.BOT_SETUP) },
                 onPassAndPlay = {
                     navController.navigate(AppRoutes.PASS_AND_PLAY_SETUP)
@@ -926,6 +952,61 @@ fun AppNavigation(authRepository: AuthRepository) {
                         navController.safeBack(homeRoute(authRepository))
                     }
                 }
+            )
+        }
+
+        composable(route = AppRoutes.TOURNAMENTS) {
+            val listViewModel = screenViewModel {
+                TournamentListViewModel(context as Application)
+            }
+
+            TournamentListScreen(
+                viewModel = listViewModel,
+                onCreate = { navController.navigate(AppRoutes.CREATE_TOURNAMENT) },
+                onOpenTournament = { id, code ->
+                    navController.navigate(AppRoutes.tournamentDetail(id, code))
+                },
+                onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
+            )
+        }
+
+        composable(route = AppRoutes.CREATE_TOURNAMENT) {
+            val createViewModel = screenViewModel {
+                CreateTournamentViewModel(context as Application)
+            }
+
+            CreateTournamentScreen(
+                viewModel = createViewModel,
+                onCreated = { id ->
+                    navController.navigate(AppRoutes.tournamentDetail(id)) {
+                        popUpTo(AppRoutes.CREATE_TOURNAMENT) { inclusive = true }
+                    }
+                },
+                onBack = { navController.safeBack(AppRoutes.TOURNAMENTS) }
+            )
+        }
+
+        composable(
+            route = AppRoutes.TOURNAMENT_DETAIL,
+            arguments = listOf(
+                navArgument("id") { type = NavType.StringType },
+                navArgument("code") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { entry ->
+            val id = entry.arguments?.getString("id").orEmpty()
+            val code = entry.arguments?.getString("code")
+            val detailViewModel = screenViewModel {
+                TournamentDetailViewModel(context as Application, id, code)
+            }
+
+            TournamentDetailScreen(
+                viewModel = detailViewModel,
+                onOpenGame = { gameId -> navController.navigate(AppRoutes.onlineGame(gameId)) },
+                onBack = { navController.safeBack(AppRoutes.TOURNAMENTS) }
             )
         }
 

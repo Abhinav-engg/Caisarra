@@ -39,6 +39,15 @@ class GameViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(GameUiState())
     val state = _state.asStateFlow()
+    fun onMoveAnimationStarted(eventId: Long) {
+        _state.update { current ->
+            if (current.moveAnimationEvent?.id == eventId) {
+                current.copy(moveAnimationConsumedId = eventId)
+            } else {
+                current
+            }
+        }
+    }
     private var game: PassAndPlayGame? = null
     private var gameId: String? = null
     private var ownerId: String = ""

@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.Square
+import androidx.compose.runtime.saveable.rememberSaveable
 
 @Composable
 fun ChessMoveSound(
@@ -21,7 +22,7 @@ fun ChessMoveSound(
     val previousBoard = remember {
         mutableStateOf(board)
     }
-    val lastHandledMoveId = remember {
+    val lastHandledMoveId = rememberSaveable {
         mutableStateOf<Long?>(null)
     }
 

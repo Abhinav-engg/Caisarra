@@ -37,6 +37,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
+import com.abhinav.caisarra.domain.chess.model.Move as DomainMove
+import com.abhinav.caisarra.domain.chess.model.Square as DomainSquare
+import com.abhinav.caisarra.domain.chess.model.PieceType as DomainPieceType
+import com.abhinav.caisarra.domain.chess.model.PieceColor as DomainPieceColor
+import com.abhinav.caisarra.domain.chess.game.mapper.toUiPiece
 
 class OnlineGameViewModel(
     application: Application,
@@ -61,6 +66,15 @@ class OnlineGameViewModel(
     private val _uiState = MutableStateFlow(GameUiState(isRated = true))
     
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
+    fun onMoveAnimationStarted(eventId: Long) {
+        _uiState.update { current ->
+            if (current.moveAnimationEvent?.id == eventId) {
+                current.copy(moveAnimationConsumedId = eventId)
+            } else {
+                current
+            }
+        }
+    }
     private val _waitingForOpponent = MutableStateFlow(true)
     val waitingForOpponent: StateFlow<Boolean> = _waitingForOpponent.asStateFlow()
     private val _chat = MutableStateFlow<List<ChatMessageDto>>(emptyList())
@@ -526,6 +540,10 @@ class OnlineGameViewModel(
             )
             clock.start(turn)
         }
+        val (capturedWhite, capturedBlack) =
+            calculateCapturedPieces(
+                state.moves?.map { it.move }.orEmpty()
+            )
 
         _uiState.update { previous ->
             previous.copy(
@@ -533,6 +551,8 @@ class OnlineGameViewModel(
                 errorMessage = null,
                 board = engine.pieces().toUiBoard(),
                 moveAnimationEvent = animationEvent ?: previous.moveAnimationEvent,
+                capturedWhitePieces = capturedWhite,
+                capturedBlackPieces = capturedBlack,
 
                 whitePlayerName = whiteName
                     ?: previous.whitePlayerName,
@@ -593,6 +613,65 @@ class OnlineGameViewModel(
             }
         }
     }
+    private fun calculateCapturedPieces(
+        uciMoves: List<String>
+    ): Pair<List<com.abhinav.caisarra.presentation.game.model.Piece>,
+            List<com.abhinav.caisarra.presentation.game.model.Piece>> {
+
+        val replayEngine = ChesslibEngine()
+
+        val capturedPieces = mutableListOf<
+                com.abhinav.caisarra.domain.chess.model.BoardPiece
+                >()
+
+        uciMoves.forEach { uci ->
+            if (uci.length < 4) return@forEach
+
+            val fromFile = uci[0] - 'a'
+            val fromRank = uci[1].digitToIntOrNull()?.minus(1)
+                ?: return@forEach
+            val toFile = uci[2] - 'a'
+            val toRank = uci[3].digitToIntOrNull()?.minus(1)
+                ?: return@forEach
+
+            if (fromFile !in 0..7 || toFile !in 0..7 ||
+                fromRank !in 0..7 || toRank !in 0..7
+            ) {
+                return@forEach
+            }
+
+            val promotion = when (uci.getOrNull(4)?.lowercaseChar()) {
+                'q' -> DomainPieceType.Queen
+                'r' -> DomainPieceType.Rook
+                'b' -> DomainPieceType.Bishop
+                'n' -> DomainPieceType.Knight
+                else -> null
+            }
+
+            val move = DomainMove(
+                from = DomainSquare(fromFile, fromRank),
+                to = DomainSquare(toFile, toRank),
+                promotion = promotion
+            )
+
+            val captured = replayEngine.capturedBy(move)
+
+            if (replayEngine.play(move) && captured != null) {
+                capturedPieces.add(captured)
+            }
+        }
+
+        val whitePiecesCaptured = capturedPieces
+            .filter { it.color == DomainPieceColor.White }
+            .map { it.toUiPiece() }
+
+        val blackPiecesCaptured = capturedPieces
+            .filter { it.color == DomainPieceColor.Black }
+            .map { it.toUiPiece() }
+
+        return whitePiecesCaptured to blackPiecesCaptured
+    }
+
 
     private suspend fun loadOpponentRating(username: String) {
         if (username.equals("You", true) || username.equals("Opponent", true)) return

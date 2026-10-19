@@ -40,10 +40,12 @@ import com.abhinav.caisarra.presentation.game.model.GameUiState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.abhinav.caisarra.presentation.game.components.GameDecision
 import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 import com.abhinav.caisarra.presentation.game.components.MoveTicker
+import com.abhinav.caisarra.presentation.game.components.CapturedPieces
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 private val BannerBg = Color(0xFF3B1F24)
@@ -112,16 +114,17 @@ fun BotGameScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.size(boardSize)) {
-                    BotBoard(state, viewModel::onSquareClick)
+                    BotBoard(
+                        state = state,
+                        moveAnimationConsumedId = state.moveAnimationConsumedId,
+                        onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                        onSquareClick = { square ->
+                            viewModel.onSquareClick(square)
+                        }
+                    )
                 }
                 Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     BotTopBar(requestHome, viewModel::flipBoard)
-                    MoveTicker(
-                        moves = state.moves,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(36.dp)
-                    )
                     state.errorMessage?.let { message ->
                         Text(message, color = Color.White, fontSize = 12.sp, modifier = Modifier.background(BannerBg, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp))
                         Spacer(Modifier.height(6.dp))
@@ -185,7 +188,14 @@ fun BotGameScreen(
                 )
 
                 Box(modifier = Modifier.size(boardSize)) {
-                    BotBoard(state, viewModel::onSquareClick)
+                    BotBoard(
+                        state = state,
+                        moveAnimationConsumedId = state.moveAnimationConsumedId,
+                        onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                        onSquareClick = { square ->
+                            viewModel.onSquareClick(square)
+                        }
+                    )
                 }
 
                 BottomPlayer(
@@ -229,7 +239,7 @@ fun BotGameScreen(
 }
 
 @Composable
-private fun BotBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra.presentation.game.model.Square) -> Unit) {
+private fun BotBoard(state: GameUiState,moveAnimationConsumedId: Long?,onMoveAnimationStarted: (Long) -> Unit, onSquareClick: (com.abhinav.caisarra.presentation.game.model.Square) -> Unit) {
     ChessBoard(
         board = state.board,
         selectedSquare = state.selectedSquare,
@@ -240,6 +250,8 @@ private fun BotBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra.pr
         isBlackInCheck = state.isBlackInCheck,
         isFlipped = state.isBoardFlipped,
         moveAnimationEvent = state.moveAnimationEvent,
+        moveAnimationConsumedId = state.moveAnimationConsumedId,
+        onMoveAnimationStarted = onMoveAnimationStarted,
         onSquareClick = onSquareClick
     )
 }
@@ -283,40 +295,100 @@ private fun BotTopBar(onHome: () -> Unit, onFlip: () -> Unit) {
 }
 
 @Composable
-private fun TopPlayer(state: GameUiState, thinking: Boolean, modifier: Modifier = Modifier) {
+private fun TopPlayer(
+    state: GameUiState,
+    thinking: Boolean,
+    modifier: Modifier = Modifier
+) {
     if (state.isBoardFlipped) {
-        PlayerBar(state.whitePlayerName, state.isWhiteTurn, thinking, modifier)
+        // White is at the top. Show pieces captured by White.
+        PlayerBar(
+            name = state.whitePlayerName,
+            isActive = state.isWhiteTurn,
+            thinking = thinking,
+            captured = state.capturedBlackPieces,
+            modifier = modifier
+        )
     } else {
-        PlayerBar(state.blackPlayerName, !state.isWhiteTurn, thinking, modifier)
+        // Black is at the top. Show pieces captured by Black.
+        PlayerBar(
+            name = state.blackPlayerName,
+            isActive = !state.isWhiteTurn,
+            thinking = thinking,
+            captured = state.capturedWhitePieces,
+            modifier = modifier
+        )
     }
 }
 
 @Composable
-private fun BottomPlayer(state: GameUiState, thinking: Boolean, modifier: Modifier = Modifier) {
+private fun BottomPlayer(
+    state: GameUiState,
+    thinking: Boolean,
+    modifier: Modifier = Modifier
+) {
     if (state.isBoardFlipped) {
-        PlayerBar(state.blackPlayerName, !state.isWhiteTurn, thinking, modifier)
+        PlayerBar(
+            name = state.blackPlayerName,
+            isActive = !state.isWhiteTurn,
+            thinking = thinking,
+            captured = state.capturedWhitePieces,
+            modifier = modifier
+        )
     } else {
-        PlayerBar(state.whitePlayerName, state.isWhiteTurn, thinking, modifier)
+        PlayerBar(
+            name = state.whitePlayerName,
+            isActive = state.isWhiteTurn,
+            thinking = thinking,
+            captured = state.capturedBlackPieces,
+            modifier = modifier
+        )
     }
 }
-
 @Composable
-private fun PlayerBar(name: String, isActive: Boolean, thinking: Boolean, modifier: Modifier = Modifier) {
+private fun PlayerBar(
+    name: String,
+    isActive: Boolean,
+    thinking: Boolean,
+    captured: List<com.abhinav.caisarra.presentation.game.model.Piece>,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(if (isActive) Color(0xFF263B30) else Color(0xFF151F2B), RoundedCornerShape(12.dp))
-            .border(1.dp, Color(0xFF304154), RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .background(
+                if (isActive) Color(0xFF263B30) else Color(0xFF151F2B),
+                RoundedCornerShape(12.dp)
+            )
+            .border(
+                1.dp,
+                Color(0xFF304154),
+                RoundedCornerShape(12.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = name,
-            color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = name,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
+            )
+
+            if (captured.isNotEmpty()) {
+                CapturedPieces(
+                    pieces = captured
+                )
+            }
+        }
+
         if (isActive && thinking) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(
@@ -324,6 +396,7 @@ private fun PlayerBar(name: String, isActive: Boolean, thinking: Boolean, modifi
                     strokeWidth = 2.dp,
                     modifier = Modifier.size(16.dp)
                 )
+
                 Text(
                     text = "Thinking...",
                     color = Accent,
@@ -334,6 +407,7 @@ private fun PlayerBar(name: String, isActive: Boolean, thinking: Boolean, modifi
         }
     }
 }
+
 
 @Composable
 private fun CenteredColumn(content: @Composable () -> Unit) {

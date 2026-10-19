@@ -72,6 +72,7 @@ import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 import kotlinx.coroutines.launch
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 import com.abhinav.caisarra.presentation.game.components.MoveTicker
+import com.abhinav.caisarra.presentation.game.components.CapturedPieces
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
@@ -182,23 +183,50 @@ fun OnlineGameScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(modifier = Modifier.size(boardSize)) {
-                        OnlineBoard(state, viewModel::onSquareClick)
+                        OnlineBoard(state, viewModel::onSquareClick, moveAnimationConsumedId = state.moveAnimationConsumedId,onMoveAnimationStarted = viewModel::onMoveAnimationStarted)
                     }
-                    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        OnlineTopBar(state.isRated, unread, chatMuted, requestHome, viewModel::flipBoard) { showChat = true }
-                        state.errorMessage?.let { Banner(it, BannerBg); Spacer(Modifier.height(6.dp)) }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    ) {
+                        OnlineTopBar(
+                            isRated = state.isRated,
+                            unread = unread,
+                            muted = chatMuted,
+                            onHome = requestHome,
+                            onFlip = viewModel::flipBoard,
+                            onChat = { showChat = true }
+                        )
+
+                        state.errorMessage?.let {
+                            Spacer(Modifier.height(4.dp))
+                            Banner(it, BannerBg)
+                        }
+
                         if (drawOfferSent) {
-                            Banner("Draw offer sent. Waiting for your opponent...", InfoBannerBg)
-                            Spacer(Modifier.height(6.dp))
+                            Spacer(Modifier.height(4.dp))
+                            Banner(
+                                "Draw offer sent. Waiting for your opponent...",
+                                InfoBannerBg
+                            )
                         }
                         TopClock(state)
                         MoveList(
                             moves = state.moves,
-                            modifier = Modifier.weight(1f).padding(vertical = 8.dp)
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
                         )
                         BottomClock(state)
+
                         Spacer(Modifier.height(8.dp))
-                        OnlineActions(gameOngoing, viewModel::offerDraw, viewModel::resign)
+                        OnlineActions(
+                            gameOngoing,
+                            viewModel::offerDraw,
+                            viewModel::resign
+                        )
                     }
                 }
             }
@@ -255,11 +283,10 @@ fun OnlineGameScreen(
             TopClock(state = state, modifier = Modifier.width(portraitBoardSize))
 
             Box(modifier = Modifier.size(portraitBoardSize)) {
-                OnlineBoard(state, viewModel::onSquareClick)
+                OnlineBoard(state, viewModel::onSquareClick, moveAnimationConsumedId = state.moveAnimationConsumedId,onMoveAnimationStarted = viewModel::onMoveAnimationStarted)
             }
 
             BottomClock(state = state, modifier = Modifier.width(portraitBoardSize))
-
             if (state.isDailyMode) {
                 state.lastMoveAccepted?.let { accepted ->
                     Text(
@@ -418,7 +445,7 @@ private fun shareGame(context: Context, pgn: String, summary: String) {
 }
 
 @Composable
-private fun OnlineBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra.presentation.game.model.Square) -> Unit) {
+private fun OnlineBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra.presentation.game.model.Square) -> Unit, moveAnimationConsumedId: Long?, onMoveAnimationStarted: (Long) -> Unit) {
     ChessBoard(
         board = state.board,
         selectedSquare = state.selectedSquare,
@@ -429,6 +456,8 @@ private fun OnlineBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra
         isBlackInCheck = state.isBlackInCheck,
         isFlipped = state.isBoardFlipped,
         moveAnimationEvent = state.moveAnimationEvent,
+        moveAnimationConsumedId = moveAnimationConsumedId,
+        onMoveAnimationStarted = onMoveAnimationStarted,
         onSquareClick = onSquareClick
     )
 }
@@ -573,49 +602,65 @@ private fun OnlineTopBar(
     }
 }
 
+
 @Composable
-private fun TopClock(state: GameUiState, modifier: Modifier = Modifier) {
+private fun TopClock(
+    state: GameUiState,
+    modifier: Modifier = Modifier
+) {
     if (state.isBoardFlipped) {
+        // White is at the top; show black pieces captured by White.
         ClockBar(
             playerName = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
             isDailyMode = state.isDailyMode,
+            capturedPieces = state.capturedBlackPieces,
             modifier = modifier
         )
     } else {
+        // Black is at the top; show white pieces captured by Black.
         ClockBar(
             playerName = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
             isDailyMode = state.isDailyMode,
+            capturedPieces = state.capturedWhitePieces,
             modifier = modifier
         )
     }
 }
 
 @Composable
-private fun BottomClock(state: GameUiState, modifier: Modifier = Modifier) {
+private fun BottomClock(
+    state: GameUiState,
+    modifier: Modifier = Modifier
+) {
     if (state.isBoardFlipped) {
+        // Black is at the bottom; show white pieces captured by Black.
         ClockBar(
             playerName = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
             rating = state.playerRating,
             isDailyMode = state.isDailyMode,
+            capturedPieces = state.capturedWhitePieces,
             modifier = modifier
         )
     } else {
+        // White is at the bottom; show black pieces captured by White.
         ClockBar(
             playerName = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
-            isDailyMode = state.isDailyMode,
             rating = state.playerRating,
+            isDailyMode = state.isDailyMode,
+            capturedPieces = state.capturedBlackPieces,
             modifier = modifier
         )
     }
 }
+
 
 @Composable
 private fun CenteredColumn(content: @Composable () -> Unit) {

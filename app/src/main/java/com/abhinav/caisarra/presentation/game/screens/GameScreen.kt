@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -139,7 +141,7 @@ fun GameScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.size(boardSize)) {
-                    Board(state = state, onIntent = onIntent)
+                    Board(state = state, onIntent = onIntent,moveAnimationConsumedId = state.moveAnimationConsumedId,onMoveAnimationStarted = viewModel::onMoveAnimationStarted)
                 }
 
                 Column(
@@ -153,10 +155,6 @@ fun GameScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    MoveTicker(
-                        moves = state.moves,
-                        modifier = Modifier.width(boardSize)
-                    )
                     TopPlayerStrip(state = state)
                     MoveList(
                         moves = state.moves,
@@ -208,7 +206,9 @@ fun GameScreen(
                 ) {
                     Board(
                         state = state,
-                        onIntent = onIntent
+                        onIntent = onIntent,
+                        moveAnimationConsumedId = state.moveAnimationConsumedId,
+                        onMoveAnimationStarted = viewModel::onMoveAnimationStarted
                     )
                 }
                 BottomPlayerStrip(
@@ -256,7 +256,10 @@ fun GameScreen(
 @Composable
 private fun Board(
     state: GameUiState,
-    onIntent: (GameIntent) -> Unit
+    onIntent: (GameIntent) -> Unit,
+    moveAnimationConsumedId: Long?,
+    onMoveAnimationStarted: (Long) -> Unit
+
 ) {
     ChessBoard(
         board = state.board,
@@ -268,6 +271,8 @@ private fun Board(
         isBlackInCheck = state.isBlackInCheck,
         isFlipped = state.isBoardFlipped,
         moveAnimationEvent = state.moveAnimationEvent,
+        moveAnimationConsumedId = moveAnimationConsumedId,
+        onMoveAnimationStarted = onMoveAnimationStarted,
         onSquareClick = { square ->
             onIntent(GameIntent.SquareClicked(square))
         }
@@ -300,6 +305,7 @@ private fun TopBar(
     }
 }
 
+
 @Composable
 private fun TopPlayerStrip(
     state: GameUiState,
@@ -311,7 +317,7 @@ private fun TopPlayerStrip(
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
             hasClock = state.hasClock,
-            captured = state.capturedWhitePieces,
+            captured = state.capturedBlackPieces,
             capturedOnTop = false,
             modifier = modifier
         )
@@ -321,7 +327,7 @@ private fun TopPlayerStrip(
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
             hasClock = state.hasClock,
-            captured = state.capturedBlackPieces,
+            captured = state.capturedWhitePieces,
             capturedOnTop = false,
             modifier = modifier
         )
@@ -339,7 +345,7 @@ private fun BottomPlayerStrip(
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
             hasClock = state.hasClock,
-            captured = state.capturedBlackPieces,
+            captured = state.capturedWhitePieces,
             capturedOnTop = true,
             modifier = modifier
         )
@@ -349,7 +355,7 @@ private fun BottomPlayerStrip(
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
             hasClock = state.hasClock,
-            captured = state.capturedWhitePieces,
+            captured = state.capturedBlackPieces,
             capturedOnTop = true,
             modifier = modifier
         )
@@ -366,35 +372,54 @@ private fun PlayerStrip(
     capturedOnTop: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    if (hasClock) {
+        ClockBar(
+            playerName = name,
+            timeMillis = timeMillis,
+            isActive = isActive,
+            capturedPieces = captured,
+            modifier = modifier
+        )
+    } else {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(
+                    if (isActive) Color(0xFF263B30) else Color(0xFF151F2B),
+                    RoundedCornerShape(12.dp)
+                )
+                .border(
+                    1.dp,
+                    Color(0xFF304154),
+                    RoundedCornerShape(12.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
 
-        val capturedModifier = Modifier
-            .heightIn(min = 20.dp)
-            .padding(vertical = 2.dp)
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
 
-        if (capturedOnTop) {
-            CapturedPieces(pieces = captured, modifier = capturedModifier)
-        }
-        if (hasClock) {
-            ClockBar(
-                playerName = name,
-                timeMillis = timeMillis,
-                isActive = isActive
-            )
-        } else {
-            Text(
-                text = name,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(vertical = 10.dp)
-            )
-        }
-        if (!capturedOnTop) {
-            CapturedPieces(pieces = captured, modifier = capturedModifier)
+                if (captured.isNotEmpty()) {
+                    CapturedPieces(
+                        pieces = captured
+                    )
+                }
+            }
         }
     }
 }
+
 
 @Composable
 private fun GameActions(
