@@ -343,12 +343,12 @@ private fun PlayerCard(
 private fun StatsRow(stats: AnalysisSummaryStatsDto?, iAmWhite: Boolean) {
     val accuracy = stats?.let { if (iAmWhite) it.accuracyWhite else it.accuracyBlack }
     val best = stats?.let { if (iAmWhite) it.bestWhite else it.bestBlack }
-    val blunders = stats?.let { if (iAmWhite) it.blundersWhite else it.blundersBlack }
+    val brilliant = stats?.let { if (iAmWhite) it.brilliantWhite else it.brilliantBlack }
 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatCard("ACCURACY", accuracy?.let { "%.1f%%".format(it) } ?: "—", Win, Modifier.weight(1f))
+        StatCard("BRILLIANT", brilliant?.toString() ?: "—", Win, Modifier.weight(1f))
         StatCard("BEST MOVES", best?.toString() ?: "—", TextMain, Modifier.weight(1f))
-        StatCard("BLUNDERS", blunders?.toString() ?: "—", Loss, Modifier.weight(1f))
     }
 }
 

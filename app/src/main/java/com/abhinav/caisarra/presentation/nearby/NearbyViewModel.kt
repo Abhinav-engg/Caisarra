@@ -1,0 +1,110 @@
+package com.abhinav.caisarra.presentation.nearby
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.data.location.LocationProvider
+import com.abhinav.caisarra.data.repository.NearbyFailure
+import com.abhinav.caisarra.data.repository.NearbyRepository
+import com.abhinav.caisarra.data.repository.NearbyResult
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class NearbyViewModel(
+    private val repository: NearbyRepository,
+    private val locationProvider: LocationProvider,
+    private val tokenProvider: suspend () -> String?
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(NearbyUiState())
+    val state: StateFlow<NearbyUiState> = _state.asStateFlow()
+
+    init {
+        loadPlayers()
+    }
+
+    fun select(id: Int?) {
+        _state.update { it.copy(selectedId = id) }
+    }
+
+    fun loadPlayers() = launchWithToken { token ->
+        _state.update { it.copy(loading = true, error = null) }
+        when (val result = repository.getPlayers(token)) {
+            is NearbyResult.Success -> _state.update { current ->
+                current.copy(
+                    loading = false,
+                    visible = true,
+                    players = result.data.players,
+                    radiusKm = result.data.radiusKm,
+                    selectedId = current.selectedId?.takeIf { id ->
+                        result.data.players.any { it.userId == id }
+                    }
+                )
+            }
+            is NearbyResult.Failure -> handle(result.failure)
+        }
+    }
+
+    fun enable() = launchWithToken { token ->
+        _state.update { it.copy(loading = true, error = null) }
+        val location = locationProvider.current()
+        if (location == null) {
+            _state.update { it.copy(loading = false, error = "Could not get your location") }
+            return@launchWithToken
+        }
+        when (val result = repository.saveLocation(token, location.first, location.second)) {
+            is NearbyResult.Success -> loadPlayers()
+            is NearbyResult.Failure -> handle(result.failure)
+        }
+    }
+
+    fun disable() = launchWithToken { token ->
+        _state.update { it.copy(loading = true, error = null) }
+        val result = repository.setVisibility(token, false)
+        if (result is NearbyResult.Failure && result.failure != NearbyFailure.LocationNotSaved) {
+            handle(result.failure)
+        } else {
+            _state.update {
+                it.copy(loading = false, visible = false, players = emptyList(), selectedId = null)
+            }
+        }
+    }
+
+    fun permissionDenied() {
+        _state.update {
+            it.copy(loading = false, error = "Location permission is needed to find players near you")
+        }
+    }
+
+    private fun handle(failure: NearbyFailure) {
+        when (failure) {
+            NearbyFailure.NearbyOff -> _state.update {
+                it.copy(loading = false, visible = false, players = emptyList(), selectedId = null)
+            }
+            NearbyFailure.Guest -> _state.update { it.copy(loading = false, guest = true) }
+            else -> _state.update { it.copy(loading = false, error = messageFor(failure)) }
+        }
+    }
+
+    private fun messageFor(failure: NearbyFailure): String = when (failure) {
+        NearbyFailure.Network -> "No internet connection"
+        NearbyFailure.Unauthorized -> "Session expired, please log in again"
+        NearbyFailure.RateLimited -> "Too many requests, try again in a minute"
+        NearbyFailure.LocationNotSaved -> "Turn on Nearby to share your location"
+        is NearbyFailure.Other -> failure.message
+        else -> "Something went wrong"
+    }
+
+    private fun launchWithToken(block: suspend (String) -> Unit) {
+        viewModelScope.launch {
+            val token = tokenProvider()
+            if (token == null) {
+                _state.update { it.copy(loading = false, error = "Please log in again") }
+            } else {
+                block(token)
+            }
+        }
+    }
+}

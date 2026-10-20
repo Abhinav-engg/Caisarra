@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -51,7 +53,8 @@ private val Accent = Color(0xFF10B981)
 @Composable
 fun GameHistoryScreen(
     viewModel: GameHistoryReviewViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onAnalyze: () -> Unit
 ) {
 
     val state by viewModel.state.collectAsState()
@@ -149,8 +152,8 @@ fun GameHistoryScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(text =
-                    "${state.whitePlayerName}  vs  " +
-                            state.blackPlayerName,
+                "${state.whitePlayerName}  vs  " +
+                        state.blackPlayerName,
                 color = White,
                 fontFamily =
                     JetBrainsMono,
@@ -209,6 +212,25 @@ fun GameHistoryScreen(
                 onForward = viewModel::nextMove,
                 modifier = Modifier.width(boardSize)
             )
+
+            if (state.isRegisteredGame) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = onAnalyze,
+                    modifier = Modifier.width(boardSize),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent)
+                ) {
+                    Text(
+                        text = "ANALYZE GAME",
+                        color = ScreenBg,
+                        fontFamily = JetBrainsMono,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
             HistoryMoves(
@@ -328,9 +350,9 @@ private fun HistoryNavigationButtons(
             Text(
                 text = "FORWARD  ›",
                 color = if (canGoForward)
-                        White
-                    else
-                        Secondary,
+                    White
+                else
+                    Secondary,
                 fontFamily =
                     JetBrainsMono,
                 fontSize = 12.sp
@@ -395,7 +417,7 @@ private fun HistoryMoves(
 
                 Row(
                     modifier = Modifier.fillMaxWidth()
-                            .padding(vertical = 3.dp),
+                        .padding(vertical = 3.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
 
@@ -417,9 +439,9 @@ private fun HistoryMoves(
                                 move.whiteMove != null
                             ) {
                                 { onMoveClick(
-                                        move.moveNumber,
-                                        false
-                                    )
+                                    move.moveNumber,
+                                    false
+                                )
                                 }
                             } else {
                                 null
@@ -483,9 +505,9 @@ private fun MoveCell(
         Text(
             text = text,
             color = if (selected)
-                    Accent
-                else
-                    White,
+                Accent
+            else
+                White,
             fontFamily = JetBrainsMono,
             fontSize = 11.sp
         )

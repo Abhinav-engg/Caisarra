@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
-import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.InviteRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -33,7 +33,7 @@ class JoinInviteViewModel(
 ) : AndroidViewModel(application) {
 
     private val inviteRepository = InviteRepository.get(application)
-    private val tokenManager = TokenManager(application)
+    private val authRepository = AuthRepository.get(application)
 
     private val _state = MutableStateFlow<JoinInviteState>(JoinInviteState.Loading)
     val state: StateFlow<JoinInviteState> = _state.asStateFlow()
@@ -50,7 +50,7 @@ class JoinInviteViewModel(
             _state.value = JoinInviteState.Loading
             inviteRepository.previewInvite(code)
                 .onSuccess { preview ->
-                    val accessToken = tokenManager.getAccessToken()
+                    val accessToken = authRepository.getValidAccessToken()
                     val loggedIn = accessToken != null
                     val myId = accessToken?.let { TokenExpiryChecker.getUserId(it) }
 

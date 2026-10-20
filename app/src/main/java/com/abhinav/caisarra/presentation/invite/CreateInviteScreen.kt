@@ -29,6 +29,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,6 +55,7 @@ fun CreateInviteScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var showQr by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.link) {
         state.link?.let { shareLink(context, it) }
@@ -107,12 +111,23 @@ fun CreateInviteScreen(
         )
         state.link?.let { link ->
             Spacer(Modifier.height(16.dp))
-            InviteLink(link, context)
+            InviteLink(
+                link = link,
+                context = context,
+                onShowQr = { showQr = true }
+            )
             Spacer(Modifier.height(16.dp))
             GeneralButton(
                 text = "ENTER WAITING BOARD",
                 onClick = { state.gameId?.let(onEnterWaitingBoard) }
             )
+
+            if (showQr) {
+                InviteQrDialog(
+                    link = link,
+                    onDismiss = { showQr = false }
+                )
+            }
         }
     }
 }
@@ -177,7 +192,11 @@ private fun InviteSwitchRow(
 }
 
 @Composable
-private fun InviteLink(link: String, context: Context) {
+private fun InviteLink(
+    link: String,
+    context: Context,
+    onShowQr: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -189,13 +208,22 @@ private fun InviteLink(link: String, context: Context) {
         Spacer(Modifier.height(8.dp))
         Text(link, color = SetupColors.Text, fontSize = 14.sp)
         Spacer(Modifier.height(12.dp))
-        Text(
-            "COPY LINK",
-            color = SetupColors.Accent,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.clickable { copyLink(context, link) }
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            Text(
+                "COPY LINK",
+                color = SetupColors.Accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { copyLink(context, link) }
+            )
+            Text(
+                "SHOW QR",
+                color = SetupColors.Accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onShowQr() }
+            )
+        }
     }
 }
 

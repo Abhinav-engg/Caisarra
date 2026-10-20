@@ -70,7 +70,6 @@ import com.abhinav.caisarra.presentation.invite.CreateInviteScreen
 import com.abhinav.caisarra.presentation.invite.CreateInviteViewModel
 import com.abhinav.caisarra.presentation.invite.JoinInviteScreen
 import com.abhinav.caisarra.presentation.invite.JoinInviteViewModel
-import com.abhinav.caisarra.presentation.invite.PlayWithFriendScreen
 import com.abhinav.caisarra.presentation.screens.AllGameHistoryScreen
 import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.presentation.screens.ProfileScreen
@@ -91,8 +90,9 @@ import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 import com.abhinav.caisarra.presentation.screens.EditProfileScreen
 import androidx.navigation.compose.currentBackStackEntryAsState
-
-
+import com.abhinav.caisarra.presentation.invite.FriendsViewModel
+import com.abhinav.caisarra.presentation.invite.PlayWithFriendHomeScreen
+import com.abhinav.caisarra.presentation.invite.PlayWithFriendScreen
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -128,6 +128,7 @@ object AppRoutes {
     const val PASS_AND_PLAY_SETUP = "pass_and_play_setup"
     const val TOURNAMENTS = "tournaments"
     const val CREATE_TOURNAMENT = "create_tournament"
+    const val PLAY_WITH_FRIEND_HOME = "play_with_friend_home"
     const val TOURNAMENT_DETAIL = "tournament/{id}?code={code}"
 
     fun tournamentDetail(id: String, inviteCode: String? = null): String =
@@ -629,7 +630,26 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
 
 
-                onPlayWithFriend = { navController.navigate(AppRoutes.PLAY_WITH_FRIEND) },
+                onPlayWithFriend = {
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Friends require a registered account. Please sign in.",
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            navController.navigate(AppRoutes.LOGIN)
+                            return@launch
+                        }
+
+                        // Open the intermediate Play a Friend screen first.
+                        navController.navigate(AppRoutes.PLAY_WITH_FRIEND_HOME) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
+
                 onTournaments = {
                     scope.launch {
                         if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
@@ -794,6 +814,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
                     }
+                },
+                onAnalyze = {
+                    navController.navigate(AppRoutes.gameAnalysis(gameId))
                 }
             )
         }
@@ -899,9 +922,31 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable(route = AppRoutes.PLAY_WITH_FRIEND) {
+            val friendsViewModel = screenViewModel {
+                FriendsViewModel(context as Application)
+            }
+
             PlayWithFriendScreen(
-                onCreateMatchLink = { navController.navigate(AppRoutes.CREATE_INVITE) },
-                onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
+                viewModel = friendsViewModel,
+                onCreateMatchLink = {
+                    navController.navigate(AppRoutes.CREATE_INVITE)
+                },
+                onBack = {
+                    navController.safeBack(AppRoutes.GAME_SETUP)
+                }
+            )
+        }
+        composable(route = AppRoutes.PLAY_WITH_FRIEND_HOME) {
+            PlayWithFriendHomeScreen(
+                onInviteFriends = {
+                    navController.navigate(AppRoutes.PLAY_WITH_FRIEND)
+                },
+                onCreateChallengeLink = {
+                    navController.navigate(AppRoutes.CREATE_INVITE)
+                },
+                onBack = {
+                    navController.safeBack(AppRoutes.GAME_SETUP)
+                }
             )
         }
 
@@ -917,7 +962,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                         popUpTo(AppRoutes.CREATE_INVITE) { inclusive = true }
                     }
                 },
-                onBack = { navController.safeBack(AppRoutes.PLAY_WITH_FRIEND) }
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -1112,9 +1157,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
                 onEditProfile = {
-                        navController.navigate(AppRoutes.EDIT_PROFILE){
-                            launchSingleTop = true
-                        }
+                    navController.navigate(AppRoutes.EDIT_PROFILE){
+                        launchSingleTop = true
+                    }
 
                 }
             )

@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.data.remote.dto.AnalysisPhaseDto
 import com.abhinav.caisarra.data.remote.dto.AnalysisSummaryStatsDto
 import com.abhinav.caisarra.data.remote.dto.EvalPointDto
 import com.abhinav.caisarra.data.remote.dto.MoveAnalysisDto
@@ -53,8 +55,11 @@ private val TextMain = Color(0xFFF4F7FB)
 private val Muted = Color(0xFF8FA0B3)
 private val Cyan = Color(0xFF3AD6F0)
 private val Win = Color(0xFF45E5AF)
+private val Brilliant = Color(0xFF26D0CE)
+private val Great = Color(0xFF5C9DFF)
 private val Warn = Color(0xFFF2C94C)
 private val Orange = Color(0xFFF2994A)
+private val Miss = Color(0xFFE08A6B)
 private val Loss = Color(0xFFF08D96)
 
 @Composable
@@ -62,8 +67,9 @@ fun GameAnalysisScreen(
     viewModel: GameAnalysisViewModel,
     onBack: () -> Unit
 ) {
-    LaunchedEffect(Unit) { viewModel.start() }
     val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) { viewModel.start() }
 
     Column(
         modifier = Modifier
@@ -147,15 +153,16 @@ private fun AnalysisContent(state: GameAnalysisUiState, onMoveClick: (Int) -> Un
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 18.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                AccuracyCard("WHITE", stats.accuracyWhite, Modifier.weight(1f))
-                AccuracyCard("BLACK", stats.accuracyBlack, Modifier.weight(1f))
+                AccuracyCard("WHITE", stats.accuracyWhite, stats.ratingWhite, Modifier.weight(1f))
+                AccuracyCard("BLACK", stats.accuracyBlack, stats.ratingBlack, Modifier.weight(1f))
             }
         }
+        if (summary.phases.isNotEmpty()) item { PhasesCard(summary.phases) }
         item { CountsCard(stats) }
         item { EvalGraph(summary.evalHistory, state.selectedMove) }
         items(state.moves, key = { it.moveNumber }) { move ->
@@ -165,7 +172,7 @@ private fun AnalysisContent(state: GameAnalysisUiState, onMoveClick: (Int) -> Un
 }
 
 @Composable
-private fun AccuracyCard(label: String, value: Double, modifier: Modifier) {
+private fun AccuracyCard(label: String, accuracy: Double, rating: Int, modifier: Modifier) {
     Column(
         modifier = modifier
             .background(Card, RoundedCornerShape(16.dp))
@@ -175,17 +182,73 @@ private fun AccuracyCard(label: String, value: Double, modifier: Modifier) {
     ) {
         Text("$label ACCURACY", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
         Spacer(Modifier.height(6.dp))
-        Text("%.1f%%".format(value), color = Win, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text("%.1f%%".format(accuracy), color = Win, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Text("Game rating $rating", color = Muted, fontSize = 11.sp)
     }
+}
+
+@Composable
+private fun PhasesCard(phases: List<AnalysisPhaseDto>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Card, RoundedCornerShape(16.dp))
+            .border(1.dp, Border, RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        phases.forEach { phase ->
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                PhaseScore(
+                    accuracy = phase.accuracyWhite,
+                    symbol = phase.symbolWhite,
+                    color = classificationColor(phase.classificationWhite),
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Start
+                )
+                Text(
+                    phase.phase.replaceFirstChar { it.uppercase() },
+                    color = Muted,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+                PhaseScore(
+                    accuracy = phase.accuracyBlack,
+                    symbol = phase.symbolBlack,
+                    color = classificationColor(phase.classificationBlack),
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.End
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhaseScore(accuracy: Double, symbol: String, color: Color, modifier: Modifier, textAlign: TextAlign) {
+    Text(
+        "%.1f%% %s".format(accuracy, symbol),
+        color = color,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Bold,
+        textAlign = textAlign,
+        modifier = modifier
+    )
 }
 
 @Composable
 private fun CountsCard(stats: AnalysisSummaryStatsDto) {
     val rows = listOf(
+        Triple("Brilliant", stats.brilliantWhite to stats.brilliantBlack, Brilliant),
+        Triple("Great", stats.greatWhite to stats.greatBlack, Great),
         Triple("Best", stats.bestWhite to stats.bestBlack, Win),
         Triple("Good", stats.goodWhite to stats.goodBlack, Cyan),
         Triple("Inaccuracies", stats.inaccuraciesWhite to stats.inaccuraciesBlack, Warn),
         Triple("Mistakes", stats.mistakesWhite to stats.mistakesBlack, Orange),
+        Triple("Misses", stats.missesWhite to stats.missesBlack, Miss),
         Triple("Blunders", stats.blundersWhite to stats.blundersBlack, Loss)
     )
     Column(
@@ -281,10 +344,13 @@ private fun MoveRow(move: MoveAnalysisDto, expanded: Boolean, onClick: () -> Uni
 private fun formatEval(centipawns: Int) = "%+.2f".format(centipawns / 100.0)
 
 private fun classificationColor(classification: String) = when (classification.lowercase()) {
-    "best", "brilliant" -> Win
+    "brilliant" -> Brilliant
+    "great" -> Great
+    "best" -> Win
     "good" -> Cyan
     "inaccuracy" -> Warn
     "mistake" -> Orange
+    "miss" -> Miss
     "blunder" -> Loss
     else -> Muted
 }
