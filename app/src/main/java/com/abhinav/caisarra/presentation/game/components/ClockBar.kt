@@ -16,8 +16,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.presentation.game.model.Piece
 
 private const val DAY_MILLIS = 86_400_000L
+
 @Composable
 fun ClockBar(
     playerName: String,
@@ -25,7 +27,8 @@ fun ClockBar(
     isActive: Boolean,
     modifier: Modifier = Modifier,
     isDailyMode: Boolean = false,
-    rating: Int? = null
+    rating: Int? = null,
+    capturedPieces: List<Piece> = emptyList()
 ) {
     val daily = isDailyMode || timeMillis >= DAY_MILLIS
 
@@ -33,53 +36,53 @@ fun ClockBar(
         if (timeMillis <= 0L) {
             "0 days"
         } else {
-            val remainingDays =
-                ((timeMillis - 1L) / DAY_MILLIS) + 1L
-
-            if (remainingDays == 1L) {
-                "1 day"
-            } else {
-                "$remainingDays days"
-            }
+            val remainingDays = ((timeMillis - 1L) / DAY_MILLIS) + 1L
+            if (remainingDays == 1L) "1 day" else "$remainingDays days"
         }
     } else {
         val totalSeconds = timeMillis.coerceAtLeast(0L) / 1000L
-        val minutes = totalSeconds / 60L
-        val seconds = totalSeconds % 60L
-
-        "%02d:%02d".format(minutes, seconds)
+        "%02d:%02d".format(totalSeconds / 60L, totalSeconds % 60L)
     }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                color = if (isActive) {
-                    Color(0xFF263B30)
-                } else {
-                    Color(0xFF151F2B)
-                },
-                shape = RoundedCornerShape(12.dp)
+                if (isActive) Color(0xFF263B30) else Color(0xFF151F2B),
+                RoundedCornerShape(12.dp)
             )
             .border(
-                width = 1.dp,
-                color = Color(0xFF304154),
-                shape = RoundedCornerShape(12.dp)
+                1.dp,
+                Color(0xFF304154),
+                RoundedCornerShape(12.dp)
             )
-            .padding(
-                horizontal = 16.dp,
-                vertical = 10.dp
-            ),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                text = playerName,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = playerName,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
+
+                if (capturedPieces.isNotEmpty()) {
+                    CapturedPieces(
+                        pieces = capturedPieces
+                    )
+                }
+            }
+
             rating?.let {
                 Text(
                     text = "Rating $it",
@@ -89,15 +92,6 @@ fun ClockBar(
                 )
             }
         }
-        Text(
-            text = timeText,
-            color = if (isActive) {
-                Color(0xFF10B981)
-            } else {
-                Color.White
-            },
-            fontSize = if (daily) 18.sp else 18.sp,
-            fontWeight = FontWeight.Bold
-        )
+
     }
 }

@@ -41,6 +41,7 @@ import com.abhinav.caisarra.presentation.game.model.Square
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+import androidx.compose.runtime.saveable.rememberSaveable
 
 private val LightSquare = Color(0xFFE8EDF3)
 private val DarkSquare = Color(0xFF253449)
@@ -69,30 +70,49 @@ fun ChessBoard(
     isBlackInCheck: Boolean,
     isFlipped: Boolean,
     moveAnimationEvent: PieceMoveAnimationEvent? = null,
+    moveAnimationConsumedId: Long? = null,
+    onMoveAnimationStarted: (Long) -> Unit = {},
     onSquareClick: (Square) -> Unit
 ) {
     var movingPiece by remember {
         mutableStateOf<PieceMoveAnimationEvent?>(null)
     }
+    var handledMoveId by rememberSaveable {
+        mutableStateOf<Long?>(null)
+    }
+    var handledMoveSignature by rememberSaveable {
+        mutableStateOf<String?>(null)
+    }
 
-    var completedMoveId by remember {
+    var completedMoveId by rememberSaveable {
         mutableStateOf<Long?>(null)
     }
 
     val movementProgress = remember(moveAnimationEvent?.id) {
         Animatable(0f)
     }
+    fun moveSignature(event: PieceMoveAnimationEvent): String =
+        "${event.from.row},${event.from.column}->${event.to.row},${event.to.column}:${event.piece.color}:${event.piece.type}"
+
+
 
     LaunchedEffect(moveAnimationEvent?.id) {
         val event = moveAnimationEvent ?: return@LaunchedEffect
-        if (completedMoveId == event.id) {
+        if (
+            moveAnimationConsumedId == event.id ||
+            handledMoveId == event.id ||
+            completedMoveId == event.id
+        ) {
             return@LaunchedEffect
         }
+
+        handledMoveId = event.id
+        onMoveAnimationStarted(event.id)
 
         movingPiece = event
         movementProgress.snapTo(0f)
 
-        val fileDistance = abs(event.to.column - event.from.column)
+    val fileDistance = abs(event.to.column - event.from.column)
         val rankDistance = abs(event.to.row - event.from.row)
         val distance = sqrt(
             (fileDistance * fileDistance + rankDistance * rankDistance).toFloat()
@@ -115,10 +135,11 @@ fun ChessBoard(
             completedMoveId = event.id
         }
     }
-
-    val activeMove = movingPiece
-        ?: moveAnimationEvent?.takeIf { it.id != completedMoveId }
-
+    val activeMove = movingPiece ?: moveAnimationEvent?.takeIf { event ->
+        event.id != moveAnimationConsumedId &&
+                event.id != handledMoveId &&
+                event.id != completedMoveId
+    }
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()

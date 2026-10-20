@@ -28,7 +28,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
-
+import com.abhinav.caisarra.domain.chess.model.PieceType as DomainPieceType
+import com.abhinav.caisarra.domain.chess.model.Square as DomainSquare
+import com.abhinav.caisarra.domain.chess.game.mapper.toUiPiece
 class BotGameViewModel(
     application: Application,
     private val gameId: String
@@ -39,6 +41,15 @@ class BotGameViewModel(
 
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
+    fun onMoveAnimationStarted(eventId: Long) {
+        _uiState.update { current ->
+            if (current.moveAnimationEvent?.id == eventId) {
+                current.copy(moveAnimationConsumedId = eventId)
+            } else {
+                current
+            }
+        }
+    }
 
     private val _botThinking = MutableStateFlow(false)
     val botThinking: StateFlow<Boolean> = _botThinking.asStateFlow()
@@ -187,6 +198,66 @@ class BotGameViewModel(
             }
         }
     }
+    private fun calculateCapturedPieces(
+        uciMoves: List<String>
+    ): Pair<
+            List<com.abhinav.caisarra.presentation.game.model.Piece>,
+            List<com.abhinav.caisarra.presentation.game.model.Piece>
+            > {
+        val replayEngine = ChesslibEngine()
+
+        val captured = mutableListOf<
+                com.abhinav.caisarra.domain.chess.model.BoardPiece
+                >()
+
+        for (uci in uciMoves) {
+            if (uci.length < 4) continue
+
+            val fromFile = uci[0] - 'a'
+            val fromRank = uci[1].digitToIntOrNull()?.minus(1)
+            val toFile = uci[2] - 'a'
+            val toRank = uci[3].digitToIntOrNull()?.minus(1)
+
+            if (
+                fromFile !in 0..7 ||
+                toFile !in 0..7 ||
+                fromRank !in 0..7 ||
+                toRank !in 0..7
+            ) {
+                continue
+            }
+
+            val promotion = when (uci.getOrNull(4)?.lowercaseChar()) {
+                'q' -> DomainPieceType.Queen
+                'r' -> DomainPieceType.Rook
+                'b' -> DomainPieceType.Bishop
+                'n' -> DomainPieceType.Knight
+                else -> null
+            }
+
+            val move = Move(
+                from = DomainSquare(fromFile, fromRank!!),
+                to = DomainSquare(toFile, toRank!!),
+                promotion = promotion
+            )
+            val capturedPiece = replayEngine.capturedBy(move)
+
+            if (replayEngine.play(move) && capturedPiece != null) {
+                captured.add(capturedPiece)
+            }
+        }
+
+        val whiteCaptured = captured
+            .filter { it.color == DomainColor.White }
+            .map { it.toUiPiece() }
+
+        val blackCaptured = captured
+            .filter { it.color == DomainColor.Black }
+            .map { it.toUiPiece() }
+
+        return whiteCaptured to blackCaptured
+    }
+
 
     private fun applyState(game: BotGameDto) {
         awaitingServer = false
@@ -228,6 +299,8 @@ class BotGameViewModel(
         engine.loadFen(game.position)
         finished = game.status == "finished"
         moveCount = game.moves.size
+        val (capturedWhite, capturedBlack) =
+            calculateCapturedPieces(game.moves)
 
 
         val turn = engine.turn()
@@ -254,6 +327,8 @@ class BotGameViewModel(
                 isWhiteInCheck = inCheck && whiteTurn,
                 isBlackInCheck = inCheck && !whiteTurn,
                 moves = game.moves.toMoveUi(),
+                capturedWhitePieces = capturedWhite,
+                capturedBlackPieces = capturedBlack,
                 isBoardFlipped = if (colorWasUnknown) myColor == PieceColor.BLACK else it.isBoardFlipped,
                 undoEnabled = false,
                 gameResult = if (finished) resultFrom(game.result) else null
