@@ -63,6 +63,7 @@ class AuthRepository private constructor(context: Context) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
         }
     }
+
     suspend fun verifyRegistration(email: String, code: String): AuthResult {
         return try {
             val response = service.verifyRegistration(VerifyRegistrationRequest(email, code))
@@ -97,21 +98,42 @@ class AuthRepository private constructor(context: Context) {
         }
     }
 
+    suspend fun refreshAccessToken(): AuthResult =
+        tokenManager.refreshMutex.withLock { performRefresh() }
 
-
-
-
-    suspend fun refreshAccessToken(): AuthResult = tokenManager.refreshMutex.withLock {
+    /** Must only be called while holding tokenManager.refreshMutex. */
+    private suspend fun performRefresh(): AuthResult {
         val refreshToken = tokenManager.getRefreshToken()
-            ?: return@withLock AuthResult.Error("You are not logged in.")
+            ?: return AuthResult.Error("You are not logged in.")
 
-        try {
+        return try {
             val response = RetrofitInstance.plainService.refresh(RefreshTokenRequest(refreshToken))
             tokenManager.saveTokens(response.accessToken, response.refreshToken)
             AuthResult.Success("Token refreshed")
         } catch (e: Exception) {
             if (e is HttpException && (e.code() == 401 || e.code() == 403)) tokenManager.clearTokens()
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
+        }
+    }
+
+    /**
+     * Returns an access token that is not expired (or expiring soon), refreshing if needed.
+     * Returns null if the user is not logged in or the refresh failed.
+     */
+    suspend fun getValidAccessToken(): String? {
+        val token = tokenManager.getAccessToken()
+        if (token != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(token)) {
+            return token
+        }
+
+        return tokenManager.refreshMutex.withLock {
+            // Another caller may have refreshed while we waited for the lock.
+            val current = tokenManager.getAccessToken()
+            if (current != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(current)) {
+                return@withLock current
+            }
+
+            if (performRefresh() is AuthResult.Success) tokenManager.getAccessToken() else null
         }
     }
 
@@ -186,17 +208,12 @@ class AuthRepository private constructor(context: Context) {
         }
     }
 
-    suspend fun isLoggedIn(): Boolean {
-        val accessToken = tokenManager.getAccessToken()
-        if (accessToken != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(accessToken)) {
-            return true
-        }
-        return refreshAccessToken() is AuthResult.Success
-    }
+    suspend fun isLoggedIn(): Boolean = getValidAccessToken() != null
 
     suspend fun isGuest(): Boolean = tokenManager.getGuestId() != null
 
     suspend fun getGuestId(): String? = tokenManager.getGuestId()
+
     suspend fun getUsername(): String? {
         return tokenManager.getUsername()
     }
@@ -210,19 +227,22 @@ class AuthRepository private constructor(context: Context) {
                 instance ?: AuthRepository(context.applicationContext).also { instance = it }
             }
     }
+
     fun createGamesService(): GamesService {
         return RetrofitInstance.createGamesService(tokenManager)
     }
+
     fun createProfileService(): ProfileService {
         return RetrofitInstance.createProfileService(tokenManager)
     }
+
     fun createRatingService(): RatingService {
         return RetrofitInstance.createRatingService(tokenManager)
     }
+
     fun createMatchmakingService(): MatchmakingService =
         RetrofitInstance.createMatchmakingService(tokenManager)
 
     fun createAnalysisService(): AnalysisService =
         RetrofitInstance.createAnalysisService(tokenManager)
-
 }
