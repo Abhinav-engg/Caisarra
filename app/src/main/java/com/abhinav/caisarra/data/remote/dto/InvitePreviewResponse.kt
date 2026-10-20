@@ -10,5 +10,6 @@ data class InvitePreviewResponse(
     @SerialName("time_control_minutes") val timeControlMinutes: Int,
     @SerialName("increment_seconds") val incrementSeconds: Int,
     val color: String,
+    val rated: Boolean = true,
     val status: String
 )

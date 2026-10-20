@@ -7,5 +7,6 @@ import kotlinx.serialization.Serializable
 data class CreateInviteRequest(
     @SerialName("time_control_minutes") val timeControlMinutes: Int,
     @SerialName("increment_seconds") val incrementSeconds: Int,
-    val color: String
+    val color: String,
+    val rated: Boolean = true
 )

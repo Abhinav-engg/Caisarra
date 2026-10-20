@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
 import com.abhinav.caisarra.presentation.game.components.setup.SetupHeader
 import com.abhinav.caisarra.presentation.game.components.setup.SetupPage

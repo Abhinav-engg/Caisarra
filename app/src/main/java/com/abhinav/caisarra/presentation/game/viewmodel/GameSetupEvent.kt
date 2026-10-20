@@ -10,3 +10,10 @@ sealed interface GameSetupEvent {
         val mode: GameMode
     ) : GameSetupEvent
 }
+
+sealed interface PassAndPlaySetupEvent {
+    data class ClockChanged(val enabled: Boolean) : PassAndPlaySetupEvent
+    data class AutoFlipChanged(val enabled: Boolean) : PassAndPlaySetupEvent
+    data class TimeChanged(val minutes: Float) : PassAndPlaySetupEvent
+    data class PresetSelected(val minutes: Int) : PassAndPlaySetupEvent
+}

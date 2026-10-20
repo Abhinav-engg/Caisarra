@@ -29,6 +29,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,7 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
 import com.abhinav.caisarra.presentation.game.components.setup.SetupHeader
 import com.abhinav.caisarra.presentation.game.components.setup.SetupPage
@@ -52,6 +55,7 @@ fun CreateInviteScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var showQr by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.link) {
         state.link?.let { shareLink(context, it) }
@@ -75,9 +79,25 @@ fun CreateInviteScreen(
                 .border(1.dp, InviteBorder, RoundedCornerShape(18.dp))
                 .padding(horizontal = 14.dp)
         ) {
-            InviteSwitchRow("Allow Takebacks", "Permit friendly undo requests", Icons.AutoMirrored.Filled.Undo, false)
+            InviteSwitchRow(
+                title = "Allow Takebacks",
+                subtitle = if (state.allowTakebacks) {
+                    "This friendly game will be unrated"
+                } else {
+                    "Rated by default - turn on for an unrated game"
+                },
+                icon = Icons.AutoMirrored.Filled.Undo,
+                checked = state.allowTakebacks,
+                onCheckedChange = viewModel::onTakebacksChanged
+            )
             Box(Modifier.fillMaxWidth().height(1.dp).background(InviteBorder))
-            InviteSwitchRow("Public Spectators", "Friends can watch match live", Icons.Default.RemoveRedEye, true)
+            InviteSwitchRow(
+                "Public Spectators",
+                "Friends can watch match live",
+                Icons.Default.RemoveRedEye,
+                true,
+                onCheckedChange = {}
+            )
         }
         state.error?.let {
             Spacer(Modifier.height(14.dp))
@@ -91,12 +111,23 @@ fun CreateInviteScreen(
         )
         state.link?.let { link ->
             Spacer(Modifier.height(16.dp))
-            InviteLink(link, context)
+            InviteLink(
+                link = link,
+                context = context,
+                onShowQr = { showQr = true }
+            )
             Spacer(Modifier.height(16.dp))
             GeneralButton(
                 text = "ENTER WAITING BOARD",
                 onClick = { state.gameId?.let(onEnterWaitingBoard) }
             )
+
+            if (showQr) {
+                InviteQrDialog(
+                    link = link,
+                    onDismiss = { showQr = false }
+                )
+            }
         }
     }
 }
@@ -130,7 +161,8 @@ private fun InviteSwitchRow(
     title: String,
     subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    checked: Boolean
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
@@ -148,7 +180,7 @@ private fun InviteSwitchRow(
         }
         Switch(
             checked = checked,
-            onCheckedChange = {},
+            onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = SetupColors.Accent,
                 checkedTrackColor = Color(0xFF176B6B),
@@ -160,7 +192,11 @@ private fun InviteSwitchRow(
 }
 
 @Composable
-private fun InviteLink(link: String, context: Context) {
+private fun InviteLink(
+    link: String,
+    context: Context,
+    onShowQr: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -172,13 +208,22 @@ private fun InviteLink(link: String, context: Context) {
         Spacer(Modifier.height(8.dp))
         Text(link, color = SetupColors.Text, fontSize = 14.sp)
         Spacer(Modifier.height(12.dp))
-        Text(
-            "COPY LINK",
-            color = SetupColors.Accent,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.clickable { copyLink(context, link) }
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            Text(
+                "COPY LINK",
+                color = SetupColors.Accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { copyLink(context, link) }
+            )
+            Text(
+                "SHOW QR",
+                color = SetupColors.Accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onShowQr() }
+            )
+        }
     }
 }
 

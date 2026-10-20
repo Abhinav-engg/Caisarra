@@ -38,7 +38,9 @@ class BotSocketClient(context: Context) {
 
     suspend fun connect(gameId: String): Boolean {
         close()
-        AuthRepository.get(appContext).isLoggedIn()
+        if (!AuthRepository.get(appContext).isLoggedIn()) {
+            return false
+        }
         val token = TokenManager(appContext).getAccessToken() ?: return false
 
         val url = RetrofitInstance.BASE_URL.toHttpUrl().newBuilder()

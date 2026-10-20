@@ -14,6 +14,7 @@ data class CreateInviteUiState(
     val timeControlMinutes: Int = 10,
     val incrementSeconds: Int = 0,
     val color: String = "random",
+    val allowTakebacks: Boolean = false,
     val inviteCode: String? = null,
     val gameId: String? = null,
     val link: String? = null,
@@ -40,6 +41,10 @@ class CreateInviteViewModel(application: Application) : AndroidViewModel(applica
         _uiState.update { it.copy(color = color) }
     }
 
+    fun onTakebacksChanged(allowed: Boolean) {
+        _uiState.update { it.copy(allowTakebacks = allowed) }
+    }
+
     fun createInvite() {
         val state = _uiState.value
         if (state.isLoading) return
@@ -57,7 +62,12 @@ class CreateInviteViewModel(application: Application) : AndroidViewModel(applica
         }
         _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            repository.createInvite(state.timeControlMinutes, state.incrementSeconds, state.color)
+            repository.createInvite(
+                timeControlMinutes = state.timeControlMinutes,
+                incrementSeconds = state.incrementSeconds,
+                color = state.color,
+                rated = !state.allowTakebacks
+            )
                 .onSuccess { response ->
                     _uiState.update {
                         it.copy(

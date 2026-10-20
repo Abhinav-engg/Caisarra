@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.presentation.game.components.setup.GameModeRow
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
 import com.abhinav.caisarra.presentation.game.components.setup.SetupHeader
@@ -22,17 +22,26 @@ import com.abhinav.caisarra.presentation.game.components.setup.TimeControlRow
 import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupUiState
 
 @Composable
-fun GameSetupScreen(state: GameSetupUiState, onOpenTimeControls: () -> Unit,onStartMatch: () -> Unit, onPlayWithFriend: () -> Unit, onPlayBots: () -> Unit, onPassAndPlay: () -> Unit, onBack: () -> Unit) {
+fun GameSetupScreen(
+    state: GameSetupUiState,
+    onOpenTimeControls: () -> Unit,
+    onStartMatch: () -> Unit,
+    onTournaments: () -> Unit,
+    onPlayWithFriend: () -> Unit,
+    onPlayBots: () -> Unit,
+    onPassAndPlay: () -> Unit,
+    onBack: () -> Unit
+) {
     SetupPage {
         SetupHeader("New Game", onBack)
         Spacer(Modifier.height(24.dp))
         TimeControlRow("${state.mode.label} · ${state.selectedControl}", onOpenTimeControls)
         Spacer(Modifier.height(20.dp))
-        GeneralButton("START MATCH",onClick=onStartMatch)
+        GeneralButton("START MATCH", onClick = onStartMatch)
         Spacer(Modifier.height(28.dp))
         Text("EXPLORE OTHER MODES", color = SetupColors.Secondary, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Spacer(Modifier.height(14.dp))
-        GameModeRow("Tournaments", Icons.Default.EmojiEvents)
+        GameModeRow("Tournaments", Icons.Default.EmojiEvents, onTournaments)
         Spacer(Modifier.height(12.dp))
         GameModeRow("Play a Friend", Icons.Default.Group, onPlayWithFriend)
         Spacer(Modifier.height(12.dp))

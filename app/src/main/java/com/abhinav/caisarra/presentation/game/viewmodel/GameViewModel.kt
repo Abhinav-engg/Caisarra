@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
+import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 class GameViewModel(
     private val gameRepository: GameRepository,
     private val authRepository: AuthRepository,
@@ -34,10 +34,20 @@ class GameViewModel(
     private val newTimeMinutes: Int,
     private val newBoardFlipped: Boolean,
     private val newUndoEnabled: Boolean,
+    private val clockEnabled: Boolean = true,
     private var isGuest: Boolean = false
 ) : ViewModel() {
     private val _state = MutableStateFlow(GameUiState())
     val state = _state.asStateFlow()
+    fun onMoveAnimationStarted(eventId: Long) {
+        _state.update { current ->
+            if (current.moveAnimationEvent?.id == eventId) {
+                current.copy(moveAnimationConsumedId = eventId)
+            } else {
+                current
+            }
+        }
+    }
     private var game: PassAndPlayGame? = null
     private var gameId: String? = null
     private var ownerId: String = ""
@@ -47,6 +57,8 @@ class GameViewModel(
     private var initialTimeMs = newTimeMinutes * 60_000L
     private var promotionFrom: DomainSquare? = null
     private var promotionTo: DomainSquare? = null
+    private var moveAnimationId = 0L
+
     private val autoFlip = !resumeGame && newBoardFlipped
 
     init {
@@ -55,7 +67,6 @@ class GameViewModel(
 
     private fun loadGame() {
         viewModelScope.launch {
-            // Resolve guest status before creating or loading a game.
             isGuest = authRepository.isGuest()
 
             ownerId = authRepository.getUsername()
@@ -72,12 +83,11 @@ class GameViewModel(
 
     private suspend fun createNewGame() {
         val created = if (isGuest) {
-            // Guest games are persisted in Room.
             gameRepository.startGame(
                 ownerId = ownerId,
                 whiteName = newWhiteName.ifBlank { "Player 1" },
                 blackName = newBlackName.ifBlank { "Player 2" },
-                timeControlMinutes = newTimeMinutes,
+                timeControlMinutes = if (clockEnabled) newTimeMinutes else null,
                 incrementSeconds = 0
             )
         } else {
@@ -85,7 +95,7 @@ class GameViewModel(
                 ownerId = ownerId,
                 whiteName = newWhiteName.ifBlank { "Player 1" },
                 blackName = newBlackName.ifBlank { "Player 2" },
-                timeControlMinutes = newTimeMinutes,
+                timeControlMinutes = if (clockEnabled) newTimeMinutes else null,
                 incrementSeconds = 0
             )
         }
@@ -96,14 +106,18 @@ class GameViewModel(
         moveTimeSnapshots.clear()
         redoTimeSnapshots.clear()
         game = PassAndPlayGame()
-        createClock(
-            whiteTime = created.whiteTimeMs,
-            blackTime = created.blackTimeMs,
-            incrementSeconds = created.incrementSeconds
-        )
+        if (clockEnabled) {
+            createClock(
+                whiteTime = created.whiteTimeMs,
+                blackTime = created.blackTimeMs,
+                incrementSeconds = created.incrementSeconds
+            )
+        }
 
-        updateUiState()
-        startClock()
+        updateUiState(clockEnabled = clockEnabled)
+        if (clockEnabled) {
+            startClock()
+        }
     }
 
     private suspend fun loadExistingGame() {
@@ -144,19 +158,22 @@ class GameViewModel(
             restoredGame.play(move)
         }
         game = restoredGame
-        createClock(
-            whiteTime = savedGame.whiteTimeMs,
-            blackTime = savedGame.blackTimeMs,
-            incrementSeconds = savedGame.incrementSeconds
-        )
+        val savedClockEnabled = savedGame.timeControlMinutes != null
+        if (savedClockEnabled) {
+            createClock(
+                whiteTime = savedGame.whiteTimeMs,
+                blackTime = savedGame.blackTimeMs,
+                incrementSeconds = savedGame.incrementSeconds
+            )
+        }
         _state.update {
             it.copy(
                 isBoardFlipped = false,
                 undoEnabled = true
             )
         }
-        updateUiState()
-        if (!restoredGame.status.isOver) {
+        updateUiState(clockEnabled = savedClockEnabled)
+        if (savedClockEnabled && !restoredGame.status.isOver) {
             startClock()
         }
     }
@@ -352,30 +369,40 @@ class GameViewModel(
         promotionTo = null
     }
 
-    private fun playMove(
-        move: Move
-    ) {
+    private fun playMove(move: Move) {
         val currentGame = game ?: return
+        val movingPieceBeforeMove = currentGame.pieces
+            .firstOrNull { it.square == move.from }
+            ?.toUiPiece()
         val played = currentGame.play(move)
 
         if (!played) {
             clearSelection()
             return
         }
-
+        val animationEvent = movingPieceBeforeMove?.let { piece ->
+            PieceMoveAnimationEvent(
+                id = ++moveAnimationId,
+                piece = piece,
+                from = move.from.toUiSquare(),
+                to = move.to.toUiSquare()
+            )
+        }
         clearSelection()
         redoTimeSnapshots.clear()
-        clock?.switchTo(
-            currentGame.turn
-        )
+
+        clock?.switchTo(currentGame.turn)
 
         clock?.times?.value?.let { times ->
             moveTimeSnapshots += times.first to times.second
         }
+        updateUiState(
+            moveAnimationEvent = animationEvent
+        )
 
-        updateUiState()
         persistAfterMove()
     }
+
 
     private fun undo() {
 
@@ -479,7 +506,7 @@ class GameViewModel(
         if (!isGuest) return
         val id = gameId ?: return
         val currentGame = game ?: return
-        val times = clock?.times?.value ?: return
+        val times = clock?.times?.value ?: (0L to 0L)
 
         viewModelScope.launch {
 
@@ -507,7 +534,7 @@ class GameViewModel(
         if (!isGuest) return
         val id = gameId ?: return
         val currentGame = game ?: return
-        val times = clock?.times?.value ?: return
+        val times = clock?.times?.value ?: (0L to 0L)
         val result = status.toUiResult() ?: return
 
         viewModelScope.launch {
@@ -524,7 +551,8 @@ class GameViewModel(
         }
     }
 
-    private fun updateUiState() {
+    private fun updateUiState(clockEnabled: Boolean = this.clockEnabled,moveAnimationEvent: PieceMoveAnimationEvent? =
+        _state.value.moveAnimationEvent) {
         val currentGame = game ?: return
         val domainPieces = currentGame.pieces
         val uiBoard = domainPieces.associate { piece ->
@@ -585,14 +613,17 @@ class GameViewModel(
 
             it.copy(
                 isLoading = false,
+                hasClock = clockEnabled,
                 errorMessage = null,
                 board = uiBoard,
+                moveAnimationEvent = moveAnimationEvent,
                 whitePlayerName = it.whitePlayerName.ifBlank {
                     newWhiteName
                 },
                 blackPlayerName = it.blackPlayerName.ifBlank {
                     newBlackName
                 },
+
 
                 isWhiteTurn = currentGame.turn == DomainPieceColor.White,
                 lastMoveFrom = lastMove?.from?.toUiSquare(),
@@ -619,6 +650,7 @@ class GameViewModel(
                 undoEnabled = undoAllowed,
                 canUndo = undoAllowed && currentGame.canUndo,
                 canRedo = undoAllowed && currentGame.canRedo
+
             )
         }
     }
@@ -641,7 +673,7 @@ class GameViewModel(
 
         val id = gameId ?: return
         if (currentGame.status.isOver) return
-        val times = clock?.times?.value ?: return
+        val times = clock?.times?.value ?: (0L to 0L)
         viewModelScope.launch {
             gameRepository.saveProgress(
                 id = id,

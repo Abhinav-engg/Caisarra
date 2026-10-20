@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -36,7 +37,15 @@ import com.abhinav.caisarra.presentation.game.components.GameResultDialog
 import com.abhinav.caisarra.presentation.game.components.MoveList
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
 import com.abhinav.caisarra.presentation.game.model.GameUiState
-
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.abhinav.caisarra.presentation.game.components.GameDecision
+import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
+import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
+import com.abhinav.caisarra.presentation.game.components.MoveTicker
+import com.abhinav.caisarra.presentation.game.components.CapturedPieces
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 private val BannerBg = Color(0xFF3B1F24)
@@ -48,7 +57,23 @@ fun BotGameScreen(
     onNewGame: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    ChessMoveSound(
+        board = state.board,
+        moveEventId = state.moveAnimationEvent?.id,
+        moveTo = state.moveAnimationEvent?.to
+    )
     val thinking by viewModel.botThinking.collectAsState()
+    var showHomeResignDialog by remember {
+        mutableStateOf(false)
+    }
+
+    val requestHome = {
+        if (state.gameResult == null) {
+            showHomeResignDialog = true
+        } else {
+            onHome()
+        }
+    }
 
     if (!state.isLoading && state.board.isEmpty() && state.errorMessage != null) {
         CenteredColumn {
@@ -76,83 +101,174 @@ fun BotGameScreen(
             .background(ScreenBg)
             .systemBarsPadding()
     ) {
-        val boardSize = minOf(maxWidth - 24.dp, maxHeight * 0.5f)
+        val isWide = maxWidth > maxHeight && maxWidth >= 600.dp
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        if (isWide) {
+            val boardSize = minOf(
+                maxHeight - 24.dp,
+                maxWidth * 0.55f
+            )
+            Row(
+                modifier = Modifier.fillMaxSize().padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.size(boardSize)) {
+                    BotBoard(
+                        state = state,
+                        moveAnimationConsumedId = state.moveAnimationConsumedId,
+                        onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                        onSquareClick = { square ->
+                            viewModel.onSquareClick(square)
+                        }
+                    )
+                }
+                Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    BotTopBar(requestHome, viewModel::flipBoard)
+                    state.errorMessage?.let { message ->
+                        Text(message, color = Color.White, fontSize = 12.sp, modifier = Modifier.background(BannerBg, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp))
+                        Spacer(Modifier.height(6.dp))
+                    }
+                    TopPlayer(state, thinking)
+                    MoveList(state.moves, Modifier.weight(1f).padding(vertical = 8.dp))
+                    BottomPlayer(state, thinking)
+                    Spacer(Modifier.height(8.dp))
+                    BotActions(state.gameResult == null, viewModel::resign)
+                }
+            }
+        }
+        else {
+            val boardSize = maxWidth - 24.dp
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                BotTopBar(onHome = onHome, onFlip = viewModel::flipBoard)
-
-                state.errorMessage?.let { message ->
-                    Text(
-                        text = message,
-                        color = Color.White,
-                        fontSize = 12.sp,
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    BotTopBar(
+                        onHome = requestHome,
+                        onFlip = viewModel::flipBoard
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    MoveTicker(
+                        moves = state.moves,
                         modifier = Modifier
-                            .width(boardSize)
-                            .background(BannerBg, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .fillMaxWidth()
+                            .height(36.dp)
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    state.errorMessage?.let { message ->
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = message,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    BannerBg,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(
+                                    horizontal = 12.dp,
+                                    vertical = 6.dp
+                                )
+                        )
+                    }
                 }
 
-                TopPlayer(state = state, thinking = thinking, modifier = Modifier.width(boardSize))
-                Spacer(modifier = Modifier.height(6.dp))
+                TopPlayer(
+                    state = state,
+                    thinking = thinking,
+                    modifier = Modifier.width(boardSize)
+                )
+
                 Box(modifier = Modifier.size(boardSize)) {
-                    ChessBoard(
-                        board = state.board,
-                        selectedSquare = state.selectedSquare,
-                        legalMoves = state.legalMoves,
-                        lastMoveFrom = state.lastMoveFrom,
-                        lastMoveTo = state.lastMoveTo,
-                        isWhiteInCheck = state.isWhiteInCheck,
-                        isBlackInCheck = state.isBlackInCheck,
-                        isFlipped = state.isBoardFlipped,
-                        onSquareClick = viewModel::onSquareClick
+                    BotBoard(
+                        state = state,
+                        moveAnimationConsumedId = state.moveAnimationConsumedId,
+                        onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                        onSquareClick = { square ->
+                            viewModel.onSquareClick(square)
+                        }
                     )
                 }
-                Spacer(modifier = Modifier.height(6.dp))
-                BottomPlayer(state = state, thinking = thinking, modifier = Modifier.width(boardSize))
 
-                MoveList(
-                    moves = state.moves,
-                    modifier = Modifier
-                        .weight(1f)
-                        .width(boardSize)
-                        .padding(vertical = 8.dp)
+                BottomPlayer(
+                    state = state,
+                    thinking = thinking,
+                    modifier = Modifier.width(boardSize)
+                )
+
+                BotActions(
+                    gameOngoing = state.gameResult == null,
+                    onResign = viewModel::resign
                 )
             }
-
-            GameBottomBar(
-                canUndo = false,
-                canRedo = false,
-                optionsEnabled = state.gameResult == null,
-                onUndo = {},
-                onRedo = {},
-                onOfferDraw = {},
-                onResign = viewModel::resign,
-                showDraw = false,
-                showUndoRedo = false
-            )
         }
     }
 
+
     state.promotionPending?.let {
         PromotionDialog(onPieceSelected = viewModel::onPromote)
+    }
+    if (showHomeResignDialog) {
+        GameDecisionDialog(
+            decision = GameDecision.Resign,
+            onConfirm = {
+                showHomeResignDialog = false
+                viewModel.resign()
+            },
+            onDismiss = {showHomeResignDialog = false}
+        )
     }
 
     state.gameResult?.let { result ->
         GameResultDialog(
             result = result,
             onNewGame = onNewGame,
-            onHome = onHome
+            onHome = onHome,
+            whitePlayerName = state.whitePlayerName,
+            blackPlayerName = state.blackPlayerName
         )
     }
+}
+
+@Composable
+private fun BotBoard(state: GameUiState,moveAnimationConsumedId: Long?,onMoveAnimationStarted: (Long) -> Unit, onSquareClick: (com.abhinav.caisarra.presentation.game.model.Square) -> Unit) {
+    ChessBoard(
+        board = state.board,
+        selectedSquare = state.selectedSquare,
+        legalMoves = state.legalMoves,
+        lastMoveFrom = state.lastMoveFrom,
+        lastMoveTo = state.lastMoveTo,
+        isWhiteInCheck = state.isWhiteInCheck,
+        isBlackInCheck = state.isBlackInCheck,
+        isFlipped = state.isBoardFlipped,
+        moveAnimationEvent = state.moveAnimationEvent,
+        moveAnimationConsumedId = state.moveAnimationConsumedId,
+        onMoveAnimationStarted = onMoveAnimationStarted,
+        onSquareClick = onSquareClick
+    )
+}
+
+@Composable
+private fun BotActions(gameOngoing: Boolean, onResign: () -> Unit) {
+    GameBottomBar(
+        canUndo = false,
+        canRedo = false,
+        optionsEnabled = gameOngoing,
+        onUndo = {},
+        onRedo = {},
+        onOfferDraw = {},
+        onResign = onResign,
+        showDraw = false,
+        showUndoRedo = false
+    )
 }
 
 @Composable
@@ -179,40 +295,100 @@ private fun BotTopBar(onHome: () -> Unit, onFlip: () -> Unit) {
 }
 
 @Composable
-private fun TopPlayer(state: GameUiState, thinking: Boolean, modifier: Modifier = Modifier) {
+private fun TopPlayer(
+    state: GameUiState,
+    thinking: Boolean,
+    modifier: Modifier = Modifier
+) {
     if (state.isBoardFlipped) {
-        PlayerBar(state.whitePlayerName, state.isWhiteTurn, thinking, modifier)
+        // White is at the top. Show pieces captured by White.
+        PlayerBar(
+            name = state.whitePlayerName,
+            isActive = state.isWhiteTurn,
+            thinking = thinking,
+            captured = state.capturedBlackPieces,
+            modifier = modifier
+        )
     } else {
-        PlayerBar(state.blackPlayerName, !state.isWhiteTurn, thinking, modifier)
+        // Black is at the top. Show pieces captured by Black.
+        PlayerBar(
+            name = state.blackPlayerName,
+            isActive = !state.isWhiteTurn,
+            thinking = thinking,
+            captured = state.capturedWhitePieces,
+            modifier = modifier
+        )
     }
 }
 
 @Composable
-private fun BottomPlayer(state: GameUiState, thinking: Boolean, modifier: Modifier = Modifier) {
+private fun BottomPlayer(
+    state: GameUiState,
+    thinking: Boolean,
+    modifier: Modifier = Modifier
+) {
     if (state.isBoardFlipped) {
-        PlayerBar(state.blackPlayerName, !state.isWhiteTurn, thinking, modifier)
+        PlayerBar(
+            name = state.blackPlayerName,
+            isActive = !state.isWhiteTurn,
+            thinking = thinking,
+            captured = state.capturedWhitePieces,
+            modifier = modifier
+        )
     } else {
-        PlayerBar(state.whitePlayerName, state.isWhiteTurn, thinking, modifier)
+        PlayerBar(
+            name = state.whitePlayerName,
+            isActive = state.isWhiteTurn,
+            thinking = thinking,
+            captured = state.capturedBlackPieces,
+            modifier = modifier
+        )
     }
 }
-
 @Composable
-private fun PlayerBar(name: String, isActive: Boolean, thinking: Boolean, modifier: Modifier = Modifier) {
+private fun PlayerBar(
+    name: String,
+    isActive: Boolean,
+    thinking: Boolean,
+    captured: List<com.abhinav.caisarra.presentation.game.model.Piece>,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(if (isActive) Color(0xFF263B30) else Color(0xFF151F2B), RoundedCornerShape(12.dp))
-            .border(1.dp, Color(0xFF304154), RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .background(
+                if (isActive) Color(0xFF263B30) else Color(0xFF151F2B),
+                RoundedCornerShape(12.dp)
+            )
+            .border(
+                1.dp,
+                Color(0xFF304154),
+                RoundedCornerShape(12.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = name,
-            color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = name,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
+            )
+
+            if (captured.isNotEmpty()) {
+                CapturedPieces(
+                    pieces = captured
+                )
+            }
+        }
+
         if (isActive && thinking) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(
@@ -220,6 +396,7 @@ private fun PlayerBar(name: String, isActive: Boolean, thinking: Boolean, modifi
                     strokeWidth = 2.dp,
                     modifier = Modifier.size(16.dp)
                 )
+
                 Text(
                     text = "Thinking...",
                     color = Accent,
@@ -230,6 +407,7 @@ private fun PlayerBar(name: String, isActive: Boolean, thinking: Boolean, modifi
         }
     }
 }
+
 
 @Composable
 private fun CenteredColumn(content: @Composable () -> Unit) {

@@ -27,7 +27,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-
+import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
+import com.abhinav.caisarra.domain.chess.model.PieceType as DomainPieceType
+import com.abhinav.caisarra.domain.chess.model.Square as DomainSquare
+import com.abhinav.caisarra.domain.chess.game.mapper.toUiPiece
 class BotGameViewModel(
     application: Application,
     private val gameId: String
@@ -38,6 +41,15 @@ class BotGameViewModel(
 
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
+    fun onMoveAnimationStarted(eventId: Long) {
+        _uiState.update { current ->
+            if (current.moveAnimationEvent?.id == eventId) {
+                current.copy(moveAnimationConsumedId = eventId)
+            } else {
+                current
+            }
+        }
+    }
 
     private val _botThinking = MutableStateFlow(false)
     val botThinking: StateFlow<Boolean> = _botThinking.asStateFlow()
@@ -47,6 +59,9 @@ class BotGameViewModel(
     private var awaitingServer = false
     private var finished = false
     private var reconnecting = false
+    private var moveCount = 0
+    private var animationSequence = 0L
+    private var lastAnimatedMoveKey: String? = null
 
     init {
         viewModelScope.launch {
@@ -121,6 +136,13 @@ class BotGameViewModel(
         socket.send(BotSocketOutgoing.Resign)
     }
 
+    private fun resignIfUntouched() {
+        val color = myColor ?: return
+        val botOpening = if (color == PieceColor.BLACK) 1 else 0
+        if (finished || moveCount > botOpening) return
+        socket.send(BotSocketOutgoing.Resign)
+    }
+
     fun flipBoard() {
         _uiState.update { it.copy(isBoardFlipped = !it.isBoardFlipped) }
     }
@@ -176,6 +198,66 @@ class BotGameViewModel(
             }
         }
     }
+    private fun calculateCapturedPieces(
+        uciMoves: List<String>
+    ): Pair<
+            List<com.abhinav.caisarra.presentation.game.model.Piece>,
+            List<com.abhinav.caisarra.presentation.game.model.Piece>
+            > {
+        val replayEngine = ChesslibEngine()
+
+        val captured = mutableListOf<
+                com.abhinav.caisarra.domain.chess.model.BoardPiece
+                >()
+
+        for (uci in uciMoves) {
+            if (uci.length < 4) continue
+
+            val fromFile = uci[0] - 'a'
+            val fromRank = uci[1].digitToIntOrNull()?.minus(1)
+            val toFile = uci[2] - 'a'
+            val toRank = uci[3].digitToIntOrNull()?.minus(1)
+
+            if (
+                fromFile !in 0..7 ||
+                toFile !in 0..7 ||
+                fromRank !in 0..7 ||
+                toRank !in 0..7
+            ) {
+                continue
+            }
+
+            val promotion = when (uci.getOrNull(4)?.lowercaseChar()) {
+                'q' -> DomainPieceType.Queen
+                'r' -> DomainPieceType.Rook
+                'b' -> DomainPieceType.Bishop
+                'n' -> DomainPieceType.Knight
+                else -> null
+            }
+
+            val move = Move(
+                from = DomainSquare(fromFile, fromRank!!),
+                to = DomainSquare(toFile, toRank!!),
+                promotion = promotion
+            )
+            val capturedPiece = replayEngine.capturedBy(move)
+
+            if (replayEngine.play(move) && capturedPiece != null) {
+                captured.add(capturedPiece)
+            }
+        }
+
+        val whiteCaptured = captured
+            .filter { it.color == DomainColor.White }
+            .map { it.toUiPiece() }
+
+        val blackCaptured = captured
+            .filter { it.color == DomainColor.Black }
+            .map { it.toUiPiece() }
+
+        return whiteCaptured to blackCaptured
+    }
+
 
     private fun applyState(game: BotGameDto) {
         awaitingServer = false
@@ -184,8 +266,42 @@ class BotGameViewModel(
             myColor = if (game.playerColor == "white") PieceColor.WHITE else PieceColor.BLACK
         }
 
+        val previousBoard = _uiState.value.board
+        val lastMove = game.moves.lastOrNull()
+        val moveKey = lastMove?.let { "$it:${game.moves.size}" }
+
+        val animationEvent = if (
+            previousBoard.isNotEmpty() &&
+            lastMove != null &&
+            moveKey != lastAnimatedMoveKey &&
+            lastMove.length >= 4
+        ) {
+            val from = squareFrom(lastMove.take(2))
+            val to = squareFrom(lastMove.drop(2).take(2))
+            val movingPiece = previousBoard[from]
+
+            if (movingPiece != null) {
+                PieceMoveAnimationEvent(
+                    id = ++animationSequence,
+                    piece = movingPiece,
+                    from = from,
+                    to = to
+                )
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+
+        lastAnimatedMoveKey = moveKey
+
         engine.loadFen(game.position)
         finished = game.status == "finished"
+        moveCount = game.moves.size
+        val (capturedWhite, capturedBlack) =
+            calculateCapturedPieces(game.moves)
+
 
         val turn = engine.turn()
         val inCheck = engine.checkSquare() != null
@@ -194,13 +310,12 @@ class BotGameViewModel(
         _botThinking.value = !finished && !myTurn
 
         val botName = "Bot (${game.botRating})"
-        val lastMove = game.moves.lastOrNull()
-
         _uiState.update {
             it.copy(
                 isLoading = false,
                 errorMessage = null,
                 board = engine.pieces().toUiBoard(),
+                moveAnimationEvent = animationEvent ?: it.moveAnimationEvent,
                 whitePlayerName = if (myColor == PieceColor.WHITE) "You" else botName,
                 blackPlayerName = if (myColor == PieceColor.BLACK) "You" else botName,
                 isWhiteTurn = whiteTurn,
@@ -212,6 +327,8 @@ class BotGameViewModel(
                 isWhiteInCheck = inCheck && whiteTurn,
                 isBlackInCheck = inCheck && !whiteTurn,
                 moves = game.moves.toMoveUi(),
+                capturedWhitePieces = capturedWhite,
+                capturedBlackPieces = capturedBlack,
                 isBoardFlipped = if (colorWasUnknown) myColor == PieceColor.BLACK else it.isBoardFlipped,
                 undoEnabled = false,
                 gameResult = if (finished) resultFrom(game.result) else null
@@ -230,6 +347,7 @@ class BotGameViewModel(
         Square(row = 8 - name[1].digitToInt(), column = name[0] - 'a')
 
     override fun onCleared() {
+        resignIfUntouched()
         socket.close()
     }
 }

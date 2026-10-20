@@ -13,10 +13,11 @@ data class MatchmakingJoinRequest(
 
     @SerialName("increment_seconds")
     val incrementSeconds: Int,
-    val rated: Boolean = true,
+
+    val rated: Boolean,
 
     @SerialName("ignore_tilt")
-    val ignoreTilt: Boolean = false
+    val ignoreTilt: Boolean
 )
 
 @Serializable

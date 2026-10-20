@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,13 +42,17 @@ import com.abhinav.caisarra.presentation.game.model.GameIntent
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
-
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-
-
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.abhinav.caisarra.presentation.game.components.GameDecision
+import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
+import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
+import com.abhinav.caisarra.presentation.game.components.MoveTicker
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 
@@ -57,6 +63,15 @@ fun GameScreen(
     onNewGame: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    ChessMoveSound(
+        board = state.board,
+        moveEventId = state.moveAnimationEvent?.id,
+        moveTo = state.moveAnimationEvent?.to
+    )
+    var showHomeResignDialog by remember { mutableStateOf(false) }
+    val requestHome = {
+        if (state.gameResult == null) showHomeResignDialog = true else onHome()
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -117,6 +132,7 @@ fun GameScreen(
 
             val boardSize = minOf(maxHeight - 24.dp, maxWidth * 0.55f)
 
+
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -125,7 +141,7 @@ fun GameScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.size(boardSize)) {
-                    Board(state = state, onIntent = onIntent)
+                    Board(state = state, onIntent = onIntent,moveAnimationConsumedId = state.moveAnimationConsumedId,onMoveAnimationStarted = viewModel::onMoveAnimationStarted)
                 }
 
                 Column(
@@ -134,9 +150,11 @@ fun GameScreen(
                         .fillMaxHeight()
                 ) {
                     TopBar(
-                        onHome = onHome,
+                        onHome = requestHome,
                         onFlip = { onIntent(GameIntent.FlipBoard) }
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     TopPlayerStrip(state = state)
                     MoveList(
                         moves = state.moves,
@@ -149,46 +167,61 @@ fun GameScreen(
                     GameActions(state = state, onIntent = onIntent)
                 }
             }
+
         } else {
+            val boardSize = maxWidth - 24.dp
 
-            val boardSize = minOf(maxWidth - 24.dp, maxHeight * 0.5f)
-
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     TopBar(
-                        onHome = onHome,
-                        onFlip = { onIntent(GameIntent.FlipBoard) }
+                        onHome = requestHome,
+                        onFlip = {
+                            onIntent(GameIntent.FlipBoard)
+                        }
                     )
-                    TopPlayerStrip(
-                        state = state,
-                        modifier = Modifier.width(boardSize)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Box(modifier = Modifier.size(boardSize)) {
-                        Board(state = state, onIntent = onIntent)
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    BottomPlayerStrip(
-                        state = state,
-                        modifier = Modifier.width(boardSize)
-                    )
-                    MoveList(
+
+                    Spacer(modifier = Modifier.height(2.dp))
+                    MoveTicker(
                         moves = state.moves,
                         modifier = Modifier
-                            .weight(1f)
-                            .width(boardSize)
-                            .padding(vertical = 8.dp)
+                            .fillMaxWidth()
+                            .height(36.dp)
                     )
                 }
-                GameActions(state = state, onIntent = onIntent)
+                TopPlayerStrip(
+                    state = state,
+                    modifier = Modifier.width(boardSize)
+                )
+                Box(
+                    modifier = Modifier.size(boardSize)
+                ) {
+                    Board(
+                        state = state,
+                        onIntent = onIntent,
+                        moveAnimationConsumedId = state.moveAnimationConsumedId,
+                        onMoveAnimationStarted = viewModel::onMoveAnimationStarted
+                    )
+                }
+                BottomPlayerStrip(
+                    state = state,
+                    modifier = Modifier.width(boardSize)
+                )
+                GameActions(
+                    state = state,
+                    onIntent = onIntent
+                )
             }
         }
+
     }
 
     state.promotionPending?.let {
@@ -198,12 +231,24 @@ fun GameScreen(
             }
         )
     }
+    if (showHomeResignDialog) {
+        GameDecisionDialog(
+            decision = GameDecision.Resign,
+            onConfirm = {
+                showHomeResignDialog = false
+                onIntent(GameIntent.Resign)
+            },
+            onDismiss = { showHomeResignDialog = false }
+        )
+    }
 
     state.gameResult?.let { result ->
         GameResultDialog(
             result = result,
             onNewGame = onNewGame,
-            onHome = onHome
+            onHome = onHome,
+            whitePlayerName = state.whitePlayerName,
+            blackPlayerName = state.blackPlayerName
         )
     }
 }
@@ -211,7 +256,10 @@ fun GameScreen(
 @Composable
 private fun Board(
     state: GameUiState,
-    onIntent: (GameIntent) -> Unit
+    onIntent: (GameIntent) -> Unit,
+    moveAnimationConsumedId: Long?,
+    onMoveAnimationStarted: (Long) -> Unit
+
 ) {
     ChessBoard(
         board = state.board,
@@ -222,6 +270,9 @@ private fun Board(
         isWhiteInCheck = state.isWhiteInCheck,
         isBlackInCheck = state.isBlackInCheck,
         isFlipped = state.isBoardFlipped,
+        moveAnimationEvent = state.moveAnimationEvent,
+        moveAnimationConsumedId = moveAnimationConsumedId,
+        onMoveAnimationStarted = onMoveAnimationStarted,
         onSquareClick = { square ->
             onIntent(GameIntent.SquareClicked(square))
         }
@@ -254,6 +305,7 @@ private fun TopBar(
     }
 }
 
+
 @Composable
 private fun TopPlayerStrip(
     state: GameUiState,
@@ -264,7 +316,8 @@ private fun TopPlayerStrip(
             name = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
-            captured = state.capturedWhitePieces,
+            hasClock = state.hasClock,
+            captured = state.capturedBlackPieces,
             capturedOnTop = false,
             modifier = modifier
         )
@@ -273,7 +326,8 @@ private fun TopPlayerStrip(
             name = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
-            captured = state.capturedBlackPieces,
+            hasClock = state.hasClock,
+            captured = state.capturedWhitePieces,
             capturedOnTop = false,
             modifier = modifier
         )
@@ -290,7 +344,8 @@ private fun BottomPlayerStrip(
             name = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
-            captured = state.capturedBlackPieces,
+            hasClock = state.hasClock,
+            captured = state.capturedWhitePieces,
             capturedOnTop = true,
             modifier = modifier
         )
@@ -299,7 +354,8 @@ private fun BottomPlayerStrip(
             name = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
-            captured = state.capturedWhitePieces,
+            hasClock = state.hasClock,
+            captured = state.capturedBlackPieces,
             capturedOnTop = true,
             modifier = modifier
         )
@@ -311,29 +367,59 @@ private fun PlayerStrip(
     name: String,
     timeMillis: Long,
     isActive: Boolean,
+    hasClock: Boolean,
     captured: List<Piece>,
     capturedOnTop: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-
-        val capturedModifier = Modifier
-            .heightIn(min = 20.dp)
-            .padding(vertical = 2.dp)
-
-        if (capturedOnTop) {
-            CapturedPieces(pieces = captured, modifier = capturedModifier)
-        }
+    if (hasClock) {
         ClockBar(
             playerName = name,
             timeMillis = timeMillis,
-            isActive = isActive
+            isActive = isActive,
+            capturedPieces = captured,
+            modifier = modifier
         )
-        if (!capturedOnTop) {
-            CapturedPieces(pieces = captured, modifier = capturedModifier)
+    } else {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(
+                    if (isActive) Color(0xFF263B30) else Color(0xFF151F2B),
+                    RoundedCornerShape(12.dp)
+                )
+                .border(
+                    1.dp,
+                    Color(0xFF304154),
+                    RoundedCornerShape(12.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
+
+                if (captured.isNotEmpty()) {
+                    CapturedPieces(
+                        pieces = captured
+                    )
+                }
+            }
         }
     }
 }
+
 
 @Composable
 private fun GameActions(

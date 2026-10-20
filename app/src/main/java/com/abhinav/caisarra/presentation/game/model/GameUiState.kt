@@ -1,24 +1,34 @@
+
 package com.abhinav.caisarra.presentation.game.model
 
 data class GameUiState(
     val isLoading: Boolean = true,
-
     val errorMessage: String? = null,
-
     val board: Map<Square, Piece> = emptyMap(),
 
     val whitePlayerName: String = "White",
     val blackPlayerName: String = "Black",
+    val myColor: PieceColor? = null,
+    val playerRating: Int? = null,
+    val ratingChange: Int? = null,
+    val opponentRating: Int? = null,
+    val whiteRating: Int? = null,
+    val blackRating: Int? = null,
+    val isRated: Boolean = false,
+    val timeControlMinutes: Int = 10,
+    val incrementSeconds: Int = 0,
+    val hasClock: Boolean = true,
 
     val whiteTimeMillis: Long = 10 * 60 * 1000L,
     val blackTimeMillis: Long = 10 * 60 * 1000L,
 
+    val isDailyMode: Boolean = false,
+    val dailyDaysPerMove: Int = 0,
+    val lastMoveAccepted: Boolean? = null,
+
     val isWhiteTurn: Boolean = true,
-
     val selectedSquare: Square? = null,
-
     val legalMoves: List<Square> = emptyList(),
-
     val lastMoveFrom: Square? = null,
     val lastMoveTo: Square? = null,
 
@@ -27,17 +37,15 @@ data class GameUiState(
 
     val capturedWhitePieces: List<Piece> = emptyList(),
     val capturedBlackPieces: List<Piece> = emptyList(),
-
     val moves: List<MoveUi> = emptyList(),
 
     val isBoardFlipped: Boolean = false,
-
     val undoEnabled: Boolean = true,
-
     val promotionPending: Square? = null,
-
     val gameResult: GameResult? = null,
     val redoEnabled: Boolean = false,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
+    val moveAnimationEvent: PieceMoveAnimationEvent? = null,
+    val moveAnimationConsumedId: Long? = null
 )

@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.data.remote
 
 import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.data.remote.api.AnalysisService
 import com.abhinav.caisarra.data.remote.api.AuthService
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -14,6 +15,7 @@ import com.abhinav.caisarra.data.remote.api.GamesService
 import com.abhinav.caisarra.data.remote.api.ProfileService
 import com.abhinav.caisarra.data.remote.api.RatingService
 import com.abhinav.caisarra.data.remote.api.MatchmakingService
+import com.abhinav.caisarra.data.remote.api.FriendsService
 object RetrofitInstance {
     const val BASE_URL = "https://caisaara.duckdns.org"
     val json = Json { ignoreUnknownKeys = true }
@@ -67,5 +69,12 @@ object RetrofitInstance {
     fun createMatchmakingService(tokenManager: TokenManager): MatchmakingService =
         authenticatedRetrofit(tokenManager).create()
     fun createBotGameService(tokenManager: TokenManager): BotGameService =
+        authenticatedRetrofit(tokenManager).create()
+
+    fun createAnalysisService(tokenManager: TokenManager): AnalysisService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createTournamentService(tokenManager: TokenManager): TournamentService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createFriendsService(tokenManager: TokenManager): FriendsService =
         authenticatedRetrofit(tokenManager).create()
 }

@@ -11,8 +11,6 @@ import kotlinx.coroutines.sync.Mutex
 
 private val Context.tokenDataStore by preferencesDataStore(name = "auth_tokens")
 
-
-
 class TokenManager(private val context: Context){
 
     val refreshMutex = Mutex()

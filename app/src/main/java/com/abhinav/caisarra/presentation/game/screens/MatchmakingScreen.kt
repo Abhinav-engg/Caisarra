@@ -1,3 +1,4 @@
+
 package com.abhinav.caisarra.presentation.game.screens
 
 import androidx.compose.foundation.background
@@ -8,10 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,8 +23,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.presentation.game.viewmodel.MatchmakingViewModel
+
+private fun formatTimeControl(
+    minutes: Int,
+    incrementSeconds: Int
+): String {
+    val duration = when (minutes) {
+        1440 -> "1 day"
+        2880 -> "2 days"
+        4320 -> "3 days"
+        7200 -> "5 days"
+        10080 -> "7 days"
+        20160 -> "14 days"
+        else -> "$minutes min"
+    }
+    return if (incrementSeconds > 0) {
+        "$duration + ${incrementSeconds}s"
+    } else {
+        duration
+    }
+}
 
 @Composable
 fun MatchmakingScreen(
@@ -36,12 +55,14 @@ fun MatchmakingScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+
     LaunchedEffect(state.matchedGameId) {
         state.matchedGameId?.let { gameId ->
             viewModel.clearMatchedGame()
             onMatched(gameId)
         }
     }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -64,7 +85,9 @@ fun MatchmakingScreen(
                 color = Color(0xFF10B981),
                 strokeWidth = 4.dp
             )
+
             Spacer(Modifier.height(28.dp))
+
             Text(
                 text = state.message.ifBlank {
                     "Finding opponent..."
@@ -73,6 +96,7 @@ fun MatchmakingScreen(
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
+
             Spacer(Modifier.height(12.dp))
 
             Text(
@@ -82,13 +106,15 @@ fun MatchmakingScreen(
             )
 
             Spacer(Modifier.height(20.dp))
+
             Text(
-                text = "$minutes min + ${incrementSeconds}s",
+                text = formatTimeControl(minutes, incrementSeconds),
                 color = Color(0xFF10B981),
                 fontSize = 16.sp
             )
 
             Spacer(Modifier.height(36.dp))
+
             GeneralButton(
                 text = "CANCEL SEARCH",
                 onClick = viewModel::cancelMatch,
@@ -104,6 +130,7 @@ fun MatchmakingScreen(
                 },
                 fontSize = 17.sp
             )
+
             Spacer(Modifier.height(24.dp))
 
             GeneralButton(
@@ -133,7 +160,7 @@ fun MatchmakingScreen(
             },
             text = {
                 Text(
-                    "The server detected a possible tilt pattern. "+
+                    "The server detected a possible tilt pattern. " +
                             "You can take a break or continue with a rated game."
                 )
             },
