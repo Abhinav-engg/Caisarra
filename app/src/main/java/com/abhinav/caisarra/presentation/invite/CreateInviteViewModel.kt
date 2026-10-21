@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.repository.InviteRepository
+import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +14,8 @@ import kotlinx.coroutines.launch
 data class CreateInviteUiState(
     val timeControlMinutes: Int = 10,
     val incrementSeconds: Int = 0,
+    val selectedControl: String = "10 min",
+    val mode: GameMode = GameMode.RAPID,
     val color: String = "random",
     val allowTakebacks: Boolean = false,
     val inviteCode: String? = null,
@@ -30,11 +33,85 @@ class CreateInviteViewModel(application: Application) : AndroidViewModel(applica
     val uiState: StateFlow<CreateInviteUiState> = _uiState.asStateFlow()
 
     fun onTimeControlChange(minutes: Int) {
-        _uiState.update { it.copy(timeControlMinutes = minutes) }
+        _uiState.update { current ->
+            current.copy(
+                timeControlMinutes = minutes,
+                selectedControl = timeLabel(minutes.toFloat(), current.incrementSeconds.toFloat()),
+                mode = modeFor(minutes.toFloat())
+            )
+        }
     }
 
     fun onIncrementChange(seconds: Int) {
-        _uiState.update { it.copy(incrementSeconds = seconds) }
+        _uiState.update { current ->
+            current.copy(
+                incrementSeconds = seconds,
+                selectedControl = timeLabel(current.timeControlMinutes.toFloat(), seconds.toFloat())
+            )
+        }
+    }
+
+    fun onControlSelected(label: String, minutes: Float, incrementSeconds: Float, mode: GameMode) {
+        _uiState.update {
+            it.copy(
+                timeControlMinutes = minutes.toInt(),
+                incrementSeconds = incrementSeconds.toInt(),
+                selectedControl = label,
+                mode = mode
+            )
+        }
+    }
+
+    fun onTimeChanged(minutes: Float) {
+        val totalMinutes = minutes.toInt()
+        _uiState.update { current ->
+            current.copy(
+                timeControlMinutes = totalMinutes,
+                selectedControl = timeLabel(minutes, current.incrementSeconds.toFloat()),
+                mode = modeFor(minutes)
+            )
+        }
+    }
+
+    fun onBonusChanged(seconds: Float) {
+        val increment = seconds.toInt()
+        _uiState.update { current ->
+            current.copy(
+                incrementSeconds = increment,
+                selectedControl = timeLabel(current.timeControlMinutes.toFloat(), seconds)
+            )
+        }
+    }
+
+    private fun modeFor(minutes: Float): GameMode = when {
+        minutes >= 1440f -> GameMode.DAILY
+        minutes < 3f -> GameMode.BULLET
+        minutes < 10f -> GameMode.BLITZ
+        else -> GameMode.RAPID
+    }
+
+    private fun timeLabel(
+        minutes: Float,
+        incrementSeconds: Float
+    ): String {
+        val totalMinutes = minutes.toInt()
+        val increment = incrementSeconds.toInt()
+
+        val duration = when (totalMinutes) {
+            1440 -> "1 day"
+            2880 -> "2 days"
+            4320 -> "3 days"
+            7200 -> "5 days"
+            10080 -> "7 days"
+            20160 -> "14 days"
+            else -> "$totalMinutes min"
+        }
+
+        return if (increment == 0) {
+            duration
+        } else {
+            "$duration + $increment"
+        }
     }
 
     fun onColorChange(color: String) {

@@ -59,5 +59,5 @@ interface AuthService {
     @POST("api/rating")
     suspend fun submitRating(@Body request: RatingRequest): ApiResponse<RatingData>
 
-    suspend fun getProfile(): ApiResponse<ProfileResponse>
+
 }
