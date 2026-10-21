@@ -3,6 +3,7 @@ package com.abhinav.caisarra.data.remote
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.api.AnalysisService
 import com.abhinav.caisarra.data.remote.api.AuthService
+import com.abhinav.caisarra.data.remote.api.BotGameApiService
 import com.abhinav.caisarra.data.remote.api.FriendsService
 import com.abhinav.caisarra.data.remote.api.GamesService
 import com.abhinav.caisarra.data.remote.api.MatchmakingService
@@ -20,7 +21,10 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
     const val BASE_URL = "https://caisaara.duckdns.org"
-    val json = Json { ignoreUnknownKeys = true }
+    val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    }
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.NONE
@@ -91,8 +95,8 @@ object RetrofitInstance {
         authenticatedRetrofit(tokenManager).create()
     fun createMatchmakingService(tokenManager: TokenManager): MatchmakingService =
         authenticatedRetrofit(tokenManager).create()
-    fun createBotGameService(tokenManager: TokenManager): BotGameService =
-        authenticatedRetrofit(tokenManager).create()
+    fun createBotGameService(tokenManager: TokenManager): BotGameApiService =
+        authenticatedRetrofit(tokenManager).create(BotGameApiService::class.java)
     fun createAnalysisService(tokenManager: TokenManager): AnalysisService =
         authenticatedRetrofit(tokenManager).create()
     fun createTournamentService(tokenManager: TokenManager): TournamentService =

@@ -6,6 +6,7 @@ import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.TokenRefresher
 import com.abhinav.caisarra.data.remote.api.AnalysisService
+import com.abhinav.caisarra.data.remote.api.BotGameApiService
 import com.abhinav.caisarra.data.remote.api.GamesService
 import com.abhinav.caisarra.data.remote.api.MatchmakingService
 import com.abhinav.caisarra.data.remote.api.NearbyService
@@ -209,4 +210,7 @@ class AuthRepository private constructor(context: Context) {
 
     fun createNearbyService(): NearbyService =
         RetrofitInstance.createNearbyService(tokenManager)
+
+    fun createBotGameService(): BotGameApiService =
+        RetrofitInstance.createBotGameService(tokenManager)
 }

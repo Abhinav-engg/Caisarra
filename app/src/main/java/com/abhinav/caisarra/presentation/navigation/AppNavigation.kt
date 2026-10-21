@@ -83,10 +83,12 @@ import com.abhinav.caisarra.presentation.game.viewmodel.MatchmakingViewModel
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.abhinav.caisarra.data.repository.GameAnalysisRepository
-import com.abhinav.caisarra.presentation.game.screens.BotSetupScreen
+import com.abhinav.caisarra.presentation.screens.BotSetupScreen
+import com.abhinav.caisarra.presentation.screens.BotGameScreen
+import com.abhinav.caisarra.presentation.screens.BotHistoryScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.BotSetupViewModel
+import com.abhinav.caisarra.presentation.game.viewmodel.BotHistoryViewModel
 import com.abhinav.caisarra.presentation.game.BotGameViewModel
-import com.abhinav.caisarra.presentation.game.screens.BotGameScreen
 import com.abhinav.caisarra.presentation.game.screens.PassAndPlaySetupScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.PassAndPlaySetupViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
@@ -132,6 +134,7 @@ object AppRoutes {
 
     const val BOT_SETUP = "bot_setup"
     const val BOT_GAME = "bot_game/{gameId}"
+    const val BOT_HISTORY = "bot_history"
     const val PASS_AND_PLAY_SETUP = "pass_and_play_setup"
     const val TOURNAMENTS = "tournaments"
     const val CREATE_TOURNAMENT = "create_tournament"
@@ -171,6 +174,7 @@ object AppRoutes {
     fun onlineGame(gameId: String) = "online_game/${Uri.encode(gameId)}"
 
     fun botGame(gameId: String) = "bot_game/${Uri.encode(gameId)}"
+    fun botHistory() = BOT_HISTORY
 
     fun joinInvite(code: String) = "play/${Uri.encode(code)}"
     fun matchmaking(minutes: Int, incrementSeconds: Int) = "matchmaking/$minutes/$incrementSeconds"
@@ -582,6 +586,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.navigateOnce(AppRoutes.NEARBY) {
                         launchSingleTop = true
                     }
+                },
+                onPlayBots = {
+                    navController.navigateOnce(AppRoutes.BOT_SETUP)
                 },
                 onOpenProfile = {
                     navController.navigateOnce(AppRoutes.PROFILE)
@@ -1221,7 +1228,29 @@ fun AppNavigation(authRepository: AuthRepository) {
                         popUpTo(AppRoutes.BOT_SETUP) { inclusive = true }
                     }
                 },
+                onViewHistory = {
+                    navController.navigateOnce(AppRoutes.BOT_HISTORY)
+                },
                 onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
+            )
+        }
+
+        composable(route = AppRoutes.BOT_HISTORY) {
+            val botHistoryViewModel = screenViewModel {
+                BotHistoryViewModel(context as Application)
+            }
+
+            BotHistoryScreen(
+                viewModel = botHistoryViewModel,
+                onOpenGame = { gameId ->
+                    navController.navigateOnce(AppRoutes.botGame(gameId))
+                },
+                onNewGame = {
+                    navController.navigate(AppRoutes.BOT_SETUP) {
+                        popUpTo(AppRoutes.BOT_HISTORY) { inclusive = true }
+                    }
+                },
+                onBack = { navController.safeBack(AppRoutes.BOT_SETUP) }
             )
         }
 

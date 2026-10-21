@@ -70,6 +70,7 @@ fun HomeScreen(
     onLogoutSuccess: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
     onOpenNearby: () -> Unit = {},
+    onPlayBots: () -> Unit = {},
     onOpenProfile: () -> Unit
 ) {
 
@@ -149,6 +150,14 @@ fun HomeScreen(
                 GeneralButton(
                     text = "Chess Nearby",
                     onClick = onOpenNearby,
+                    modifier = Modifier.width(200.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                GeneralButton(
+                    text = "Play with Bot",
+                    onClick = onPlayBots,
                     modifier = Modifier.width(200.dp)
                 )
             }

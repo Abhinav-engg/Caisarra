@@ -3,34 +3,43 @@ package com.abhinav.caisarra.presentation.game
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.data.local.SessionExpiredEvent
 import com.abhinav.caisarra.data.remote.BotSocketClient
-import com.abhinav.caisarra.data.remote.dto.BotGameDto
+import com.abhinav.caisarra.data.remote.dto.BotErrorMessage
+import com.abhinav.caisarra.data.remote.dto.BotGame
+import com.abhinav.caisarra.data.remote.dto.BotGameStateMessage
 import com.abhinav.caisarra.data.remote.dto.BotSocketIncoming
-import com.abhinav.caisarra.data.remote.dto.BotSocketOutgoing
+import com.abhinav.caisarra.data.remote.dto.BotThinkingMessage
+import com.abhinav.caisarra.data.remote.dto.NextBot
+import com.abhinav.caisarra.data.repository.BotGameRepository
 import com.abhinav.caisarra.domain.chess.engine.ChesslibEngine
 import com.abhinav.caisarra.domain.chess.game.mapper.toDomain
 import com.abhinav.caisarra.domain.chess.game.mapper.toMoveUi
 import com.abhinav.caisarra.domain.chess.game.mapper.toUi
 import com.abhinav.caisarra.domain.chess.game.mapper.toUiBoard
+import com.abhinav.caisarra.domain.chess.game.mapper.toUiPiece
 import com.abhinav.caisarra.domain.chess.model.Move
 import com.abhinav.caisarra.domain.chess.model.PieceColor as DomainColor
+import com.abhinav.caisarra.domain.chess.model.PieceType as DomainPieceType
+import com.abhinav.caisarra.domain.chess.model.Square as DomainSquare
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
+import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 import com.abhinav.caisarra.presentation.game.model.PieceType
 import com.abhinav.caisarra.presentation.game.model.Square
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
-import com.abhinav.caisarra.domain.chess.model.PieceType as DomainPieceType
-import com.abhinav.caisarra.domain.chess.model.Square as DomainSquare
-import com.abhinav.caisarra.domain.chess.game.mapper.toUiPiece
+
 class BotGameViewModel(
     application: Application,
     private val gameId: String
@@ -38,28 +47,32 @@ class BotGameViewModel(
 
     private val engine = ChesslibEngine()
     private val socket = BotSocketClient(application)
+    private val repository = BotGameRepository.get(application)
 
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
-    fun onMoveAnimationStarted(eventId: Long) {
-        _uiState.update { current ->
-            if (current.moveAnimationEvent?.id == eventId) {
-                current.copy(moveAnimationConsumedId = eventId)
-            } else {
-                current
-            }
-        }
-    }
 
     private val _botThinking = MutableStateFlow(false)
     val botThinking: StateFlow<Boolean> = _botThinking.asStateFlow()
 
+    private val _snackbarEvent = MutableSharedFlow<String>(extraBufferCapacity = 16)
+    val snackbarEvent: SharedFlow<String> = _snackbarEvent.asSharedFlow()
+
+    private val _nextBot = MutableStateFlow<NextBot?>(null)
+    val nextBot: StateFlow<NextBot?> = _nextBot.asStateFlow()
+
+    private val _endReason = MutableStateFlow<String?>(null)
+    val endReason: StateFlow<String?> = _endReason.asStateFlow()
+
+    private val _isStartingNextBot = MutableStateFlow(false)
+    val isStartingNextBot: StateFlow<Boolean> = _isStartingNextBot.asStateFlow()
+
     private var myColor: PieceColor? = null
+    private var myColorString: String = "white"
     private var pendingPromotionFrom: Square? = null
     private var awaitingServer = false
     private var finished = false
     private var reconnecting = false
-    private var moveCount = 0
     private var animationSequence = 0L
     private var lastAnimatedMoveKey: String? = null
 
@@ -79,27 +92,50 @@ class BotGameViewModel(
         }
         viewModelScope.launch {
             if (!socket.connect(gameId)) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = "Please log in to play against the bot.") }
+                loadGameFallback()
                 return@launch
             }
-            if (withTimeoutOrNull(8000) { socket.connected.first { it } } == null) reconnect()
+            if (withTimeoutOrNull(6000) { socket.connected.first { it } } == null) {
+                loadGameFallback()
+            }
+        }
+    }
+
+    fun onMoveAnimationStarted(eventId: Long) {
+        _uiState.update { current ->
+            if (current.moveAnimationEvent?.id == eventId) {
+                current.copy(moveAnimationConsumedId = eventId)
+            } else {
+                current
+            }
+        }
+    }
+
+    private fun loadGameFallback() {
+        viewModelScope.launch {
+            repository.getGame(gameId)
+                .onSuccess { game ->
+                    applyState(game)
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
+                }
         }
     }
 
     private fun reconnect() {
-        if (reconnecting) return
+        if (reconnecting || finished) return
         reconnecting = true
         viewModelScope.launch {
             var attempt = 0
             while (!finished && !socket.connected.value && attempt < 5) {
-                _uiState.update { it.copy(errorMessage = "Connection lost. Reconnecting...") }
-                delay(minOf(2000L shl attempt.coerceAtMost(2), 8000L))
+                delay(minOf(1500L shl attempt.coerceAtMost(2), 6000L))
                 if (!socket.connect(gameId)) break
-                withTimeoutOrNull(5000) { socket.connected.first { it } }
+                if (withTimeoutOrNull(4000) { socket.connected.first { it } } != null) break
                 attempt++
             }
             if (!finished && !socket.connected.value) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = "Couldn't connect to the game.") }
+                loadGameFallback()
             }
             reconnecting = false
         }
@@ -133,14 +169,7 @@ class BotGameViewModel(
 
     fun resign() {
         if (finished) return
-        socket.send(BotSocketOutgoing.Resign)
-    }
-
-    private fun resignIfUntouched() {
-        val color = myColor ?: return
-        val botOpening = if (color == PieceColor.BLACK) 1 else 0
-        if (finished || moveCount > botOpening) return
-        socket.send(BotSocketOutgoing.Resign)
+        socket.sendResign()
     }
 
     fun flipBoard() {
@@ -149,6 +178,23 @@ class BotGameViewModel(
 
     fun dismissResult() {
         _uiState.update { it.copy(gameResult = null) }
+    }
+
+    fun playNextBot(onGameCreated: (String) -> Unit) {
+        val bot = _nextBot.value ?: return
+        if (_isStartingNextBot.value) return
+        _isStartingNextBot.value = true
+        viewModelScope.launch {
+            repository.createGame(botId = bot.id, rating = null, color = myColorString)
+                .onSuccess { game ->
+                    _isStartingNextBot.value = false
+                    onGameCreated(game.id)
+                }
+                .onFailure { error ->
+                    _isStartingNextBot.value = false
+                    _snackbarEvent.tryEmit(error.message ?: "Failed to start next game")
+                }
+        }
     }
 
     private fun move(from: Square, to: Square) {
@@ -167,65 +213,60 @@ class BotGameViewModel(
             _uiState.update { it.copy(selectedSquare = null, legalMoves = emptyList(), promotionPending = null) }
             return
         }
-        val sent = socket.send(BotSocketOutgoing.Move(move.uci))
+        val sent = socket.sendMove(move.uci)
         awaitingServer = sent
         _uiState.update {
             it.copy(
                 selectedSquare = null,
                 legalMoves = emptyList(),
-                promotionPending = null,
-                errorMessage = if (sent) null else "Connection lost. Move not sent."
+                promotionPending = null
             )
+        }
+        if (!sent) {
+            _snackbarEvent.tryEmit("Connection lost. Move not sent.")
         }
     }
 
     private fun handle(message: BotSocketIncoming) {
         when (message) {
-            is BotSocketIncoming.GameState -> applyState(message.game)
-            is BotSocketIncoming.BotThinking -> _botThinking.value = true
-            is BotSocketIncoming.Error -> {
+            is BotGameStateMessage -> applyState(message.game)
+            is BotThinkingMessage -> _botThinking.value = true
+            is BotErrorMessage -> {
                 awaitingServer = false
                 _botThinking.value = false
                 _uiState.update {
                     it.copy(
                         selectedSquare = null,
                         legalMoves = emptyList(),
-                        promotionPending = null,
-                        errorMessage = message.message
+                        promotionPending = null
                     )
                 }
-                if (message.message.startsWith("bot could not move")) reconnect()
+                _snackbarEvent.tryEmit(message.message)
+                if (message.message == "invalid or revoked token") {
+                    SessionExpiredEvent.emit()
+                } else if (message.message.startsWith("bot could not move")) {
+                    reconnect()
+                } else if (message.message.contains("reload state", ignoreCase = true)) {
+                    loadGameFallback()
+                }
             }
         }
     }
+
     private fun calculateCapturedPieces(
         uciMoves: List<String>
-    ): Pair<
-            List<com.abhinav.caisarra.presentation.game.model.Piece>,
-            List<com.abhinav.caisarra.presentation.game.model.Piece>
-            > {
+    ): Pair<List<com.abhinav.caisarra.presentation.game.model.Piece>, List<com.abhinav.caisarra.presentation.game.model.Piece>> {
         val replayEngine = ChesslibEngine()
-
-        val captured = mutableListOf<
-                com.abhinav.caisarra.domain.chess.model.BoardPiece
-                >()
+        val captured = mutableListOf<com.abhinav.caisarra.domain.chess.model.BoardPiece>()
 
         for (uci in uciMoves) {
             if (uci.length < 4) continue
-
             val fromFile = uci[0] - 'a'
-            val fromRank = uci[1].digitToIntOrNull()?.minus(1)
+            val fromRank = uci[1].digitToIntOrNull()?.minus(1) ?: continue
             val toFile = uci[2] - 'a'
-            val toRank = uci[3].digitToIntOrNull()?.minus(1)
+            val toRank = uci[3].digitToIntOrNull()?.minus(1) ?: continue
 
-            if (
-                fromFile !in 0..7 ||
-                toFile !in 0..7 ||
-                fromRank !in 0..7 ||
-                toRank !in 0..7
-            ) {
-                continue
-            }
+            if (fromFile !in 0..7 || toFile !in 0..7 || fromRank !in 0..7 || toRank !in 0..7) continue
 
             val promotion = when (uci.getOrNull(4)?.lowercaseChar()) {
                 'q' -> DomainPieceType.Queen
@@ -236,31 +277,24 @@ class BotGameViewModel(
             }
 
             val move = Move(
-                from = DomainSquare(fromFile, fromRank!!),
-                to = DomainSquare(toFile, toRank!!),
+                from = DomainSquare(fromFile, fromRank),
+                to = DomainSquare(toFile, toRank),
                 promotion = promotion
             )
             val capturedPiece = replayEngine.capturedBy(move)
-
             if (replayEngine.play(move) && capturedPiece != null) {
                 captured.add(capturedPiece)
             }
         }
 
-        val whiteCaptured = captured
-            .filter { it.color == DomainColor.White }
-            .map { it.toUiPiece() }
-
-        val blackCaptured = captured
-            .filter { it.color == DomainColor.Black }
-            .map { it.toUiPiece() }
-
+        val whiteCaptured = captured.filter { it.color == DomainColor.White }.map { it.toUiPiece() }
+        val blackCaptured = captured.filter { it.color == DomainColor.Black }.map { it.toUiPiece() }
         return whiteCaptured to blackCaptured
     }
 
-
-    private fun applyState(game: BotGameDto) {
+    private fun applyState(game: BotGame) {
         awaitingServer = false
+        myColorString = game.playerColor
         val colorWasUnknown = myColor == null
         if (colorWasUnknown) {
             myColor = if (game.playerColor == "white") PieceColor.WHITE else PieceColor.BLACK
@@ -279,7 +313,6 @@ class BotGameViewModel(
             val from = squareFrom(lastMove.take(2))
             val to = squareFrom(lastMove.drop(2).take(2))
             val movingPiece = previousBoard[from]
-
             if (movingPiece != null) {
                 PieceMoveAnimationEvent(
                     id = ++animationSequence,
@@ -287,29 +320,29 @@ class BotGameViewModel(
                     from = from,
                     to = to
                 )
-            } else {
-                null
-            }
-        } else {
-            null
-        }
+            } else null
+        } else null
 
         lastAnimatedMoveKey = moveKey
 
         engine.loadFen(game.position)
         finished = game.status == "finished"
-        moveCount = game.moves.size
-        val (capturedWhite, capturedBlack) =
-            calculateCapturedPieces(game.moves)
+        _nextBot.value = game.nextBot
+        _endReason.value = game.endReason
 
-
+        val (capturedWhite, capturedBlack) = calculateCapturedPieces(game.moves)
         val turn = engine.turn()
         val inCheck = engine.checkSquare() != null
         val whiteTurn = turn == DomainColor.White
         val myTurn = whiteTurn == (myColor == PieceColor.WHITE)
         _botThinking.value = !finished && !myTurn
 
-        val botName = "Bot (${game.botRating})"
+        val botName = if (game.botId != null) {
+            "Bot (${game.botRating})"
+        } else {
+            "Custom Bot (${game.botRating})"
+        }
+
         _uiState.update {
             it.copy(
                 isLoading = false,
@@ -347,7 +380,6 @@ class BotGameViewModel(
         Square(row = 8 - name[1].digitToInt(), column = name[0] - 'a')
 
     override fun onCleared() {
-        resignIfUntouched()
         socket.close()
     }
 }
