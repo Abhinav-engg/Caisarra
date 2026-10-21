@@ -32,16 +32,19 @@ class NearbyViewModel(
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = null) }
             when (val result = repository.getPlayers()) {
-                is NearbyResult.Success -> _state.update { current ->
-                    current.copy(
-                        loading = false,
-                        visible = true,
-                        players = result.data.players,
-                        radiusKm = result.data.radiusKm,
-                        selectedId = current.selectedId?.takeIf { id ->
-                            result.data.players.any { it.userId == id }
-                        }
-                    )
+                is NearbyResult.Success -> {
+                    _state.update { current ->
+                        current.copy(
+                            loading = false,
+                            visible = true,
+                            players = result.data.players,
+                            radiusKm = result.data.radiusKm,
+                            selectedId = current.selectedId?.takeIf { id ->
+                                result.data.players.any { it.userId == id }
+                            }
+                        )
+                    }
+                    loadMyLocation()
                 }
                 is NearbyResult.Failure -> handle(result.failure)
             }
@@ -56,6 +59,7 @@ class NearbyViewModel(
                 _state.update { it.copy(loading = false, error = "Could not get your location") }
                 return@launch
             }
+            _state.update { it.copy(myLatitude = location.first, myLongitude = location.second) }
             when (val result = repository.saveLocation(location.first, location.second)) {
                 is NearbyResult.Success -> loadPlayers()
                 is NearbyResult.Failure -> handle(result.failure)
@@ -80,6 +84,14 @@ class NearbyViewModel(
     fun permissionDenied() {
         _state.update {
             it.copy(loading = false, error = "Location permission is needed to find players near you")
+        }
+    }
+
+    private fun loadMyLocation() {
+        if (_state.value.myLatitude != null || !locationProvider.hasPermission()) return
+        viewModelScope.launch {
+            val location = locationProvider.current() ?: return@launch
+            _state.update { it.copy(myLatitude = location.first, myLongitude = location.second) }
         }
     }
 

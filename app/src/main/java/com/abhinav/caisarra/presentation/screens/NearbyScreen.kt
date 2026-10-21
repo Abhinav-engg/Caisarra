@@ -29,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.abhinav.caisarra.data.remote.dto.NearbyPlayer
+import com.abhinav.caisarra.presentation.common.singleClick
 import com.abhinav.caisarra.presentation.nearby.NearbyColors
 import com.abhinav.caisarra.presentation.nearby.NearbyMapState
 import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
@@ -45,7 +45,6 @@ import com.abhinav.caisarra.presentation.nearby.components.NearbyMap
 import com.abhinav.caisarra.presentation.nearby.components.NearbyTopBar
 import com.abhinav.caisarra.presentation.nearby.components.PlayerCard
 import com.abhinav.caisarra.presentation.nearby.components.SquareIconButton
-import kotlinx.coroutines.launch
 
 @Composable
 fun NearbyScreen(
@@ -58,13 +57,16 @@ fun NearbyScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val mapState = remember { NearbyMapState() }
     val selected = state.players.firstOrNull { it.userId == state.selectedId }
-    val farthestKm = state.players.maxOfOrNull { it.distanceKm }?.toFloat() ?: 3f
+    val farthestKm = state.players.maxOfOrNull { it.distanceKm }?.toDouble() ?: 2.0
+    val myLat = state.myLatitude
+    val myLng = state.myLongitude
 
-    LaunchedEffect(mapState.size, farthestKm) {
-        mapState.fitIfIdle(farthestKm)
+    LaunchedEffect(myLat, myLng, farthestKm, mapState.userMoved) {
+        if (myLat != null && myLng != null && !mapState.userMoved) {
+            mapState.fitAround(myLat, myLng, farthestKm, animated = true)
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -87,12 +89,16 @@ fun NearbyScreen(
             .fillMaxSize()
             .background(NearbyColors.Background)
     ) {
-        NearbyMap(
-            state = mapState,
-            players = if (state.visible) state.players else emptyList(),
-            selectedId = state.selectedId,
-            onSelect = viewModel::select
-        )
+        if (myLat != null && myLng != null) {
+            NearbyMap(
+                state = mapState,
+                myLatitude = myLat,
+                myLongitude = myLng,
+                players = if (state.visible) state.players else emptyList(),
+                selectedId = state.selectedId,
+                onSelect = viewModel::select
+            )
+        }
 
         NearbyTopBar(
             visible = state.visible,
@@ -114,7 +120,12 @@ fun NearbyScreen(
             SquareIconButton(
                 icon = Icons.Filled.MyLocation,
                 contentDescription = "Recenter",
-                onClick = { scope.launch { mapState.recenter(farthestKm) } }
+                onClick = {
+                    mapState.userMoved = false
+                    if (myLat != null && myLng != null) {
+                        mapState.fitAround(myLat, myLng, farthestKm, animated = true)
+                    }
+                }
             )
             SquareIconButton(
                 icon = Icons.Filled.Tune,
@@ -141,7 +152,7 @@ fun NearbyScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
-                TextButton(onClick = viewModel::loadPlayers) {
+                TextButton(onClick = singleClick(viewModel::loadPlayers)) {
                     Text("Retry", color = NearbyColors.Accent)
                 }
             }
@@ -154,6 +165,12 @@ fun NearbyScreen(
             )
             !state.visible && !state.loading -> MapMessage(
                 text = "Turn on Appear on Map to see players around you",
+                actionLabel = "Turn on",
+                onAction = { turnOn() },
+                modifier = Modifier.align(Alignment.Center)
+            )
+            state.visible && !state.loading && (myLat == null || myLng == null) -> MapMessage(
+                text = "Location needed to find players near you",
                 actionLabel = "Turn on",
                 onAction = { turnOn() },
                 modifier = Modifier.align(Alignment.Center)
@@ -215,7 +232,7 @@ private fun MapMessage(
             textAlign = TextAlign.Center
         )
         if (actionLabel != null) {
-            TextButton(onClick = onAction) {
+            TextButton(onClick = singleClick(onAction)) {
                 Text(actionLabel, color = NearbyColors.Accent)
             }
         }

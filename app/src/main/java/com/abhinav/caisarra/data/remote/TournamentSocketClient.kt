@@ -77,7 +77,6 @@ class TournamentSocketClient(context: Context) {
                 val event = json.decodeFromString(TournamentSocketEvent.serializer(), text)
                 _incoming.tryEmit(event)
             } catch (e: Exception) {
-                // Unknown or malformed event types are ignored on purpose.
                 Log.w(TAG, "ignored message: ${e.message}")
             }
         }

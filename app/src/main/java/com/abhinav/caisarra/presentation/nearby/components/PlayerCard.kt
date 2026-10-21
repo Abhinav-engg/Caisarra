@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.data.remote.dto.NearbyPlayer
+import com.abhinav.caisarra.presentation.common.singleClick
 import com.abhinav.caisarra.presentation.nearby.NearbyColors
 
 @Composable
@@ -131,7 +132,7 @@ fun PlayerCard(
                             listOf(NearbyColors.AccentDark, NearbyColors.Accent)
                         )
                     )
-                    .clickable(onClick = onChallenge),
+                    .clickable(onClick = singleClick(onChallenge)),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
@@ -168,7 +169,7 @@ fun SquareIconButton(
             .clip(shape)
             .background(NearbyColors.SurfaceHigh)
             .border(1.dp, NearbyColors.Border, shape)
-            .clickable(onClick = onClick),
+            .clickable(onClick = singleClick(onClick)),
         contentAlignment = Alignment.Center
     ) {
         Icon(icon, contentDescription, tint = NearbyColors.TextPrimary)

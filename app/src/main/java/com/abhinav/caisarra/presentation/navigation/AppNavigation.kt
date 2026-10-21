@@ -163,15 +163,6 @@ object AppRoutes {
                 "&clock=$clockEnabled"
     }
 
-//    fun resumeGame(): String {
-//        return "game" + "?resume=true" +
-//                "&white=" +
-//                "&black=" +
-//                "&minutes=10" +
-//                "&flip=false" +
-//                "&undo=true"
-//    }
-
     fun gameHistory(
         gameId: String
     ): String {

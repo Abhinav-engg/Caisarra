@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.abhinav.caisarra.presentation.common.singleClick
 import com.abhinav.caisarra.presentation.nearby.NearbyColors
 
 @Composable
@@ -43,7 +44,7 @@ fun NearbyTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        IconButton(onClick = onBack) {
+        IconButton(onClick = singleClick(onBack)) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",

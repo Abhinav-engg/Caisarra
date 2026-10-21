@@ -301,7 +301,6 @@ private fun TopPlayer(
     modifier: Modifier = Modifier
 ) {
     if (state.isBoardFlipped) {
-        // White is at the top. Show pieces captured by White.
         PlayerBar(
             name = state.whitePlayerName,
             isActive = state.isWhiteTurn,
@@ -310,7 +309,6 @@ private fun TopPlayer(
             modifier = modifier
         )
     } else {
-        // Black is at the top. Show pieces captured by Black.
         PlayerBar(
             name = state.blackPlayerName,
             isActive = !state.isWhiteTurn,

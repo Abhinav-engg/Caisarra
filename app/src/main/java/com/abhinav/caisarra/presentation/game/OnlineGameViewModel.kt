@@ -82,6 +82,7 @@ class OnlineGameViewModel(
 
     private val _myUserId = MutableStateFlow<Long?>(null)
     val myUserId: StateFlow<Long?> = _myUserId.asStateFlow()
+    private val _myUsername = MutableStateFlow<String?>(null)
     private val _drawOfferedBy = MutableStateFlow<Long?>(null)
     val drawOfferedBy: StateFlow<Long?> = _drawOfferedBy.asStateFlow()
     private val _chatMuted = MutableStateFlow(false)
@@ -134,6 +135,7 @@ class OnlineGameViewModel(
             }
             _myUserId.value = TokenManager.get(getApplication()).getAccessToken()
                 ?.let { TokenExpiryChecker.getUserId(it) }
+            _myUsername.value = TokenManager.get(getApplication()).getUsername()
             if (withTimeoutOrNull(8000) { socket.connected.first { it } } == null) reconnect()
         }
         viewModelScope.launch {
@@ -144,9 +146,23 @@ class OnlineGameViewModel(
         viewModelScope.launch { loadGameDetailsAndRating() }
     }
 
+    private fun resolveMode(timeControlMinutes: Int, explicitMode: String? = null): String {
+        val normalized = explicitMode?.trim()?.lowercase()
+        if (normalized in setOf("bullet", "blitz", "rapid", "daily")) {
+            return normalized!!
+        }
+        return when {
+            timeControlMinutes >= 1440 -> "daily"
+            timeControlMinutes < 3 -> "bullet"
+            timeControlMinutes < 10 -> "blitz"
+            else -> "rapid"
+        }
+    }
+
     private suspend fun loadGameDetailsAndRating() {
         val game = runCatching { gameRepository.getGame(gameId) }.getOrNull()
-        mode = game?.timeControlMode?.lowercase()
+        val minutes = game?.timeControlMinutes ?: _uiState.value.timeControlMinutes
+        mode = resolveMode(minutes, game?.timeControlMode ?: mode)
         _uiState.update { current ->
             current.copy(
                 isRated = game?.rated ?: current.isRated,
@@ -155,13 +171,13 @@ class OnlineGameViewModel(
             )
         }
         refreshRating(captureChange = false)
+        lastOpponentUsername?.let { loadOpponentRating(it) }
     }
 
     private suspend fun refreshRating(captureChange: Boolean) {
         val profile = runCatching { profileRepository.getMyProfile() }.getOrNull() ?: return
-        val currentRating = mode
-            ?.let { profile.ratings?.get(it)?.rating }
-            ?: profile.rating
+        val currentMode = mode ?: resolveMode(_uiState.value.timeControlMinutes)
+        val currentRating = profile.ratings?.get(currentMode)?.rating ?: profile.rating
         _uiState.update { current ->
             val change = if (captureChange && current.playerRating != null && currentRating != null) {
                 currentRating - current.playerRating
@@ -463,12 +479,19 @@ class OnlineGameViewModel(
             PieceColor.BLACK -> whiteName
             else -> null
         }
+        val resolvedMode = resolveMode(state.timeControlMinutes, mode)
+        val modeChanged = mode != resolvedMode
+        mode = resolvedMode
+
         if (!resolvedOpponent.isNullOrBlank()) {
             _opponentName.value = resolvedOpponent
-            if (lastOpponentUsername != resolvedOpponent) {
+            if (lastOpponentUsername != resolvedOpponent || _uiState.value.opponentRating == null || modeChanged) {
                 lastOpponentUsername = resolvedOpponent
                 viewModelScope.launch { loadOpponentRating(resolvedOpponent) }
             }
+        }
+        if (modeChanged) {
+            viewModelScope.launch { refreshRating(captureChange = false) }
         }
 
         val previousBoard = _uiState.value.board
@@ -531,6 +554,10 @@ class OnlineGameViewModel(
             0
         }
 
+        val initialDailyTimeMs = state.timeControlMinutes.toLong() * 60L * 1000L
+        val whiteTimeMs = if (dailyMode && state.whiteTimeMs <= 0L && !finished) initialDailyTimeMs else state.whiteTimeMs
+        val blackTimeMs = if (dailyMode && state.blackTimeMs <= 0L && !finished) initialDailyTimeMs else state.blackTimeMs
+
         if (dailyMode || finished) {
             clock.stop()
         } else {
@@ -559,8 +586,8 @@ class OnlineGameViewModel(
                 blackPlayerName = blackName
                     ?: previous.blackPlayerName,
 
-                whiteTimeMillis = state.whiteTimeMs,
-                blackTimeMillis = state.blackTimeMs,
+                whiteTimeMillis = whiteTimeMs,
+                blackTimeMillis = blackTimeMs,
 
                 isDailyMode = dailyMode,
                 dailyDaysPerMove = daysPerMove,
@@ -674,9 +701,10 @@ class OnlineGameViewModel(
 
 
     private suspend fun loadOpponentRating(username: String) {
-        if (username.equals("You", true) || username.equals("Opponent", true)) return
+        if (username.isBlank() || username.equals("You", true) || username.equals("Opponent", true)) return
         val profile = runCatching { ratingService.getPublicProfile(username).data }.getOrNull() ?: return
-        val rating = mode?.let { profile.ratings?.get(it)?.rating } ?: profile.rating
+        val currentMode = mode ?: resolveMode(_uiState.value.timeControlMinutes)
+        val rating = profile.ratings?.get(currentMode)?.rating ?: profile.rating
         _uiState.update { current ->
             current.copy(opponentRating = rating ?: current.opponentRating).withSideRatings()
         }
@@ -689,30 +717,35 @@ class OnlineGameViewModel(
             whiteRating = when (myColor) {
                 PieceColor.WHITE -> mine
                 PieceColor.BLACK -> theirs
-                null -> whiteRating
+                null -> whiteRating ?: (if (whitePlayerName == "You") mine else theirs)
             },
             blackRating = when (myColor) {
                 PieceColor.BLACK -> mine
                 PieceColor.WHITE -> theirs
-                null -> blackRating
+                null -> blackRating ?: (if (blackPlayerName == "You") mine else theirs)
             }
         )
     }
 
     private suspend fun resolveColor(state: SocketIncoming.GameState): PieceColor? {
-        val myId = _myUserId.value ?: return null
+        val myId = _myUserId.value
+        val myUsername = _myUsername.value
         var white = state.whitePlayerId
         var black = state.blackPlayerId
         if (white == 0L && black == 0L) {
-            val game = runCatching { gameRepository.getGame(gameId) }.getOrNull() ?: return null
-            white = game.whitePlayerId.toLong()
-            black = game.blackPlayerId.toLong()
+            val game = runCatching { gameRepository.getGame(gameId) }.getOrNull()
+            white = game?.whitePlayerId ?: 0L
+            black = game?.blackPlayerId ?: 0L
         }
-        return when (myId) {
-            white -> PieceColor.WHITE
-            black -> PieceColor.BLACK
-            else -> null
+        if (myId != null && (white != 0L || black != 0L)) {
+            if (myId == white) return PieceColor.WHITE
+            if (myId == black) return PieceColor.BLACK
         }
+        if (!myUsername.isNullOrBlank()) {
+            if (state.whiteUsername.equals(myUsername, ignoreCase = true)) return PieceColor.WHITE
+            if (state.blackUsername.equals(myUsername, ignoreCase = true)) return PieceColor.BLACK
+        }
+        return null
     }
 
     private fun resultFrom(result: String?) = when (result) {

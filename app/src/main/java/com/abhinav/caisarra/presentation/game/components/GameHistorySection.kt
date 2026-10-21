@@ -203,7 +203,6 @@ private fun GameHistoryCard(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Both players stay in the same row.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -251,7 +250,6 @@ private fun GameHistoryCard(
                 )
             }
 
-            // Date followed by time.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
