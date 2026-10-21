@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.abhinav.caisarra.presentation.common.ClickGuard
 import com.caisaara.ui.theme.CardBackground
 import com.caisaara.ui.theme.CardBorderNavy
 import com.caisaara.ui.theme.PlaceholderColor
@@ -65,7 +66,7 @@ fun GameBottomBar(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            BottomBarItem(Icons.Default.Menu, "Options", optionsEnabled, { showOptions = true }, Modifier.weight(1f))
+            BottomBarItem(Icons.Default.Menu, "Options", optionsEnabled, { if (ClickGuard.canClick()) showOptions = true }, Modifier.weight(1f))
             if (showUndoRedo) {
                 BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Back", canUndo, onUndo, Modifier.weight(1f))
                 BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Forward", canRedo, onRedo, Modifier.weight(1f))
@@ -80,13 +81,17 @@ fun GameBottomBar(
         ) {
             if (showDraw) {
                 OptionRow("Offer draw", TextColor) {
-                    showOptions = false
-                    pendingAction = ConfirmAction.Draw
+                    if (ClickGuard.canClick()) {
+                        showOptions = false
+                        pendingAction = ConfirmAction.Draw
+                    }
                 }
             }
             OptionRow("Resign", RedNormal) {
-                showOptions = false
-                pendingAction = ConfirmAction.Resign
+                if (ClickGuard.canClick()) {
+                    showOptions = false
+                    pendingAction = ConfirmAction.Resign
+                }
             }
         }
     }

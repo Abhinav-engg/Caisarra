@@ -609,21 +609,21 @@ private fun TopClock(
     modifier: Modifier = Modifier
 ) {
     if (state.isBoardFlipped) {
-        // White is at the top; show black pieces captured by White.
         ClockBar(
             playerName = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
+            rating = state.whiteRating,
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedBlackPieces,
             modifier = modifier
         )
     } else {
-        // Black is at the top; show white pieces captured by Black.
         ClockBar(
             playerName = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
+            rating = state.blackRating,
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedWhitePieces,
             modifier = modifier
@@ -637,23 +637,21 @@ private fun BottomClock(
     modifier: Modifier = Modifier
 ) {
     if (state.isBoardFlipped) {
-        // Black is at the bottom; show white pieces captured by Black.
         ClockBar(
             playerName = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
-            rating = state.playerRating,
+            rating = state.blackRating,
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedWhitePieces,
             modifier = modifier
         )
     } else {
-        // White is at the bottom; show black pieces captured by White.
         ClockBar(
             playerName = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
-            rating = state.playerRating,
+            rating = state.whiteRating,
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedBlackPieces,
             modifier = modifier

@@ -9,5 +9,7 @@ data class NearbyUiState(
     val players: List<NearbyPlayer> = emptyList(),
     val radiusKm: Int = 50,
     val selectedId: Int? = null,
+    val myLatitude: Double? = null,
+    val myLongitude: Double? = null,
     val error: String? = null
 )

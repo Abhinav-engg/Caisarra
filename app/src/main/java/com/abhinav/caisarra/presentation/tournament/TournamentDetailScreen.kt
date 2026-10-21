@@ -395,7 +395,6 @@ private fun PairingRow(pairing: PairingDto, myUserId: Long?, onOpenGame: (String
     }
 }
 
-/** The round number and game id of my unfinished game, if any. */
 private fun activeGame(state: TournamentDetailUiState): Pair<Int, String>? {
     val me = state.myUserId ?: return null
     state.rounds.sortedByDescending { it.roundNumber }.forEach { round ->

@@ -11,7 +11,7 @@ import com.abhinav.caisarra.data.remote.dto.JoinGameResponse
 
 class InviteRepository private constructor(context: Context) {
 
-    private val service = RetrofitInstance.createInviteService(TokenManager(context))
+    private val service = RetrofitInstance.createInviteService(TokenManager.get(context))
 
     suspend fun createInvite(
         timeControlMinutes: Int,

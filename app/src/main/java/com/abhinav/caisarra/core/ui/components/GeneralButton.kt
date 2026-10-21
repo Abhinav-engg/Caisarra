@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.abhinav.caisarra.core.ui.theme.SignUpButtonDefaultCornerRadius
 import com.abhinav.caisarra.core.ui.theme.SignUpButtonDefaultMaxHeight
+import com.abhinav.caisarra.presentation.common.singleClick
 import com.caisaara.ui.theme.ButtonGradientEnd
 import com.caisaara.ui.theme.ButtonGradientMid
 import com.caisaara.ui.theme.ButtonGradientStart
@@ -45,7 +46,7 @@ fun GeneralButton(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(),
                 enabled = enabled,
-                onClick = onClick
+                onClick = singleClick(onClick)
             ),
         contentAlignment = Alignment.Center
     ) {

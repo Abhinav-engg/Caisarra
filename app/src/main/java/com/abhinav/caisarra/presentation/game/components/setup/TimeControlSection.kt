@@ -17,9 +17,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 
 @Composable
-fun TimeControlSection(title: String, icon: ImageVector, color: Color, options: List<TimeControlOption>, selected: String, onSelected: (TimeControlOption) -> Unit) {
+fun TimeControlSection(
+    title: String,
+    icon: ImageVector,
+    color: Color,
+    options: List<TimeControlOption>,
+    selected: String,
+    selectedMode: GameMode? = null,
+    onSelected: (TimeControlOption) -> Unit
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
         Text(title, Modifier.padding(start = 9.dp), color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
@@ -28,7 +37,10 @@ fun TimeControlSection(title: String, icon: ImageVector, color: Color, options: 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         options.chunked(3).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { option -> TimeControlChoice(option, option.label == selected, Modifier.weight(1f), onSelected) }
+                row.forEach { option ->
+                    val isSelected = option.label == selected && (selectedMode == null || option.mode == selectedMode)
+                    TimeControlChoice(option, isSelected, Modifier.weight(1f), color, onSelected)
+                }
                 repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }

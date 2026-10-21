@@ -1,4 +1,5 @@
 package com.abhinav.caisarra.presentation.navigation
+import com.abhinav.caisarra.data.local.SessionExpiredEvent
 import com.abhinav.caisarra.presentation.tournament.CreateTournamentScreen
 import com.abhinav.caisarra.presentation.tournament.CreateTournamentViewModel
 import com.abhinav.caisarra.presentation.tournament.TournamentDetailScreen
@@ -19,7 +20,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
+import androidx.navigation.NavOptionsBuilder
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -80,10 +83,12 @@ import com.abhinav.caisarra.presentation.game.viewmodel.MatchmakingViewModel
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.abhinav.caisarra.data.repository.GameAnalysisRepository
-import com.abhinav.caisarra.presentation.game.screens.BotSetupScreen
+import com.abhinav.caisarra.presentation.screens.BotSetupScreen
+import com.abhinav.caisarra.presentation.screens.BotGameScreen
+import com.abhinav.caisarra.presentation.screens.BotHistoryScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.BotSetupViewModel
+import com.abhinav.caisarra.presentation.game.viewmodel.BotHistoryViewModel
 import com.abhinav.caisarra.presentation.game.BotGameViewModel
-import com.abhinav.caisarra.presentation.game.screens.BotGameScreen
 import com.abhinav.caisarra.presentation.game.screens.PassAndPlaySetupScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.PassAndPlaySetupViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
@@ -93,6 +98,18 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.abhinav.caisarra.presentation.invite.FriendsViewModel
 import com.abhinav.caisarra.presentation.invite.PlayWithFriendHomeScreen
 import com.abhinav.caisarra.presentation.invite.PlayWithFriendScreen
+<<<<<<< Updated upstream
+import com.abhinav.caisarra.data.location.LocationProvider
+import com.abhinav.caisarra.data.repository.NearbyRepository
+import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
+import com.abhinav.caisarra.presentation.screens.NearbyScreen
+=======
+import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.data.remote.RetrofitInstance
+import com.abhinav.caisarra.data.repository.CommunityRepository
+import com.abhinav.caisarra.presentation.community.CommunityScreen
+import com.abhinav.caisarra.presentation.community.CommunityViewModel
+>>>>>>> Stashed changes
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -125,11 +142,17 @@ object AppRoutes {
 
     const val BOT_SETUP = "bot_setup"
     const val BOT_GAME = "bot_game/{gameId}"
+    const val BOT_HISTORY = "bot_history"
     const val PASS_AND_PLAY_SETUP = "pass_and_play_setup"
     const val TOURNAMENTS = "tournaments"
     const val CREATE_TOURNAMENT = "create_tournament"
     const val PLAY_WITH_FRIEND_HOME = "play_with_friend_home"
     const val TOURNAMENT_DETAIL = "tournament/{id}?code={code}"
+<<<<<<< Updated upstream
+    const val NEARBY = "nearby"
+=======
+    const val COMMUNITY = "community"
+>>>>>>> Stashed changes
 
     fun tournamentDetail(id: String, inviteCode: String? = null): String =
         "tournament/${Uri.encode(id)}" +
@@ -155,15 +178,6 @@ object AppRoutes {
                 "&clock=$clockEnabled"
     }
 
-//    fun resumeGame(): String {
-//        return "game" + "?resume=true" +
-//                "&white=" +
-//                "&black=" +
-//                "&minutes=10" +
-//                "&flip=false" +
-//                "&undo=true"
-//    }
-
     fun gameHistory(
         gameId: String
     ): String {
@@ -172,6 +186,7 @@ object AppRoutes {
     fun onlineGame(gameId: String) = "online_game/${Uri.encode(gameId)}"
 
     fun botGame(gameId: String) = "bot_game/${Uri.encode(gameId)}"
+    fun botHistory() = BOT_HISTORY
 
     fun joinInvite(code: String) = "play/${Uri.encode(code)}"
     fun matchmaking(minutes: Int, incrementSeconds: Int) = "matchmaking/$minutes/$incrementSeconds"
@@ -183,11 +198,18 @@ object AppRoutes {
 private inline fun <reified VM : ViewModel> screenViewModel(crossinline create: () -> VM): VM =
     viewModel(factory = viewModelFactory { initializer { create() } })
 
-/**
- * Navigate back safely. If the current destination has no previous entry,
- * replace the navigation stack with the supplied fallback route.
- */
+private fun NavController.isResumed(): Boolean =
+    currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED
+
+private fun NavController.navigateOnce(
+    route: String,
+    builder: NavOptionsBuilder.() -> Unit = {}
+) {
+    if (isResumed()) navigate(route, builder)
+}
+
 private fun NavController.safeBack(fallbackRoute: String) {
+    if (!isResumed()) return
     if (currentDestination?.route == fallbackRoute) return
 
     val popped = runCatching { popBackStack() }.getOrDefault(false)
@@ -270,23 +292,17 @@ fun AppNavigation(authRepository: AuthRepository) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
 
-    fun openPlayGame() {
-        navController.navigate(AppRoutes.GAME_SETUP)
+    LaunchedEffect(Unit) {
+        SessionExpiredEvent.events.collect {
+            navController.navigate(AppRoutes.LOGIN) {
+                popUpTo(navController.graph.id) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
     }
 
-    fun startLocalGame(minutes: Int) {
-        navController.navigate(
-            AppRoutes.newGame(
-                white = "Player 1",
-                black = "Player 2",
-                minutes = minutes,
-                flip = false,
-                undo = true,
-                clockEnabled = true
-            )
-        ) {
-            popUpTo(AppRoutes.GAME_SETUP) { inclusive = true }
-        }
+    fun openPlayGame() {
+        navController.navigateOnce(AppRoutes.GAME_SETUP)
     }
 
     NavHost(
@@ -297,8 +313,8 @@ fun AppNavigation(authRepository: AuthRepository) {
             LoginScreen(
                 viewModel = screenViewModel { LoginViewModel(authRepository) },
                 onLoginSuccess = { navController.goHomeThenPendingInvite(pendingInviteStore) },
-                onForgotPasswordClick = { navController.navigate(AppRoutes.RESET_PASSWORD) },
-                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
+                onForgotPasswordClick = { navController.navigateOnce(AppRoutes.RESET_PASSWORD) },
+                onSignUpClick = { navController.navigateOnce(AppRoutes.REGISTER) },
                 onContinueAsGuestClick = {
                     scope.launch {
                         when (val result = authRepository.guestLogin()) {
@@ -390,21 +406,21 @@ fun AppNavigation(authRepository: AuthRepository) {
                 gameHistory = guestHomeState.gameHistory,
                 isLoadingHistory = guestHomeState.isLoadingHistory,
                 onPlayGame = {
-                    navController.navigate(AppRoutes.PASS_AND_PLAY_SETUP)
+                    navController.navigateOnce(AppRoutes.PASS_AND_PLAY_SETUP)
                 },
                 onReviewGame = { gameId ->
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.gameHistory(gameId)
                     )
                 },
                 onViewAllHistory = {
-                    navController.navigate(AppRoutes.ALL_GAME_HISTORY)
+                    navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY)
                 },
                 onSignIn = {
                     navController.goToLogin()
                 },
                 onSignUp = {
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.REGISTER
                     )
                 },
@@ -429,7 +445,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
                 isLoggingOut = isLoggingOut,
                 onOpenProfile = {
-                    navController.navigate(AppRoutes.PROFILE)
+                    navController.navigateOnce(AppRoutes.PROFILE)
                 }
             )
         }
@@ -459,9 +475,41 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
                 onReviewGame = { gameId ->
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.gameHistory(gameId)
                     )
+                }
+            )
+        }
+        composable(route = AppRoutes.COMMUNITY) {
+            val tokenManager = remember {
+                TokenManager(context)
+            }
+
+            val accessToken by tokenManager.accessTokenFlow
+                .collectAsState(initial = null)
+
+            val communityViewModel = screenViewModel {
+                CommunityViewModel(
+                    CommunityRepository(
+                        RetrofitInstance.createCommunityService(
+                            tokenManager
+                        )
+                    )
+                )
+            }
+
+            CommunityScreen(
+                viewModel = communityViewModel,
+                isRegisteredUser = !accessToken.isNullOrBlank(),
+                onBack = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(AppRoutes.HOME) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = true
+                            }
+                        }
+                    }
                 }
             )
         }
@@ -566,20 +614,35 @@ fun AppNavigation(authRepository: AuthRepository) {
             HomeScreen(
                 viewModel = homeViewModel,
                 onStartChallenge = {openPlayGame()},
-                onViewAllHistory = {navController.navigate(AppRoutes.ALL_GAME_HISTORY)},
+                onViewAllHistory = {navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY)},
 
 
 
                 onReviewGame = { gameId ->
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.gameHistory(gameId)
                     )
                 },
                 onLogoutSuccess = {
                     navController.goToLogin()
                 },
+                onOpenNearby = {
+                    navController.navigateOnce(AppRoutes.NEARBY) {
+                        launchSingleTop = true
+                    }
+                },
+                onPlayBots = {
+                    navController.navigateOnce(AppRoutes.BOT_SETUP)
+                },
                 onOpenProfile = {
+<<<<<<< Updated upstream
+                    navController.navigateOnce(AppRoutes.PROFILE)
+=======
                     navController.navigate(AppRoutes.PROFILE)
+                },
+                onOpenCommunity = {
+                    navController.navigate(AppRoutes.COMMUNITY)
+>>>>>>> Stashed changes
                 }
             )
         }
@@ -590,7 +653,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             val setupState by setupViewModel.state.collectAsState()
             GameSetupScreen(
                 state = setupState,
-                onOpenTimeControls = { navController.navigate(AppRoutes.TIME_CONTROLS) },
+                onOpenTimeControls = { navController.navigateOnce(AppRoutes.TIME_CONTROLS) },
                 onStartMatch = {
                     scope.launch {
                         if (authRepository.isGuest() || !authRepository.isLoggedIn()
@@ -600,7 +663,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 Toast.LENGTH_LONG
                             ).show()
 
-                            navController.navigate(AppRoutes.LOGIN)
+                            navController.navigateOnce(AppRoutes.LOGIN)
                             return@launch
                         }
                         val minutes = setupState.minutes.toInt()
@@ -623,7 +686,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                             ).show()
                             return@launch
                         }
-                        navController.navigate(
+                        navController.navigateOnce(
                             AppRoutes.matchmaking(minutes, increment)
                         )
                     }
@@ -639,12 +702,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 Toast.LENGTH_LONG
                             ).show()
 
-                            navController.navigate(AppRoutes.LOGIN)
+                            navController.navigateOnce(AppRoutes.LOGIN)
                             return@launch
                         }
 
-                        // Open the intermediate Play a Friend screen first.
-                        navController.navigate(AppRoutes.PLAY_WITH_FRIEND_HOME) {
+                        navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND_HOME) {
                             launchSingleTop = true
                         }
                     }
@@ -658,15 +720,15 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 "Tournaments require a registered account.",
                                 Toast.LENGTH_LONG
                             ).show()
-                            navController.navigate(AppRoutes.LOGIN)
+                            navController.navigateOnce(AppRoutes.LOGIN)
                             return@launch
                         }
-                        navController.navigate(AppRoutes.TOURNAMENTS)
+                        navController.navigateOnce(AppRoutes.TOURNAMENTS)
                     }
                 },
-                onPlayBots = { navController.navigate(AppRoutes.BOT_SETUP) },
+                onPlayBots = { navController.navigateOnce(AppRoutes.BOT_SETUP) },
                 onPassAndPlay = {
-                    navController.navigate(AppRoutes.PASS_AND_PLAY_SETUP)
+                    navController.navigateOnce(AppRoutes.PASS_AND_PLAY_SETUP)
                 },
                 onBack = {
                     scope.launch {
@@ -684,7 +746,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 state = setupState,
                 onEvent = setupViewModel::onEvent,
                 onStart = {
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.newGame(
                             white = "Player 1",
                             black = "Player 2",
@@ -816,7 +878,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
                 onAnalyze = {
-                    navController.navigate(AppRoutes.gameAnalysis(gameId))
+                    navController.navigateOnce(AppRoutes.gameAnalysis(gameId))
                 }
             )
         }
@@ -887,28 +949,30 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = gameViewModel,
                 onHome = {
                     scope.launch {
-                        val destination = if (authRepository.isGuest()) {
-                            AppRoutes.GUEST_HOME
-                        } else {
-                            AppRoutes.HOME
-                        }
-                        val popped = navController.popBackStack(
-                            destination,
-                            inclusive = false
-                        )
-                        if (!popped) {
-                            navController.navigate(destination) {
-                                popUpTo(navController.graph.id) {
-                                    inclusive = true
+                        if (navController.isResumed()) {
+                            val destination = if (authRepository.isGuest()) {
+                                AppRoutes.GUEST_HOME
+                            } else {
+                                AppRoutes.HOME
+                            }
+                            val popped = navController.popBackStack(
+                                destination,
+                                inclusive = false
+                            )
+                            if (!popped) {
+                                navController.navigate(destination) {
+                                    popUpTo(navController.graph.id) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
                                 }
-                                launchSingleTop = true
                             }
                         }
                     }
                 },
 
                 onNewGame = {
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.GAME_SETUP
                     ) {
                         popUpTo(
@@ -1188,6 +1252,20 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
+        composable(route = AppRoutes.NEARBY) {
+            val nearbyViewModel = screenViewModel {
+                NearbyViewModel(
+                    repository = NearbyRepository(authRepository.createNearbyService()),
+                    locationProvider = LocationProvider(context)
+                )
+            }
+
+            NearbyScreen(
+                viewModel = nearbyViewModel,
+                onBack = { navController.safeBack(AppRoutes.HOME) }
+            )
+        }
+
 
         composable(route = AppRoutes.BOT_SETUP) {
             val botSetupViewModel = screenViewModel {
@@ -1201,7 +1279,29 @@ fun AppNavigation(authRepository: AuthRepository) {
                         popUpTo(AppRoutes.BOT_SETUP) { inclusive = true }
                     }
                 },
+                onViewHistory = {
+                    navController.navigateOnce(AppRoutes.BOT_HISTORY)
+                },
                 onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
+            )
+        }
+
+        composable(route = AppRoutes.BOT_HISTORY) {
+            val botHistoryViewModel = screenViewModel {
+                BotHistoryViewModel(context as Application)
+            }
+
+            BotHistoryScreen(
+                viewModel = botHistoryViewModel,
+                onOpenGame = { gameId ->
+                    navController.navigateOnce(AppRoutes.botGame(gameId))
+                },
+                onNewGame = {
+                    navController.navigate(AppRoutes.BOT_SETUP) {
+                        popUpTo(AppRoutes.BOT_HISTORY) { inclusive = true }
+                    }
+                },
+                onBack = { navController.safeBack(AppRoutes.BOT_SETUP) }
             )
         }
 

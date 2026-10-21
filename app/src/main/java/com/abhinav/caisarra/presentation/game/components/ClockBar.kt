@@ -5,8 +5,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.game.model.Piece
@@ -33,11 +36,20 @@ fun ClockBar(
     val daily = isDailyMode || timeMillis >= DAY_MILLIS
 
     val timeText = if (daily) {
-        if (timeMillis <= 0L) {
-            "0 days"
-        } else {
-            val remainingDays = ((timeMillis - 1L) / DAY_MILLIS) + 1L
-            if (remainingDays == 1L) "1 day" else "$remainingDays days"
+        when {
+            timeMillis <= 0L -> "0 days"
+            timeMillis >= DAY_MILLIS -> {
+                val remainingDays = ((timeMillis - 1L) / DAY_MILLIS) + 1L
+                if (remainingDays == 1L) "1 day" else "$remainingDays days"
+            }
+            timeMillis >= 3600_000L -> {
+                val hours = (timeMillis + 3599_999L) / 3600_000L
+                if (hours == 1L) "1 hr" else "$hours hrs"
+            }
+            else -> {
+                val minutes = ((timeMillis + 59_999L) / 60_000L).coerceAtLeast(1L)
+                if (minutes == 1L) "1 min" else "$minutes min"
+            }
         }
     } else {
         val totalSeconds = timeMillis.coerceAtLeast(0L) / 1000L
@@ -73,7 +85,8 @@ fun ClockBar(
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 if (capturedPieces.isNotEmpty()) {
@@ -93,5 +106,17 @@ fun ClockBar(
             }
         }
 
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = timeText,
+            color = if (isActive) {
+                Color(0xFF10B981)
+            } else {
+                Color.White
+            },
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

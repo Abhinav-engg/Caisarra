@@ -14,8 +14,7 @@ import kotlinx.coroutines.launch
 
 class NearbyViewModel(
     private val repository: NearbyRepository,
-    private val locationProvider: LocationProvider,
-    private val tokenProvider: suspend () -> String?
+    private val locationProvider: LocationProvider
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(NearbyUiState())
@@ -29,45 +28,55 @@ class NearbyViewModel(
         _state.update { it.copy(selectedId = id) }
     }
 
-    fun loadPlayers() = launchWithToken { token ->
-        _state.update { it.copy(loading = true, error = null) }
-        when (val result = repository.getPlayers(token)) {
-            is NearbyResult.Success -> _state.update { current ->
-                current.copy(
-                    loading = false,
-                    visible = true,
-                    players = result.data.players,
-                    radiusKm = result.data.radiusKm,
-                    selectedId = current.selectedId?.takeIf { id ->
-                        result.data.players.any { it.userId == id }
+    fun loadPlayers() {
+        viewModelScope.launch {
+            _state.update { it.copy(loading = true, error = null) }
+            when (val result = repository.getPlayers()) {
+                is NearbyResult.Success -> {
+                    _state.update { current ->
+                        current.copy(
+                            loading = false,
+                            visible = true,
+                            players = result.data.players,
+                            radiusKm = result.data.radiusKm,
+                            selectedId = current.selectedId?.takeIf { id ->
+                                result.data.players.any { it.userId == id }
+                            }
+                        )
                     }
-                )
+                    loadMyLocation()
+                }
+                is NearbyResult.Failure -> handle(result.failure)
             }
-            is NearbyResult.Failure -> handle(result.failure)
         }
     }
 
-    fun enable() = launchWithToken { token ->
-        _state.update { it.copy(loading = true, error = null) }
-        val location = locationProvider.current()
-        if (location == null) {
-            _state.update { it.copy(loading = false, error = "Could not get your location") }
-            return@launchWithToken
-        }
-        when (val result = repository.saveLocation(token, location.first, location.second)) {
-            is NearbyResult.Success -> loadPlayers()
-            is NearbyResult.Failure -> handle(result.failure)
+    fun enable() {
+        viewModelScope.launch {
+            _state.update { it.copy(loading = true, error = null) }
+            val location = locationProvider.current()
+            if (location == null) {
+                _state.update { it.copy(loading = false, error = "Could not get your location") }
+                return@launch
+            }
+            _state.update { it.copy(myLatitude = location.first, myLongitude = location.second) }
+            when (val result = repository.saveLocation(location.first, location.second)) {
+                is NearbyResult.Success -> loadPlayers()
+                is NearbyResult.Failure -> handle(result.failure)
+            }
         }
     }
 
-    fun disable() = launchWithToken { token ->
-        _state.update { it.copy(loading = true, error = null) }
-        val result = repository.setVisibility(token, false)
-        if (result is NearbyResult.Failure && result.failure != NearbyFailure.LocationNotSaved) {
-            handle(result.failure)
-        } else {
-            _state.update {
-                it.copy(loading = false, visible = false, players = emptyList(), selectedId = null)
+    fun disable() {
+        viewModelScope.launch {
+            _state.update { it.copy(loading = true, error = null) }
+            val result = repository.setVisibility(false)
+            if (result is NearbyResult.Failure && result.failure != NearbyFailure.LocationNotSaved) {
+                handle(result.failure)
+            } else {
+                _state.update {
+                    it.copy(loading = false, visible = false, players = emptyList(), selectedId = null)
+                }
             }
         }
     }
@@ -75,6 +84,14 @@ class NearbyViewModel(
     fun permissionDenied() {
         _state.update {
             it.copy(loading = false, error = "Location permission is needed to find players near you")
+        }
+    }
+
+    private fun loadMyLocation() {
+        if (_state.value.myLatitude != null || !locationProvider.hasPermission()) return
+        viewModelScope.launch {
+            val location = locationProvider.current() ?: return@launch
+            _state.update { it.copy(myLatitude = location.first, myLongitude = location.second) }
         }
     }
 
@@ -95,16 +112,5 @@ class NearbyViewModel(
         NearbyFailure.LocationNotSaved -> "Turn on Nearby to share your location"
         is NearbyFailure.Other -> failure.message
         else -> "Something went wrong"
-    }
-
-    private fun launchWithToken(block: suspend (String) -> Unit) {
-        viewModelScope.launch {
-            val token = tokenProvider()
-            if (token == null) {
-                _state.update { it.copy(loading = false, error = "Please log in again") }
-            } else {
-                block(token)
-            }
-        }
     }
 }
