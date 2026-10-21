@@ -1,4 +1,5 @@
 package com.abhinav.caisarra.presentation.navigation
+import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.SessionExpiredEvent
 import com.abhinav.caisarra.presentation.tournament.CreateTournamentScreen
 import com.abhinav.caisarra.presentation.tournament.CreateTournamentViewModel
@@ -378,10 +379,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     profileRepository = ProfileRepository(
                         service = authRepository.createProfileService()
+                    ),
+                    ratingPreferenceStore = RatingPreferencesStore.get(
+                        context.applicationContext
                     )
-
                 )
-
             }
 
 
@@ -450,8 +452,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     profileRepository = ProfileRepository(
                         service = authRepository.createProfileService()
+                    ),
+                    ratingPreferenceStore = RatingPreferencesStore.get(
+                        context.applicationContext
                     )
-
                 )
             }
 
@@ -562,8 +566,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     profileRepository = ProfileRepository(
                         service = authRepository.createProfileService()
+                    ),
+                    ratingPreferenceStore = RatingPreferencesStore.get(
+                        context.applicationContext
                     )
-
                 )
             }
 
