@@ -2,7 +2,6 @@ package com.abhinav.caisarra.data.remote
 
 import android.content.Context
 import android.util.Log
-import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.dto.TournamentSocketEvent
 import com.abhinav.caisarra.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -38,7 +37,7 @@ class TournamentSocketClient(context: Context) {
     suspend fun connect(tournamentId: String): Boolean {
         close()
         if (!AuthRepository.get(appContext).isLoggedIn()) return false
-        val token = TokenManager(appContext).getAccessToken() ?: return false
+        val token = AuthRepository.get(appContext).getValidAccessToken() ?: return false
 
         val url = RetrofitInstance.BASE_URL.toHttpUrl().newBuilder()
             .addPathSegment("ws")

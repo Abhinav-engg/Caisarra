@@ -54,12 +54,12 @@ class OnlineGameViewModel(
     private val socket = GameSocketClient(application)
     private val chatRepository = ChatRepository.get(application)
     private val gameRepository = RemoteGameRepository(
-        RetrofitInstance.createGamesService(TokenManager(application))
+        RetrofitInstance.createGamesService(TokenManager.get(application))
     )
     private val profileRepository = ProfileRepository(
-        RetrofitInstance.createProfileService(TokenManager(application))
+        RetrofitInstance.createProfileService(TokenManager.get(application))
     )
-    private val ratingService = RetrofitInstance.createRatingService(TokenManager(application))
+    private val ratingService = RetrofitInstance.createRatingService(TokenManager.get(application))
     private val inviteRepository = InviteRepository.get(application)
     private val clock = GameClock(viewModelScope, 0L, 0L) { }
 
@@ -132,7 +132,7 @@ class OnlineGameViewModel(
                 _uiState.update { it.copy(isLoading = false, errorMessage = "Please log in to play online.") }
                 return@launch
             }
-            _myUserId.value = TokenManager(getApplication()).getAccessToken()
+            _myUserId.value = TokenManager.get(getApplication()).getAccessToken()
                 ?.let { TokenExpiryChecker.getUserId(it) }
             if (withTimeoutOrNull(8000) { socket.connected.first { it } } == null) reconnect()
         }

@@ -7,7 +7,7 @@ import com.abhinav.caisarra.data.remote.RetrofitInstance
 
 class DrawRepository private constructor(context: Context) {
 
-    private val service = RetrofitInstance.createDrawService(TokenManager(context))
+    private val service = RetrofitInstance.createDrawService(TokenManager.get(context))
 
     suspend fun offerDraw(gameId: String): Result<Unit> = call { service.offerDraw(gameId) }
 

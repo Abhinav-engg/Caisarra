@@ -9,7 +9,7 @@ import com.abhinav.caisarra.data.remote.dto.CreateBotGameRequest
 
 class BotGameRepository private constructor(context: Context) {
 
-    private val service = RetrofitInstance.createBotGameService(TokenManager(context))
+    private val service = RetrofitInstance.createBotGameService(TokenManager.get(context))
 
     suspend fun createGame(level: String, rating: Int?, color: String): Result<BotGameDto> =
         call { service.createBotGame(CreateBotGameRequest(level, rating, color)) }

@@ -52,7 +52,7 @@ class TournamentDetailViewModel(
 
     init {
         viewModelScope.launch {
-            val token = TokenManager(application).getAccessToken()
+            val token = TokenManager.get(application).getAccessToken()
             val userId = token?.let { TokenExpiryChecker.getUserId(it) }
             _state.update { it.copy(myUserId = userId) }
             refreshAll(showLoading = true)

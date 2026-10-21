@@ -7,11 +7,10 @@ import com.abhinav.caisarra.data.repository.NearbyRepository
 
 class NearbyViewModelFactory(
     private val repository: NearbyRepository,
-    private val locationProvider: LocationProvider,
-    private val tokenProvider: suspend () -> String?
+    private val locationProvider: LocationProvider
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        NearbyViewModel(repository, locationProvider, tokenProvider) as T
+        NearbyViewModel(repository, locationProvider) as T
 }

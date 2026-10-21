@@ -1,6 +1,6 @@
 package com.abhinav.caisarra.data.repository
 
-import com.abhinav.caisarra.data.remote.NearbyService
+import com.abhinav.caisarra.data.remote.api.NearbyService
 import com.abhinav.caisarra.data.remote.dto.ErrorResponse
 import com.abhinav.caisarra.data.remote.dto.LocationRequest
 import com.abhinav.caisarra.data.remote.dto.LocationResponse
@@ -16,20 +16,14 @@ class NearbyRepository(private val service: NearbyService) {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun saveLocation(
-        token: String,
-        latitude: Double,
-        longitude: Double
-    ): NearbyResult<LocationResponse> =
-        call { service.saveLocation(bearer(token), LocationRequest(latitude, longitude)) }
+    suspend fun saveLocation(latitude: Double, longitude: Double): NearbyResult<LocationResponse> =
+        call { service.saveLocation(LocationRequest(latitude, longitude)) }
 
-    suspend fun setVisibility(token: String, enabled: Boolean): NearbyResult<VisibilityResponse> =
-        call { service.setVisibility(bearer(token), VisibilityRequest(enabled)) }
+    suspend fun setVisibility(enabled: Boolean): NearbyResult<VisibilityResponse> =
+        call { service.setVisibility(VisibilityRequest(enabled)) }
 
-    suspend fun getPlayers(token: String): NearbyResult<NearbyPlayersResponse> =
-        call { service.getPlayers(bearer(token)) }
-
-    private fun bearer(token: String) = "Bearer $token"
+    suspend fun getPlayers(): NearbyResult<NearbyPlayersResponse> =
+        call { service.getPlayers() }
 
     private suspend fun <T> call(block: suspend () -> Response<T>): NearbyResult<T> =
         try {

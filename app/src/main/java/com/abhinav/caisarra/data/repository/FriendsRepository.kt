@@ -16,7 +16,7 @@ class FriendsRepository(context: Context) {
 
     private val service: FriendsService =
         RetrofitInstance.createFriendsService(
-            TokenManager(context.applicationContext)
+            TokenManager.get(context.applicationContext)
         )
 
     suspend fun searchPlayers(

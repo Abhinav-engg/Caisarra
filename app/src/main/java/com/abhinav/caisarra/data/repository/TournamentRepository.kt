@@ -30,7 +30,7 @@ class TournamentRepository private constructor(
             instance ?: synchronized(this) {
                 instance ?: TournamentRepository(
                     RetrofitInstance.createTournamentService(
-                        TokenManager(context.applicationContext)
+                        TokenManager.get(context.applicationContext)
                     )
                 ).also { instance = it }
             }

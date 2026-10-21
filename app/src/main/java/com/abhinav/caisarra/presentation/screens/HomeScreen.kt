@@ -69,6 +69,7 @@ fun HomeScreen(
     onReviewGame: (String) -> Unit = {},
     onLogoutSuccess: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
+    onOpenNearby: () -> Unit = {},
     onOpenProfile: () -> Unit
 ) {
 
@@ -140,6 +141,14 @@ fun HomeScreen(
                     },
 
                     enabled = !state.isLoggingOut,
+                    modifier = Modifier.width(200.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                GeneralButton(
+                    text = "Chess Nearby",
+                    onClick = onOpenNearby,
                     modifier = Modifier.width(200.dp)
                 )
             }

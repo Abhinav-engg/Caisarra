@@ -2,7 +2,6 @@ package com.abhinav.caisarra.data.remote
 
 import android.content.Context
 import android.util.Log
-import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.dto.BotSocketIncoming
 import com.abhinav.caisarra.data.remote.dto.BotSocketOutgoing
 import com.abhinav.caisarra.data.repository.AuthRepository
@@ -41,7 +40,7 @@ class BotSocketClient(context: Context) {
         if (!AuthRepository.get(appContext).isLoggedIn()) {
             return false
         }
-        val token = TokenManager(appContext).getAccessToken() ?: return false
+        val token = AuthRepository.get(appContext).getValidAccessToken() ?: return false
 
         val url = RetrofitInstance.BASE_URL.toHttpUrl().newBuilder()
             .addPathSegment("ws")
