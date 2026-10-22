@@ -55,7 +55,17 @@ import com.abhinav.caisarra.core.ui.backgrounds.DailyRatingBackground
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.backgrounds.HomeBackground
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ripple
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ColorFilter
+import com.abhinav.caisarra.presentation.common.singleClick
+import com.caisaara.ui.theme.ButtonGradientEnd
+import com.caisaara.ui.theme.ButtonGradientMid
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
+import com.abhinav.caisarra.core.ui.theme.SignUpButtonDefaultCornerRadius
+import com.caisaara.ui.theme.ButtonGradientStart
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 
@@ -74,17 +84,14 @@ private val DashboardBorder = Color(0xFF304154)
 fun HomeScreen(
     viewModel: HomeViewModel,
     onStartChallenge: () -> Unit = {},
+    onStartQuickPlay: () -> Unit = {},
     onReviewGame: (String) -> Unit = {},
     onLogoutSuccess: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
-<<<<<<< Updated upstream
     onOpenNearby: () -> Unit = {},
     onPlayBots: () -> Unit = {},
-    onOpenProfile: () -> Unit
-=======
     onOpenProfile: () -> Unit,
     onOpenCommunity: () -> Unit = {}
->>>>>>> Stashed changes
 ) {
 
     val state by viewModel.state.collectAsState()
@@ -125,7 +132,7 @@ fun HomeScreen(
                 )
                 .padding(
                     top = 16.dp,
-                    bottom = 32.dp
+                    bottom = 100.dp
                 ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -149,16 +156,8 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                TodaysChallenge(onStartChallenge = onStartChallenge)
-                Spacer(modifier = Modifier.height(12.dp))
-                GeneralButton(
-                    text = "COMMUNITY",
-                    onClick = onOpenCommunity,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                QuickPlayCard(onStartQuickPlay = onStartQuickPlay)
+                Spacer(modifier = Modifier.height(16.dp))
 
                 GameHistorySection(
                     games = state.gameHistory,
@@ -183,21 +182,28 @@ fun HomeScreen(
                     enabled = !state.isLoggingOut,
                     modifier = Modifier.width(200.dp)
                 )
+            }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                BackgroundColor.copy(alpha = 0.88f),
+                                BackgroundColor
+                            )
+                        )
+                    )
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 GeneralButton(
-                    text = "Chess Nearby",
-                    onClick = onOpenNearby,
-                    modifier = Modifier.width(200.dp)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                GeneralButton(
-                    text = "Play with Bot",
-                    onClick = onPlayBots,
-                    modifier = Modifier.width(200.dp)
+                    text = "PLAY GAME",
+                    onClick = onStartChallenge,
+                    modifier = Modifier.width(contentWidth)
                 )
             }
         }
@@ -244,7 +250,6 @@ private fun HomeTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Streak
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -263,7 +268,6 @@ private fun HomeTopBar(
                 )
             }
 
-            // Profile avatar button
             val initials = remember(displayName, username) {
                 extractInitials(displayName, username)
             }
@@ -479,58 +483,101 @@ private fun RatingCard(
 }
 
 @Composable
-private fun TodaysChallenge(
-    onStartChallenge: () -> Unit,
+private fun QuickPlayCard(
+    onStartQuickPlay: () -> Unit,
+    modifier: Modifier = Modifier,
+    timeControlLabel: String = "10 min • Rapid",
+    onSettingClick: () -> Unit = {}
 ) {
-
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(156.dp)
+            .height(172.dp)
     ) {
         ChallengeCardBackground(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            piecesAlignment = Alignment.BottomStart,
+            alpha = 0.70f
         )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
-                    top = 11.dp,
-                    bottom = 9.dp
+                    horizontal = 16.dp,
+                    vertical = 12.dp
                 ),
-
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.Text(
+                        text = "READY TO PLAY?",
+                        color = Color(0xFF00E5FF),
+                        fontFamily = JetBrainsMono,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
 
-            androidx.compose.material3.Text(
-                text = "READY TO PLAY?",
-                color = White,
-                fontFamily = JetBrainsMono,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal,
-                letterSpacing = 1.sp,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(SignUpButtonDefaultCornerRadius))
+                            .background(Color(0xFF08202A))
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFF154C59),
+                                shape = RoundedCornerShape(SignUpButtonDefaultCornerRadius)
+                            )
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = ripple(),
+                                onClick = singleClick(onSettingClick)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        androidx.compose.material3.Text(
+                            text = timeControlLabel,
+                            color = Color(0xFF5CE1E6),
+                            fontFamily = JetBrainsMono,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
 
-            androidx.compose.material3.Text(
-                text = "Make your move",
-                color = White,
-                fontFamily = JetBrainsMono,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                textAlign = TextAlign.Center
-            )
+                Spacer(modifier = Modifier.height(4.dp))
 
-            Spacer(modifier = Modifier.height(15.dp))
+                androidx.compose.material3.Text(
+                    text = "Quick Play",
+                    color = White,
+                    fontFamily = JetBrainsMono,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                androidx.compose.material3.Text(
+                    text = "Find an evenly matched opponent instantly",
+                    color = SecondaryText,
+                    fontFamily = JetBrainsMono,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Normal
+                )
+            }
 
             GeneralButton(
-                text = "Play Game",
-
-                onClick = onStartChallenge,
-
-                modifier = Modifier.width(200.dp)
+                text = "START QUICK GAME",
+                onClick = onStartQuickPlay,
+                modifier = Modifier
+                    .fillMaxWidth(0.66f)
+                    .align(Alignment.CenterHorizontally)
             )
         }
     }

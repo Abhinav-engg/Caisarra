@@ -3,7 +3,10 @@ package com.abhinav.caisarra.core.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,12 +27,16 @@ import com.caisaara.ui.theme.ButtonGradientEnd
 import com.caisaara.ui.theme.ButtonGradientMid
 import com.caisaara.ui.theme.ButtonGradientStart
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+
 @Composable
 fun GeneralButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    leadingIcon: @Composable (() -> Unit)? = null,
 ) {
     Box(
         modifier = modifier
@@ -50,10 +57,25 @@ fun GeneralButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.Black
-        )
+        if (leadingIcon != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                leadingIcon()
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Black
+                )
+            }
+        } else {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Black
+            )
+        }
     }
 }

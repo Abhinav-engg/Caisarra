@@ -61,9 +61,9 @@ enum class BottomNavItem(
         selectedIcon = Icons.Filled.LocationOn,
         unselectedIcon = Icons.Outlined.LocationOn
     ),
-    SOCIAL(
-        route = AppRoutes.SOCIAL,
-        label = "SOCIAL",
+    COMMUNITY(
+        route = AppRoutes.COMMUNITY,
+        label = "COMMUNITY",
         selectedIcon = Icons.Filled.Groups,
         unselectedIcon = Icons.Outlined.Groups
     ),
@@ -120,6 +120,7 @@ fun AppBottomNavigationBar(
             BottomNavItem.entries.forEach { item ->
                 val isSelected = when (item) {
                     BottomNavItem.HOME -> currentRoute == AppRoutes.HOME || currentRoute == AppRoutes.GUEST_HOME
+                    BottomNavItem.COMMUNITY -> currentRoute == AppRoutes.COMMUNITY || currentRoute == AppRoutes.SOCIAL
                     else -> currentRoute == item.route
                 }
                 val icon = if (isSelected) item.selectedIcon else item.unselectedIcon

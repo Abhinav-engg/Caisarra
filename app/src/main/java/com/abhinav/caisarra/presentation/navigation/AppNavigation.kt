@@ -102,7 +102,6 @@ import com.abhinav.caisarra.presentation.invite.PlayWithFriendScreen
 import com.abhinav.caisarra.data.location.LocationProvider
 import com.abhinav.caisarra.data.repository.NearbyRepository
 import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
-import com.abhinav.caisarra.presentation.screens.CommunityScreen
 import com.abhinav.caisarra.presentation.screens.MenuScreen
 import com.abhinav.caisarra.presentation.screens.NearbyScreen
 import com.abhinav.caisarra.data.local.TokenManager
@@ -111,6 +110,12 @@ import com.abhinav.caisarra.data.repository.CommunityRepository
 import com.abhinav.caisarra.presentation.community.CommunityScreen
 import com.abhinav.caisarra.presentation.community.CommunityViewModel
 import com.abhinav.caisarra.presentation.screens.PuzzlesScreen
+import com.abhinav.caisarra.presentation.screens.DailyPuzzleScreen
+import com.abhinav.caisarra.presentation.screens.RushScreen
+import com.abhinav.caisarra.presentation.puzzles.PuzzlesHubViewModel
+import com.abhinav.caisarra.presentation.puzzles.DailyPuzzleViewModel
+import com.abhinav.caisarra.presentation.puzzles.RushViewModel
+import com.abhinav.caisarra.data.repository.PuzzleRepository
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.unit.dp
@@ -155,6 +160,10 @@ object AppRoutes {
     const val NEARBY = "nearby"
     const val COMMUNITY = "community"
     const val PUZZLES = "puzzles"
+    const val DAILY_PUZZLE = "daily_puzzle"
+    const val PUZZLE_RUSH = "puzzle_rush?mode={mode}"
+
+    fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
     const val SOCIAL = "social"
     const val MENU = "menu"
 
@@ -320,6 +329,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             AppRoutes.GUEST_HOME,
             AppRoutes.PUZZLES,
             AppRoutes.NEARBY,
+            AppRoutes.COMMUNITY,
             AppRoutes.SOCIAL,
             AppRoutes.MENU
         )
@@ -534,7 +544,7 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
         composable(route = AppRoutes.COMMUNITY) {
             val tokenManager = remember {
-                TokenManager(context)
+                TokenManager.get(context)
             }
 
             val accessToken by tokenManager.accessTokenFlow
@@ -554,12 +564,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = communityViewModel,
                 isRegisteredUser = !accessToken.isNullOrBlank(),
                 onBack = {
-                    if (!navController.popBackStack()) {
-                        navController.navigate(AppRoutes.HOME) {
-                            popUpTo(navController.graph.id) {
-                                inclusive = true
-                            }
-                        }
+                    scope.launch {
+                        navController.safeBack(homeRoute(authRepository))
                     }
                 }
             )
@@ -666,8 +672,24 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             HomeScreen(
                 viewModel = homeViewModel,
-                onStartChallenge = {openPlayGame()},
-                onViewAllHistory = {navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY)},
+                onStartChallenge = { openPlayGame() },
+                onStartQuickPlay = {
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Online matchmaking requires a registered account.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            navController.navigateOnce(AppRoutes.LOGIN)
+                            return@launch
+                        }
+                        navController.navigateOnce(
+                            AppRoutes.matchmaking(10, 0)
+                        )
+                    }
+                },
+                onViewAllHistory = { navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY) },
 
 
 
@@ -689,7 +711,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
                 onOpenProfile = {
                     navController.navigateOnce(AppRoutes.PROFILE)
-                    navController.navigate(AppRoutes.PROFILE)
                 },
                 onOpenCommunity = {
                     navController.navigate(AppRoutes.COMMUNITY)
@@ -1378,11 +1399,76 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable(route = AppRoutes.PUZZLES) {
-            PuzzlesScreen()
+            val tokenManager = remember { TokenManager.get(context) }
+            val hubViewModel = screenViewModel {
+                PuzzlesHubViewModel(
+                    PuzzleRepository(
+                        RetrofitInstance.createPuzzleService(tokenManager)
+                    )
+                )
+            }
+            PuzzlesScreen(
+                viewModel = hubViewModel,
+                onPlayDailyPuzzle = {
+                    navController.navigate(AppRoutes.DAILY_PUZZLE)
+                },
+                onPlayPuzzleRush = { mode ->
+                    navController.navigate(AppRoutes.puzzleRush(mode))
+                }
+            )
+        }
+
+        composable(route = AppRoutes.DAILY_PUZZLE) {
+            val tokenManager = remember { TokenManager.get(context) }
+            val dailyViewModel = screenViewModel {
+                DailyPuzzleViewModel(
+                    PuzzleRepository(
+                        RetrofitInstance.createPuzzleService(tokenManager)
+                    )
+                )
+            }
+            DailyPuzzleScreen(
+                viewModel = dailyViewModel,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = AppRoutes.PUZZLE_RUSH,
+            arguments = listOf(
+                navArgument("mode") {
+                    type = NavType.StringType
+                    defaultValue = "3min"
+                }
+            )
+        ) { backStackEntry ->
+            val mode = backStackEntry.arguments?.getString("mode") ?: "3min"
+            val tokenManager = remember { TokenManager.get(context) }
+            val rushViewModel = screenViewModel {
+                RushViewModel(
+                    puzzleRepository = PuzzleRepository(
+                        RetrofitInstance.createPuzzleService(tokenManager)
+                    ),
+                    mode = mode
+                )
+            }
+            RushScreen(
+                viewModel = rushViewModel,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
         }
 
         composable(route = AppRoutes.SOCIAL) {
-            CommunityScreen()
+            LaunchedEffect(Unit) {
+                navController.navigate(AppRoutes.COMMUNITY) {
+                    popUpTo(AppRoutes.SOCIAL) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
         }
 
         composable(route = AppRoutes.MENU) {
