@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.game
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.GameSocketClient
@@ -183,6 +184,9 @@ class OnlineGameViewModel(
                 currentRating - current.playerRating
             } else {
                 current.ratingChange
+            }
+            if (captureChange && change != null) {
+                RatingPreferencesStore.get(getApplication()).setRatingChange(currentMode, change)
             }
             current.copy(
                 ratingChange = change,

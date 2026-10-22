@@ -3,22 +3,31 @@ package com.abhinav.caisarra.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.data.local.entity.RecordStatus
+import com.abhinav.caisarra.data.remote.dto.ProfileData
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.GameRepository
+import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
+import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.abhinav.caisarra.data.repository.ProfileRepository
 
 data class HomeUiState(
     val username: String = "",
+    val displayName: String? = null,
+    val avatarUrl: String? = null,
+    val streak: Int = 7,
+    val selectedMode: GameMode = GameMode.RAPID,
     val rating: Int? = null,
+    val ratingChange: Int? = null,
     val provisional: Boolean = true,
+    val modeRatings: Map<GameMode, Int?> = emptyMap(),
     val isLoggingOut: Boolean = false,
     val error: String? = null,
     val gameHistory: List<GameEntity> = emptyList(),
@@ -29,7 +38,8 @@ class HomeViewModel(
     private val repository: AuthRepository,
     private val gameRepository: GameRepository,
     private val remoteGameRepository: RemoteGameRepository,
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val ratingPreferenceStore: RatingPreferencesStore? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
@@ -38,9 +48,41 @@ class HomeViewModel(
     private var localHistory: List<GameEntity> = emptyList()
     private var remoteHistory: List<GameEntity> = emptyList()
     private var signedInUser = false
+    private var cachedProfile: ProfileData? = null
 
     init {
         loadHomeData()
+    }
+
+    fun refresh() {
+        loadHomeData()
+    }
+
+    fun selectMode(mode: GameMode) {
+        ratingPreferenceStore?.setSelectedMode(mode)
+        val rating = extractRating(cachedProfile, mode)
+        val provisional = extractProvisional(cachedProfile, mode)
+        val change = ratingPreferenceStore?.getRatingChange(mode)
+        _state.update {
+            it.copy(
+                selectedMode = mode,
+                rating = rating,
+                provisional = provisional,
+                ratingChange = change
+            )
+        }
+    }
+
+    private fun extractRating(profile: ProfileData?, mode: GameMode): Int? {
+        if (profile == null) return null
+        return profile.ratings?.get(mode.ratingKey)?.rating
+            ?: if (mode == GameMode.RAPID) profile.rating else null
+    }
+
+    private fun extractProvisional(profile: ProfileData?, mode: GameMode): Boolean {
+        if (profile == null) return true
+        return profile.ratings?.get(mode.ratingKey)?.provisional
+            ?: if (mode == GameMode.RAPID) profile.provisional else true
     }
 
     private fun loadHomeData() {
@@ -58,7 +100,7 @@ class HomeViewModel(
             signedInUser = savedUsername != null
             val profile = if (signedInUser) {
                 try {
-                    profileRepository.getMyProfile()
+                    profileRepository.getMyProfile().also { cachedProfile = it }
                 } catch (e: Exception) {
                     null
                 }
@@ -67,11 +109,25 @@ class HomeViewModel(
                 ?: savedUsername?.takeUnless { it.contains("@") }
                 ?: "Guest"
 
+            val selectedMode = ratingPreferenceStore?.getSelectedMode() ?: _state.value.selectedMode
+            val modeRatings = GameMode.entries.associateWith { mode ->
+                extractRating(profile, mode)
+            }
+            val currentRating = modeRatings[selectedMode]
+            val currentProvisional = extractProvisional(profile, selectedMode)
+            val currentChange = ratingPreferenceStore?.getRatingChange(selectedMode)
+
             _state.update {
                 it.copy(
                     username = displayUsername,
-                    rating = profile?.rating,
-                    provisional = profile?.provisional ?: true
+                    displayName = profile?.displayName,
+                    avatarUrl = profile?.avatarUrl,
+                    streak = 7,
+                    selectedMode = selectedMode,
+                    rating = currentRating,
+                    provisional = currentProvisional,
+                    ratingChange = currentChange,
+                    modeRatings = modeRatings
                 )
             }
 
