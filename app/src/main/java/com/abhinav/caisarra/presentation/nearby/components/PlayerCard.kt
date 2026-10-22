@@ -29,6 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -132,7 +136,10 @@ fun PlayerCard(
                             listOf(NearbyColors.AccentDark, NearbyColors.Accent)
                         )
                     )
-                    .clickable(onClick = singleClick(onChallenge)),
+                    .clickable(
+                        onClick = singleClick(onChallenge),
+                        role = Role.Button
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
@@ -169,9 +176,14 @@ fun SquareIconButton(
             .clip(shape)
             .background(NearbyColors.SurfaceHigh)
             .border(1.dp, NearbyColors.Border, shape)
-            .clickable(onClick = singleClick(onClick)),
+            .clickable(
+                onClick = singleClick(onClick),
+                role = Role.Button,
+                onClickLabel = contentDescription
+            )
+            .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center
     ) {
-        Icon(icon, contentDescription, tint = NearbyColors.TextPrimary)
+        Icon(icon, contentDescription = null, tint = NearbyColors.TextPrimary)
     }
 }

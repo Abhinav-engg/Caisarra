@@ -100,9 +100,17 @@ import com.abhinav.caisarra.presentation.invite.FriendsViewModel
 import com.abhinav.caisarra.presentation.invite.PlayWithFriendHomeScreen
 import com.abhinav.caisarra.presentation.invite.PlayWithFriendScreen
 import com.abhinav.caisarra.data.location.LocationProvider
+import com.abhinav.caisarra.data.repository.FriendsRepository
 import com.abhinav.caisarra.data.repository.NearbyRepository
 import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
 import com.abhinav.caisarra.presentation.screens.MenuScreen
+import com.abhinav.caisarra.presentation.screens.StatsScreen
+import com.abhinav.caisarra.presentation.screens.ThemeScreen
+import com.abhinav.caisarra.presentation.screens.MessagesScreen
+import com.abhinav.caisarra.presentation.screens.ClubsScreen
+import com.abhinav.caisarra.presentation.screens.LeaderboardScreen
+import com.abhinav.caisarra.presentation.screens.DeleteAccountScreen
+import com.abhinav.caisarra.presentation.screens.SettingsDetailScreen
 import com.abhinav.caisarra.presentation.screens.NearbyScreen
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.RetrofitInstance
@@ -166,6 +174,13 @@ object AppRoutes {
     fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
     const val SOCIAL = "social"
     const val MENU = "menu"
+    const val STATS = "stats"
+    const val THEME = "theme"
+    const val MESSAGES = "messages"
+    const val CLUBS = "clubs"
+    const val LEADERBOARD = "leaderboard"
+    const val DELETE_ACCOUNT = "delete_account"
+    const val SETTINGS_DETAIL = "settings_detail"
 
     fun tournamentDetail(id: String, inviteCode: String? = null): String =
         "tournament/${Uri.encode(id)}" +
@@ -1333,7 +1348,55 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             NearbyScreen(
                 viewModel = nearbyViewModel,
-                onBack = { navController.safeBack(AppRoutes.HOME) }
+                onBack = { navController.safeBack(AppRoutes.HOME) },
+                onChallenge = { player ->
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Challenging players requires a registered account.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            navController.navigate(AppRoutes.CREATE_INVITE)
+                        }
+                    }
+                },
+                onAddFriend = { player ->
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Adding friends requires a registered account.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@launch
+                        }
+                        val friendsRepo = FriendsRepository(context)
+                        friendsRepo.sendFriendRequest(player.username)
+                            .onSuccess {
+                                Toast.makeText(
+                                    context,
+                                    "Friend request sent to ${player.username}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            .onFailure { error ->
+                                Toast.makeText(
+                                    context,
+                                    error.message ?: "Could not send friend request",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                    }
+                },
+                onChat = { player ->
+                    Toast.makeText(
+                        context,
+                        "Direct messaging is coming soon",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             )
         }
 
@@ -1472,7 +1535,123 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable(route = AppRoutes.MENU) {
-            MenuScreen()
+            MenuScreen(
+                onBack = {
+                    scope.launch {
+                        navController.safeBack(homeRoute(authRepository))
+                    }
+                },
+                onSettingsClick = {
+                    navController.navigateOnce(AppRoutes.SETTINGS_DETAIL)
+                },
+                onProfileClick = {
+                    navController.navigateOnce(AppRoutes.PROFILE)
+                },
+                onStatsClick = {
+                    navController.navigateOnce(AppRoutes.STATS)
+                },
+                onGameHistoryClick = {
+                    navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY)
+                },
+                onThemeClick = {
+                    navController.navigateOnce(AppRoutes.THEME)
+                },
+                onFriendsClick = {
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Friends require a registered account. Please sign in.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            navController.navigateOnce(AppRoutes.LOGIN)
+                        } else {
+                            navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
+                        }
+                    }
+                },
+                onMessagesClick = {
+                    navController.navigateOnce(AppRoutes.MESSAGES)
+                },
+                onClubsClick = {
+                    navController.navigateOnce(AppRoutes.CLUBS)
+                },
+                onLeaderboardClick = {
+                    navController.navigateOnce(AppRoutes.LEADERBOARD)
+                },
+                onDeleteAccountClick = {
+                    navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)
+                },
+                onLogoutClick = {
+                    scope.launch {
+                        authRepository.logout()
+                        navController.navigate(AppRoutes.LOGIN) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+        }
+
+        composable(route = AppRoutes.STATS) {
+            StatsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = AppRoutes.THEME) {
+            ThemeScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = AppRoutes.MESSAGES) {
+            MessagesScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = AppRoutes.CLUBS) {
+            ClubsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = AppRoutes.LEADERBOARD) {
+            LeaderboardScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = AppRoutes.SETTINGS_DETAIL) {
+            SettingsDetailScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = AppRoutes.DELETE_ACCOUNT) {
+            DeleteAccountScreen(
+                onBack = { navController.popBackStack() },
+                onConfirmDelete = {
+                    scope.launch {
+                        authRepository.logout()
+                        Toast.makeText(
+                            context,
+                            "Account deletion request submitted.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        navController.navigate(AppRoutes.LOGIN) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
         }
 
     }

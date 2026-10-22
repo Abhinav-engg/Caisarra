@@ -11,6 +11,7 @@ data class PuzzlesHubUiState(
     val isLoading: Boolean = true,
     val streak: Int = 0,
     val puzzleRating: Int = 0,
+    val rushHighScore: Int = 24,
     val isSolved: Boolean = false,
     val attemptsLeft: Int = 3,
     val error: String? = null
@@ -45,6 +46,15 @@ class PuzzlesHubViewModel(
                         isLoading = false,
                         error = err.message
                     )
+                }
+
+            puzzleRepository.getRushStats()
+                .onSuccess { stats ->
+                    if (stats.bestScore3min > 0) {
+                        _state.value = _state.value.copy(
+                            rushHighScore = stats.bestScore3min
+                        )
+                    }
                 }
         }
     }

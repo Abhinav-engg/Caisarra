@@ -1,6 +1,5 @@
 package com.abhinav.caisarra.presentation.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,8 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,9 +29,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,7 +48,6 @@ fun PuzzlesScreen(
     onPlayPuzzleRush: (String) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.loadHubData()
@@ -77,13 +72,11 @@ fun PuzzlesScreen(
             onPlayClick = onPlayDailyPuzzle
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        ModeSelectionSection(
-            onPlayPuzzleRush = onPlayPuzzleRush,
-            onCustomTacticsClick = {
-                Toast.makeText(context, "Custom Tactics is coming soon", Toast.LENGTH_SHORT).show()
-            }
+        ModesSection(
+            rushHighScore = state.rushHighScore,
+            onPlayPuzzleRush = onPlayPuzzleRush
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -95,7 +88,15 @@ private fun PuzzlesHeader() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF0B1017))
+            .background(
+                color = Color(0xFF0D141E),
+                shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = Color(0xFF1B2A3A),
+                shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
+            )
             .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -103,9 +104,10 @@ private fun PuzzlesHeader() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Image(
+            Icon(
                 painter = painterResource(id = R.drawable.ic_puzzle_piece),
                 contentDescription = null,
+                tint = Color(0xFF23CDE8),
                 modifier = Modifier.size(20.dp)
             )
             Text(
@@ -131,37 +133,31 @@ private fun DailyPuzzleCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1520)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E293B))
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF0C131D)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1B2A3A))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(horizontal = 20.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.daily_puzzle_graphic),
+                contentDescription = "Daily Puzzle",
                 modifier = Modifier
-                    .size(140.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF131D2A))
-                    .border(1.dp, Color(0xFF1E293B), RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_puzzle_piece),
-                    contentDescription = null,
-                    modifier = Modifier.size(54.dp)
-                )
-            }
+                    .width(187.dp)
+                    .height(185.dp),
+                contentScale = ContentScale.Fit
+            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
                 text = "Daily Puzzle",
                 color = Color.White,
-                fontSize = 18.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold
             )
 
@@ -174,7 +170,7 @@ private fun DailyPuzzleCard(
                 fontSize = 13.sp
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (isLoading) {
                 CircularProgressIndicator(
@@ -192,68 +188,53 @@ private fun DailyPuzzleCard(
 }
 
 @Composable
-private fun ModeSelectionSection(
-    onPlayPuzzleRush: (String) -> Unit,
-    onCustomTacticsClick: () -> Unit
+private fun ModesSection(
+    rushHighScore: Int,
+    onPlayPuzzleRush: (String) -> Unit
 ) {
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF0C131D)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1B2A3A))
     ) {
-        ModeCard(
-            title = "Puzzle Rush",
-            subtitle = "3 min • High Score: 24",
-            iconContent = {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_puzzle_piece),
-                    contentDescription = "Puzzle Rush",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            onClick = { onPlayPuzzleRush("3min") }
-        )
-        ModeCard(
-            title = "Puzzle Survival",
-            subtitle = "3 Lives • No Time Limit",
-            iconContent = {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_puzzle_shield),
-                    contentDescription = "Puzzle Survival",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            onClick = { onPlayPuzzleRush("survival") }
-        )
-        ModeCard(
-            title = "Custom Tactics",
-            subtitle = "Select themes & difficulty",
-            iconContent = {
-                Icon(
-                    imageVector = Icons.Filled.Tune,
-                    contentDescription = "Custom Tactics",
-                    tint = Color(0xFF23CDE8),
-                    modifier = Modifier.size(22.dp)
-                )
-            },
-            onClick = onCustomTacticsClick
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ModeItem(
+                title = "Puzzle Rush",
+                subtitle = "3 min • High Score: $rushHighScore",
+                iconRes = R.drawable.ic_puzzle_piece,
+                onClick = { onPlayPuzzleRush("3min") }
+            )
+
+            ModeItem(
+                title = "Puzzle Survival",
+                subtitle = "3 Lives • No Time Limit",
+                iconRes = R.drawable.ic_puzzle_shield,
+                onClick = { onPlayPuzzleRush("survival") }
+            )
+        }
     }
 }
 
 @Composable
-private fun ModeCard(
+private fun ModeItem(
     title: String,
     subtitle: String,
-    iconContent: @Composable () -> Unit,
+    iconRes: Int,
     onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF0D1520), RoundedCornerShape(16.dp))
-            .border(1.dp, Color(0xFF1E293B), RoundedCornerShape(16.dp))
+            .background(Color(0xFF131D2A), RoundedCornerShape(16.dp))
+            .border(1.dp, Color(0xFF1F2E40), RoundedCornerShape(16.dp))
             .singleClickable(onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 14.dp)
     ) {
@@ -261,16 +242,14 @@ private fun ModeCard(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(Color(0xFF1E293B), RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                iconContent()
-            }
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = title,
+                tint = Color(0xFF23CDE8),
+                modifier = Modifier.size(26.dp)
+            )
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
             Column {
                 Text(
