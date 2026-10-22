@@ -189,11 +189,7 @@ fun ProfileScreen(
                         .size(46.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(ProfileCard)
-                        .border(
-                            width = 1.dp,
-                            color = ProfileBorder,
-                            shape = RoundedCornerShape(14.dp)
-                        ),
+                        .border(1.dp, ProfileBorder, RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(
@@ -204,7 +200,7 @@ fun ProfileScreen(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Profile settings",
                             tint = ProfileWhite,
-                            modifier = Modifier.size(23.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
@@ -212,17 +208,14 @@ fun ProfileScreen(
                 DropdownMenu(
                     expanded = settingsExpanded,
                     onDismissRequest = { settingsExpanded = false },
-                    modifier = Modifier .clip(RoundedCornerShape(18.dp))
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(18.dp))
                         .background(ProfileCard)
-                        .border(
-                            width = 1.dp,
-                            color = ProfileBorder,
-                            shape = RoundedCornerShape(18.dp)),
+                        .border(1.dp, ProfileBorder, RoundedCornerShape(18.dp)),
                     containerColor = ProfileCard,
                     shape = RoundedCornerShape(18.dp),
                     shadowElevation = 10.dp,
                     tonalElevation = 0.dp
-
                 ) {
                     DropdownMenuItem(
                         text = {
@@ -232,7 +225,6 @@ fun ProfileScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                         },
-                        enabled = true,
                         onClick = {
                             settingsExpanded = false
                             onEditProfile()
@@ -241,8 +233,8 @@ fun ProfileScreen(
                     )
                 }
             }
-
         }
+
         if (state.loading && state.profile == null) {
             Box(
                 modifier = Modifier
@@ -356,17 +348,30 @@ fun ProfileScreen(
                             fontSize = 14.sp
                         )
 
-                        Text(
-                            text = if (isGuest) {
-                                "GUEST PLAYER"
-                            } else {
-                                "MOSAIC PLAYER"
-                            },
-                            color = ProfileMuted,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.2.sp
-                        )
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(Color(0xFF073743))
+                                .border(1.dp, Color(0xFF0B5965), RoundedCornerShape(50))
+                                .padding(horizontal = 9.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(5.dp)
+                                    .clip(CircleShape)
+                                    .background(ProfileCyan)
+                            )
+                            Text(
+                                text = if (isGuest) "GUEST PLAYER" else "MOSAIC PLAYER",
+                                color = ProfileCyan,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.7.sp,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
 
@@ -475,14 +480,54 @@ fun ProfileScreen(
 
                 Text(
                     text = if (profile.provisional) {
-                        "Your rating is still being established through games."
+                        "Your rating is still being established through games. Play rated matches to unlock your competitive tier."
                     } else {
-                        "Keep playing to improve your rating."
+                        "Your rating reflects your current playing strength. Keep playing rated games to improve."
                     },
                     color = ProfileMuted,
                     fontSize = 13.sp,
                     lineHeight = 19.sp
                 )
+
+                if (profile.provisional) {
+                    Spacer(Modifier.height(2.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "RATING CALIBRATION",
+                            color = ProfileMuted,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.7.sp
+                        )
+                        Text(
+                            text = "Play rated games",
+                            color = ProfileCyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(ProfileCardSecondary)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.22f)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(
+                                    Brush.horizontalGradient(listOf(ProfileCyan, ProfileTeal))
+                                )
+                        )
+                    }
+                }
             }
 
             Column(
@@ -535,10 +580,25 @@ fun ProfileScreen(
                             ProfileBorder,
                             RoundedCornerShape(22.dp)
                         )
+                        .clickable(enabled = !isGuest) { onEditProfile() }
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    SectionLabel("PLAYER BIO")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        SectionLabel("PLAYER BIO")
+                        if (!isGuest) {
+                            Text(
+                                text = if (profile.bio.isNullOrBlank()) "+ Add bio" else "Edit bio",
+                                color = ProfileCyan,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
 
                     Text(
                         text = profile.bio

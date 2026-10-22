@@ -107,7 +107,6 @@ import com.abhinav.caisarra.presentation.screens.MenuScreen
 import com.abhinav.caisarra.presentation.screens.StatsScreen
 import com.abhinav.caisarra.presentation.screens.ThemeScreen
 import com.abhinav.caisarra.presentation.screens.MessagesScreen
-import com.abhinav.caisarra.presentation.screens.ClubsScreen
 import com.abhinav.caisarra.presentation.screens.LeaderboardScreen
 import com.abhinav.caisarra.presentation.screens.DeleteAccountScreen
 import com.abhinav.caisarra.presentation.screens.SettingsDetailScreen
@@ -127,6 +126,10 @@ import com.abhinav.caisarra.data.repository.PuzzleRepository
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.unit.dp
+import com.abhinav.caisarra.data.repository.ClubRepository
+import com.abhinav.caisarra.presentation.club.ClubScreen
+import com.abhinav.caisarra.presentation.club.ClubViewModel
+import com.abhinav.caisarra.presentation.club.ClubDetailScreen
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -178,6 +181,10 @@ object AppRoutes {
     const val THEME = "theme"
     const val MESSAGES = "messages"
     const val CLUBS = "clubs"
+    const val CLUB_DETAIL = "club_detail/{clubId}"
+
+    fun clubDetail(clubId: String): String =
+        "club_detail/${Uri.encode(clubId)}"
     const val LEADERBOARD = "leaderboard"
     const val DELETE_ACCOUNT = "delete_account"
     const val SETTINGS_DETAIL = "settings_detail"
@@ -1619,13 +1626,101 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-        composable(route = AppRoutes.CLUBS) {
-            ClubsScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
+//        composable(route = AppRoutes.CLUBS) {
+//            ClubsScreen(
+//                onBack = { navController.popBackStack() }
+//            )
+//        }
 
-        composable(route = AppRoutes.LEADERBOARD) {
+            composable(route = AppRoutes.CLUBS) {
+                val tokenManager = remember(context) {
+                    TokenManager.get(context)
+                }
+
+                val clubRepository = remember(tokenManager) {
+                    ClubRepository(
+                        RetrofitInstance.createClubService(tokenManager)
+                    )
+                }
+
+                val clubViewModel: ClubViewModel = viewModel(
+                    key = "club-list",
+                    factory = viewModelFactory {
+                        initializer {
+                            ClubViewModel(clubRepository)
+                        }
+                    }
+                )
+
+                var isRegisteredUser by remember {
+                    mutableStateOf(false)
+                }
+
+                LaunchedEffect(authRepository) {
+                    isRegisteredUser = runCatching {
+                        authRepository.isLoggedIn() &&
+                                !authRepository.isGuest()
+                    }.getOrDefault(false)
+                }
+
+                ClubScreen(
+                    viewModel = clubViewModel,
+                    isRegisteredUser = isRegisteredUser,
+                    onBack = {
+                        navController.safeBack(AppRoutes.MENU)
+                    },
+                    onOpenClub = { clubId ->
+                        navController.navigateOnce(
+                            AppRoutes.clubDetail(clubId)
+                        )
+                    },
+                    onSignIn = {
+                        navController.navigateOnce(AppRoutes.LOGIN)
+                    }
+                )
+            }
+
+            composable(
+                route = AppRoutes.CLUB_DETAIL,
+                arguments = listOf(
+                    navArgument("clubId") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+
+                val clubId = backStackEntry.arguments
+                    ?.getString("clubId")
+                    .orEmpty()
+
+                val tokenManager = remember(context) {
+                    TokenManager.get(context)
+                }
+
+                val clubRepository = remember(tokenManager) {
+                    ClubRepository(
+                        RetrofitInstance.createClubService(tokenManager)
+                    )
+                }
+
+                if (clubId.isBlank()) {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                } else {
+                    ClubDetailScreen(
+                        clubId = clubId,
+                        repository = clubRepository,
+                        onBack = {
+                            navController.safeBack(AppRoutes.CLUBS)
+                        }
+                    )
+                }
+            }
+
+
+
+            composable(route = AppRoutes.LEADERBOARD) {
             LeaderboardScreen(
                 onBack = { navController.popBackStack() }
             )

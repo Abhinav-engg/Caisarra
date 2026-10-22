@@ -20,6 +20,7 @@ import retrofit2.create
 import java.util.concurrent.TimeUnit
 import com.abhinav.caisarra.data.remote.api.CommunityService
 import com.abhinav.caisarra.data.remote.api.PuzzleApiService
+import com.abhinav.caisarra.data.remote.api.ClubService
 object RetrofitInstance {
     const val BASE_URL = "https://caisaara.duckdns.org"
     val json = Json {
@@ -114,4 +115,5 @@ object RetrofitInstance {
         authenticatedRetrofit(tokenManager).create()
     fun createPuzzleService(tokenManager: TokenManager): PuzzleApiService =
         authenticatedRetrofit(tokenManager).create()
+    fun createClubService(tokenManager: TokenManager): ClubService = authenticatedRetrofit(tokenManager).create()
 }
