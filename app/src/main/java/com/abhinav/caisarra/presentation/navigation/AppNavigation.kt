@@ -107,7 +107,6 @@ import com.abhinav.caisarra.presentation.screens.MenuScreen
 import com.abhinav.caisarra.presentation.screens.StatsScreen
 import com.abhinav.caisarra.presentation.screens.ThemeScreen
 import com.abhinav.caisarra.presentation.screens.MessagesScreen
-import com.abhinav.caisarra.presentation.screens.ClubsScreen
 import com.abhinav.caisarra.presentation.screens.LeaderboardScreen
 import com.abhinav.caisarra.presentation.screens.DeleteAccountScreen
 import com.abhinav.caisarra.presentation.screens.SettingsDetailScreen
