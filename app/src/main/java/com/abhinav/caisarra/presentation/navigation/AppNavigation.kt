@@ -102,7 +102,13 @@ import com.abhinav.caisarra.presentation.invite.PlayWithFriendScreen
 import com.abhinav.caisarra.data.location.LocationProvider
 import com.abhinav.caisarra.data.repository.NearbyRepository
 import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
+import com.abhinav.caisarra.presentation.screens.CommunityScreen
+import com.abhinav.caisarra.presentation.screens.MenuScreen
 import com.abhinav.caisarra.presentation.screens.NearbyScreen
+import com.abhinav.caisarra.presentation.screens.PuzzlesScreen
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.ui.unit.dp
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -142,6 +148,9 @@ object AppRoutes {
     const val PLAY_WITH_FRIEND_HOME = "play_with_friend_home"
     const val TOURNAMENT_DETAIL = "tournament/{id}?code={code}"
     const val NEARBY = "nearby"
+    const val PUZZLES = "puzzles"
+    const val SOCIAL = "social"
+    const val MENU = "menu"
 
     fun tournamentDetail(id: String, inviteCode: String? = null): String =
         "tournament/${Uri.encode(id)}" +
@@ -245,9 +254,11 @@ fun AppNavigation(authRepository: AuthRepository) {
         PendingInviteStore.get(context)
     }
     var startDestination by remember { mutableStateOf<String?>(null) }
+    var isGuestUser by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val pending = pendingOtpStore.getPendingVerification()
+        isGuestUser = authRepository.isGuest()
         startDestination = when {
             pending != null -> {
                 val purpose = runCatching {
@@ -263,7 +274,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             }
 
             authRepository.isLoggedIn() -> AppRoutes.HOME
-            authRepository.isGuest() -> AppRoutes.GUEST_HOME
+            isGuestUser -> AppRoutes.GUEST_HOME
             else -> AppRoutes.LOGIN
         }
     }
@@ -294,10 +305,52 @@ fun AppNavigation(authRepository: AuthRepository) {
         navController.navigateOnce(AppRoutes.GAME_SETUP)
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = start
-    ) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val bottomNavRoutes = remember {
+        setOf(
+            AppRoutes.HOME,
+            AppRoutes.GUEST_HOME,
+            AppRoutes.PUZZLES,
+            AppRoutes.NEARBY,
+            AppRoutes.SOCIAL,
+            AppRoutes.MENU
+        )
+    }
+    val showBottomBar = currentRoute in bottomNavRoutes
+
+    Scaffold(
+        containerColor = Color(0xFF080D13),
+        bottomBar = {
+            if (showBottomBar) {
+                AppBottomNavigationBar(
+                    currentRoute = currentRoute,
+                    onNavigateTo = { route ->
+                        val targetRoute = if (route == AppRoutes.HOME && isGuestUser) {
+                            AppRoutes.GUEST_HOME
+                        } else {
+                            route
+                        }
+                        if (currentRoute != targetRoute) {
+                            navController.navigate(targetRoute) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = start,
+            modifier = Modifier.padding(bottom = if (showBottomBar) innerPadding.calculateBottomPadding() else 0.dp)
+        ) {
         composable(route = AppRoutes.LOGIN) {
             LoginScreen(
                 viewModel = screenViewModel { LoginViewModel(authRepository) },
@@ -1282,5 +1335,18 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
+        composable(route = AppRoutes.PUZZLES) {
+            PuzzlesScreen()
+        }
+
+        composable(route = AppRoutes.SOCIAL) {
+            CommunityScreen()
+        }
+
+        composable(route = AppRoutes.MENU) {
+            MenuScreen()
+        }
+
+    }
     }
 }

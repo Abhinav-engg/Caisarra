@@ -20,6 +20,9 @@ import kotlinx.coroutines.launch
 
 data class HomeUiState(
     val username: String = "",
+    val displayName: String? = null,
+    val avatarUrl: String? = null,
+    val streak: Int = 7,
     val selectedMode: GameMode = GameMode.RAPID,
     val rating: Int? = null,
     val ratingChange: Int? = null,
@@ -117,6 +120,9 @@ class HomeViewModel(
             _state.update {
                 it.copy(
                     username = displayUsername,
+                    displayName = profile?.displayName,
+                    avatarUrl = profile?.avatarUrl,
+                    streak = 7,
                     selectedMode = selectedMode,
                     rating = currentRating,
                     provisional = currentProvisional,
