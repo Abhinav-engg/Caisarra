@@ -47,5 +47,9 @@ data class GameHistoryDto(
     @SerialName("started_at")
     val startedAt: String? = null,
     @SerialName("ended_at")
-    val endedAt: String? = null
+    val endedAt: String? = null,
+    @SerialName("white_username")
+    val whiteUsername: String? = null,
+    @SerialName("black_username")
+    val blackUsername: String? = null
 )

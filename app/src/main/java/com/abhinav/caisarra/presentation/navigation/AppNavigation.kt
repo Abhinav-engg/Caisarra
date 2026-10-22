@@ -704,6 +704,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                         )
                     }
                 },
+                onOpenActiveGame = { gameId ->
+                    navController.navigateOnce(
+                        AppRoutes.onlineGame(gameId)
+                    )
+                },
                 onViewAllHistory = { navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY) },
 
 

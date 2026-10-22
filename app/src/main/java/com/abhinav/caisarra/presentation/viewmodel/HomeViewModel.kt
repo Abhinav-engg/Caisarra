@@ -4,6 +4,7 @@ package com.abhinav.caisarra.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.local.RatingPreferencesStore
+import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.data.local.entity.RecordStatus
 import com.abhinav.caisarra.data.remote.dto.ProfileData
@@ -18,6 +19,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class ActiveDailyGame(
+    val id: String,
+    val opponentUsername: String,
+    val isMyTurn: Boolean,
+    val timeControlMinutes: Int,
+    val daysPerMove: Int = (timeControlMinutes + 1439) / 1440,
+    val position: String = ""
+)
+
 data class HomeUiState(
     val username: String = "",
     val displayName: String? = null,
@@ -31,7 +41,8 @@ data class HomeUiState(
     val isLoggingOut: Boolean = false,
     val error: String? = null,
     val gameHistory: List<GameEntity> = emptyList(),
-    val isLoadingHistory: Boolean = true
+    val isLoadingHistory: Boolean = true,
+    val activeDailyGames: List<ActiveDailyGame> = emptyList()
 )
 
 class HomeViewModel(
@@ -135,9 +146,53 @@ class HomeViewModel(
                 localHistory = emptyList()
 
                 try {
-                    remoteHistory = remoteGameRepository
-                        .getGameHistory(savedUsername!!)
-                        .filter(::isCompletedGame)
+                    val myId = repository.getValidAccessToken()
+                        ?.let { TokenExpiryChecker.getUserId(it) }
+
+                    val rawGames = remoteGameRepository.getRawGameHistory()
+                    with(remoteGameRepository) {
+                        remoteHistory = rawGames
+                            .map { it.toGameEntity(savedUsername!!) }
+                            .filter(::isCompletedGame)
+                    }
+
+                    val activeDaily = rawGames.filter { dto ->
+                        val isUnfinished = !dto.status.equals("finished", ignoreCase = true) && dto.endedAt == null
+                        val isDaily = dto.timeControlMinutes >= 1440 || dto.timeControlMode.equals("daily", ignoreCase = true)
+                        isUnfinished && isDaily
+                    }.map { dto ->
+                        val isWhite = if (myId != null) {
+                            dto.whitePlayerId == myId
+                        } else {
+                            dto.whiteUsername.equals(savedUsername, ignoreCase = true)
+                        }
+
+                        val opponent = if (isWhite) {
+                            dto.blackUsername?.takeIf { it.isNotBlank() } ?: "Player #${dto.blackPlayerId}"
+                        } else {
+                            dto.whiteUsername?.takeIf { it.isNotBlank() } ?: "Player #${dto.whitePlayerId}"
+                        }
+
+                        val isMyTurn = if (isWhite) {
+                            dto.currentTurn.equals("white", ignoreCase = true)
+                        } else {
+                            dto.currentTurn.equals("black", ignoreCase = true)
+                        }
+
+                        ActiveDailyGame(
+                            id = dto.id,
+                            opponentUsername = opponent,
+                            isMyTurn = isMyTurn,
+                            timeControlMinutes = dto.timeControlMinutes,
+                            daysPerMove = ((dto.timeControlMinutes + 1439) / 1440).coerceAtLeast(1),
+                            position = dto.position
+                        )
+                    }
+
+                    _state.update {
+                        it.copy(activeDailyGames = activeDaily)
+                    }
+
                     publishHistory()
                     _state.update {
                         it.copy(
@@ -150,6 +205,7 @@ class HomeViewModel(
 
                     _state.update {
                         it.copy(
+                            activeDailyGames = emptyList(),
                             isLoadingHistory = false,
                             error = e.message ?: "Unable to load server game history."
                         )
@@ -159,6 +215,7 @@ class HomeViewModel(
                 }
             } else {
                 remoteHistory = emptyList()
+                _state.update { it.copy(activeDailyGames = emptyList()) }
 
                 val guestId = repository.getGuestId()
                     ?: "local-user"

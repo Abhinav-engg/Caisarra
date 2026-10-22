@@ -56,10 +56,15 @@ import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.backgrounds.HomeBackground
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ripple
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.text.style.TextOverflow
 import com.abhinav.caisarra.presentation.common.singleClick
 import com.caisaara.ui.theme.ButtonGradientEnd
 import com.caisaara.ui.theme.ButtonGradientMid
@@ -67,6 +72,7 @@ import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.core.ui.theme.SignUpButtonDefaultCornerRadius
 import com.caisaara.ui.theme.ButtonGradientStart
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
+import com.abhinav.caisarra.presentation.viewmodel.ActiveDailyGame
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 
 private val BackgroundColor = Color(0xFF080D13)
@@ -85,6 +91,7 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onStartChallenge: () -> Unit = {},
     onStartQuickPlay: () -> Unit = {},
+    onOpenActiveGame: (String) -> Unit = {},
     onReviewGame: (String) -> Unit = {},
     onLogoutSuccess: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
@@ -156,7 +163,12 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                QuickPlayCard(onStartQuickPlay = onStartQuickPlay)
+                QuickPlayAndActiveGamesSection(
+                    activeGames = state.activeDailyGames,
+                    contentWidth = contentWidth,
+                    onStartQuickPlay = onStartQuickPlay,
+                    onOpenActiveGame = onOpenActiveGame
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
                 GameHistorySection(
@@ -575,6 +587,188 @@ private fun QuickPlayCard(
             GeneralButton(
                 text = "START QUICK GAME",
                 onClick = onStartQuickPlay,
+                modifier = Modifier
+                    .fillMaxWidth(0.66f)
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuickPlayAndActiveGamesSection(
+    activeGames: List<ActiveDailyGame>,
+    contentWidth: androidx.compose.ui.unit.Dp,
+    onStartQuickPlay: () -> Unit,
+    onOpenActiveGame: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (activeGames.isEmpty()) {
+        QuickPlayCard(
+            onStartQuickPlay = onStartQuickPlay,
+            modifier = modifier.fillMaxWidth()
+        )
+    } else {
+        val listState = rememberLazyListState()
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            LazyRow(
+                state = listState,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+            ) {
+                item(key = "quick_play") {
+                    QuickPlayCard(
+                        onStartQuickPlay = onStartQuickPlay,
+                        modifier = Modifier.width(contentWidth)
+                    )
+                }
+
+                items(
+                    items = activeGames,
+                    key = { it.id }
+                ) { game ->
+                    ActiveDailyGameCard(
+                        game = game,
+                        onClick = { onOpenActiveGame(game.id) },
+                        modifier = Modifier.width(contentWidth)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val totalItems = 1 + activeGames.size
+            val currentIndex = listState.firstVisibleItemIndex.coerceIn(0, totalItems - 1)
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(totalItems) { index ->
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(if (index == currentIndex) 7.dp else 4.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (index == currentIndex) Color(0xFF00E5FF)
+                                else Color(0xFF304154)
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActiveDailyGameCard(
+    game: ActiveDailyGame,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val daysText = if (game.daysPerMove == 1) "1 day/move" else "${game.daysPerMove} days/move"
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(172.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(),
+                onClick = singleClick(onClick)
+            )
+    ) {
+        ChallengeCardBackground(
+            modifier = Modifier.fillMaxSize(),
+            piecesAlignment = Alignment.BottomStart,
+            alpha = 0.70f
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    horizontal = 16.dp,
+                    vertical = 12.dp
+                ),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.Text(
+                        text = "DAILY MATCH",
+                        color = Color(0xFF00E5FF),
+                        fontFamily = JetBrainsMono,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(SignUpButtonDefaultCornerRadius))
+                            .background(
+                                if (game.isMyTurn) Color(0xFF064E3B) else Color(0xFF08202A)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = if (game.isMyTurn) Color(0xFF059669) else Color(0xFF154C59),
+                                shape = RoundedCornerShape(SignUpButtonDefaultCornerRadius)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        androidx.compose.material3.Text(
+                            text = if (game.isMyTurn) "YOUR TURN" else "OPPONENT'S TURN",
+                            color = if (game.isMyTurn) Color(0xFF34D399) else Color(0xFF5CE1E6),
+                            fontFamily = JetBrainsMono,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                androidx.compose.material3.Text(
+                    text = "vs ${game.opponentUsername}",
+                    color = White,
+                    fontFamily = JetBrainsMono,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                androidx.compose.material3.Text(
+                    text = if (game.isMyTurn) {
+                        "It's your turn to play • $daysText"
+                    } else {
+                        "Waiting for opponent to move • $daysText"
+                    },
+                    color = SecondaryText,
+                    fontFamily = JetBrainsMono,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            GeneralButton(
+                text = if (game.isMyTurn) "PLAY MOVE" else "RESUME GAME",
+                onClick = onClick,
                 modifier = Modifier
                     .fillMaxWidth(0.66f)
                     .align(Alignment.CenterHorizontally)
