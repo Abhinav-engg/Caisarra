@@ -75,6 +75,8 @@ class BotGameViewModel(
     private var reconnecting = false
     private var animationSequence = 0L
     private var lastAnimatedMoveKey: String? = null
+    private var uciMoves: List<String> = emptyList()
+    private var viewedPly: Int? = null
 
     init {
         viewModelScope.launch {
@@ -141,9 +143,119 @@ class BotGameViewModel(
         }
     }
 
+    fun undo() {
+        val totalPlies = uciMoves.size
+        if (totalPlies == 0) return
+        val currentPly = viewedPly ?: totalPlies
+        if (currentPly <= 0) return
+        viewPly(currentPly - 1)
+    }
+
+    fun redo() {
+        val totalPlies = uciMoves.size
+        val currentPly = viewedPly ?: totalPlies
+        if (currentPly >= totalPlies) return
+        viewPly(currentPly + 1)
+    }
+
+    private fun viewPly(ply: Int) {
+        val totalPlies = uciMoves.size
+        if (ply < 0 || ply > totalPlies) return
+
+        if (ply == totalPlies) {
+            viewedPly = null
+            val inCheck = engine.checkSquare() != null
+            val turn = engine.turn()
+            val whiteTurn = turn == DomainColor.White
+            val (capturedWhite, capturedBlack) = calculateCapturedPieces(uciMoves)
+            val lastMove = uciMoves.lastOrNull()
+            _uiState.update {
+                it.copy(
+                    board = engine.pieces().toUiBoard(),
+                    selectedSquare = null,
+                    legalMoves = emptyList(),
+                    promotionPending = null,
+                    lastMoveFrom = lastMove?.let { m -> squareFrom(m.take(2)) },
+                    lastMoveTo = lastMove?.let { m -> squareFrom(m.drop(2).take(2)) },
+                    isWhiteInCheck = inCheck && whiteTurn,
+                    isBlackInCheck = inCheck && !whiteTurn,
+                    isWhiteTurn = whiteTurn,
+                    capturedWhitePieces = capturedWhite,
+                    capturedBlackPieces = capturedBlack,
+                    canUndo = totalPlies > 0,
+                    canRedo = false,
+                    undoEnabled = true,
+                    redoEnabled = false
+                )
+            }
+            return
+        }
+
+        viewedPly = ply
+        val replayEngine = ChesslibEngine()
+        var lastFrom: Square? = null
+        var lastTo: Square? = null
+        val historyMoves = uciMoves.take(ply)
+
+        for (uci in historyMoves) {
+            if (uci.length < 4) continue
+            val fromFile = uci[0] - 'a'
+            val fromRank = uci[1].digitToIntOrNull()?.minus(1) ?: continue
+            val toFile = uci[2] - 'a'
+            val toRank = uci[3].digitToIntOrNull()?.minus(1) ?: continue
+            if (fromFile !in 0..7 || toFile !in 0..7 || fromRank !in 0..7 || toRank !in 0..7) continue
+
+            val promotion = when (uci.getOrNull(4)?.lowercaseChar()) {
+                'q' -> DomainPieceType.Queen
+                'r' -> DomainPieceType.Rook
+                'b' -> DomainPieceType.Bishop
+                'n' -> DomainPieceType.Knight
+                else -> null
+            }
+            val move = Move(
+                from = DomainSquare(fromFile, fromRank),
+                to = DomainSquare(toFile, toRank),
+                promotion = promotion
+            )
+            replayEngine.play(move)
+        }
+
+        val lastMove = historyMoves.lastOrNull()
+        if (lastMove != null && lastMove.length >= 4) {
+            lastFrom = squareFrom(lastMove.take(2))
+            lastTo = squareFrom(lastMove.drop(2).take(2))
+        }
+
+        val inCheck = replayEngine.checkSquare() != null
+        val turn = replayEngine.turn()
+        val whiteTurn = turn == DomainColor.White
+        val (capturedWhite, capturedBlack) = calculateCapturedPieces(historyMoves)
+
+        _uiState.update {
+            it.copy(
+                board = replayEngine.pieces().toUiBoard(),
+                selectedSquare = null,
+                legalMoves = emptyList(),
+                promotionPending = null,
+                lastMoveFrom = lastFrom,
+                lastMoveTo = lastTo,
+                isWhiteInCheck = inCheck && whiteTurn,
+                isBlackInCheck = inCheck && !whiteTurn,
+                isWhiteTurn = whiteTurn,
+                capturedWhitePieces = capturedWhite,
+                capturedBlackPieces = capturedBlack,
+                canUndo = ply > 0,
+                canRedo = true,
+                undoEnabled = true,
+                redoEnabled = true
+            )
+        }
+    }
+
     fun onSquareClick(square: Square) {
         val state = _uiState.value
         val color = myColor ?: return
+        if (viewedPly != null && viewedPly != uciMoves.size) return
         if (finished || awaitingServer || _botThinking.value || state.promotionPending != null) return
         if (state.isWhiteTurn != (color == PieceColor.WHITE)) return
 
@@ -184,6 +296,8 @@ class BotGameViewModel(
         val bot = _nextBot.value ?: return
         if (_isStartingNextBot.value) return
         _isStartingNextBot.value = true
+        viewedPly = null
+        uciMoves = emptyList()
         viewModelScope.launch {
             repository.createGame(botId = bot.id, rating = null, color = myColorString)
                 .onSuccess { game ->
@@ -330,6 +444,10 @@ class BotGameViewModel(
         _nextBot.value = game.nextBot
         _endReason.value = game.endReason
 
+        val newMoves = game.moves
+        val wasAtLatest = viewedPly == null || viewedPly == uciMoves.size
+        uciMoves = newMoves
+
         val (capturedWhite, capturedBlack) = calculateCapturedPieces(game.moves)
         val turn = engine.turn()
         val inCheck = engine.checkSquare() != null
@@ -343,29 +461,51 @@ class BotGameViewModel(
             "Custom Bot (${game.botRating})"
         }
 
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                errorMessage = null,
-                board = engine.pieces().toUiBoard(),
-                moveAnimationEvent = animationEvent ?: it.moveAnimationEvent,
-                whitePlayerName = if (myColor == PieceColor.WHITE) "You" else botName,
-                blackPlayerName = if (myColor == PieceColor.BLACK) "You" else botName,
-                isWhiteTurn = whiteTurn,
-                selectedSquare = null,
-                legalMoves = emptyList(),
-                promotionPending = null,
-                lastMoveFrom = lastMove?.let { m -> squareFrom(m.take(2)) },
-                lastMoveTo = lastMove?.let { m -> squareFrom(m.drop(2).take(2)) },
-                isWhiteInCheck = inCheck && whiteTurn,
-                isBlackInCheck = inCheck && !whiteTurn,
-                moves = game.moves.toMoveUi(),
-                capturedWhitePieces = capturedWhite,
-                capturedBlackPieces = capturedBlack,
-                isBoardFlipped = if (colorWasUnknown) myColor == PieceColor.BLACK else it.isBoardFlipped,
-                undoEnabled = false,
-                gameResult = if (finished) resultFrom(game.result) else null
-            )
+        if (wasAtLatest) {
+            viewedPly = null
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                    board = engine.pieces().toUiBoard(),
+                    moveAnimationEvent = animationEvent ?: it.moveAnimationEvent,
+                    whitePlayerName = if (myColor == PieceColor.WHITE) "You" else botName,
+                    blackPlayerName = if (myColor == PieceColor.BLACK) "You" else botName,
+                    isWhiteTurn = whiteTurn,
+                    selectedSquare = null,
+                    legalMoves = emptyList(),
+                    promotionPending = null,
+                    lastMoveFrom = lastMove?.let { m -> squareFrom(m.take(2)) },
+                    lastMoveTo = lastMove?.let { m -> squareFrom(m.drop(2).take(2)) },
+                    isWhiteInCheck = inCheck && whiteTurn,
+                    isBlackInCheck = inCheck && !whiteTurn,
+                    moves = game.moves.toMoveUi(),
+                    capturedWhitePieces = capturedWhite,
+                    capturedBlackPieces = capturedBlack,
+                    isBoardFlipped = if (colorWasUnknown) myColor == PieceColor.BLACK else it.isBoardFlipped,
+                    undoEnabled = true,
+                    redoEnabled = false,
+                    canUndo = uciMoves.isNotEmpty(),
+                    canRedo = false,
+                    gameResult = if (finished) resultFrom(game.result) else null
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                    whitePlayerName = if (myColor == PieceColor.WHITE) "You" else botName,
+                    blackPlayerName = if (myColor == PieceColor.BLACK) "You" else botName,
+                    moves = game.moves.toMoveUi(),
+                    isBoardFlipped = if (colorWasUnknown) myColor == PieceColor.BLACK else it.isBoardFlipped,
+                    undoEnabled = true,
+                    redoEnabled = true,
+                    canUndo = (viewedPly ?: 0) > 0,
+                    canRedo = (viewedPly ?: 0) < uciMoves.size,
+                    gameResult = if (finished) resultFrom(game.result) else null
+                )
+            }
         }
     }
 

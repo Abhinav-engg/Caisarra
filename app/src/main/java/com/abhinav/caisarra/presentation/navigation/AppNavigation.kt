@@ -76,6 +76,7 @@ import com.abhinav.caisarra.presentation.invite.JoinInviteScreen
 import com.abhinav.caisarra.presentation.invite.JoinInviteViewModel
 import com.abhinav.caisarra.presentation.screens.AllGameHistoryScreen
 import com.abhinav.caisarra.data.repository.ProfileRepository
+import com.abhinav.caisarra.data.repository.RatingRepository
 import com.abhinav.caisarra.presentation.screens.ProfileScreen
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import com.abhinav.caisarra.data.repository.ChatRepository
@@ -1276,8 +1277,11 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(route = AppRoutes.PROFILE) {
             val profileViewModel = screenViewModel {
                 ProfileViewModel(
-                    ProfileRepository(
+                    repository = ProfileRepository(
                         authRepository.createProfileService()
+                    ),
+                    ratingRepository = RatingRepository(
+                        authRepository.createRatingService()
                     )
                 )
             }
@@ -1330,8 +1334,11 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(route = AppRoutes.EDIT_PROFILE) {
             val editProfileViewModel = screenViewModel {
                 ProfileViewModel(
-                    ProfileRepository(
+                    repository = ProfileRepository(
                         authRepository.createProfileService()
+                    ),
+                    ratingRepository = RatingRepository(
+                        authRepository.createRatingService()
                     )
                 )
             }

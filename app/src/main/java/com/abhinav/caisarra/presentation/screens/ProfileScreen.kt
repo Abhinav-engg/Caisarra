@@ -546,7 +546,14 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         rowModes.forEach { mode ->
-                            val rating = profile.ratings?.get(mode.ratingKey)
+                            val rating = profile.ratings?.entries?.firstOrNull {
+                                it.key.equals(mode.ratingKey, ignoreCase = true)
+                            }?.value ?: if (mode == GameMode.RAPID) {
+                                com.abhinav.caisarra.data.remote.dto.ModeRating(
+                                    rating = profile.rating,
+                                    provisional = profile.provisional
+                                )
+                            } else null
 
                             RatingModeCard(
                                 title = mode.label,

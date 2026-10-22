@@ -145,6 +145,10 @@ fun BotGameScreen(
                         BottomPlayer(state, thinking)
                         Spacer(Modifier.height(8.dp))
                         BotActions(
+                            canUndo = state.canUndo,
+                            canRedo = state.canRedo,
+                            onUndo = viewModel::undo,
+                            onRedo = viewModel::redo,
                             gameOngoing = state.gameResult == null,
                             onResign = singleClick(viewModel::resign)
                         )
@@ -197,6 +201,10 @@ fun BotGameScreen(
                     )
 
                     BotActions(
+                        canUndo = state.canUndo,
+                        canRedo = state.canRedo,
+                        onUndo = viewModel::undo,
+                        onRedo = viewModel::redo,
                         gameOngoing = state.gameResult == null,
                         onResign = singleClick(viewModel::resign)
                     )
@@ -267,17 +275,24 @@ private fun BotBoard(
 }
 
 @Composable
-private fun BotActions(gameOngoing: Boolean, onResign: () -> Unit) {
+private fun BotActions(
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    gameOngoing: Boolean,
+    onResign: () -> Unit
+) {
     GameBottomBar(
-        canUndo = false,
-        canRedo = false,
+        canUndo = canUndo,
+        canRedo = canRedo,
         optionsEnabled = gameOngoing,
-        onUndo = {},
-        onRedo = {},
+        onUndo = onUndo,
+        onRedo = onRedo,
         onOfferDraw = {},
         onResign = onResign,
         showDraw = false,
-        showUndoRedo = false
+        showUndoRedo = true
     )
 }
 

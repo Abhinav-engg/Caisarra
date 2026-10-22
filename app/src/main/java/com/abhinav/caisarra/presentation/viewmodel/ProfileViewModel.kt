@@ -3,9 +3,11 @@ package com.abhinav.caisarra.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.data.remote.dto.ModeRating
 import com.abhinav.caisarra.data.remote.dto.ProfileData
 import com.abhinav.caisarra.data.remote.dto.UpdateProfileRequest
 import com.abhinav.caisarra.data.repository.ProfileRepository
+import com.abhinav.caisarra.data.repository.RatingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -19,7 +21,8 @@ data class ProfileUiState(
 )
 
 class ProfileViewModel(
-    private val repository: ProfileRepository
+    private val repository: ProfileRepository,
+    private val ratingRepository: RatingRepository? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileUiState())
@@ -35,8 +38,35 @@ class ProfileViewModel(
 
             try {
                 val profile = repository.getMyProfile()
+                val enrichedRatings = profile.ratings?.toMutableMap() ?: mutableMapOf()
+
+                if (ratingRepository != null && profile.username.isNotBlank()) {
+                    val publicProfile = runCatching { ratingRepository.getPublicProfile(profile.username) }.getOrNull()
+                    publicProfile?.ratings?.forEach { (key, modeRating) ->
+                        if (!enrichedRatings.keys.any { it.equals(key, ignoreCase = true) } && modeRating.rating != null) {
+                            enrichedRatings[key.lowercase()] = modeRating
+                        }
+                    }
+
+                    if (!enrichedRatings.keys.any { it.equals("daily", ignoreCase = true) }) {
+                        val dailyStats = runCatching { ratingRepository.getModeStats(profile.username, "daily") }.getOrNull()
+                        if (dailyStats != null && dailyStats.rating > 0) {
+                            enrichedRatings["daily"] = ModeRating(
+                                rating = dailyStats.rating,
+                                provisional = dailyStats.provisional
+                            )
+                        }
+                    }
+                }
+
+                val finalProfile = if (enrichedRatings.isNotEmpty()) {
+                    profile.copy(ratings = enrichedRatings)
+                } else {
+                    profile
+                }
+
                 _state.value = _state.value.copy(
-                    profile = profile,
+                    profile = finalProfile,
                     loading = false
                 )
             } catch (e: Exception) {

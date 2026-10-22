@@ -19,17 +19,21 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +41,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.abhinav.caisarra.data.remote.dto.NearbyPlayer
 import com.abhinav.caisarra.presentation.common.singleClick
 import com.abhinav.caisarra.presentation.nearby.NearbyColors
@@ -54,10 +61,30 @@ fun NearbyScreen(
     onChallenge: (NearbyPlayer) -> Unit = {},
     onAddFriend: (NearbyPlayer) -> Unit = {},
     onChat: (NearbyPlayer) -> Unit = {},
-    onFilter: () -> Unit = {}
+    onFilter: () -> Unit = {},
+    onRefresh: () -> Unit = { viewModel.loadPlayers(silent = false) }
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isFirstResume by remember { mutableStateOf(true) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (isFirstResume) {
+                    isFirstResume = false
+                } else {
+                    viewModel.refresh()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     val mapState = remember { NearbyMapState() }
     val selected = state.players.firstOrNull { it.userId == state.selectedId }
     val farthestKm = state.players.maxOfOrNull { it.distanceKm }?.toDouble() ?: 2.0
@@ -129,9 +156,9 @@ fun NearbyScreen(
                 }
             )
             SquareIconButton(
-                icon = Icons.Filled.Tune,
-                contentDescription = "Filter",
-                onClick = onFilter
+                icon = Icons.Filled.Refresh,
+                contentDescription = "Refresh",
+                onClick = onRefresh
             )
         }
 

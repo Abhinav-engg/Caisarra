@@ -223,9 +223,13 @@ fun OnlineGameScreen(
 
                         Spacer(Modifier.height(8.dp))
                         OnlineActions(
-                            gameOngoing,
-                            viewModel::offerDraw,
-                            viewModel::resign
+                            canUndo = state.canUndo,
+                            canRedo = state.canRedo,
+                            onUndo = viewModel::undo,
+                            onRedo = viewModel::redo,
+                            gameOngoing = gameOngoing,
+                            onOfferDraw = viewModel::offerDraw,
+                            onResign = viewModel::resign
                         )
                     }
                 }
@@ -307,9 +311,13 @@ fun OnlineGameScreen(
             }
 
             OnlineActions(
-                gameOngoing,
-                viewModel::offerDraw,
-                viewModel::resign
+                canUndo = state.canUndo,
+                canRedo = state.canRedo,
+                onUndo = viewModel::undo,
+                onRedo = viewModel::redo,
+                gameOngoing = gameOngoing,
+                onOfferDraw = viewModel::offerDraw,
+                onResign = viewModel::resign
             )
         }
     }
@@ -463,17 +471,25 @@ private fun OnlineBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra
 }
 
 @Composable
-private fun OnlineActions(gameOngoing: Boolean, onOfferDraw: () -> Unit, onResign: () -> Unit) {
+private fun OnlineActions(
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    gameOngoing: Boolean,
+    onOfferDraw: () -> Unit,
+    onResign: () -> Unit
+) {
     GameBottomBar(
-        canUndo = false,
-        canRedo = false,
+        canUndo = canUndo,
+        canRedo = canRedo,
         optionsEnabled = gameOngoing,
-        onUndo = {},
-        onRedo = {},
+        onUndo = onUndo,
+        onRedo = onRedo,
         onOfferDraw = onOfferDraw,
         onResign = onResign,
         showDraw = true,
-        showUndoRedo = false
+        showUndoRedo = true
     )
 }
 

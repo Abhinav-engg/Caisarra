@@ -58,6 +58,7 @@ class GameViewModel(
     private var promotionFrom: DomainSquare? = null
     private var promotionTo: DomainSquare? = null
     private var moveAnimationId = 0L
+    private var viewedPly: Int? = null
 
     private val autoFlip = !resumeGame && newBoardFlipped
 
@@ -260,6 +261,9 @@ class GameViewModel(
         if (currentGame.status.isOver) {
             return
         }
+        if (_state.value.isRated && viewedPly != null && viewedPly != currentGame.moveList.size) {
+            return
+        }
         val clickedSquare = uiSquare.toDomainSquare()
         val selected = _state.value.selectedSquare
 
@@ -390,6 +394,7 @@ class GameViewModel(
         }
         clearSelection()
         redoTimeSnapshots.clear()
+        viewedPly = null
 
         clock?.switchTo(currentGame.turn)
 
@@ -405,12 +410,20 @@ class GameViewModel(
 
 
     private fun undo() {
+        val currentGame = game ?: return
+        if (_state.value.isRated) {
+            val totalPlies = currentGame.moveList.size
+            if (totalPlies == 0) return
+            val currentPly = viewedPly ?: totalPlies
+            if (currentPly <= 0) return
+            viewPlyRated(currentPly - 1)
+            return
+        }
 
         if (!_state.value.undoEnabled) {
             return
         }
 
-        val currentGame = game ?: return
         if (!currentGame.undo()) {
             return
         }
@@ -439,11 +452,19 @@ class GameViewModel(
     }
 
     private fun redo() {
+        val currentGame = game ?: return
+        if (_state.value.isRated) {
+            val totalPlies = currentGame.moveList.size
+            val currentPly = viewedPly ?: totalPlies
+            if (currentPly >= totalPlies) return
+            viewPlyRated(currentPly + 1)
+            return
+        }
+
         if (!_state.value.canRedo) {
             return
         }
 
-        val currentGame = game ?: return
         if (!currentGame.redo()) {
             return
         }
@@ -463,6 +484,53 @@ class GameViewModel(
 
         updateUiState()
         persistAfterMove()
+    }
+
+    private fun viewPlyRated(ply: Int) {
+        val currentGame = game ?: return
+        val totalPlies = currentGame.moveList.size
+        if (ply < 0 || ply > totalPlies) return
+
+        if (ply == totalPlies) {
+            viewedPly = null
+            updateUiState()
+            return
+        }
+
+        viewedPly = ply
+        val replay = PassAndPlayGame()
+        val historyMoves = currentGame.moveList.take(ply)
+        historyMoves.forEach { uci ->
+            runCatching {
+                replay.play(uci.toMove())
+            }
+        }
+
+        val lastMove = replay.lastMove
+        val checkSquare = replay.checkSquare
+        val isWhiteTurn = replay.turn == DomainPieceColor.White
+
+        _state.update {
+            it.copy(
+                board = replay.pieces.associate { piece ->
+                    piece.square.toUiSquare() to piece.toUiPiece()
+                },
+                selectedSquare = null,
+                legalMoves = emptyList(),
+                promotionPending = null,
+                lastMoveFrom = lastMove?.from?.toUiSquare(),
+                lastMoveTo = lastMove?.to?.toUiSquare(),
+                isWhiteInCheck = checkSquare != null && isWhiteTurn,
+                isBlackInCheck = checkSquare != null && !isWhiteTurn,
+                isWhiteTurn = isWhiteTurn,
+                capturedWhitePieces = replay.captured.filter { p -> p.color == DomainPieceColor.White }.map { p -> p.toUiPiece() },
+                capturedBlackPieces = replay.captured.filter { p -> p.color == DomainPieceColor.Black }.map { p -> p.toUiPiece() },
+                canUndo = ply > 0,
+                canRedo = true,
+                undoEnabled = true,
+                redoEnabled = true
+            )
+        }
     }
 
     private fun resign() {
@@ -611,6 +679,17 @@ class GameViewModel(
                     newUndoEnabled
                 }
 
+            val canUndo = if (it.isRated) {
+                currentGame.moveList.isNotEmpty()
+            } else {
+                undoAllowed && currentGame.canUndo
+            }
+            val canRedo = if (it.isRated) {
+                false
+            } else {
+                undoAllowed && currentGame.canRedo
+            }
+
             it.copy(
                 isLoading = false,
                 hasClock = clockEnabled,
@@ -647,9 +726,9 @@ class GameViewModel(
                         it.isBoardFlipped
                     },
 
-                undoEnabled = undoAllowed,
-                canUndo = undoAllowed && currentGame.canUndo,
-                canRedo = undoAllowed && currentGame.canRedo
+                undoEnabled = if (it.isRated) true else undoAllowed,
+                canUndo = canUndo,
+                canRedo = canRedo
 
             )
         }
