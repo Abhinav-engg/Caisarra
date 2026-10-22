@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.game
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.GameSocketClient
@@ -163,12 +164,40 @@ class OnlineGameViewModel(
         val game = runCatching { gameRepository.getGame(gameId) }.getOrNull()
         val minutes = game?.timeControlMinutes ?: _uiState.value.timeControlMinutes
         mode = resolveMode(minutes, game?.timeControlMode ?: mode)
+        val daily = minutes >= 1440
         _uiState.update { current ->
             current.copy(
                 isRated = game?.rated ?: current.isRated,
                 timeControlMinutes = game?.timeControlMinutes ?: current.timeControlMinutes,
-                incrementSeconds = game?.incrementMs?.div(1000L)?.toInt() ?: current.incrementSeconds
+                incrementSeconds = game?.incrementMs?.div(1000L)?.toInt() ?: current.incrementSeconds,
+                isDailyMode = if (daily) true else current.isDailyMode
             )
+        }
+        if (game != null && game.position.isNotBlank()) {
+            runCatching {
+                if (_uiState.value.board.isEmpty()) {
+                    engine.loadFen(game.position)
+                    _uiState.update { current ->
+                        if (current.board.isEmpty()) {
+                            current.copy(
+                                isLoading = false,
+                                board = engine.pieces().toUiBoard(),
+                                isDailyMode = daily
+                            )
+                        } else current
+                    }
+                }
+            }
+        }
+        val myId = _myUserId.value
+        val resolvedOpponent = when {
+            myId != null && myId == game?.whitePlayerId -> game.blackUsername
+            myId != null && myId == game?.blackPlayerId -> game.whiteUsername
+            else -> game?.blackUsername ?: game?.whiteUsername
+        }
+        if (!resolvedOpponent.isNullOrBlank() && lastOpponentUsername == null) {
+            lastOpponentUsername = resolvedOpponent
+            _opponentName.value = resolvedOpponent
         }
         refreshRating(captureChange = false)
         lastOpponentUsername?.let { loadOpponentRating(it) }
@@ -183,6 +212,9 @@ class OnlineGameViewModel(
                 currentRating - current.playerRating
             } else {
                 current.ratingChange
+            }
+            if (captureChange && change != null) {
+                RatingPreferencesStore.get(getApplication()).setRatingChange(currentMode, change)
             }
             current.copy(
                 ratingChange = change,

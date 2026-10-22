@@ -8,8 +8,17 @@ object ApiErrorInterpreter {
 
     fun toUserMessage(error: Throwable): String {
 
+        if (error is java.net.SocketTimeoutException) {
+            return "Server timed out. The server is taking too long to respond."
+        }
+        if (error is java.net.ConnectException) {
+            return "Could not connect to the server. The server might be down."
+        }
+        if (error is java.net.UnknownHostException) {
+            return "Unable to resolve server address. Check your internet connection."
+        }
         if (error is IOException) {
-            return "Can't reach the server. Check your internet connection."
+            return "Can't reach the server. Check your connection or server status."
         }
         if (error is HttpException) {
 

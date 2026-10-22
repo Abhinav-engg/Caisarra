@@ -18,16 +18,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.create
 import java.util.concurrent.TimeUnit
-<<<<<<< Updated upstream
-
-=======
-import com.abhinav.caisarra.data.remote.api.GamesService
-import com.abhinav.caisarra.data.remote.api.ProfileService
-import com.abhinav.caisarra.data.remote.api.RatingService
-import com.abhinav.caisarra.data.remote.api.MatchmakingService
-import com.abhinav.caisarra.data.remote.api.FriendsService
 import com.abhinav.caisarra.data.remote.api.CommunityService
->>>>>>> Stashed changes
+import com.abhinav.caisarra.data.remote.api.PuzzleApiService
+import com.abhinav.caisarra.data.remote.api.ClubService
 object RetrofitInstance {
     const val BASE_URL = "https://caisaara.duckdns.org"
     val json = Json {
@@ -36,7 +29,11 @@ object RetrofitInstance {
     }
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.NONE
+        level = if (com.abhinav.caisarra.BuildConfig.DEBUG) {
+            HttpLoggingInterceptor.Level.BODY
+        } else {
+            HttpLoggingInterceptor.Level.NONE
+        }
     }
 
     private val plainClient = OkHttpClient.Builder()
@@ -112,12 +109,11 @@ object RetrofitInstance {
         authenticatedRetrofit(tokenManager).create()
     fun createFriendsService(tokenManager: TokenManager): FriendsService =
         authenticatedRetrofit(tokenManager).create()
-<<<<<<< Updated upstream
     fun createNearbyService(tokenManager: TokenManager): NearbyService =
         authenticatedRetrofit(tokenManager).create(NearbyService::class.java)
-}
-=======
     fun createCommunityService(tokenManager: TokenManager): CommunityService =
         authenticatedRetrofit(tokenManager).create()
+    fun createPuzzleService(tokenManager: TokenManager): PuzzleApiService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createClubService(tokenManager: TokenManager): ClubService = authenticatedRetrofit(tokenManager).create()
 }
->>>>>>> Stashed changes
