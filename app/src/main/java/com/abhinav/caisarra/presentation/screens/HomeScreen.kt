@@ -77,9 +77,14 @@ fun HomeScreen(
     onReviewGame: (String) -> Unit = {},
     onLogoutSuccess: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
+<<<<<<< Updated upstream
     onOpenNearby: () -> Unit = {},
     onPlayBots: () -> Unit = {},
     onOpenProfile: () -> Unit
+=======
+    onOpenProfile: () -> Unit,
+    onOpenCommunity: () -> Unit = {}
+>>>>>>> Stashed changes
 ) {
 
     val state by viewModel.state.collectAsState()
@@ -145,6 +150,14 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 TodaysChallenge(onStartChallenge = onStartChallenge)
+                Spacer(modifier = Modifier.height(12.dp))
+                GeneralButton(
+                    text = "COMMUNITY",
+                    onClick = onOpenCommunity,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                )
                 Spacer(modifier = Modifier.height(12.dp))
 
                 GameHistorySection(

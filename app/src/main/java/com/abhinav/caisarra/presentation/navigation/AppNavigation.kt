@@ -105,6 +105,11 @@ import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
 import com.abhinav.caisarra.presentation.screens.CommunityScreen
 import com.abhinav.caisarra.presentation.screens.MenuScreen
 import com.abhinav.caisarra.presentation.screens.NearbyScreen
+import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.data.remote.RetrofitInstance
+import com.abhinav.caisarra.data.repository.CommunityRepository
+import com.abhinav.caisarra.presentation.community.CommunityScreen
+import com.abhinav.caisarra.presentation.community.CommunityViewModel
 import com.abhinav.caisarra.presentation.screens.PuzzlesScreen
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -148,6 +153,7 @@ object AppRoutes {
     const val PLAY_WITH_FRIEND_HOME = "play_with_friend_home"
     const val TOURNAMENT_DETAIL = "tournament/{id}?code={code}"
     const val NEARBY = "nearby"
+    const val COMMUNITY = "community"
     const val PUZZLES = "puzzles"
     const val SOCIAL = "social"
     const val MENU = "menu"
@@ -526,6 +532,38 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
             )
         }
+        composable(route = AppRoutes.COMMUNITY) {
+            val tokenManager = remember {
+                TokenManager(context)
+            }
+
+            val accessToken by tokenManager.accessTokenFlow
+                .collectAsState(initial = null)
+
+            val communityViewModel = screenViewModel {
+                CommunityViewModel(
+                    CommunityRepository(
+                        RetrofitInstance.createCommunityService(
+                            tokenManager
+                        )
+                    )
+                )
+            }
+
+            CommunityScreen(
+                viewModel = communityViewModel,
+                isRegisteredUser = !accessToken.isNullOrBlank(),
+                onBack = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(AppRoutes.HOME) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                }
+            )
+        }
 
 
         composable(route = AppRoutes.RESET_PASSWORD) {
@@ -651,6 +689,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
                 onOpenProfile = {
                     navController.navigateOnce(AppRoutes.PROFILE)
+                    navController.navigate(AppRoutes.PROFILE)
+                },
+                onOpenCommunity = {
+                    navController.navigate(AppRoutes.COMMUNITY)
                 }
             )
         }
