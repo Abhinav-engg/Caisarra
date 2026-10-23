@@ -4,7 +4,9 @@ package com.abhinav.caisarra.presentation.community
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.remote.dto.CommunityPostDto
+import com.abhinav.caisarra.data.remote.dto.GameHistoryDto
 import com.abhinav.caisarra.data.repository.CommunityRepository
+import com.abhinav.caisarra.data.repository.RemoteGameRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,11 +21,14 @@ data class CommunityUiState(
     val nextBeforeId: Long? = null,
     val error: String? = null,
     val info: String? = null,
-    val commentsPostId: Long? = null
+    val commentsPostId: Long? = null,
+    val shareableGames: List<GameHistoryDto> = emptyList(),
+    val isLoadingGames: Boolean = false
 )
 
 class CommunityViewModel(
-    private val repository: CommunityRepository
+    private val repository: CommunityRepository,
+    private val remoteGameRepository: RemoteGameRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CommunityUiState())
@@ -31,6 +36,7 @@ class CommunityViewModel(
 
     init {
         refresh()
+        loadShareableGames()
     }
 
     fun refresh() {
@@ -38,7 +44,11 @@ class CommunityViewModel(
 
         viewModelScope.launch {
             _state.update {
-                it.copy(isLoading = true, error = null, info = null)
+                it.copy(
+                    isLoading = true,
+                    error = null,
+                    info = null
+                )
             }
 
             try {
@@ -57,42 +67,36 @@ class CommunityViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Unable to load community feed."
+                        error = e.message
+                            ?: "Unable to load community feed."
                     )
                 }
             }
         }
     }
-    fun openComments(postId: Long) {
-        _state.update { it.copy(commentsPostId = postId) }
-    }
-    fun closeComments() {
-        _state.update { it.copy(commentsPostId = null) }
-    }
 
-    fun loadMore() {
-        val current = _state.value
-        val cursor = current.nextBeforeId
-
-        if (current.isLoading ||
-            current.isLoadingMore ||
-            cursor == null
-        ) return
+    fun loadShareableGames() {
+        if (_state.value.isLoadingGames) return
 
         viewModelScope.launch {
             _state.update {
-                it.copy(isLoadingMore = true, error = null)
+                it.copy(isLoadingGames = true)
             }
 
             try {
-                val feed = repository.loadFeed(cursor)
+                val games = remoteGameRepository
+                    .getRawGameHistory()
+                    .filter { game ->
+                        game.status.equals(
+                            "finished",
+                            ignoreCase = true
+                        ) && !game.result.isNullOrBlank()
+                    }
 
-                _state.update { old ->
-                    old.copy(
-                        posts = (old.posts + feed.posts)
-                            .distinctBy { post -> post.id },
-                        nextBeforeId = feed.nextBeforeId,
-                        isLoadingMore = false
+                _state.update {
+                    it.copy(
+                        shareableGames = games,
+                        isLoadingGames = false
                     )
                 }
             } catch (e: CancellationException) {
@@ -100,8 +104,9 @@ class CommunityViewModel(
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        isLoadingMore = false,
-                        error = e.message ?: "Unable to load more posts."
+                        isLoadingGames = false,
+                        error = e.message
+                            ?: "Unable to load completed games."
                     )
                 }
             }
@@ -126,7 +131,9 @@ class CommunityViewModel(
                 _state.update {
                     it.copy(
                         posts = listOf(post) +
-                                it.posts.filterNot { old -> old.id == post.id },
+                                it.posts.filterNot { old ->
+                                    old.id == post.id
+                                },
                         isPublishing = false,
                         info = "Post published successfully."
                     )
@@ -137,7 +144,104 @@ class CommunityViewModel(
                 _state.update {
                     it.copy(
                         isPublishing = false,
-                        error = e.message ?: "Unable to publish post."
+                        error = e.message
+                            ?: "Unable to publish post."
+                    )
+                }
+            }
+        }
+    }
+
+    fun shareGame(gameId: String, caption: String) {
+        if (_state.value.isPublishing) return
+
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    isPublishing = true,
+                    error = null,
+                    info = null
+                )
+            }
+
+            try {
+                val post = repository.shareGame(
+                    gameId = gameId,
+                    caption = caption
+                )
+
+                _state.update {
+                    it.copy(
+                        posts = listOf(post) +
+                                it.posts.filterNot { old ->
+                                    old.id == post.id
+                                },
+                        isPublishing = false,
+                        info = "Game shared with the community."
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isPublishing = false,
+                        error = e.message
+                            ?: "Unable to share game."
+                    )
+                }
+            }
+        }
+    }
+
+    fun openComments(postId: Long) {
+        _state.update {
+            it.copy(commentsPostId = postId)
+        }
+    }
+
+    fun closeComments() {
+        _state.update {
+            it.copy(commentsPostId = null)
+        }
+    }
+
+    fun loadMore() {
+        val current = _state.value
+        val cursor = current.nextBeforeId
+
+        if (current.isLoading ||
+            current.isLoadingMore ||
+            cursor == null
+        ) return
+
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    isLoadingMore = true,
+                    error = null
+                )
+            }
+
+            try {
+                val feed = repository.loadFeed(cursor)
+
+                _state.update { old ->
+                    old.copy(
+                        posts = (old.posts + feed.posts)
+                            .distinctBy { post -> post.id },
+                        nextBeforeId = feed.nextBeforeId,
+                        isLoadingMore = false
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoadingMore = false,
+                        error = e.message
+                            ?: "Unable to load more posts."
                     )
                 }
             }
@@ -162,7 +266,8 @@ class CommunityViewModel(
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        error = e.message ?: "Unable to delete post."
+                        error = e.message
+                            ?: "Unable to delete post."
                     )
                 }
             }
@@ -180,7 +285,10 @@ class CommunityViewModel(
                     if (currentPost.myReaction == reaction) {
                         repository.removeReaction(postId)
                     } else {
-                        repository.setReaction(postId, reaction)
+                        repository.setReaction(
+                            postId,
+                            reaction
+                        )
                     }
 
                 _state.update { old ->
@@ -203,7 +311,8 @@ class CommunityViewModel(
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        error = e.message ?: "Unable to save reaction."
+                        error = e.message
+                            ?: "Unable to save reaction."
                     )
                 }
             }
@@ -211,14 +320,23 @@ class CommunityViewModel(
     }
 
     fun clearMessages() {
-        _state.update { it.copy(error = null, info = null) }
+        _state.update {
+            it.copy(error = null, info = null)
+        }
     }
 
-    suspend fun loadComments(postId: Long,afterId: Long? = null) =
-        repository.loadComments(postId,afterId = afterId)
+    suspend fun loadComments(
+        postId: Long,
+        afterId: Long? = null
+    ) = repository.loadComments(
+        postId,
+        afterId = afterId
+    )
 
-    suspend fun addComment(postId: Long, body: String) =
-        repository.addComment(postId, body)
+    suspend fun addComment(
+        postId: Long,
+        body: String
+    ) = repository.addComment(postId, body)
 
     suspend fun deleteComment(commentId: Long) =
         repository.deleteComment(commentId)

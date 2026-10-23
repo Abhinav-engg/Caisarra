@@ -14,10 +14,33 @@ data class CommunityAuthorDto(
 )
 
 @Serializable
+data class CommunityGameDto(
+    val id: String,
+    val pgn: String,
+    @SerialName("white_name")
+    val whiteName: String,
+    @SerialName("black_name")
+    val blackName: String,
+    @SerialName("white_rating")
+    val whiteRating: Int? = null,
+    @SerialName("black_rating")
+    val blackRating: Int? = null,
+    val result: String,
+    @SerialName("end_reason")
+    val endReason: String,
+    val mode: String,
+    @SerialName("played_at")
+    val playedAt: String? = null
+)
+
+@Serializable
 data class CommunityPostDto(
     val id: Long,
     val author: CommunityAuthorDto,
-    val body: String,
+    val body: String = "",
+    val kind: String = "text",
+    val fen: String? = null,
+    val game: CommunityGameDto? = null,
     val reactions: Map<String, Int> = emptyMap(),
     @SerialName("my_reaction")
     val myReaction: String? = null,
@@ -59,7 +82,11 @@ data class CommunityReactionData(
 
 @Serializable
 data class CreateCommunityPostRequest(
-    val body: String
+    val body: String? = null,
+    val kind: String = "text",
+    @SerialName("game_id")
+    val gameId: String? = null,
+    val fen: String? = null
 )
 
 @Serializable
