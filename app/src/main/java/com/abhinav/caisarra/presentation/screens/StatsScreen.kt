@@ -50,6 +50,7 @@ import com.abhinav.caisarra.data.remote.dto.ModeStatsData
 import com.abhinav.caisarra.data.remote.dto.RatingRecentGame
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import com.abhinav.caisarra.presentation.screens.components.RatingGraphView
+import com.abhinav.caisarra.presentation.screens.components.StatsSkeletonScreen
 import com.abhinav.caisarra.presentation.viewmodel.StatsRange
 import com.abhinav.caisarra.presentation.viewmodel.StatsViewModel
 import java.time.Instant
@@ -119,23 +120,7 @@ fun StatsScreen(
                 }
 
                 state.isLoading && stats == null -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator(
-                            color = CyanColor,
-                            modifier = Modifier.size(36.dp),
-                            strokeWidth = 3.dp
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Text(
-                            text = "Loading statistics...",
-                            fontFamily = JetBrainsMono,
-                            fontSize = 13.sp,
-                            color = TextMutedColor
-                        )
-                    }
+                    StatsSkeletonScreen()
                 }
 
                 state.error != null && stats == null -> {
