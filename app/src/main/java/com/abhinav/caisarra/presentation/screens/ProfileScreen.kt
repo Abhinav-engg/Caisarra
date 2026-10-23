@@ -105,6 +105,9 @@ fun ProfileScreen(
             avatarUrl = profile.avatarUrl.orEmpty()
         }
     }
+    LaunchedEffect(isGuest) {
+        viewModel.loadProfile(isGuest = isGuest)
+    }
 
     Column(
         modifier = Modifier
@@ -152,8 +155,7 @@ fun ProfileScreen(
                     onClick = onBack,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = ProfileWhite,
                         modifier = Modifier.size(23.dp)
@@ -165,8 +167,7 @@ fun ProfileScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "Player Profile",
+                Text(text = "Player Profile",
                     color = ProfileWhite,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
@@ -300,33 +301,36 @@ fun ProfileScreen(
                                     )
                                 )
                             ),
+
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = (
-                                    profile.displayName
-                                        ?.takeIf { it.isNotBlank() }
-                                        ?: profile.username
-                                    ).take(1).uppercase(),
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ProfileBackground
-                        )
+                        val avatarUrl = profile.avatarUrl?.trim()
 
-                        profile.avatarUrl
-                            ?.trim()
-                            ?.takeIf { it.startsWith("https://", ignoreCase = true) }
-                            ?.let { url ->
-                                AsyncImage(
-                                    model = url,
-                                    contentDescription = "Profile picture",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(76.dp)
-                                        .clip(CircleShape)
-                                )
-                            }
+                        if (!avatarUrl.isNullOrBlank() &&
+                            avatarUrl.startsWith("https://", ignoreCase = true)
+                        ) {
+                            AsyncImage(
+                                model = avatarUrl,
+                                contentDescription = "Player profile avatar",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(76.dp)
+                                    .clip(CircleShape)
+                            )
+                        } else {
+                            Text(
+                                text = (
+                                        profile.displayName
+                                            ?.takeIf { it.isNotBlank() }
+                                            ?: profile.username
+                                        ).take(1).uppercase(),
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ProfileBackground
+                            )
+                        }
                     }
+
 
                     Column(
                         modifier = Modifier
@@ -358,14 +362,12 @@ fun ProfileScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
+                            Box(modifier = Modifier
                                     .size(5.dp)
                                     .clip(CircleShape)
                                     .background(ProfileCyan)
                             )
-                            Text(
-                                text = if (isGuest) "GUEST PLAYER" else "MOSAIC PLAYER",
+                            Text(text = if (isGuest) "GUEST PLAYER" else "MOSAIC PLAYER",
                                 color = ProfileCyan,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
@@ -400,16 +402,14 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    InfoChip(
-                        label = "COUNTRY",
+                    InfoChip(label = "COUNTRY",
                         value = profile.country
                             ?.takeIf { it.isNotBlank() }
                             ?: "Not set",
                         modifier = Modifier.weight(1f)
                     )
 
-                    InfoChip(
-                        label = "MEMBER SINCE",
+                    InfoChip(label = "MEMBER SINCE",
                         value = profile.joinedAt
                             ?.substringBefore('T')
                             ?: "Unknown",
