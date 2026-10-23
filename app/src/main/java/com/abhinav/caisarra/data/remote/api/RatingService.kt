@@ -7,6 +7,7 @@ import com.abhinav.caisarra.data.remote.dto.PlayerRatingProfile
 import com.abhinav.caisarra.data.remote.dto.ClubLeaderboardEntry
 import retrofit2.http.GET
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface RatingService {
     @GET("players/{username}")
@@ -16,7 +17,8 @@ interface RatingService {
     @GET("players/{username}/stats/{mode}")
     suspend fun getModeStats(
         @Path("username") username: String,
-        @Path("mode") mode: String
+        @Path("mode") mode: String,
+        @Query("range") range: String? = null
     ): ApiResponse<ModeStatsData>
     @GET("api/clubs/{clubID}/leaderboard")
     suspend fun getClubLeaderboard(

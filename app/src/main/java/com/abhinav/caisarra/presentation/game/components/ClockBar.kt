@@ -31,7 +31,8 @@ fun ClockBar(
     modifier: Modifier = Modifier,
     isDailyMode: Boolean = false,
     rating: Int? = null,
-    capturedPieces: List<Piece> = emptyList()
+    capturedPieces: List<Piece> = emptyList(),
+    advantage: Int = 0
 ) {
     val daily = isDailyMode || timeMillis >= DAY_MILLIS
 
@@ -86,12 +87,14 @@ fun ClockBar(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
 
-                if (capturedPieces.isNotEmpty()) {
+                if (capturedPieces.isNotEmpty() || advantage > 0) {
                     CapturedPieces(
-                        pieces = capturedPieces
+                        pieces = capturedPieces,
+                        advantage = advantage
                     )
                 }
             }

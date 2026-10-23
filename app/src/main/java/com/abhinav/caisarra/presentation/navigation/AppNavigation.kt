@@ -106,6 +106,7 @@ import com.abhinav.caisarra.data.repository.NearbyRepository
 import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
 import com.abhinav.caisarra.presentation.screens.MenuScreen
 import com.abhinav.caisarra.presentation.screens.StatsScreen
+import com.abhinav.caisarra.presentation.viewmodel.StatsViewModel
 import com.abhinav.caisarra.presentation.screens.ThemeScreen
 import com.abhinav.caisarra.presentation.screens.MessagesScreen
 import com.abhinav.caisarra.presentation.screens.LeaderboardScreen
@@ -178,7 +179,13 @@ object AppRoutes {
     fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
     const val SOCIAL = "social"
     const val MENU = "menu"
-    const val STATS = "stats"
+    const val STATS = "stats?username={username}&mode={mode}"
+    fun stats(username: String? = null, mode: String? = null): String {
+        val queryParts = mutableListOf<String>()
+        if (!username.isNullOrBlank()) queryParts.add("username=${Uri.encode(username.trim())}")
+        if (!mode.isNullOrBlank()) queryParts.add("mode=${Uri.encode(mode.trim())}")
+        return if (queryParts.isEmpty()) "stats" else "stats?${queryParts.joinToString("&")}"
+    }
     const val THEME = "theme"
     const val MESSAGES = "messages"
     const val CLUBS = "clubs"
@@ -742,6 +749,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
                 onOpenCommunity = {
                     navController.navigate(AppRoutes.COMMUNITY)
+                },
+                onStatsClick = { mode ->
+                    navController.navigateOnce(AppRoutes.stats(mode = mode.ratingKey))
                 }
             )
         }
@@ -975,9 +985,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
                     }
-                },
-                onAnalyze = {
-                    navController.navigateOnce(AppRoutes.gameAnalysis(gameId))
                 }
             )
         }
@@ -1326,7 +1333,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.navigate(AppRoutes.EDIT_PROFILE){
                         launchSingleTop = true
                     }
-
+                },
+                onStatsClick = { mode ->
+                    navController.navigateOnce(AppRoutes.stats(mode = mode.ratingKey))
                 }
             )
         }
@@ -1567,7 +1576,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.navigateOnce(AppRoutes.PROFILE)
                 },
                 onStatsClick = {
-                    navController.navigateOnce(AppRoutes.STATS)
+                    navController.navigateOnce(AppRoutes.stats())
                 },
                 onGameHistoryClick = {
                     navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY)
@@ -1615,9 +1624,41 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-        composable(route = AppRoutes.STATS) {
+        composable(
+            route = AppRoutes.STATS,
+            arguments = listOf(
+                navArgument("username") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("mode") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val usernameArg = backStackEntry.arguments?.getString("username")
+            val modeArg = backStackEntry.arguments?.getString("mode")
+            val statsViewModel = screenViewModel {
+                StatsViewModel(
+                    authRepository = authRepository,
+                    ratingRepository = RatingRepository(authRepository.createRatingService()),
+                    profileRepository = ProfileRepository(authRepository.createProfileService()),
+                    initialUsername = usernameArg,
+                    initialMode = modeArg
+                )
+            }
             StatsScreen(
-                onBack = { navController.popBackStack() }
+                viewModel = statsViewModel,
+                onBack = { navController.popBackStack() },
+                onGameClick = { gameId ->
+                    navController.navigateOnce(AppRoutes.gameHistory(gameId))
+                },
+                onSignIn = {
+                    navController.navigateOnce(AppRoutes.LOGIN)
+                }
             )
         }
 

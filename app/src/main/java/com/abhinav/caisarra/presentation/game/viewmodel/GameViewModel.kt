@@ -59,6 +59,7 @@ class GameViewModel(
     private var promotionTo: DomainSquare? = null
     private var moveAnimationId = 0L
     private var viewedPly: Int? = null
+    private var recordedGameResult: GameResult? = null
 
     private val autoFlip = !resumeGame && newBoardFlipped
 
@@ -103,6 +104,7 @@ class GameViewModel(
 
         gameId = created.id
         initialTimeMs = created.whiteTimeMs
+        recordedGameResult = null
 
         moveTimeSnapshots.clear()
         redoTimeSnapshots.clear()
@@ -671,6 +673,9 @@ class GameViewModel(
         val checkSquare = currentGame.checkSquare
         val status = currentGame.status
         val result = status.toUiResult()
+        if (recordedGameResult == null && result != null) {
+            recordedGameResult = result
+        }
         _state.update {
             val undoAllowed =
                 if (resumeGame) {
@@ -718,7 +723,7 @@ class GameViewModel(
                 capturedWhitePieces = capturedWhite,
                 capturedBlackPieces = capturedBlack,
                 moves = uiMoves,
-                gameResult = result,
+                gameResult = recordedGameResult ?: result,
                 isBoardFlipped =
                     if (autoFlip) {
                         currentGame.turn == DomainPieceColor.Black

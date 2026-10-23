@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
+import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
@@ -246,7 +250,7 @@ private fun RushPlayingContent(
             ) {
                 ChessBoard(
                     board = state.board,
-                    selectedSquare = state.selectedSquare,
+                    selectedSquare = state.selectedSquare ?: state.highlightedSquare,
                     legalMoves = state.legalMoves,
                     lastMoveFrom = state.lastMoveFrom,
                     lastMoveTo = state.lastMoveTo,
@@ -260,6 +264,75 @@ private fun RushPlayingContent(
                         viewModel.onSquareClicked(square)
                     }
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color(0xFF1E293B), RoundedCornerShape(12.dp))
+                    .border(1.dp, Color(0xFF334155), RoundedCornerShape(12.dp))
+                    .singleClickable(enabled = !state.isAwaitingServer) {
+                        viewModel.requestHint()
+                    }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lightbulb,
+                        contentDescription = "Hint",
+                        tint = Color(0xFFFBBF24),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Hint",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color(0xFF1E293B), RoundedCornerShape(12.dp))
+                    .border(1.dp, Color(0xFF334155), RoundedCornerShape(12.dp))
+                    .singleClickable(enabled = !state.isAwaitingServer) {
+                        viewModel.skipPuzzle()
+                    }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FastForward,
+                        contentDescription = "Skip",
+                        tint = Color(0xFFF87171),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = if (state.secondsRemaining != null) "Skip (-45s)" else "Skip",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }

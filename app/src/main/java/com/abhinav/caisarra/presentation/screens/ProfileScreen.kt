@@ -81,7 +81,8 @@ fun ProfileScreen(
     viewModel: ProfileViewModel,
     isGuest: Boolean,
     onBack: () -> Unit,
-    onEditProfile: () -> Unit
+    onEditProfile: () -> Unit,
+    onStatsClick: (GameMode) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -559,7 +560,8 @@ fun ProfileScreen(
                                 title = mode.label,
                                 rating = rating?.rating,
                                 provisional = rating?.provisional ?: false,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                onClick = { onStatsClick(mode) }
                             )
                         }
 
@@ -687,7 +689,8 @@ private fun RatingModeCard(
     title: String,
     rating: Int?,
     provisional: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -697,6 +700,9 @@ private fun RatingModeCard(
                 1.dp,
                 ProfileBorder,
                 RoundedCornerShape(19.dp)
+            )
+            .then(
+                if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
             )
             .padding(17.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp)

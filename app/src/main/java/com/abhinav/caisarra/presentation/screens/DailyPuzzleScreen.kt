@@ -23,7 +23,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -365,29 +368,142 @@ private fun DailyPuzzlePlayingContent(
         }
 
         if (state.solutionRevealed && state.solutionMoves.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Box(
+            Spacer(modifier = Modifier.height(14.dp))
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(Color(0xFF0F172A), RoundedCornerShape(12.dp))
-                    .padding(12.dp)
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E293B))
             ) {
-                Column {
-                    Text(
-                        text = "SOLUTION:",
-                        color = Color(0xFF23CDE8),
-                        fontSize = 11.sp,
-                        fontFamily = JetBrainsMono,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = state.solutionMoves.joinToString("  "),
-                        color = Color.White,
-                        fontSize = 13.sp,
-                        fontFamily = JetBrainsMono
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "SOLUTION",
+                            color = Color(0xFF23CDE8),
+                            fontSize = 12.sp,
+                            fontFamily = JetBrainsMono,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+
+                        if (state.isPlayingSolution) {
+                            Text(
+                                text = "Playing on board...",
+                                color = Color(0xFF34D399),
+                                fontSize = 11.sp,
+                                fontFamily = JetBrainsMono
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        state.solutionMoves.forEachIndexed { index, moveUci ->
+                            val isPlayerMove = index % 2 == 0
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        color = if (isPlayerMove) Color(0xFF1E293B) else Color(0xFF131D2A),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isPlayerMove) Color(0xFF334155) else Color(0xFF1E293B),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "${index + 1}. $moveUci",
+                                    color = if (isPlayerMove) Color.White else Color(0xFF94A3B8),
+                                    fontSize = 12.sp,
+                                    fontFamily = JetBrainsMono,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(Color(0xFF1E293B), RoundedCornerShape(10.dp))
+                                .border(1.dp, Color(0xFF334155), RoundedCornerShape(10.dp))
+                                .singleClickable(enabled = !state.isPlayingSolution) {
+                                    viewModel.replaySolution()
+                                }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "Replay",
+                                    tint = Color(0xFF23CDE8),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Replay",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(Color(0xFF1E293B), RoundedCornerShape(10.dp))
+                                .border(1.dp, Color(0xFF334155), RoundedCornerShape(10.dp))
+                                .singleClickable(enabled = !state.isPlayingSolution) {
+                                    viewModel.resetPuzzleToStart()
+                                }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Try it",
+                                    tint = Color(0xFFFBBF24),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Try Moves",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

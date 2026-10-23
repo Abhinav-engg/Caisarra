@@ -32,6 +32,7 @@ sealed interface DailyPuzzleUiState {
         val isAwaitingServer: Boolean = false,
         val solutionMoves: List<String> = emptyList(),
         val solutionRevealed: Boolean = false,
+        val isPlayingSolution: Boolean = false,
         val hintAvailable: Boolean = true,
         val canViewSolution: Boolean = false
     ) : DailyPuzzleUiState

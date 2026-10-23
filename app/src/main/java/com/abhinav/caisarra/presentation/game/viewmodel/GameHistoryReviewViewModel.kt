@@ -14,6 +14,9 @@ import com.abhinav.caisarra.domain.chess.game.PassAndPlayGame
 import com.abhinav.caisarra.domain.chess.game.mapper.toUi
 import com.abhinav.caisarra.domain.chess.game.mapper.toUiBoard
 import com.abhinav.caisarra.domain.chess.model.PieceColor
+import com.abhinav.caisarra.domain.chess.model.PieceColor as DomainPieceColor
+import com.abhinav.caisarra.domain.chess.model.PieceType as DomainPieceType
+import com.abhinav.caisarra.domain.chess.model.Square as DomainSquare
 import com.abhinav.caisarra.domain.chess.model.toMove
 import com.abhinav.caisarra.presentation.game.model.MoveUi
 import com.abhinav.caisarra.presentation.game.model.Piece
@@ -69,7 +72,6 @@ class GameHistoryReviewViewModel(
         loadGame()
     }
 
-
     private fun loadGame() {
         viewModelScope.launch {
             try {
@@ -94,7 +96,6 @@ class GameHistoryReviewViewModel(
             }
         }
     }
-
 
     private suspend fun loadRegisteredGame(username: String) {
         val game = remoteGameRepository
@@ -208,6 +209,14 @@ class GameHistoryReviewViewModel(
         renderPosition(localMoves.size)
     }
 
+    fun firstMove() {
+        jumpToMove(0)
+    }
+
+    fun lastMove() {
+        jumpToMove(_state.value.totalPlies)
+    }
+
     fun previousMove() {
         val current = _state.value.currentPly
         if (current > 0) renderPosition(current - 1)
@@ -256,6 +265,14 @@ class GameHistoryReviewViewModel(
             val checkSquare = engine.checkSquare()
             val turn = engine.turn()
 
+            val lastMoveDto = if (ply > 0) remoteMoves.getOrNull(ply - 1) else null
+            val (lastFrom, lastTo) = if (lastMoveDto != null) {
+                val prevFen = if (ply == 1) STARTING_FEN else remoteMoves.getOrNull(ply - 2)?.positionAfter ?: STARTING_FEN
+                findMoveSquares(lastMoveDto.move, prevFen, fen, if (ply % 2 == 1) "white" else "black")
+            } else {
+                null to null
+            }
+
             _state.update {
                 it.copy(
                     currentPly = ply,
@@ -263,8 +280,8 @@ class GameHistoryReviewViewModel(
                     board = domainPieces.toUiBoard(),
                     whiteTimeMillis = game.whiteTimeMs,
                     blackTimeMillis = game.blackTimeMs,
-                    lastMoveFrom = null,
-                    lastMoveTo = null,
+                    lastMoveFrom = lastFrom,
+                    lastMoveTo = lastTo,
                     isWhiteInCheck = checkSquare != null && turn == PieceColor.White,
                     isBlackInCheck = checkSquare != null && turn == PieceColor.Black,
                     isWhiteTurn = turn == PieceColor.White,
@@ -326,6 +343,70 @@ class GameHistoryReviewViewModel(
                 isWhiteTurn = replay.turn == PieceColor.White,
                 error = null
             )
+        }
+    }
+
+    private fun findMoveSquares(
+        playedMove: String,
+        prevFen: String,
+        currFen: String,
+        playerColor: String
+    ): Pair<Square?, Square?> {
+        val clean = playedMove.trim()
+        if (clean.length in 4..5 &&
+            clean[0] in 'a'..'h' && clean[1] in '1'..'8' &&
+            clean[2] in 'a'..'h' && clean[3] in '1'..'8'
+        ) {
+            val from = Square(row = 8 - clean[1].digitToInt(), column = clean[0] - 'a')
+            val to = Square(row = 8 - clean[3].digitToInt(), column = clean[2] - 'a')
+            return from to to
+        }
+
+        return try {
+            val isWhite = playerColor.equals("white", ignoreCase = true)
+            val moverColor = if (isWhite) DomainPieceColor.White else DomainPieceColor.Black
+
+            if (clean.contains("O-O-O", ignoreCase = true)) {
+                val rank = if (isWhite) 8 - 1 else 8 - 8
+                return Square(row = rank, column = 'e' - 'a') to Square(row = rank, column = 'c' - 'a')
+            } else if (clean.contains("O-O", ignoreCase = true)) {
+                val rank = if (isWhite) 8 - 1 else 8 - 8
+                return Square(row = rank, column = 'e' - 'a') to Square(row = rank, column = 'g' - 'a')
+            }
+
+            val prevEngine = ChesslibEngine().apply { loadFen(prevFen) }
+            val currEngine = ChesslibEngine().apply { loadFen(currFen) }
+            val prevPieces = prevEngine.pieces()
+            val currPieces = currEngine.pieces()
+
+            val prevMap = prevPieces.associateBy { it.square }
+            val currMap = currPieces.associateBy { it.square }
+
+            var fromSquare: Square? = null
+            var toSquare: Square? = null
+
+            for (file in 0..7) {
+                for (rank in 0..7) {
+                    val dSquare = DomainSquare(file, rank)
+                    val pBefore = prevMap[dSquare]
+                    val pAfter = currMap[dSquare]
+                    val uiSq = dSquare.toUi()
+
+                    if (pBefore != null && pBefore.color == moverColor && pAfter != pBefore) {
+                        if (fromSquare == null || pBefore.type != DomainPieceType.Rook) {
+                            fromSquare = uiSq
+                        }
+                    }
+                    if (pAfter != null && pAfter.color == moverColor && pAfter != pBefore) {
+                        if (toSquare == null || pAfter.type != DomainPieceType.Rook) {
+                            toSquare = uiSq
+                        }
+                    }
+                }
+            }
+            fromSquare to toSquare
+        } catch (_: Exception) {
+            null to null
         }
     }
 

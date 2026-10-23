@@ -17,10 +17,15 @@ data class ChatMessageDto(
     @JsonNames("user_id")
     val senderId: Long,
 
+    @JsonNames("sender_username", "user_name")
     val username: String? = null,
 
     val message: String,
 
     @SerialName("created_at")
-    val createdAt: String
+    val createdAt: String,
+
+    @SerialName("avatar_url")
+    @JsonNames("sender_avatar_url")
+    val avatarUrl: String? = null
 )

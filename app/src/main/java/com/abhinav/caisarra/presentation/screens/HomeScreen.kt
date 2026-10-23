@@ -30,11 +30,14 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,6 +76,7 @@ import com.abhinav.caisarra.core.ui.theme.SignUpButtonDefaultCornerRadius
 import com.caisaara.ui.theme.ButtonGradientStart
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import com.abhinav.caisarra.presentation.viewmodel.ActiveDailyGame
+import com.abhinav.caisarra.presentation.viewmodel.ActiveGame
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 
 private val BackgroundColor = Color(0xFF080D13)
@@ -98,7 +102,8 @@ fun HomeScreen(
     onOpenNearby: () -> Unit = {},
     onPlayBots: () -> Unit = {},
     onOpenProfile: () -> Unit,
-    onOpenCommunity: () -> Unit = {}
+    onOpenCommunity: () -> Unit = {},
+    onStatsClick: (GameMode) -> Unit = {}
 ) {
 
     val state by viewModel.state.collectAsState()
@@ -158,16 +163,24 @@ fun HomeScreen(
                     ratingChange = state.ratingChange,
                     provisional = state.provisional,
                     modeRatings = state.modeRatings,
-                    onSelectMode = viewModel::selectMode
+                    onSelectMode = viewModel::selectMode,
+                    onStatsClick = { onStatsClick(state.selectedMode) }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 QuickPlayAndActiveGamesSection(
-                    activeGames = state.activeDailyGames,
+                    activeGames = state.activeGames,
                     contentWidth = contentWidth,
+                    timeControlLabel = when (state.selectedMode) {
+                        GameMode.BULLET -> "1 min • Bullet"
+                        GameMode.BLITZ -> "3 min • Blitz"
+                        GameMode.RAPID -> "10 min • Rapid"
+                        GameMode.DAILY -> "1 day • Daily"
+                    },
                     onStartQuickPlay = onStartQuickPlay,
-                    onOpenActiveGame = onOpenActiveGame
+                    onOpenActiveGame = onOpenActiveGame,
+                    onGameExpired = viewModel::removeExpiredGame
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -322,7 +335,8 @@ private fun RatingCard(
     ratingChange: Int?,
     provisional: Boolean,
     modeRatings: Map<GameMode, Int?> = emptyMap(),
-    onSelectMode: (GameMode) -> Unit = {}
+    onSelectMode: (GameMode) -> Unit = {},
+    onStatsClick: () -> Unit = {}
 ) {
     var dropdownExpanded by remember { mutableStateOf(false) }
 
@@ -437,7 +451,8 @@ private fun RatingCard(
                 fontFamily = JetBrainsMono,
                 fontSize = 48.sp,
                 lineHeight = 50.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable(onClick = onStatsClick)
             )
 
             val changeText = when {
@@ -597,15 +612,18 @@ private fun QuickPlayCard(
 
 @Composable
 private fun QuickPlayAndActiveGamesSection(
-    activeGames: List<ActiveDailyGame>,
+    activeGames: List<ActiveGame>,
     contentWidth: androidx.compose.ui.unit.Dp,
     onStartQuickPlay: () -> Unit,
     onOpenActiveGame: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    timeControlLabel: String = "10 min • Rapid",
+    onGameExpired: (String) -> Unit = {}
 ) {
     if (activeGames.isEmpty()) {
         QuickPlayCard(
             onStartQuickPlay = onStartQuickPlay,
+            timeControlLabel = timeControlLabel,
             modifier = modifier.fillMaxWidth()
         )
     } else {
@@ -623,6 +641,7 @@ private fun QuickPlayAndActiveGamesSection(
                 item(key = "quick_play") {
                     QuickPlayCard(
                         onStartQuickPlay = onStartQuickPlay,
+                        timeControlLabel = timeControlLabel,
                         modifier = Modifier.width(contentWidth)
                     )
                 }
@@ -631,9 +650,10 @@ private fun QuickPlayAndActiveGamesSection(
                     items = activeGames,
                     key = { it.id }
                 ) { game ->
-                    ActiveDailyGameCard(
+                    ActiveGameCard(
                         game = game,
                         onClick = { onOpenActiveGame(game.id) },
+                        onExpired = { onGameExpired(game.id) },
                         modifier = Modifier.width(contentWidth)
                     )
                 }
@@ -665,12 +685,43 @@ private fun QuickPlayAndActiveGamesSection(
 }
 
 @Composable
-private fun ActiveDailyGameCard(
-    game: ActiveDailyGame,
+private fun ActiveGameCard(
+    game: ActiveGame,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onExpired: () -> Unit = {}
 ) {
+    val isDaily = game.mode == GameMode.DAILY
     val daysText = if (game.daysPerMove == 1) "1 day/move" else "${game.daysPerMove} days/move"
+
+    var remainingMs by remember(game.id, game.expiresAt) {
+        mutableLongStateOf(
+            game.expiresAt?.let { (it - System.currentTimeMillis()).coerceAtLeast(0L) } ?: 0L
+        )
+    }
+
+    if (game.expiresAt != null) {
+        LaunchedEffect(game.id, game.expiresAt) {
+            while (true) {
+                val now = System.currentTimeMillis()
+                val left = (game.expiresAt - now).coerceAtLeast(0L)
+                remainingMs = left
+                if (left <= 0L) {
+                    onExpired()
+                    break
+                }
+                delay(1000)
+            }
+        }
+    }
+
+    val timeSubtitle = if (isDaily) {
+        daysText
+    } else {
+        val totalSec = remainingMs / 1000L
+        val clock = "%02d:%02d".format(totalSec / 60L, totalSec % 60L)
+        "$clock left"
+    }
 
     Box(
         modifier = modifier
@@ -705,7 +756,7 @@ private fun ActiveDailyGameCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     androidx.compose.material3.Text(
-                        text = "DAILY MATCH",
+                        text = "${game.mode.label.uppercase()} MATCH",
                         color = Color(0xFF00E5FF),
                         fontFamily = JetBrainsMono,
                         fontSize = 12.sp,
@@ -753,9 +804,9 @@ private fun ActiveDailyGameCard(
 
                 androidx.compose.material3.Text(
                     text = if (game.isMyTurn) {
-                        "It's your turn to play • $daysText"
+                        "It's your turn to play • $timeSubtitle"
                     } else {
-                        "Waiting for opponent to move • $daysText"
+                        "Waiting for opponent to move • $timeSubtitle"
                     },
                     color = SecondaryText,
                     fontFamily = JetBrainsMono,
@@ -775,4 +826,17 @@ private fun ActiveDailyGameCard(
             )
         }
     }
+}
+
+@Composable
+private fun ActiveDailyGameCard(
+    game: ActiveDailyGame,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ActiveGameCard(
+        game = game,
+        onClick = onClick,
+        modifier = modifier
+    )
 }

@@ -67,6 +67,11 @@ interface PuzzleApiService {
         @Body request: RushMoveRequest
     ): RushMoveResponse
 
+    @POST("puzzles/rush/skip")
+    suspend fun skipRushPuzzle(
+        @Body request: RushMoveRequest
+    ): RushMoveResponse
+
     @POST("puzzles/rush/end")
     suspend fun endRush(
         @Body request: RushEndRequest
