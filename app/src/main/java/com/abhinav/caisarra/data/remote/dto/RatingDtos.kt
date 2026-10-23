@@ -32,7 +32,8 @@ data class PlayerRatingProfile(
 @Serializable
 data class ModeStatsData(
     val mode: String,
-    val rating: Int,
+    val range: String = "30d",
+    val rating: Int = 1200,
     val provisional: Boolean = true,
 
     @SerialName("best_rating")
@@ -40,6 +41,15 @@ data class ModeStatsData(
 
     @SerialName("best_rating_at")
     val bestRatingAt: String? = null,
+
+    @SerialName("lowest_rating")
+    val lowestRating: Int? = null,
+
+    @SerialName("lowest_rating_at")
+    val lowestRatingAt: String? = null,
+
+    @SerialName("start_rating")
+    val startRating: Int = 1200,
 
     @SerialName("games_played")
     val gamesPlayed: Int = 0,
@@ -51,8 +61,36 @@ data class ModeStatsData(
     @SerialName("win_percent")
     val winPercent: Int = 0,
 
+    @SerialName("as_white")
+    val asWhite: ColorStatsDto? = null,
+
+    @SerialName("as_black")
+    val asBlack: ColorStatsDto? = null,
+
+    @SerialName("current_streak")
+    val currentStreak: Int = 0,
+
+    @SerialName("best_streak")
+    val bestStreak: Int = 0,
+
+    @SerialName("rating_history")
+    val ratingHistory: List<RatingHistoryPoint> = emptyList(),
+
     @SerialName("recent_games")
     val recentGames: List<RatingRecentGame> = emptyList()
+)
+
+@Serializable
+data class ColorStatsDto(
+    val wins: Int = 0,
+    val losses: Int = 0,
+    val draws: Int = 0
+)
+
+@Serializable
+data class RatingHistoryPoint(
+    val date: String,
+    val rating: Int
 )
 
 @Serializable

@@ -17,10 +17,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -53,7 +55,8 @@ fun GameResultDialog(
     ratingChange: Int? = null,
     isRated: Boolean = false,
     whitePlayerName: String = "White",
-    blackPlayerName: String = "Black"
+    blackPlayerName: String = "Black",
+    onDismiss: () -> Unit = {}
 ) {
     val outcome = outcomeFor(result, playerColor)
     val outcomeColor = when (outcome) {
@@ -80,7 +83,7 @@ fun GameResultDialog(
         else -> "Your rating is unchanged"
     }
 
-    Dialog(onDismissRequest = {}, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         BoxWithConstraints(Modifier.fillMaxWidth().padding(20.dp)) {
             Column(
                 modifier = Modifier
@@ -94,6 +97,18 @@ fun GameResultDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = ResultMuted
+                        )
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .background(outcomeColor.copy(alpha = 0.12f), CircleShape)

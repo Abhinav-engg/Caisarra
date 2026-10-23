@@ -18,7 +18,6 @@ import com.abhinav.caisarra.presentation.game.model.Square as UiSquare
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class DailyPuzzleViewModel(
@@ -60,7 +59,7 @@ class DailyPuzzleViewModel(
 
     fun onSquareClicked(square: UiSquare) {
         val current = _state.value
-        if (current !is DailyPuzzleUiState.Playing || current.isAwaitingServer) return
+        if (current !is DailyPuzzleUiState.Playing || current.isAwaitingServer || current.isPlayingSolution) return
 
         val selected = current.selectedSquare
         if (selected == null) {
@@ -154,7 +153,7 @@ class DailyPuzzleViewModel(
 
     fun requestHint() {
         val current = _state.value
-        if (current !is DailyPuzzleUiState.Playing || !current.hintAvailable || current.isAwaitingServer) return
+        if (current !is DailyPuzzleUiState.Playing || !current.hintAvailable || current.isAwaitingServer || current.isPlayingSolution) return
 
         viewModelScope.launch {
             puzzleRepository.getHint(current.puzzle.puzzleId)
@@ -162,10 +161,17 @@ class DailyPuzzleViewModel(
                     val hintSquare = response.fromSquare?.let { parseSquareNameToUi(it) }
                     val stateNow = _state.value
                     if (stateNow is DailyPuzzleUiState.Playing) {
+                        val legalTargets = hintSquare?.let { sq ->
+                            engine.legalMovesFrom(sq.toDomainSquare()).map { it.to.toUiSquare() }
+                        } ?: emptyList()
+
                         _state.value = stateNow.copy(
                             hintAvailable = false,
                             highlightedSquare = hintSquare,
-                            message = response.message ?: "Hint applied"
+                            selectedSquare = hintSquare,
+                            legalMoves = legalTargets,
+                            lastMoveFrom = hintSquare,
+                            message = response.message ?: "Hint: Move the highlighted piece"
                         )
                     }
                 }
@@ -199,6 +205,7 @@ class DailyPuzzleViewModel(
                             canViewSolution = false,
                             message = response.message
                         )
+                        playSolutionAnimation(response.moves)
                     } else if (stateNow is DailyPuzzleUiState.Failed) {
                         _state.value = DailyPuzzleUiState.Playing(
                             puzzle = stateNow.puzzle,
@@ -213,6 +220,7 @@ class DailyPuzzleViewModel(
                             canViewSolution = false,
                             message = response.message
                         )
+                        playSolutionAnimation(response.moves)
                     }
                 }
                 .onFailure { error ->
@@ -223,6 +231,96 @@ class DailyPuzzleViewModel(
                         )
                     }
                 }
+        }
+    }
+
+    fun replaySolution() {
+        val current = _state.value
+        if (current !is DailyPuzzleUiState.Playing || current.solutionMoves.isEmpty()) return
+        playSolutionAnimation(current.solutionMoves)
+    }
+
+    fun resetPuzzleToStart() {
+        val current = _state.value
+        if (current !is DailyPuzzleUiState.Playing) return
+        engine.loadFen(current.puzzle.fen)
+        applyInitialMove(current.puzzle.initialMove)
+        applyMoveSequence(current.puzzle.attemptedMoves)
+
+        val board = currentBoardMap()
+        val checkSquare = engine.checkSquare()
+
+        _state.value = current.copy(
+            board = board,
+            selectedSquare = null,
+            legalMoves = emptyList(),
+            lastMoveFrom = null,
+            lastMoveTo = null,
+            isWhiteInCheck = checkSquare != null && engine.turn() == DomainPieceColor.White,
+            isBlackInCheck = checkSquare != null && engine.turn() == DomainPieceColor.Black,
+            isPlayingSolution = false,
+            message = "Now try playing the moves yourself!"
+        )
+        moveStartTime = SystemClock.elapsedRealtime()
+    }
+
+    private fun playSolutionAnimation(moves: List<String>) {
+        val current = _state.value
+        if (current !is DailyPuzzleUiState.Playing) return
+
+        viewModelScope.launch {
+            _state.value = (_state.value as? DailyPuzzleUiState.Playing)?.copy(
+                isPlayingSolution = true,
+                message = "Showing solution..."
+            ) ?: return@launch
+
+            engine.loadFen(current.puzzle.fen)
+            applyInitialMove(current.puzzle.initialMove)
+
+            _state.value = (_state.value as? DailyPuzzleUiState.Playing)?.copy(
+                board = currentBoardMap(),
+                lastMoveFrom = null,
+                lastMoveTo = null,
+                selectedSquare = null,
+                legalMoves = emptyList()
+            ) ?: return@launch
+
+            delay(400)
+
+            for (uci in moves) {
+                if (uci.isBlank()) continue
+                val move = parseUciMove(uci)
+                val piece = engine.pieces().find { it.square == move.from }?.toUiPiece()
+                engine.play(move)
+
+                val animation = piece?.let {
+                    PieceMoveAnimationEvent(
+                        id = ++animationId,
+                        from = move.from.toUiSquare(),
+                        to = move.to.toUiSquare(),
+                        piece = it
+                    )
+                }
+
+                val board = currentBoardMap()
+                val checkSquare = engine.checkSquare()
+
+                _state.value = (_state.value as? DailyPuzzleUiState.Playing)?.copy(
+                    board = board,
+                    lastMoveFrom = move.from.toUiSquare(),
+                    lastMoveTo = move.to.toUiSquare(),
+                    isWhiteInCheck = checkSquare != null && engine.turn() == DomainPieceColor.White,
+                    isBlackInCheck = checkSquare != null && engine.turn() == DomainPieceColor.Black,
+                    moveAnimationEvent = animation
+                ) ?: return@launch
+
+                delay(900)
+            }
+
+            _state.value = (_state.value as? DailyPuzzleUiState.Playing)?.copy(
+                isPlayingSolution = false,
+                message = "Solution demonstrated. You can reset and solve it!"
+            ) ?: return@launch
         }
     }
 

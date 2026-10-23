@@ -1,5 +1,15 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -82,8 +93,20 @@ fun BotGameScreen(
         moveTo = state.moveAnimationEvent?.to
     )
 
+    var showResultDialog by remember(state.gameResult != null) { mutableStateOf(state.gameResult != null) }
+
     val requestHome = {
         if (state.gameResult == null) {
+            showHomeResignDialog = true
+        } else {
+            onHome()
+        }
+    }
+
+    BackHandler(enabled = true) {
+        if (showResultDialog) {
+            showResultDialog = false
+        } else if (state.gameResult == null) {
             showHomeResignDialog = true
         } else {
             onHome()
@@ -140,13 +163,20 @@ fun BotGameScreen(
                             onHome = singleClick(requestHome),
                             onFlip = singleClick(viewModel::flipBoard)
                         )
+                        if (state.gameResult != null && !showResultDialog) {
+                            GameOverPill(onClick = { showResultDialog = true })
+                        }
                         TopPlayer(state, thinking)
                         MoveList(state.moves, Modifier.weight(1f).padding(vertical = 8.dp))
                         BottomPlayer(state, thinking)
                         Spacer(Modifier.height(8.dp))
                         BotActions(
+                            canUndo = state.canUndo,
+                            canRedo = state.canRedo,
+                            onUndo = viewModel::undo,
+                            onRedo = viewModel::redo,
                             gameOngoing = state.gameResult == null,
-                            onResign = singleClick(viewModel::resign)
+                            onResign = viewModel::resign
                         )
                     }
                 }
@@ -167,6 +197,9 @@ fun BotGameScreen(
                             onHome = singleClick(requestHome),
                             onFlip = singleClick(viewModel::flipBoard)
                         )
+                        if (state.gameResult != null && !showResultDialog) {
+                            GameOverPill(onClick = { showResultDialog = true })
+                        }
                         Spacer(Modifier.height(2.dp))
                         MoveTicker(
                             moves = state.moves,
@@ -197,8 +230,12 @@ fun BotGameScreen(
                     )
 
                     BotActions(
+                        canUndo = state.canUndo,
+                        canRedo = state.canRedo,
+                        onUndo = viewModel::undo,
+                        onRedo = viewModel::redo,
                         gameOngoing = state.gameResult == null,
-                        onResign = singleClick(viewModel::resign)
+                        onResign = viewModel::resign
                     )
                 }
             }
@@ -227,20 +264,23 @@ fun BotGameScreen(
         )
     }
 
-    state.gameResult?.let { result ->
-        BotResultDialog(
-            result = result,
-            endReason = endReason,
-            nextBot = nextBot,
-            isStartingNextBot = isStartingNextBot,
-            onPlayNextBot = {
-                viewModel.playNextBot { newGameId ->
-                    onNewGame()
-                }
-            },
-            onNewGame = onNewGame,
-            onHome = singleClick(onHome)
-        )
+    if (showResultDialog) {
+        state.gameResult?.let { result ->
+            BotResultDialog(
+                result = result,
+                endReason = endReason,
+                nextBot = nextBot,
+                isStartingNextBot = isStartingNextBot,
+                onPlayNextBot = {
+                    viewModel.playNextBot { newGameId ->
+                        onNewGame()
+                    }
+                },
+                onNewGame = onNewGame,
+                onHome = singleClick(onHome),
+                onDismiss = { showResultDialog = false }
+            )
+        }
     }
 }
 
@@ -267,17 +307,24 @@ private fun BotBoard(
 }
 
 @Composable
-private fun BotActions(gameOngoing: Boolean, onResign: () -> Unit) {
+private fun BotActions(
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    gameOngoing: Boolean,
+    onResign: () -> Unit
+) {
     GameBottomBar(
-        canUndo = false,
-        canRedo = false,
+        canUndo = canUndo,
+        canRedo = canRedo,
         optionsEnabled = gameOngoing,
-        onUndo = {},
-        onRedo = {},
+        onUndo = onUndo,
+        onRedo = onRedo,
         onOfferDraw = {},
         onResign = onResign,
         showDraw = false,
-        showUndoRedo = false
+        showUndoRedo = true
     )
 }
 
@@ -317,6 +364,7 @@ private fun TopPlayer(
             isActive = state.isWhiteTurn,
             thinking = thinking,
             captured = state.capturedBlackPieces,
+            advantage = state.whiteAdvantage,
             modifier = modifier
         )
     } else {
@@ -325,6 +373,7 @@ private fun TopPlayer(
             isActive = !state.isWhiteTurn,
             thinking = thinking,
             captured = state.capturedWhitePieces,
+            advantage = state.blackAdvantage,
             modifier = modifier
         )
     }
@@ -342,6 +391,7 @@ private fun BottomPlayer(
             isActive = !state.isWhiteTurn,
             thinking = thinking,
             captured = state.capturedWhitePieces,
+            advantage = state.blackAdvantage,
             modifier = modifier
         )
     } else {
@@ -350,6 +400,7 @@ private fun BottomPlayer(
             isActive = state.isWhiteTurn,
             thinking = thinking,
             captured = state.capturedBlackPieces,
+            advantage = state.whiteAdvantage,
             modifier = modifier
         )
     }
@@ -361,6 +412,7 @@ private fun PlayerBar(
     isActive: Boolean,
     thinking: Boolean,
     captured: List<com.abhinav.caisarra.presentation.game.model.Piece>,
+    advantage: Int = 0,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -389,10 +441,15 @@ private fun PlayerBar(
                 color = Color.White,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
-            if (captured.isNotEmpty()) {
-                CapturedPieces(pieces = captured)
+            if (captured.isNotEmpty() || advantage > 0) {
+                CapturedPieces(
+                    pieces = captured,
+                    advantage = advantage
+                )
             }
         }
 
@@ -422,9 +479,10 @@ private fun BotResultDialog(
     isStartingNextBot: Boolean,
     onPlayNextBot: () -> Unit,
     onNewGame: () -> Unit,
-    onHome: () -> Unit
+    onHome: () -> Unit,
+    onDismiss: () -> Unit = {}
 ) {
-    Dialog(onDismissRequest = {}) {
+    Dialog(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -433,6 +491,18 @@ private fun BotResultDialog(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = Color(0xFFAAB7C6)
+                    )
+                }
+            }
             val title = when (result) {
                 GameResult.WHITE_WINS -> "White Wins"
                 GameResult.BLACK_WINS -> "Black Wins"
@@ -477,6 +547,37 @@ private fun BotResultDialog(
             TextButton(onClick = onHome) {
                 Text(text = "BACK TO HOME", color = Color(0xFFAAB7C6), fontFamily = JetBrainsMono)
             }
+        }
+    }
+}
+
+@Composable
+private fun GameOverPill(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF1E293B))
+            .border(1.dp, Color(0xFF3B82F6), RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.EmojiEvents,
+                contentDescription = null,
+                tint = Color(0xFF60A5FA),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Game Over • Tap to view result",
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }

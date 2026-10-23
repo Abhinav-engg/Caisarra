@@ -33,7 +33,8 @@ sealed interface RushUiState {
         val promotionPending: Pair<Square, Square>? = null,
         val isAwaitingServer: Boolean = false,
         val isCorrectFlash: Boolean = false,
-        val isStrikeFlash: Boolean = false
+        val isStrikeFlash: Boolean = false,
+        val highlightedSquare: Square? = null
     ) : RushUiState
 
     data class GameOver(

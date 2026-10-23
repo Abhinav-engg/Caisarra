@@ -28,9 +28,11 @@ class NearbyViewModel(
         _state.update { it.copy(selectedId = id) }
     }
 
-    fun loadPlayers() {
+    fun loadPlayers(silent: Boolean = false) {
         viewModelScope.launch {
-            _state.update { it.copy(loading = true, error = null) }
+            if (!silent) {
+                _state.update { it.copy(loading = true, error = null) }
+            }
             when (val result = repository.getPlayers()) {
                 is NearbyResult.Success -> {
                     _state.update { current ->
@@ -49,6 +51,11 @@ class NearbyViewModel(
                 is NearbyResult.Failure -> handle(result.failure)
             }
         }
+    }
+
+    fun refresh() {
+        if (_state.value.guest || _state.value.loading || !_state.value.visible) return
+        loadPlayers(silent = true)
     }
 
     fun enable() {

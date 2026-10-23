@@ -50,7 +50,9 @@ fun GameBottomBar(
     modifier: Modifier = Modifier,
     drawMessage: String = "Both players agree to end the game as a draw.",
     showDraw: Boolean = true,
-    showUndoRedo: Boolean = true
+    showUndoRedo: Boolean = true,
+    undoLabel: String = "Undo",
+    redoLabel: String = "Redo"
 ) {
     var showOptions by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<ConfirmAction?>(null) }
@@ -68,8 +70,8 @@ fun GameBottomBar(
         ) {
             BottomBarItem(Icons.Default.Menu, "Options", optionsEnabled, { if (ClickGuard.canClick()) showOptions = true }, Modifier.weight(1f))
             if (showUndoRedo) {
-                BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Back", canUndo, onUndo, Modifier.weight(1f))
-                BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Forward", canRedo, onRedo, Modifier.weight(1f))
+                BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowLeft, undoLabel, canUndo, onUndo, Modifier.weight(1f))
+                BottomBarItem(Icons.AutoMirrored.Filled.KeyboardArrowRight, redoLabel, canRedo, onRedo, Modifier.weight(1f))
             }
         }
     }

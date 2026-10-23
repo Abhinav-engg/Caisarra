@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -42,12 +44,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.core.ui.components.clearFocusOnTap
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private val Accent = Color(0xFF27C7E8)
 private val Panel = Color(0xFF0C141B)
@@ -61,6 +72,9 @@ private val QuickReplies = listOf("Good luck! 🍀", "Well played 👏", "Nice m
 fun ChatPanel(
     messages: List<ChatMessageDto>,
     myUserId: Long?,
+    opponentUsername: String? = null,
+    opponentAvatarUrl: String? = null,
+    myAvatarUrl: String? = null,
     muted: Boolean,
     onToggleMute: () -> Unit,
     onSend: (String) -> Unit,
@@ -110,7 +124,13 @@ fun ChatPanel(
                     contentPadding = PaddingValues(vertical = 20.dp)
                 ) {
                     items(items = messages, key = { it.id }) { message ->
-                        ChatMessage(message = message, isMine = message.senderId == myUserId)
+                        ChatMessageItem(
+                            message = message,
+                            isMine = message.senderId == myUserId,
+                            fallbackOpponentName = opponentUsername,
+                            fallbackOpponentAvatar = opponentAvatarUrl,
+                            myAvatarUrl = myAvatarUrl
+                        )
                     }
                 }
             }
@@ -200,30 +220,43 @@ private fun QuickReplyChip(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatMessage(message: ChatMessageDto, isMine: Boolean) {
+private fun ChatMessageItem(
+    message: ChatMessageDto,
+    isMine: Boolean,
+    fallbackOpponentName: String? = null,
+    fallbackOpponentAvatar: String? = null,
+    myAvatarUrl: String? = null
+) {
+    val displayName = if (isMine) {
+        "You"
+    } else {
+        message.username?.takeIf {
+            it.isNotBlank() && !it.equals("Opponent", ignoreCase = true) && !it.equals("Your opponent", ignoreCase = true)
+        } ?: fallbackOpponentName?.takeIf {
+            it.isNotBlank() && !it.equals("Opponent", ignoreCase = true) && !it.equals("Your opponent", ignoreCase = true)
+        } ?: "Opponent"
+    }
+
+    val avatarUrl = if (isMine) {
+        message.avatarUrl ?: myAvatarUrl
+    } else {
+        message.avatarUrl ?: fallbackOpponentAvatar
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (!isMine) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF24313D))
-                        .border(1.dp, Border, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 13.dp, vertical = 11.dp)
-                ) {
-                    Text(
-                        text = message.username.orEmpty().firstOrNull()?.uppercase() ?: "?",
-                        color = Accent,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.padding(start = 10.dp))
+                UserAvatar(
+                    avatarUrl = avatarUrl,
+                    displayName = displayName
+                )
+                Spacer(modifier = Modifier.width(10.dp))
             }
             Text(
-                text = if (isMine) "You" else message.username ?: "Opponent",
+                text = displayName,
                 color = if (isMine) Accent else Color(0xFFE2E7EC),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
@@ -232,7 +265,7 @@ private fun ChatMessage(message: ChatMessageDto, isMine: Boolean) {
         }
         Box(
             modifier = Modifier
-                .padding(top = 8.dp, start = if (isMine) 0.dp else 64.dp)
+                .padding(top = 8.dp, start = if (isMine) 0.dp else 48.dp)
                 .widthIn(max = 480.dp)
                 .background(if (isMine) MyBubble else OtherBubble, RoundedCornerShape(22.dp))
                 .border(1.dp, if (isMine) Color(0xFF187A90) else Border, RoundedCornerShape(22.dp))
@@ -244,11 +277,97 @@ private fun ChatMessage(message: ChatMessageDto, isMine: Boolean) {
 }
 
 @Composable
-private fun MessageTime(createdAt: String) {
-    val time = createdAt.substringAfter('T', "").take(5)
-    if (time.isNotEmpty()) {
-        Text(text = time, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(start = 10.dp))
+private fun UserAvatar(
+    avatarUrl: String?,
+    displayName: String,
+    modifier: Modifier = Modifier
+) {
+    val validUrl = avatarUrl?.trim()?.takeIf {
+        it.startsWith("http://", ignoreCase = true) || it.startsWith("https://", ignoreCase = true)
     }
+    var imageLoadFailed by remember(validUrl) { mutableStateOf(false) }
+    val initial = displayName.trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "?"
+
+    Box(
+        modifier = modifier
+            .size(38.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF24313D))
+            .border(1.dp, Border, RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        if (validUrl != null && !imageLoadFailed) {
+            AsyncImage(
+                model = validUrl,
+                contentDescription = "Profile picture of $displayName",
+                contentScale = ContentScale.Crop,
+                onError = { imageLoadFailed = true },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp))
+            )
+        } else {
+            Text(
+                text = initial,
+                color = Accent,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun MessageTime(createdAt: String) {
+    val time = remember(createdAt) {
+        formatMessageTime(createdAt)
+    }
+    if (time.isNotEmpty()) {
+        Text(text = time, color = Muted, fontSize = 12.sp, modifier = Modifier.padding(start = 10.dp))
+    }
+}
+
+internal fun formatMessageTime(createdAt: String): String {
+    if (createdAt.isBlank()) return ""
+    return try {
+        val instant = parseToInstant(createdAt)
+        if (instant != null) {
+            val formatter = DateTimeFormatter
+                .ofPattern("h:mm a", Locale.ENGLISH)
+                .withZone(ZoneId.systemDefault())
+            formatter.format(instant)
+        } else {
+            fallbackTime(createdAt)
+        }
+    } catch (_: Exception) {
+        fallbackTime(createdAt)
+    }
+}
+
+private fun parseToInstant(value: String): Instant? {
+    val trimmed = value.trim()
+    trimmed.toLongOrNull()?.let {
+        return if (it > 1_000_000_000_000L) Instant.ofEpochMilli(it) else Instant.ofEpochSecond(it)
+    }
+    try {
+        return Instant.parse(trimmed)
+    } catch (_: Exception) {}
+
+    try {
+        return OffsetDateTime.parse(trimmed).toInstant()
+    } catch (_: Exception) {}
+
+    try {
+        val normalized = trimmed.replace(" ", "T")
+        return LocalDateTime.parse(normalized).atZone(ZoneOffset.UTC).toInstant()
+    } catch (_: Exception) {}
+
+    return null
+}
+
+private fun fallbackTime(value: String): String {
+    val time = value.substringAfter('T', "").substringBefore('.').substringBefore('Z').take(5)
+    return time.ifEmpty { value.take(5) }
 }
 
 @Composable

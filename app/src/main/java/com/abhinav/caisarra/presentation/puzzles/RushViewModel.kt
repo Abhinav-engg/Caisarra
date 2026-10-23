@@ -32,6 +32,7 @@ class RushViewModel(
     private val engine = ChesslibEngine()
     private var animationId = 0L
     private var timerJob: Job? = null
+    private var timeRemainingSeconds = 0
 
     init {
         startRush()
@@ -135,6 +136,82 @@ class RushViewModel(
 
         _state.value = current.copy(promotionPending = null)
         executePlayerMove(pending.first, pending.second, domainPromotion)
+    }
+
+    fun requestHint() {
+        val current = _state.value
+        if (current !is RushUiState.Playing || current.isAwaitingServer) return
+
+        viewModelScope.launch {
+            puzzleRepository.getHint(current.currentPuzzle.puzzleId)
+                .onSuccess { response ->
+                    val hintSquare = response.fromSquare?.let { parseSquareNameToUi(it) }
+                    val stateNow = _state.value
+                    if (stateNow is RushUiState.Playing && hintSquare != null) {
+                        val legalTargets = engine.legalMovesFrom(hintSquare.toDomainSquare())
+                            .map { it.to.toUiSquare() }
+                        _state.value = stateNow.copy(
+                            selectedSquare = hintSquare,
+                            legalMoves = legalTargets,
+                            lastMoveFrom = hintSquare,
+                            highlightedSquare = hintSquare
+                        )
+                    }
+                }
+                .onFailure {
+                    val stateNow = _state.value
+                    if (stateNow is RushUiState.Playing) {
+                        val targetDomainColor = if (current.playerColor == UiPieceColor.WHITE) DomainPieceColor.White else DomainPieceColor.Black
+                        val candidatePiece = engine.pieces().firstOrNull { piece ->
+                            piece.color == targetDomainColor &&
+                            engine.legalMovesFrom(piece.square).isNotEmpty()
+                        }
+                        val hintSquare = candidatePiece?.square?.toUiSquare()
+                        val legalTargets = candidatePiece?.let { piece ->
+                            engine.legalMovesFrom(piece.square).map { it.to.toUiSquare() }
+                        } ?: emptyList()
+
+                        _state.value = stateNow.copy(
+                            selectedSquare = hintSquare,
+                            legalMoves = legalTargets,
+                            lastMoveFrom = hintSquare,
+                            highlightedSquare = hintSquare
+                        )
+                    }
+                }
+        }
+    }
+
+    fun skipPuzzle() {
+        val current = _state.value
+        if (current !is RushUiState.Playing || current.isAwaitingServer) return
+
+        if (current.secondsRemaining != null) {
+            timeRemainingSeconds = maxOf(0, timeRemainingSeconds - 45)
+            _state.value = current.copy(secondsRemaining = timeRemainingSeconds)
+            if (timeRemainingSeconds <= 0) {
+                quitRush()
+                return
+            }
+        }
+
+        _state.value = current.copy(isAwaitingServer = true)
+
+        viewModelScope.launch {
+            puzzleRepository.skipRushPuzzle(current.sessionId, current.currentPuzzle.puzzleId)
+                .onSuccess { response ->
+                    handleMoveResponse(response, current)
+                }
+                .onFailure {
+                    puzzleRepository.submitRushMove(current.sessionId, current.currentPuzzle.puzzleId, "skip")
+                        .onSuccess { response ->
+                            handleMoveResponse(response, current)
+                        }
+                        .onFailure {
+                            _state.value = current.copy(isAwaitingServer = false)
+                        }
+                }
+        }
     }
 
     fun quitRush() {
@@ -405,20 +482,21 @@ class RushViewModel(
             moveAnimationEvent = animationEvent,
             isAwaitingServer = false,
             isCorrectFlash = false,
-            isStrikeFlash = false
+            isStrikeFlash = false,
+            highlightedSquare = null
         )
     }
 
     private fun startTimer(totalSeconds: Int) {
         timerJob?.cancel()
+        timeRemainingSeconds = totalSeconds
         timerJob = viewModelScope.launch {
-            var remaining = totalSeconds
-            while (remaining > 0) {
+            while (timeRemainingSeconds > 0) {
                 delay(1000)
-                remaining--
+                timeRemainingSeconds--
                 val current = _state.value
                 if (current is RushUiState.Playing) {
-                    _state.value = current.copy(secondsRemaining = remaining)
+                    _state.value = current.copy(secondsRemaining = timeRemainingSeconds)
                 }
             }
             quitRush()
@@ -490,4 +568,12 @@ private fun Move.toUci(): String {
         else -> ""
     }
     return "${'a' + from.file}${from.rank + 1}${'a' + to.file}${to.rank + 1}$promo"
+}
+
+private fun parseSquareNameToUi(name: String): UiSquare? {
+    if (name.length < 2) return null
+    val file = name[0].lowercaseChar() - 'a'
+    val rank = name[1] - '1'
+    if (file !in 0..7 || rank !in 0..7) return null
+    return UiSquare(row = 7 - rank, column = file)
 }

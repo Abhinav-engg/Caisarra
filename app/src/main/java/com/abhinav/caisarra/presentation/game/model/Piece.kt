@@ -23,3 +23,16 @@ data class Piece(
     val type: PieceType,
     val color: PieceColor
 )
+
+val PieceType.pointValue: Int
+    get() = when (this) {
+        PieceType.PAWN -> 1
+        PieceType.KNIGHT -> 3
+        PieceType.BISHOP -> 3
+        PieceType.ROOK -> 5
+        PieceType.QUEEN -> 9
+        PieceType.KING -> 0
+    }
+
+val Piece.pointValue: Int
+    get() = type.pointValue

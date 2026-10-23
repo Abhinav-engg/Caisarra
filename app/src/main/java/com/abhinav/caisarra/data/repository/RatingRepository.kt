@@ -26,19 +26,33 @@ class RatingRepository(
 
     suspend fun getModeStats(
         username: String,
-        mode: String
+        mode: String,
+        range: String? = null
     ): ModeStatsData {
+        val normalizedUsername = username.trim()
+        require(normalizedUsername.isNotBlank()) {
+            "Username cannot be empty"
+        }
+
         val normalizedMode = mode.trim().lowercase()
 
         require(
             normalizedMode in setOf("bullet", "blitz", "rapid", "daily")
         ) {
-            "Mode must be bullet, blitz, rapid, or daily"
+            "Mode must be one of bullet, blitz, rapid, daily"
+        }
+
+        val normalizedRange = range?.trim()?.lowercase()?.ifEmpty { null }
+        if (normalizedRange != null) {
+            require(normalizedRange in setOf("7d", "30d", "90d", "1y", "all")) {
+                "Range must be one of 7d, 30d, 90d, 1y, all"
+            }
         }
 
         val response = service.getModeStats(
-            username.trim(),
-            normalizedMode
+            username = normalizedUsername,
+            mode = normalizedMode,
+            range = normalizedRange
         )
 
         if (!response.success) {

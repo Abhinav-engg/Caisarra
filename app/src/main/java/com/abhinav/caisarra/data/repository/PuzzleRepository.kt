@@ -86,6 +86,19 @@ class PuzzleRepository(
         )
     }
 
+    suspend fun skipRushPuzzle(
+        sessionId: String,
+        puzzleId: String
+    ): Result<RushMoveResponse> = call {
+        service.skipRushPuzzle(
+            RushMoveRequest(
+                sessionId = sessionId,
+                puzzleId = puzzleId,
+                move = "skip"
+            )
+        )
+    }
+
     suspend fun endRush(sessionId: String): Result<RushEndResponse> = call {
         service.endRush(RushEndRequest(sessionId = sessionId))
     }

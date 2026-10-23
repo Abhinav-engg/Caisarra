@@ -28,7 +28,10 @@ data class ProfileData(
 @Serializable
 data class ModeRating(
     val rating: Int? = null,
-    val provisional: Boolean = true
+    val provisional: Boolean = true,
+    val wins: Int = 0,
+    val losses: Int = 0,
+    val draws: Int = 0
 )
 
 @Serializable

@@ -76,7 +76,9 @@ class AuthRepository private constructor(context: Context) {
 
             val username = pendingRegistration?.username
             if (!username.isNullOrBlank()) {
+                if (!username.contains("@")) {
                 tokenManager.saveUsername(username.trim())
+            }
             }
             pendingRegistration = null
             AuthResult.Success(response.body()?.message.orEmpty())
@@ -92,7 +94,9 @@ class AuthRepository private constructor(context: Context) {
             if (!saveTokensFromCookies(response.headers())) {
                 return AuthResult.Error("Login failed. Please try again.")
             }
-            tokenManager.saveUsername(username.trim())
+            if (!username.contains("@")) {
+                tokenManager.saveUsername(username.trim())
+            }
 
             AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
@@ -181,6 +185,10 @@ class AuthRepository private constructor(context: Context) {
 
     suspend fun getUsername(): String? {
         return tokenManager.getUsername()
+    }
+
+    suspend fun saveUsername(username: String) {
+        tokenManager.saveUsername(username.trim())
     }
 
     companion object {

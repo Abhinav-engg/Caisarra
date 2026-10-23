@@ -39,6 +39,11 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -63,6 +69,10 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 
 private val EditBackground = Color(0xFF080D13)
 private val EditCard = Color(0xFF151F2E)
@@ -90,13 +100,36 @@ fun EditProfileScreen(
     val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var selectedSource by remember {
+        mutableStateOf(AvatarSource.URL)
+    }
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            selectedSource = AvatarSource.GALLERY
+            viewModel.uploadAvatar(context, uri)
+        }
+    }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            val file = File(context.cacheDir, "profile_${System.currentTimeMillis()}.jpg")
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            selectedSource = AvatarSource.CAMERA
+            viewModel.uploadAvatar(context, Uri.fromFile(file))
+        }
+    }
 
     var displayName by remember { mutableStateOf("") }
     var country by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
     var avatarUrl by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
-    var selectedSource by remember { mutableStateOf(AvatarSource.URL) }
     var initialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -129,6 +162,13 @@ fun EditProfileScreen(
                 .imePadding()
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = {
+                            focusManager.clearFocus()
+                        }
+                    )
+                }
                 .padding(horizontal = 20.dp)
                 .padding(top = 12.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -177,7 +217,6 @@ fun EditProfileScreen(
                     CircularProgressIndicator(color = EditCyan)
                 }
             } else if (state.profile != null) {
-                // Avatar preview and source picker.
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -226,8 +265,8 @@ fun EditProfileScreen(
                     Text(
                         text = when (selectedSource) {
                             AvatarSource.URL -> "SOURCE: AVATAR URL"
-                            AvatarSource.GALLERY -> "GALLERY · COMING SOON"
-                            AvatarSource.CAMERA -> "CAMERA · COMING SOON"
+                            AvatarSource.GALLERY -> "SOURCE: GALLERY PHOTO"
+                            AvatarSource.CAMERA -> "SOURCE: CAMERA PHOTO"
                         },
                         color = EditCyan,
                         fontSize = 11.sp,
@@ -245,14 +284,7 @@ fun EditProfileScreen(
                             subtitle = "Choose photo",
                             icon = { Icon(Icons.Default.Image, null) },
                             selected = selectedSource == AvatarSource.GALLERY,
-                            onClick = {
-                                selectedSource = AvatarSource.GALLERY
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        "Gallery photo selection will be added in a later update."
-                                    )
-                                }
-                            }
+                            onClick = { galleryLauncher.launch("image/*") }
                         )
                         AvatarSourceButton(
                             modifier = Modifier.weight(1f),
@@ -260,14 +292,7 @@ fun EditProfileScreen(
                             subtitle = "Take photo",
                             icon = { Icon(Icons.Default.CameraAlt, null) },
                             selected = selectedSource == AvatarSource.CAMERA,
-                            onClick = {
-                                selectedSource = AvatarSource.CAMERA
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        "Camera capture will be added in a later update."
-                                    )
-                                }
-                            }
+                            onClick = { cameraLauncher.launch(null) }
                         )
                         AvatarSourceButton(
                             modifier = Modifier.weight(1f),
@@ -279,7 +304,7 @@ fun EditProfileScreen(
                         )
                     }
                     Text(
-                        text = "Gallery and camera options are shown for now. You can update your picture using an HTTPS avatar URL.",
+                        text = "Choose a photo from your gallery, take a new photo, or keep using an HTTPS Avatar URL. Photo uploads require a registered account.",
                         color = EditMuted,
                         fontSize = 12.sp,
                         lineHeight = 17.sp
@@ -358,8 +383,8 @@ fun EditProfileScreen(
 
                     EditProfileField(
                         value = avatarUrl,
-                        onValueChange = {
-                            avatarUrl = it
+                        onValueChange = { newValue ->
+                            avatarUrl = newValue
                             selectedSource = AvatarSource.URL
                             validationError = null
                         },
@@ -369,10 +394,17 @@ fun EditProfileScreen(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Link,
-                                contentDescription = null,
+                                contentDescription = "Avatar URL",
                                 tint = EditMuted
                             )
                         }
+                    )
+
+                    Text(
+                        text = "Enter a new HTTPS URL to replace your current profile photo. " +
+                                "You can also continue using Gallery or Camera.",
+                        color = EditMuted,
+                        fontSize = 12.sp
                     )
 
                     validationError?.let {
@@ -380,6 +412,54 @@ fun EditProfileScreen(
                     }
                     state.error?.let {
                         Text(it, color = EditError, fontSize = 12.sp)
+                    }
+                    Text(
+                        text = "DEFAULT CHESS AVATARS",
+                        color = EditCyan,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    state.defaultAvatars.chunked(3).forEach { avatarRow ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            avatarRow.forEach { avatar ->
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(EditCardSecondary)
+                                        .clickable(enabled = !state.saving) {
+                                            viewModel.selectDefaultAvatar(avatar.id)
+                                        }
+                                        .padding(10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    AsyncImage(
+                                        model = avatar.url,
+                                        contentDescription = "${avatar.id} avatar",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .clip(CircleShape)
+                                    )
+
+                                    Spacer(Modifier.height(6.dp))
+
+                                    Text(
+                                        text = avatar.id,
+                                        color = EditWhite,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+
+                            repeat(3 - avatarRow.size) {
+                                Spacer(Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
 

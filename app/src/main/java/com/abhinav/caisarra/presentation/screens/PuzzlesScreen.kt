@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,7 +67,6 @@ fun PuzzlesScreen(
         DailyPuzzleCard(
             streak = state.streak,
             rating = state.puzzleRating,
-            isLoading = state.isLoading,
             onPlayClick = onPlayDailyPuzzle
         )
 
@@ -126,7 +124,6 @@ private fun PuzzlesHeader() {
 private fun DailyPuzzleCard(
     streak: Int,
     rating: Int,
-    isLoading: Boolean,
     onPlayClick: () -> Unit
 ) {
     Card(
@@ -172,17 +169,10 @@ private fun DailyPuzzleCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = Color(0xFF23CDE8),
-                    modifier = Modifier.size(32.dp)
-                )
-            } else {
-                GeneralButton(
-                    text = "Play",
-                    onClick = onPlayClick
-                )
-            }
+            GeneralButton(
+                text = "Play",
+                onClick = onPlayClick
+            )
         }
     }
 }

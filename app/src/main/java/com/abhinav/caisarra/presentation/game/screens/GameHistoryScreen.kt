@@ -19,9 +19,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,7 +65,7 @@ private val Accent = Color(0xFF10B981)
 fun GameHistoryScreen(
     viewModel: GameHistoryReviewViewModel,
     onBack: () -> Unit,
-    onAnalyze: () -> Unit
+    onAnalyze: () -> Unit = {}
 ) {
 
     val state by viewModel.state.collectAsState()
@@ -199,38 +210,20 @@ fun GameHistoryScreen(
             ClockBar(playerName = state.whitePlayerName,
                 timeMillis = state.whiteTimeMillis,
                 isActive = state.currentPly < state.totalPlies && state.isWhiteTurn,
-
                 modifier = Modifier.width(boardSize)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             HistoryNavigationButtons(
-                canGoBack =state.currentPly > 0,
+                canGoBack = state.currentPly > 0,
                 canGoForward = state.currentPly < state.totalPlies,
+                onFirst = viewModel::firstMove,
                 onBack = viewModel::previousMove,
                 onForward = viewModel::nextMove,
+                onLast = viewModel::lastMove,
                 modifier = Modifier.width(boardSize)
             )
-
-            if (state.isRegisteredGame) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = onAnalyze,
-                    modifier = Modifier.width(boardSize),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Accent)
-                ) {
-                    Text(
-                        text = "ANALYZE GAME",
-                        color = ScreenBg,
-                        fontFamily = JetBrainsMono,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(12.dp))
             HistoryMoves(
@@ -306,34 +299,42 @@ private fun HistoryTopBar(
 private fun HistoryNavigationButtons(
     canGoBack: Boolean,
     canGoForward: Boolean,
+    onFirst: () -> Unit,
     onBack: () -> Unit,
     onForward: () -> Unit,
+    onLast: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        OutlinedButton(
+            onClick = onFirst,
+            enabled = canGoBack,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                text = "|‹",
+                color = if (canGoBack) White else Secondary,
+                fontFamily = JetBrainsMono,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         OutlinedButton(
             onClick = onBack,
             enabled = canGoBack,
-            modifier =
-                Modifier.weight(1f),
-            shape =
-                RoundedCornerShape(12.dp)
+            modifier = Modifier.weight(1.5f),
+            shape = RoundedCornerShape(12.dp)
         ) {
-
             Text(
                 text = "‹  BACK",
-                color =
-                    if (canGoBack)
-                        White
-                    else
-                        Secondary,
-                fontFamily =
-                    JetBrainsMono,
+                color = if (canGoBack) White else Secondary,
+                fontFamily = JetBrainsMono,
                 fontSize = 12.sp
             )
         }
@@ -341,21 +342,29 @@ private fun HistoryNavigationButtons(
         OutlinedButton(
             onClick = onForward,
             enabled = canGoForward,
-            modifier =
-                Modifier.weight(1f),
-            shape =
-                RoundedCornerShape(12.dp)
+            modifier = Modifier.weight(1.5f),
+            shape = RoundedCornerShape(12.dp)
         ) {
-
             Text(
                 text = "FORWARD  ›",
-                color = if (canGoForward)
-                    White
-                else
-                    Secondary,
-                fontFamily =
-                    JetBrainsMono,
+                color = if (canGoForward) White else Secondary,
+                fontFamily = JetBrainsMono,
                 fontSize = 12.sp
+            )
+        }
+
+        OutlinedButton(
+            onClick = onLast,
+            enabled = canGoForward,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                text = "›|",
+                color = if (canGoForward) White else Secondary,
+                fontFamily = JetBrainsMono,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
             )
         }
     }
