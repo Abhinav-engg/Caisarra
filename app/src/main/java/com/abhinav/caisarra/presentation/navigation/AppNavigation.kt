@@ -133,6 +133,8 @@ import com.abhinav.caisarra.presentation.club.ClubScreen
 import com.abhinav.caisarra.presentation.club.ClubViewModel
 import com.abhinav.caisarra.presentation.club.ClubDetailScreen
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
+import com.abhinav.caisarra.presentation.directmessage.DirectMessageScreen
+import com.abhinav.caisarra.presentation.directmessage.DirectMessagesListScreen
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -171,9 +173,11 @@ object AppRoutes {
     const val TOURNAMENT_DETAIL = "tournament/{id}?code={code}"
     const val NEARBY = "nearby"
     const val COMMUNITY = "community"
+    const val DIRECT_MESSAGES_LIST = "direct_messages_list"
     const val PUZZLES = "puzzles"
     const val DAILY_PUZZLE = "daily_puzzle"
     const val PUZZLE_RUSH = "puzzle_rush?mode={mode}"
+    const val DIRECT_MESSAGE = "direct_message/{userId}/{username}"
 
     fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
     const val SOCIAL = "social"
@@ -373,10 +377,10 @@ fun AppNavigation(authRepository: AuthRepository) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+
     val bottomNavRoutes = remember {
         setOf(
             AppRoutes.HOME,
-            AppRoutes.GUEST_HOME,
             AppRoutes.PUZZLES,
             AppRoutes.NEARBY,
             AppRoutes.COMMUNITY,
@@ -384,7 +388,9 @@ fun AppNavigation(authRepository: AuthRepository) {
             AppRoutes.MENU
         )
     }
-    val showBottomBar = currentRoute in bottomNavRoutes
+    val showBottomBar =
+        !isGuestUser && currentRoute in bottomNavRoutes
+
 
     Scaffold(
         containerColor = Color(0xFF080D13),
@@ -564,9 +570,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
 
                 isLoggingOut = isLoggingOut,
-                onOpenProfile = {
-                    navController.navigateOnce(AppRoutes.PROFILE)
-                }
+
             )
         }
 
@@ -925,7 +929,19 @@ fun AppNavigation(authRepository: AuthRepository) {
                         }
                     }
                 },
-                onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
+
+                onBack = {
+                    scope.launch {
+                        val fallbackRoute = if (authRepository.isGuest()) {
+                            AppRoutes.GUEST_HOME
+                        } else {
+                            AppRoutes.GAME_SETUP
+                        }
+
+                        navController.safeBack(fallbackRoute)
+                    }
+                }
+
             )
         }
 
@@ -973,6 +989,92 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
             )
         }
+            composable(
+                route = AppRoutes.DIRECT_MESSAGE,
+                arguments = listOf(
+                    navArgument("userId") {
+                        type = NavType.LongType
+                    },
+                    navArgument("username") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+
+                val userId = backStackEntry.arguments
+                    ?.getLong("userId") ?: 0L
+
+                val username = backStackEntry.arguments
+                    ?.getString("username") ?: "Player"
+
+
+                var isLeavingScreen by remember(backStackEntry) {
+                    mutableStateOf(false)
+                }
+
+                DirectMessageScreen(
+                    userId = userId,
+                    username = username,
+                    onBack = {
+                        if (!isLeavingScreen) {
+                            isLeavingScreen = true
+
+                            val popped = navController.popBackStack()
+
+                            if (!popped) {
+                                navController.navigate(AppRoutes.HOME) {
+                                    popUpTo(navController.graph.id) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+            composable(
+                route = AppRoutes.DIRECT_MESSAGES_LIST
+            ) {
+                var isLeaving by remember {
+                    mutableStateOf(false)
+                }
+
+                androidx.activity.compose.BackHandler {
+                    if (!isLeaving) {
+                        isLeaving = true
+
+                        val popped = navController.popBackStack()
+
+                        if (!popped) {
+                            navController.navigate(AppRoutes.MENU) {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                }
+
+                DirectMessagesListScreen(
+                    onBack = {
+                        if (!isLeaving) {
+                            isLeaving = true
+
+                            val popped = navController.popBackStack()
+
+                            if (!popped) {
+                                navController.navigate(AppRoutes.MENU) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    },
+                    onOpenChat = { userId, username ->
+                        navController.navigate(
+                            "${AppRoutes.DIRECT_MESSAGE.substringBefore("/{")}/$userId/${Uri.encode(username)}"
+                        )
+                    }
+                )
+            }
 
 
 
@@ -1164,7 +1266,26 @@ fun AppNavigation(authRepository: AuthRepository) {
                     },
                     onBack = {
                         navController.safeBack(friendsBackRoute)
+                    },
+                    onDirectMessage = { userId, username ->
+                        scope.launch {
+                            val isGuest = authRepository.isGuest()
+                            val isLoggedIn = authRepository.isLoggedIn()
+
+                            if (isGuest || !isLoggedIn) {
+                                Toast.makeText(
+                                    context,
+                                    "Direct messages require a registered account.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                navController.navigate(
+                                    "direct_message/$userId/${Uri.encode(username)}"
+                                )
+                            }
+                        }
                     }
+
                 )
             }
 
@@ -1498,11 +1619,19 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
                 onChat = { player ->
-                    Toast.makeText(
-                        context,
-                        "Direct messaging is coming soon",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Direct messages require a registered account.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            navController.navigate(
+                                "direct_message/${player.userId}/${Uri.encode(player.username)}"
+                            )
+                        }
+                    }
                 }
             )
         }
@@ -1689,6 +1818,26 @@ fun AppNavigation(authRepository: AuthRepository) {
 
                             navController.navigateOnce(
                                 AppRoutes.PLAY_WITH_FRIEND
+                            ) {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                },
+                onDirectMessagesClick = {
+                    scope.launch {
+                        val isGuest = authRepository.isGuest()
+                        val isLoggedIn = authRepository.isLoggedIn()
+
+                        if (isGuest || !isLoggedIn) {
+                            Toast.makeText(
+                                context,
+                                "Direct Messages require a registered account.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            navController.navigateOnce(
+                                AppRoutes.DIRECT_MESSAGES_LIST
                             ) {
                                 launchSingleTop = true
                             }

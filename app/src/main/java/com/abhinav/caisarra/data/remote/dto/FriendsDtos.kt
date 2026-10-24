@@ -43,20 +43,32 @@ data class FriendRequestDto(
 )
 
 @Serializable
+data class PlayerSearchEnvelope(
+    val success: Boolean = true,
+    val message: String? = null,
+    val data: PlayerSearchData = PlayerSearchData()
+)
+
+@Serializable
 data class PlayerSearchData(
     val players: List<PlayerSearchDto> = emptyList()
 )
 
 @Serializable
 data class PlayerSearchDto(
+    @SerialName("user_id")
+    val userId: Long,
+
     val username: String,
+
     @SerialName("display_name")
     val displayName: String? = null,
+
     @SerialName("avatar_url")
     val avatarUrl: String? = null,
+
     val rating: Int? = null
 )
-
 @Serializable
 data class FriendshipStatusData(
     val status: String,

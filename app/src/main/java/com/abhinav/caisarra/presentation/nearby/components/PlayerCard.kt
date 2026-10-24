@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.data.remote.dto.NearbyPlayer
 import com.abhinav.caisarra.presentation.common.singleClick
 import com.abhinav.caisarra.presentation.nearby.NearbyColors
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 
 @Composable
 fun PlayerCard(
@@ -155,7 +156,17 @@ fun PlayerCard(
                     color = NearbyColors.OnAccent
                 )
             }
-            SquareIconButton(Icons.Filled.PersonAdd, "Add friend", onAddFriend)
+            SquareIconButton(
+                icon = Icons.Filled.ChatBubbleOutline,
+                contentDescription = "Direct message",
+                onClick = onChat
+            )
+
+            SquareIconButton(
+                icon = Icons.Filled.PersonAdd,
+                contentDescription = "Add friend",
+                onClick = onAddFriend
+            )
         }
     }
 }

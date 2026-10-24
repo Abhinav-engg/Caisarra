@@ -89,6 +89,7 @@ import com.caisaara.ui.theme.ThemeInactiveBadge
 import com.caisaara.ui.theme.ThemeNeonDeep
 import com.caisaara.ui.theme.ThemeNeonSky
 import com.caisaara.ui.theme.ThemeSlateAccent
+import androidx.compose.material.icons.filled.Chat
 
 @Composable
 fun MenuScreen(
@@ -102,6 +103,7 @@ fun MenuScreen(
     onClubsClick: () -> Unit = {},
     onLeaderboardClick: () -> Unit = {},
     onDeleteAccountClick: () -> Unit = {},
+    onDirectMessagesClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -242,6 +244,14 @@ fun MenuScreen(
                     iconBg = ThemeNeonDeep,
                     title = "Clubs",
                     onClick = onClubsClick
+                )
+                ItemDivider()
+                MenuItem(
+                    icon = Icons.Default.Chat,
+                    iconTint = StatsCyan,
+                    iconBg = ThemeNeonDeep,
+                    title = "Direct Messages",
+                    onClick = onDirectMessagesClick
                 )
                 ItemDivider()
                 MenuItem(
