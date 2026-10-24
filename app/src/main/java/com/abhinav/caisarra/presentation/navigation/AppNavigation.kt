@@ -373,10 +373,10 @@ fun AppNavigation(authRepository: AuthRepository) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+
     val bottomNavRoutes = remember {
         setOf(
             AppRoutes.HOME,
-            AppRoutes.GUEST_HOME,
             AppRoutes.PUZZLES,
             AppRoutes.NEARBY,
             AppRoutes.COMMUNITY,
@@ -384,7 +384,9 @@ fun AppNavigation(authRepository: AuthRepository) {
             AppRoutes.MENU
         )
     }
-    val showBottomBar = currentRoute in bottomNavRoutes
+    val showBottomBar =
+        !isGuestUser && currentRoute in bottomNavRoutes
+
 
     Scaffold(
         containerColor = Color(0xFF080D13),
@@ -564,9 +566,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
 
                 isLoggingOut = isLoggingOut,
-                onOpenProfile = {
-                    navController.navigateOnce(AppRoutes.PROFILE)
-                }
+
             )
         }
 
@@ -925,7 +925,19 @@ fun AppNavigation(authRepository: AuthRepository) {
                         }
                     }
                 },
-                onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
+
+                onBack = {
+                    scope.launch {
+                        val fallbackRoute = if (authRepository.isGuest()) {
+                            AppRoutes.GUEST_HOME
+                        } else {
+                            AppRoutes.GAME_SETUP
+                        }
+
+                        navController.safeBack(fallbackRoute)
+                    }
+                }
+
             )
         }
 

@@ -1,58 +1,52 @@
 package com.abhinav.caisarra.presentation.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.R
-import com.abhinav.caisarra.core.ui.backgrounds.DailyRatingBackground
 import com.abhinav.caisarra.core.ui.components.GeneralButton
-import com.abhinav.caisarra.core.ui.backgrounds.HomeBackground
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import java.time.LocalTime
 
-private val GuestBackground = Color(0xFF080D13)
-private val White = Color(0xFFF5F5F5)
-private val SecondaryText = Color(0xFFB8C2CC)
-private val DashboardColor = Color(0xFF151F2B)
-private val DashboardBorder = Color(0xFF304154)
+private val GuestBg = Color(0xFF080D13)
+private val GuestPanel = Color(0xFF121D29)
+private val GuestBorder = Color(0xFF263B4A)
+private val GuestWhite = Color(0xFFF5F7FA)
+private val GuestMuted = Color(0xFF9EAFBD)
+private val GuestCyan = Color(0xFF05D5E5)
+private val GuestTeal = Color(0xFF168B98)
 
 @Composable
 fun GuestHomeScreen(
@@ -65,296 +59,205 @@ fun GuestHomeScreen(
     onSignUp: () -> Unit = {},
     onLogout: () -> Unit = {},
     onViewAllHistory: () -> Unit = {},
-    onOpenProfile: () -> Unit,
     isLoggingOut: Boolean = false
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(GuestBackground)
+            .background(GuestBg)
     ) {
-
-
-        HomeBackground(
-            modifier = Modifier.fillMaxSize()
+        // Soft decorative glow, without adding a bottom navigation bar.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(250.dp)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF102B38).copy(alpha = 0.7f), GuestBg)
+                    )
+                )
+                .align(Alignment.TopCenter)
         )
 
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(top = 20.dp, bottom = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            GuestWelcomePanel(guestId = guestId)
+            Spacer(Modifier.height(22.dp))
 
-            val contentWidth = minOf(
-                maxWidth - 32.dp,
-                420.dp
-            )
+            PassAndPlayCard(onPlayGame = onPlayGame)
+            Spacer(Modifier.height(26.dp))
 
-
-            Column(
-                modifier = Modifier
-                    .width(contentWidth)
-                    .align(Alignment.TopCenter)
-                    .safeDrawingPadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        top = 28.dp,
-                        bottom = 32.dp
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Spacer(modifier = Modifier.height(40.dp))
-                GuestDashboardHeader(guestId = guestId)
-                Spacer(modifier = Modifier.height(24.dp))
-
-                GuestPlayGameCard(onPlayGame = onPlayGame)
-                Spacer(modifier = Modifier.height(24.dp))
-
-                GeneralButton(
-                    text = "My Profile",
-                    onClick = onOpenProfile,
-                    modifier = Modifier.width(200.dp)
+                Text(
+                    text = "YOUR LOCAL GAMES",
+                    color = GuestWhite,
+                    fontFamily = JetBrainsMono,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                GameHistorySection(
-                    games = gameHistory,
-                    onReviewGame = onReviewGame,
-                    showViewAll = true,
-                    onViewAll = onViewAllHistory,
-                    isLoading = isLoadingHistory
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                GeneralButton(
-                    text = "SIGN IN",
-                    onClick = onSignIn,
-                    modifier = Modifier.width(200.dp)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-                GeneralButton(
-                    text = "SIGN UP",
-                    onClick = onSignUp,
-                    modifier = Modifier.width(200.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                GeneralButton(
-                    text = if (isLoggingOut) {
-                        "LOGGING OUT..."
-                    } else {
-                        "LOG OUT"
-                    },
-                    onClick = onLogout,
-                    enabled = !isLoggingOut,
-                    modifier = Modifier.width(200.dp)
+                Text(
+                    text = "GUEST MODE",
+                    color = GuestCyan,
+                    fontFamily = JetBrainsMono,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
+            Spacer(Modifier.height(12.dp))
+
+            GameHistorySection(
+                games = gameHistory,
+                onReviewGame = onReviewGame,
+                showViewAll = true,
+                onViewAll = onViewAllHistory,
+                isLoading = isLoadingHistory
+            )
+
+            Spacer(Modifier.height(26.dp))
+            Text(
+                text = "Want to keep your progress across devices?",
+                color = GuestMuted,
+                fontFamily = JetBrainsMono,
+                fontSize = 11.sp,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(12.dp))
+            GeneralButton(
+                text = "SIGN IN",
+                onClick = onSignIn,
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            )
+            Spacer(Modifier.height(10.dp))
+            GeneralButton(
+                text = "CREATE ACCOUNT",
+                onClick = onSignUp,
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            )
+            Spacer(Modifier.height(10.dp))
+            GeneralButton(
+                text = if (isLoggingOut) "ENDING GUEST SESSION..." else "EXIT GUEST MODE",
+                onClick = onLogout,
+                enabled = !isLoggingOut,
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun GuestDashboardHeader(
-    guestId: String
-) {
-    val currentDate = LocalDate.now()
-    var currentTime by remember {
-        mutableStateOf(LocalTime.now())
-    }
-
+private fun GuestWelcomePanel(guestId: String) {
+    var currentTime by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) {
         while (isActive) {
             currentTime = LocalTime.now()
             delay(60_000L)
         }
     }
-
-    val day = currentDate.dayOfMonth
-        .toString()
-        .padStart(2, '0')
-
-    val month = currentDate.format(
-        DateTimeFormatter.ofPattern(
-            "MMM",
-            Locale.ENGLISH
-        )
-    ).uppercase(Locale.ENGLISH)
-
-    val dayName = currentDate.format(
-        DateTimeFormatter.ofPattern(
-            "EEEE",
-            Locale.ENGLISH
-        )
-    )
-
-    val greeting = when {
-        currentTime.hour in 5..11 ->
-            "Good Morning"
-
-        currentTime.hour in 12..16 ->
-            "Good Afternoon"
-
-        currentTime.hour in 17..20 ->
-            "Good Evening"
-
-        else ->
-            "Good Night"
+    val greeting = when (currentTime.hour) {
+        in 5..11 -> "GOOD MORNING"
+        in 12..16 -> "GOOD AFTERNOON"
+        in 17..20 -> "GOOD EVENING"
+        else -> "GOOD NIGHT"
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(102.dp)
-            .clip(
-                RoundedCornerShape(16.dp)
-            )
-            .background(DashboardColor)
-            .border(
-                width = 1.dp,
-                color = DashboardBorder,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(
-                horizontal = 12.dp,
-                vertical = 10.dp
-            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(GuestPanel)
+            .border(1.dp, GuestBorder, RoundedCornerShape(24.dp))
+            .padding(20.dp)
     ) {
-
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Column {
-                androidx.compose.material3.Text(
-                    text = "GUEST",
-                    color = White,
-                    fontFamily = JetBrainsMono,
-                    fontSize = 27.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-
-                androidx.compose.material3.Text(
-                    text = "$greeting Guest",
-                    color = White,
-                    fontFamily = JetBrainsMono,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
-
-                androidx.compose.material3.Text(
-                    text = "ID: $guestId",
-                    color = SecondaryText,
-                    fontFamily = JetBrainsMono,
-                    fontSize = 10.sp,
-                    maxLines = 1
-                )
-            }
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                androidx.compose.material3.Text(
-                    text = day,
-                    color = White,
-                    fontFamily = JetBrainsMono,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 22.sp
-                )
-                androidx.compose.material3.Text(
-                    text = month,
-                    color = White,
-                    fontFamily = JetBrainsMono,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                androidx.compose.material3.Text(
-                    text = dayName,
-                    color = SecondaryText,
-                    fontFamily = JetBrainsMono,
-                    fontSize = 11.sp
-                )
-            }
-        }
+        Text(
+            text = "MOSAIC CHESS",
+            color = GuestCyan,
+            fontFamily = JetBrainsMono,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 2.sp
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = "PLAY AS GUEST",
+            color = GuestWhite,
+            fontFamily = JetBrainsMono,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = "$greeting, CHESS PLAYER",
+            color = GuestMuted,
+            fontFamily = JetBrainsMono,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Guest ID: ${guestId.ifBlank { "Preparing guest session…" }}",
+            color = GuestMuted,
+            fontFamily = JetBrainsMono,
+            fontSize = 10.sp,
+            maxLines = 1
+        )
     }
 }
 
 @Composable
-private fun GuestPlayGameCard(
-    onPlayGame: () -> Unit
-) {
-    BoxWithConstraints(
+private fun PassAndPlayCard(onPlayGame: () -> Unit) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
-    ) {
-
-        DailyRatingBackground(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(145.dp)
-                .align(Alignment.TopCenter)
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = 12.dp,
-                    top = 14.dp
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(Color(0xFF263D48), Color(0xFF17242F), Color(0xFF101923))
                 )
-        ) {
-            androidx.compose.material3.Text(
-                text = "PLAY GAME",
-                color = White,
-                fontFamily = JetBrainsMono,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 1.sp
             )
-
-            Spacer(modifier = Modifier.height(4.dp))
-            androidx.compose.material3.Text(
-                text = "START A NEW GAME",
-                color = White,
-                fontFamily = JetBrainsMono,
-                fontSize = 23.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(5.dp))
-            androidx.compose.material3.Text(
-                text = "Play chess locally with another player.",
-                color = SecondaryText,
-                fontFamily = JetBrainsMono,
-                fontSize = 11.sp
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            GeneralButton(
-                text = "PLAY GAME",
-                onClick = onPlayGame,
-                modifier = Modifier.width(150.dp)
-                    .height(40.dp)
-            )
-        }
-
-        Image(
-            painter = painterResource(
-                id = R.drawable.chess_board
-            ),
-            contentDescription = "Chess board",
-            modifier = Modifier
-                .width(maxWidth * 0.38f)
-                .height(105.dp)
-                .align(Alignment.BottomEnd)
-                .offset(
-                    x = 4.dp,
-                    y = 2.dp
-                ),
-            contentScale = ContentScale.Fit
+            .border(1.dp, Color(0xFF365765), RoundedCornerShape(24.dp))
+            .padding(20.dp)
+    ) {
+        Text(
+            text = "LOCAL MULTIPLAYER",
+            color = GuestCyan,
+            fontFamily = JetBrainsMono,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.5.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "PASS & PLAY",
+            color = GuestWhite,
+            fontFamily = JetBrainsMono,
+            fontSize = 27.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "One device. Two players. Take turns moving the pieces and enjoy a face-to-face chess match.",
+            color = GuestMuted,
+            fontFamily = JetBrainsMono,
+            fontSize = 12.sp,
+            lineHeight = 19.sp
+        )
+        Spacer(Modifier.height(20.dp))
+        GeneralButton(
+            text = "START PASS & PLAY",
+            onClick = onPlayGame,
+            modifier = Modifier.fillMaxWidth().height(54.dp)
         )
     }
 }
