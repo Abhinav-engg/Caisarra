@@ -26,10 +26,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AutoGraph
-import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.ui.components.MainTabTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.caisaara.ui.theme.AmberNormal
 import com.caisaara.ui.theme.BotLockedName
@@ -98,7 +99,6 @@ fun MenuScreen(
     onGameHistoryClick: () -> Unit = {},
     onThemeClick: () -> Unit = {},
     onFriendsClick: () -> Unit = {},
-    onMessagesClick: () -> Unit = {},
     onClubsClick: () -> Unit = {},
     onLeaderboardClick: () -> Unit = {},
     onDeleteAccountClick: () -> Unit = {},
@@ -159,9 +159,22 @@ fun MenuScreen(
             .background(StatsBg)
             .statusBarsPadding()
     ) {
-        MenuTopBar(
-            onBack = onBack,
-            onSettingsClick = onSettingsClick
+        MainTabTopBar(
+            title = "MENU",
+            icon = Icons.Filled.Menu,
+            trailingContent = {
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Preferences",
+                        tint = StatsCyan,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         )
 
         Column(
@@ -172,7 +185,7 @@ fun MenuScreen(
         ) {
             SectionHeader(
                 title = "Accounts & Profile",
-                badge = "6 ITEMS"
+                badge = "5 ITEMS"
             )
             Spacer(modifier = Modifier.height(8.dp))
             MenuCard {
@@ -215,15 +228,6 @@ fun MenuScreen(
                     iconBg = MenuFriendsIconBg,
                     title = "Friends",
                     onClick = onFriendsClick
-                )
-                ItemDivider()
-                MenuItem(
-                    icon = Icons.Default.ChatBubble,
-                    iconTint = ThemeNeonSky,
-                    iconBg = ThemeNeonDeep,
-                    title = "Messages",
-                    hasUnreadDot = true,
-                    onClick = onMessagesClick
                 )
             }
 
@@ -274,80 +278,6 @@ fun MenuScreen(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-        }
-    }
-}
-
-@Composable
-private fun MenuTopBar(
-    onBack: () -> Unit,
-    onSettingsClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(StatsTabBg)
-                .border(
-                    width = 1.dp,
-                    color = StatsTabBorder,
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = StatsTextWhite,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(14.dp))
-
-        Text(
-            text = "Settings",
-            fontFamily = JetBrainsMono,
-            fontWeight = FontWeight.Bold,
-            fontSize = TextSizeHeading,
-            color = StatsTextWhite,
-            modifier = Modifier.weight(1f)
-        )
-
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(StatsTabBg)
-                .border(
-                    width = 1.dp,
-                    color = StatsTabBorder,
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            IconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Preferences",
-                    tint = ThemeSlateAccent,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
         }
     }
 }

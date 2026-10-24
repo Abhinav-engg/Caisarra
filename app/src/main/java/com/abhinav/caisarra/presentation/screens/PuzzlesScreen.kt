@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.MainTabTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.puzzles.PuzzlesHubViewModel
@@ -95,41 +96,10 @@ fun PuzzlesScreen(
 
 @Composable
 private fun PuzzlesHeader() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = PuzzleHeaderBg,
-                shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
-            )
-            .border(
-                width = 1.dp,
-                color = PuzzleCardBorder,
-                shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
-            )
-            .padding(vertical = 14.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_puzzle_piece),
-                contentDescription = null,
-                tint = StatsCyan,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = "PUZZLES",
-                color = Color.White,
-                fontFamily = JetBrainsMono,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp
-            )
-        }
-    }
+    MainTabTopBar(
+        title = "PUZZLES",
+        iconPainter = painterResource(id = R.drawable.ic_puzzle_piece)
+    )
 }
 
 @Composable

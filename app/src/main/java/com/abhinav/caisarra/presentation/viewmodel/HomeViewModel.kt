@@ -12,6 +12,7 @@ import com.abhinav.caisarra.data.remote.dto.ProfileData
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.GameRepository
 import com.abhinav.caisarra.data.repository.ProfileRepository
+import com.abhinav.caisarra.data.repository.PuzzleRepository
 import com.abhinav.caisarra.data.repository.RatingRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
@@ -45,7 +46,7 @@ data class HomeUiState(
     val username: String = "",
     val displayName: String? = null,
     val avatarUrl: String? = null,
-    val streak: Int = 7,
+    val streak: Int = 0,
     val selectedMode: GameMode = GameMode.RAPID,
     val rating: Int? = null,
     val ratingChange: Int? = null,
@@ -64,7 +65,8 @@ class HomeViewModel(
     private val gameRepository: GameRepository,
     private val remoteGameRepository: RemoteGameRepository,
     private val profileRepository: ProfileRepository,
-    private val ratingPreferenceStore: RatingPreferencesStore? = null
+    private val ratingPreferenceStore: RatingPreferencesStore? = null,
+    private val puzzleRepository: PuzzleRepository? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
@@ -122,7 +124,7 @@ class HomeViewModel(
 
             val savedUsername = repository.getUsername()
                 ?.takeIf { it.isNotBlank() }
-            signedInUser = savedUsername != null
+            signedInUser = repository.isLoggedIn()
             val profile = if (signedInUser) {
                 try {
                     profileRepository.getMyProfile().also {
@@ -135,9 +137,10 @@ class HomeViewModel(
                     null
                 }
             } else null
-            val displayUsername = profile?.username?.takeIf { it.isNotBlank() }
+            val displayUsername = profile?.displayName?.takeIf { it.isNotBlank() }
+                ?: profile?.username?.takeIf { it.isNotBlank() }
                 ?: savedUsername?.takeUnless { it.contains("@") }
-                ?: "Guest"
+                ?: if (signedInUser) "Player" else "Guest"
             val currentUsername = profile?.username?.takeIf { it.isNotBlank() } ?: savedUsername
 
             val selectedMode = ratingPreferenceStore?.getSelectedMode() ?: _state.value.selectedMode
@@ -153,13 +156,26 @@ class HomeViewModel(
                     username = displayUsername,
                     displayName = profile?.displayName,
                     avatarUrl = profile?.avatarUrl,
-                    streak = 7,
+                    streak = it.streak,
                     selectedMode = selectedMode,
                     rating = currentRating,
                     provisional = currentProvisional,
                     ratingChange = currentChange,
                     modeRatings = modeRatings
                 )
+            }
+
+            if (puzzleRepository != null) {
+                launch {
+                    val streak = try {
+                        val daily = puzzleRepository.getDailyPuzzle().getOrNull()
+                        daily?.currentStreak
+                            ?: if (signedInUser) puzzleRepository.getStats().getOrNull()?.currentStreak ?: 0 else 0
+                    } catch (e: Exception) {
+                        0
+                    }
+                    _state.update { it.copy(streak = streak) }
+                }
             }
 
             if (signedInUser) {

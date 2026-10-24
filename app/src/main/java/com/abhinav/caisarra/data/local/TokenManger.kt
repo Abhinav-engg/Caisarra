@@ -19,11 +19,18 @@ class TokenManager private constructor(private val context: Context) {
         val USERNAME = stringPreferencesKey("username")
     }
 
+    val guestIdFlow: Flow<String?> =
+        context.tokenDataStore.data.map { it[Keys.GUEST_ID] }
+
     suspend fun getGuestId(): String? =
-        context.tokenDataStore.data.map { it[Keys.GUEST_ID] }.first()
+        guestIdFlow.first()
 
     suspend fun saveGuestId(guestId: String) {
         context.tokenDataStore.edit { it[Keys.GUEST_ID] = guestId }
+    }
+
+    suspend fun clearGuestId() {
+        context.tokenDataStore.edit { it.remove(Keys.GUEST_ID) }
     }
 
     suspend fun saveUsername(username: String) {

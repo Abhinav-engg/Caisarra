@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.SportsEsports
@@ -45,7 +44,7 @@ fun PlayerCard(
     player: NearbyPlayer,
     onChallenge: () -> Unit,
     onAddFriend: () -> Unit,
-    onChat: () -> Unit,
+    onChat: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val cardShape = RoundedCornerShape(24.dp)
@@ -157,7 +156,6 @@ fun PlayerCard(
                 )
             }
             SquareIconButton(Icons.Filled.PersonAdd, "Add friend", onAddFriend)
-            SquareIconButton(Icons.AutoMirrored.Filled.Chat, "Message", onChat)
         }
     }
 }

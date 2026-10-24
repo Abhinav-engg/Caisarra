@@ -103,7 +103,8 @@ fun HomeScreen(
     onPlayBots: () -> Unit = {},
     onOpenProfile: () -> Unit,
     onOpenCommunity: () -> Unit = {},
-    onStatsClick: (GameMode) -> Unit = {}
+    onStatsClick: (GameMode) -> Unit = {},
+    onStreakClick: () -> Unit = {}
 ) {
 
     val state by viewModel.state.collectAsState()
@@ -154,7 +155,8 @@ fun HomeScreen(
                     displayName = state.displayName,
                     username = state.username,
                     avatarUrl = state.avatarUrl,
-                    onOpenProfile = onOpenProfile
+                    onOpenProfile = onOpenProfile,
+                    onStreakClick = onStreakClick
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 RatingCard(
@@ -190,22 +192,6 @@ fun HomeScreen(
                     showViewAll = true,
                     onViewAll = onViewAllHistory,
                     isLoading = state.isLoadingHistory
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                GeneralButton(text = if (state.isLoggingOut) {
-                    "Logging Out..."
-                } else {
-                    "Log Out"
-                },
-
-                    onClick = {
-                        viewModel.logout(
-                            onSuccess = onLogoutSuccess
-                        )
-                    },
-
-                    enabled = !state.isLoggingOut,
-                    modifier = Modifier.width(200.dp)
                 )
             }
 
@@ -254,6 +240,7 @@ private fun HomeTopBar(
     displayName: String?,
     username: String,
     avatarUrl: String?,
+    onStreakClick: () -> Unit = {},
     onOpenProfile: () -> Unit
 ) {
     Row(
@@ -276,6 +263,14 @@ private fun HomeTopBar(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(),
+                        onClick = singleClick(onStreakClick)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {

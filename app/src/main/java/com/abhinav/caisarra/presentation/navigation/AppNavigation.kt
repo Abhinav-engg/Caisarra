@@ -297,11 +297,11 @@ fun AppNavigation(authRepository: AuthRepository) {
         PendingInviteStore.get(context)
     }
     var startDestination by remember { mutableStateOf<String?>(null) }
-    var isGuestUser by remember { mutableStateOf(false) }
+    val isGuestUser by authRepository.isGuestFlow.collectAsState(initial = false)
 
     LaunchedEffect(Unit) {
         val pending = pendingOtpStore.getPendingVerification()
-        isGuestUser = authRepository.isGuest()
+        val isGuest = authRepository.isGuest()
         startDestination = when {
             pending != null -> {
                 val purpose = runCatching {
@@ -317,7 +317,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             }
 
             authRepository.isLoggedIn() -> AppRoutes.HOME
-            isGuestUser -> AppRoutes.GUEST_HOME
+            isGuest -> AppRoutes.GUEST_HOME
             else -> AppRoutes.LOGIN
         }
     }
@@ -371,14 +371,15 @@ fun AppNavigation(authRepository: AuthRepository) {
                 AppBottomNavigationBar(
                     currentRoute = currentRoute,
                     onNavigateTo = { route ->
-                        val targetRoute = if (route == AppRoutes.HOME && isGuestUser) {
-                            AppRoutes.GUEST_HOME
+                        val homeRoute = if (isGuestUser) AppRoutes.GUEST_HOME else AppRoutes.HOME
+                        val targetRoute = if (route == AppRoutes.HOME) {
+                            homeRoute
                         } else {
                             route
                         }
                         if (currentRoute != targetRoute) {
                             navController.navigate(targetRoute) {
-                                popUpTo(navController.graph.startDestinationId) {
+                                popUpTo(homeRoute) {
                                     saveState = true
                                 }
                                 launchSingleTop = true
@@ -479,6 +480,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     ratingPreferenceStore = RatingPreferencesStore.get(
                         context.applicationContext
+                    ),
+                    puzzleRepository = PuzzleRepository(
+                        service = authRepository.createPuzzleService()
                     )
                 )
             }
@@ -486,6 +490,13 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             val guestHomeState by guestHomeViewModel.state.collectAsState()
             LaunchedEffect(Unit) {
+                if (authRepository.isLoggedIn()) {
+                    navController.navigate(AppRoutes.HOME) {
+                        popUpTo(AppRoutes.GUEST_HOME) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                    return@LaunchedEffect
+                }
                 guestId = authRepository.getGuestId().orEmpty()
             }
             GuestHomeScreen(
@@ -552,6 +563,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     ratingPreferenceStore = RatingPreferencesStore.get(
                         context.applicationContext
+                    ),
+                    puzzleRepository = PuzzleRepository(
+                        service = authRepository.createPuzzleService()
                     )
                 )
             }
@@ -700,6 +714,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     ratingPreferenceStore = RatingPreferencesStore.get(
                         context.applicationContext
+                    ),
+                    puzzleRepository = PuzzleRepository(
+                        service = authRepository.createPuzzleService()
                     )
                 )
             }
@@ -750,6 +767,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
                 onOpenProfile = {
                     navController.navigateOnce(AppRoutes.PROFILE)
+                },
+                onStreakClick = {
+                    navController.navigateOnce(AppRoutes.DAILY_PUZZLE)
                 },
                 onOpenCommunity = {
                     navController.navigate(AppRoutes.COMMUNITY)
@@ -1297,13 +1317,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                 )
             }
 
-            var isGuest by remember {
-                mutableStateOf(false)
-            }
-
-            LaunchedEffect(Unit) {
-                isGuest = authRepository.isGuest()
-            }
             val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
             val profileEntry = currentBackStackEntry
@@ -1327,7 +1340,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             ProfileScreen(
                 viewModel = profileViewModel,
-                isGuest = isGuest,
+                isGuest = isGuestUser,
                 onBack = {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
@@ -1603,9 +1616,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                             navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
                         }
                     }
-                },
-                onMessagesClick = {
-                    navController.navigateOnce(AppRoutes.MESSAGES)
                 },
                 onClubsClick = {
                     navController.navigateOnce(AppRoutes.CLUBS)
