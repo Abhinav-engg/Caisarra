@@ -1521,10 +1521,17 @@ fun AppNavigation(authRepository: AuthRepository) {
             PuzzlesScreen(
                 viewModel = hubViewModel,
                 onPlayDailyPuzzle = {
-                    navController.navigate(AppRoutes.DAILY_PUZZLE)
+                    navController.navigateOnce(AppRoutes.DAILY_PUZZLE) {
+                        launchSingleTop = true
+                    }
                 },
                 onPlayPuzzleRush = { mode ->
-                    navController.navigate(AppRoutes.puzzleRush(mode))
+                    navController.navigate(AppRoutes.puzzleRush(mode)) {
+                        popUpTo(AppRoutes.PUZZLES) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -1811,7 +1818,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
                 LeaderboardScreen(
                     onBack = {
-                        navController.popBackStack()
+                        navController.safeBack(AppRoutes.MENU)
                     },
                     viewModel = leaderboardViewModel
                 )

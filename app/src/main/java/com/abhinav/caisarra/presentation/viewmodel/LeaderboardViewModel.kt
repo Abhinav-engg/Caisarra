@@ -142,7 +142,7 @@ class LeaderboardViewModel(
         loadGlobalLeaderboard()
     }
 
-    
+
     fun loadClubLeaderboard(
         clubId: String = _state.value.clubId,
         mode: String = _state.value.clubMode

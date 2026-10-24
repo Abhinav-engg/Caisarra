@@ -1,3 +1,4 @@
+
 package com.abhinav.caisarra.presentation.screens
 
 import androidx.compose.foundation.BorderStroke
@@ -27,6 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,14 +39,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.components.MainTabTopBar
-import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.puzzles.PuzzlesHubViewModel
 import com.caisaara.ui.theme.PuzzleCardBorder
-import com.caisaara.ui.theme.PuzzleHeaderBg
 import com.caisaara.ui.theme.PuzzleItemBg
 import com.caisaara.ui.theme.PuzzleItemBorder
 import com.caisaara.ui.theme.StatsBg
@@ -60,6 +65,24 @@ fun PuzzlesScreen(
     onPlayPuzzleRush: (String) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+
+    var isLaunchingPuzzle by remember { mutableStateOf(false) }
+    
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isLaunchingPuzzle = false
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadHubData()
@@ -80,14 +103,26 @@ fun PuzzlesScreen(
         DailyPuzzleCard(
             streak = state.streak,
             rating = state.puzzleRating,
-            onPlayClick = onPlayDailyPuzzle
+            enabled = !isLaunchingPuzzle,
+            onPlayClick = {
+                if (!isLaunchingPuzzle) {
+                    isLaunchingPuzzle = true
+                    onPlayDailyPuzzle()
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         ModesSection(
             rushHighScore = state.rushHighScore,
-            onPlayPuzzleRush = onPlayPuzzleRush
+            enabled = !isLaunchingPuzzle,
+            onPlayPuzzleRush = { mode ->
+                if (!isLaunchingPuzzle) {
+                    isLaunchingPuzzle = true
+                    onPlayPuzzleRush(mode)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -106,6 +141,7 @@ private fun PuzzlesHeader() {
 private fun DailyPuzzleCard(
     streak: Int,
     rating: Int,
+    enabled: Boolean,
     onPlayClick: () -> Unit
 ) {
     Card(
@@ -113,7 +149,9 @@ private fun DailyPuzzleCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = StatsSkeletonChartBg),
+        colors = CardDefaults.cardColors(
+            containerColor = StatsSkeletonChartBg
+        ),
         border = BorderStroke(1.dp, PuzzleCardBorder)
     ) {
         Column(
@@ -123,7 +161,9 @@ private fun DailyPuzzleCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = R.drawable.daily_puzzle_graphic),
+                painter = painterResource(
+                    id = R.drawable.daily_puzzle_graphic
+                ),
                 contentDescription = "Daily Puzzle",
                 modifier = Modifier
                     .width(187.dp)
@@ -142,7 +182,9 @@ private fun DailyPuzzleCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            val ratingText = if (rating > 0) "#$rating Rated" else "Unrated"
+            val ratingText =
+                if (rating > 0) "#$rating Rated" else "Unrated"
+
             Text(
                 text = "Streak: $streak Days • $ratingText",
                 color = ThemeSlateAccent,
@@ -152,7 +194,8 @@ private fun DailyPuzzleCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             GeneralButton(
-                text = "Play",
+                text = if (enabled) "Play" else "Opening...",
+                enabled = enabled,
                 onClick = onPlayClick
             )
         }
@@ -162,6 +205,7 @@ private fun DailyPuzzleCard(
 @Composable
 private fun ModesSection(
     rushHighScore: Int,
+    enabled: Boolean,
     onPlayPuzzleRush: (String) -> Unit
 ) {
     Card(
@@ -169,7 +213,9 @@ private fun ModesSection(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = StatsSkeletonChartBg),
+        colors = CardDefaults.cardColors(
+            containerColor = StatsSkeletonChartBg
+        ),
         border = BorderStroke(1.dp, PuzzleCardBorder)
     ) {
         Column(
@@ -182,14 +228,20 @@ private fun ModesSection(
                 title = "Puzzle Rush",
                 subtitle = "3 min • High Score: $rushHighScore",
                 iconRes = R.drawable.ic_puzzle_piece,
-                onClick = { onPlayPuzzleRush("3min") }
+                enabled = enabled,
+                onClick = {
+                    onPlayPuzzleRush("3min")
+                }
             )
 
             ModeItem(
                 title = "Puzzle Survival",
                 subtitle = "3 Lives • No Time Limit",
                 iconRes = R.drawable.ic_puzzle_shield,
-                onClick = { onPlayPuzzleRush("survival") }
+                enabled = enabled,
+                onClick = {
+                    onPlayPuzzleRush("survival")
+                }
             )
         }
     }
@@ -200,14 +252,27 @@ private fun ModeItem(
     title: String,
     subtitle: String,
     iconRes: Int,
+    enabled: Boolean,
     onClick: () -> Unit
 ) {
+    val itemAlpha = if (enabled) 1f else 0.5f
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(PuzzleItemBg, RoundedCornerShape(16.dp))
-            .border(1.dp, PuzzleItemBorder, RoundedCornerShape(16.dp))
-            .singleClickable(onClick = onClick)
+            .background(
+                PuzzleItemBg.copy(alpha = itemAlpha),
+                RoundedCornerShape(16.dp)
+            )
+            .border(
+                1.dp,
+                PuzzleItemBorder.copy(alpha = itemAlpha),
+                RoundedCornerShape(16.dp)
+            )
+            .singleClickable(
+                enabled = enabled,
+                onClick = onClick
+            )
             .padding(horizontal = 18.dp, vertical = 14.dp)
     ) {
         Row(
@@ -217,7 +282,7 @@ private fun ModeItem(
             Icon(
                 painter = painterResource(id = iconRes),
                 contentDescription = title,
-                tint = StatsCyan,
+                tint = StatsCyan.copy(alpha = itemAlpha),
                 modifier = Modifier.size(26.dp)
             )
 
@@ -226,14 +291,16 @@ private fun ModeItem(
             Column {
                 Text(
                     text = title,
-                    color = Color.White,
+                    color = Color.White.copy(alpha = itemAlpha),
                     fontSize = TextSizeSubhead,
                     fontWeight = FontWeight.SemiBold
                 )
+
                 Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
                     text = subtitle,
-                    color = ThemeSlateAccent,
+                    color = ThemeSlateAccent.copy(alpha = itemAlpha),
                     fontSize = TextSizeCaption
                 )
             }
