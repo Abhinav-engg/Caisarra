@@ -160,8 +160,6 @@ object AppRoutes {
     const val EDIT_PROFILE = "edit_profile"
     const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
     const val GAME_ANALYSIS = "game_analysis/{gameId}"
-
-
     const val BOT_SETUP = "bot_setup"
     const val BOT_GAME = "bot_game/{gameId}"
     const val BOT_HISTORY = "bot_history"
@@ -582,13 +580,19 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             val communityViewModel = screenViewModel {
                 CommunityViewModel(
-                    CommunityRepository(
+                    repository = CommunityRepository(
                         RetrofitInstance.createCommunityService(
+                            tokenManager
+                        )
+                    ),
+                    remoteGameRepository = RemoteGameRepository(
+                        RetrofitInstance.createGamesService(
                             tokenManager
                         )
                     )
                 )
             }
+
 
             CommunityScreen(
                 viewModel = communityViewModel,

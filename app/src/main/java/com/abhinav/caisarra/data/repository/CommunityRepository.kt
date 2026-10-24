@@ -20,22 +20,59 @@ class CommunityRepository(
                 }
             }.data ?: error("Community feed response was empty")
 
+
     suspend fun createPost(body: String): CommunityPostDto {
         val text = body.trim()
-        require(text.isNotEmpty()) { "Post cannot be empty." }
+
+        require(text.isNotEmpty()) {
+            "Post cannot be empty."
+        }
         require(text.length <= 2000) {
             "Post must not exceed 2000 characters."
         }
 
-        return service.createPost(
-            CreateCommunityPostRequest(text)
-        ).let {
-            check(it.success) {
-                it.error ?: it.message ?: "Unable to create post"
-            }
-            it.data ?: error("Created post was missing from response")
+        val result = service.createPost(
+            CreateCommunityPostRequest(
+                body = text,
+                kind = "text"
+            )
+        )
+        check(result.success) {
+            result.error ?: result.message ?: "Unable to create post"
         }
+        return result.data?: error("Created post was missing from response")
     }
+
+    suspend fun shareGame(
+        gameId: String,
+        caption: String = ""
+    ): CommunityPostDto {
+        require(gameId.isNotBlank()) {
+            "Please select a game to share."
+        }
+
+        val text = caption.trim()
+
+        require(text.length <= 2000) {
+            "Caption must not exceed 2000 characters."
+        }
+
+        val result = service.createPost(
+            CreateCommunityPostRequest(
+                kind = "game",
+                gameId = gameId,
+                body = text.ifBlank { null }
+            )
+        )
+
+        check(result.success) {
+            result.error ?: result.message ?: "Unable to share game"
+        }
+
+        return result.data ?: error("Shared game was missing from response")
+    }
+
+
 
     suspend fun deletePost(postId: Long) {
         val result = service.deletePost(postId)

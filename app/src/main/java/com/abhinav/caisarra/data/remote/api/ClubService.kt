@@ -58,16 +58,18 @@ interface ClubService {
         @Query("mode") mode: String? = null
     ): JsonElement
 
+
     @GET("api/clubs/{clubID}/messages")
     suspend fun getMessages(
         @Path("clubID") clubId: String
-    ): ApiResponse<ClubMessagesData>
+    ): List<ClubMessageDto>
+
 
     @POST("api/clubs/{clubID}/messages")
     suspend fun sendMessage(
         @Path("clubID") clubId: String,
         @Body request: SendClubMessageRequest
-    ): ApiResponse<ClubMessageDto>
+    ): JsonElement
 
     @DELETE("api/clubs/{clubID}/members/{userID}")
     suspend fun kickMember(

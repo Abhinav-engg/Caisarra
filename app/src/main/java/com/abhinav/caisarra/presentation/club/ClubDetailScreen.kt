@@ -35,6 +35,7 @@ import com.abhinav.caisarra.data.remote.ClubChatSocket
 import com.abhinav.caisarra.data.local.TokenManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.activity.compose.BackHandler
 
 private val DetailBg = Color(0xFF080D13)
 private val DetailCard = Color(0xFF151F2B)
@@ -46,6 +47,7 @@ private enum class DetailTab { MEMBERS, LEADERBOARD, CHAT, MANAGE }
 
 data class ClubDetailState(
     val club: ClubDto? = null,
+    val currentUsername: String = "",
     val members: List<ClubMemberDto> = emptyList(),
     val leaderboard: List<ClubLeaderboardPlayerDto> = emptyList(),
     val messages: List<ClubMessageDto> = emptyList(),
@@ -120,6 +122,7 @@ class ClubDetailViewModel(
 
                 state = state.copy(
                     club = detailClub.copy(role = resolvedRole),
+                    currentUsername = currentUsername.orEmpty(),
                     members = loadedMembers,
                     loading = false
                 )
@@ -178,23 +181,27 @@ class ClubDetailViewModel(
             )
         }
     }
+
     private fun connectChat() {
         viewModelScope.launch {
             launch {
                 chatSocket.connected.collect { connected ->
-                    state = state.copy(
-                        chatConnected = connected
-                    )
+                    state = state.copy(chatConnected = connected)
                 }
             }
 
             launch {
                 chatSocket.messages.collect { message ->
-                    state = state.copy(
-                        messages = (state.messages.filterNot {
-                            it.id != 0L && it.id == message.id
-                        } + message).takeLast(200)
-                    )
+                    val existing = state.messages
+
+                    val alreadyReceived = message.id.isNotBlank() &&
+                            existing.any { it.id == message.id }
+
+                    if (!alreadyReceived) {
+                        state = state.copy(
+                            messages = (existing + message).takeLast(200)
+                        )
+                    }
                 }
             }
 
@@ -208,15 +215,16 @@ class ClubDetailViewModel(
         }
     }
 
+
     fun reconnectChat() {
         viewModelScope.launch {
             chatSocket.connect(clubId)
         }
     }
 
-
     fun sendMessage() {
         val text = state.chatInput.trim()
+
         if (text.isBlank() || state.busy) return
 
         viewModelScope.launch {
@@ -227,15 +235,24 @@ class ClubDetailViewModel(
             )
 
             try {
-                repository.sendMessage(clubId, text)
+                // Use the backend-supported REST endpoint to persist the message.
+                val sentMessage = repository.sendMessage(clubId, text)
 
+                // Show the returned message immediately.
                 state = state.copy(
                     chatInput = "",
+                    messages = (
+                            state.messages.filterNot {
+                                sentMessage.id.isNotBlank() &&
+                                        it.id == sentMessage.id
+                            } + sentMessage
+                            ).takeLast(200),
                     info = "Message sent successfully."
                 )
+
                 try {
                     state = state.copy(
-                        messages = repository.getMessages(clubId)
+                        messages = repository.getMessages(clubId).takeLast(200)
                     )
                 } catch (e: CancellationException) {
                     throw e
@@ -250,6 +267,7 @@ class ClubDetailViewModel(
                 throw e
             } catch (e: Exception) {
                 Log.e("ClubDetail", "Failed to send club message", e)
+
                 state = state.copy(
                     error = "Couldn't send your message. Please try again."
                 )
@@ -258,6 +276,7 @@ class ClubDetailViewModel(
             }
         }
     }
+
 
 
 
@@ -362,6 +381,23 @@ private fun clubUiError(raw: String): String {
     }
 }
 
+private fun formatClubMessageTime(timestamp: String?): String {
+    if (timestamp.isNullOrBlank()) return ""
+
+    return try {
+        val instant = java.time.Instant.parse(timestamp)
+
+        val formatter = java.time.format.DateTimeFormatter
+            .ofPattern("h:mm a")
+            .withZone(java.time.ZoneId.systemDefault())
+
+        formatter.format(instant)
+    } catch (e: Exception) {
+        timestamp
+    }
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClubDetailScreen(
@@ -387,6 +423,9 @@ fun ClubDetailScreen(
     )
 
     val state = vm.state
+    BackHandler(enabled = state.selectedTab == "CHAT") {
+        vm.selectTab("MEMBERS")
+    }
     LaunchedEffect(state.clubRemoved) {
         if (state.clubRemoved) onBack()
     }
@@ -419,14 +458,29 @@ fun ClubDetailScreen(
                             color = DetailText,
                             fontWeight = FontWeight.Bold
                         )
-                        Text("Chess community", color = DetailMuted,
-                            style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            if (state.selectedTab == "CHAT") "Club chat"
+                            else "Chess community",
+                            color = DetailMuted,
+                            style = MaterialTheme.typography.labelMedium
+                        )
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back", tint = DetailText)
+                    IconButton(
+                        onClick = {
+                            if (state.selectedTab == "CHAT") {
+                                vm.selectTab("MEMBERS")
+                            } else {
+                                onBack()
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = DetailText
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -448,7 +502,18 @@ fun ClubDetailScreen(
                 )
                 Button(onClick = vm::load) { Text("Retry") }
             }
-        } else {
+        }
+        else if (state.selectedTab == "CHAT") {
+            ClubChatContent(
+                state = state,
+                onMessageChange = vm::setChatInput,
+                onSendMessage = vm::sendMessage,
+                onReconnect = vm::reconnectChat,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            )
+        }else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
@@ -786,7 +851,7 @@ fun ClubDetailScreen(
                                         )
                                     )
                                     Text(
-                                        if (state.chatConnected) "Connected" else "Disconnected",
+                                        if (state.chatConnected) "Live" else "Reconnecting required",
                                         color = if (state.chatConnected) DetailGreen else Color(0xFFFF9999),
                                         style = MaterialTheme.typography.labelMedium
                                     )
@@ -823,7 +888,7 @@ fun ClubDetailScreen(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Button(
-                                    enabled = !state.busy && state.chatInput.isNotBlank(),
+                                    enabled = state.chatConnected && !state.busy &&state.chatInput.isNotBlank(),
                                     onClick = vm::sendMessage,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = DetailGreen,
@@ -836,22 +901,72 @@ fun ClubDetailScreen(
                         }
                         if (state.messages.isEmpty()) {
                             item {
-                                Text("No messages yet. Start the conversation!",
-                                    color = DetailMuted)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 28.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "No messages yet. Say hello!",
+                                        color = DetailMuted,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
                             }
                         }
-                        items(state.messages) { message ->
-                            Card(colors = CardDefaults.cardColors(
-                                containerColor = DetailCard
-                            )) {
-                                Column(Modifier.fillMaxWidth().padding(14.dp)) {
-                                    Text(message.username, color = DetailGreen,
-                                        fontWeight = FontWeight.Bold)
-                                    Text(message.message, color = DetailText)
-                                    message.createdAt?.let {
-                                        Text(it, color = DetailMuted,
-                                            style = MaterialTheme.typography.labelSmall)
-                                    }
+
+                        items(
+                            state.messages,
+                            key = { message ->
+                                message.id.ifBlank {
+                                    "${message.userId}-${message.createdAt}-${message.message}"
+                                }
+                            }
+                        ) { message ->
+                            val isMine = state.currentUsername.isNotBlank() &&
+                                    message.username.trim().equals(
+                                        state.currentUsername.trim(),
+                                        ignoreCase = true
+                                    )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .widthIn(max = 300.dp)
+                                        .background(
+                                            color = if (isMine) Color(0xFF075E54) else Color(0xFF18232F),
+                                            shape = RoundedCornerShape(
+                                                topStart = 16.dp,
+                                                topEnd = 16.dp,
+                                                bottomStart = if (isMine) 16.dp else 4.dp,
+                                                bottomEnd = if (isMine) 4.dp else 16.dp
+                                            )
+                                        )
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = if (isMine) "You" else message.username,
+                                        color = if (isMine) Color(0xFF9DE7C7) else Color(0xFF55D6A5),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        text = message.message,
+                                        color = Color(0xFFF5F5F5),
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Spacer(Modifier.height(3.dp))
+                                    Text(
+                                        text = formatClubMessageTime(message.createdAt),
+                                        color = Color(0xFFB8C2CC),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.align(Alignment.End)
+                                    )
                                 }
                             }
                         }
@@ -1020,3 +1135,266 @@ fun ClubDetailScreen(
         )
     }
 }
+
+@Composable
+private fun ClubChatContent(
+    state: ClubDetailState,
+    onMessageChange: (String) -> Unit,
+    onSendMessage: () -> Unit,
+    onReconnect: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .background(DetailBg)
+            .imePadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        // Chat header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = "Club chat",
+                    color = DetailText,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = if (state.chatConnected) "Live conversation"
+                    else "Reconnecting...",
+                    color = if (state.chatConnected) DetailGreen
+                    else Color(0xFFFF9999),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.Groups,
+                contentDescription = "Club members",
+                tint = DetailGreen,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+
+        HorizontalDivider(
+            color = DetailMuted.copy(alpha = 0.22f),
+            thickness = 1.dp
+        )
+
+        // Scrollable messages area
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentPadding = PaddingValues(
+                top = 16.dp,
+                bottom = 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (state.messages.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No messages yet. Say hello!",
+                            color = DetailMuted,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+
+            items(
+                items = state.messages,
+                key = { message ->
+                    message.id.ifBlank {
+                        "${message.userId}-${message.createdAt}-${message.message}"
+                    }
+                }
+            ) { message ->
+
+                val isMine = state.currentUsername.isNotBlank() &&
+                        message.username.trim().equals(
+                            state.currentUsername.trim(),
+                            ignoreCase = true
+                        )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = if (isMine) {
+                        Arrangement.End
+                    } else {
+                        Arrangement.Start
+                    }
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = 300.dp)
+                            .background(
+                                color = if (isMine) {
+                                    Color(0xFF075E54)
+                                } else {
+                                    Color(0xFF18232F)
+                                },
+                                shape = RoundedCornerShape(
+                                    topStart = 18.dp,
+                                    topEnd = 18.dp,
+                                    bottomStart = if (isMine) 18.dp else 4.dp,
+                                    bottomEnd = if (isMine) 4.dp else 18.dp
+                                )
+                            )
+                            .padding(
+                                horizontal = 14.dp,
+                                vertical = 10.dp
+                            )
+                    ) {
+                        // Sender
+                        Text(
+                            text = if (isMine) "You" else message.username,
+                            color = if (isMine) {
+                                Color(0xFF9DE7C7)
+                            } else {
+                                Color(0xFF55D6A5)
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        // Message text
+                        Text(
+                            text = message.message,
+                            color = DetailText,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Spacer(Modifier.height(5.dp))
+
+                        // Local time
+                        Text(
+                            text = formatClubMessageTime(message.createdAt),
+                            color = Color(0xFFB8C2CC),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.align(Alignment.End)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Error/status feedback
+        state.error?.let { error ->
+            Text(
+                text = clubUiError(error),
+                color = Color(0xFFFF9999),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+        }
+
+        state.info?.let { info ->
+            Text(
+                text = info,
+                color = DetailGreen,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+        }
+
+        // Fixed bottom message composer
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            OutlinedTextField(
+                value = state.chatInput,
+                onValueChange = onMessageChange,
+                modifier = Modifier.weight(1f),
+                placeholder = {
+                    Text(
+                        text = "Write a message...",
+                        color = DetailMuted
+                    )
+                },
+                shape = RoundedCornerShape(28.dp),
+                singleLine = true,
+                enabled = !state.busy,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = DetailText,
+                    unfocusedTextColor = DetailText,
+                    cursorColor = DetailGreen,
+                    focusedContainerColor = DetailCard,
+                    unfocusedContainerColor = DetailCard,
+                    focusedBorderColor = DetailGreen,
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedPlaceholderColor = DetailMuted,
+                    unfocusedPlaceholderColor = DetailMuted
+                )
+            )
+
+            IconButton(
+                onClick = onSendMessage,
+                enabled = state.chatConnected &&
+                        !state.busy &&
+                        state.chatInput.isNotBlank(),
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(
+                        color = if (
+                            state.chatConnected &&
+                            !state.busy &&
+                            state.chatInput.isNotBlank()
+                        ) {
+                            DetailGreen
+                        } else {
+                            DetailCard
+                        },
+                        shape = RoundedCornerShape(50)
+                    )
+            ) {
+                if (state.busy) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = DetailBg,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "➤",
+                        color = if (
+                            state.chatConnected &&
+                            state.chatInput.isNotBlank()
+                        ) DetailBg else DetailMuted,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+            }
+        }
+
+        if (!state.chatConnected) {
+            TextButton(
+                onClick = onReconnect,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("Reconnect chat", color = DetailGreen)
+            }
+        }
+    }
+}
+

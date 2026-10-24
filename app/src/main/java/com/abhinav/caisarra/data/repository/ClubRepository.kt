@@ -11,7 +11,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -247,19 +246,43 @@ class ClubRepository(
         throw IllegalStateException("Response nesting is too deep for $key.")
     }
 
-    suspend fun getMessages(id: String): List<ClubMessageDto> =
-        requireData(service.getMessages(id)).messages
 
+    suspend fun getMessages(id: String): List<ClubMessageDto> {
+        return service.getMessages(id)
+    }
     suspend fun sendMessage(
         id: String,
         message: String
     ): ClubMessageDto {
         require(message.isNotBlank()) { "Message cannot be empty." }
-        return requireData(
-            service.sendMessage(
-                id,
-                SendClubMessageRequest(message.trim())
-            )
+
+        val response = service.sendMessage(
+            id,
+            SendClubMessageRequest(message.trim())
+        )
+
+        // The current backend returns the message object directly:
+        // {"id":"UUID", "user_id":1, "username":"...", "message":"..."}.
+        // Also tolerate an optional {"success":true,"data":{...}} envelope.
+        var payload = response
+        if (response is JsonObject) {
+            val success = (response["success"] as? JsonPrimitive)?.booleanOrNull
+            if (success == false) {
+                throw IllegalStateException(
+                    response["error"]?.jsonPrimitive?.contentOrNull
+                        ?: response["message"]?.jsonPrimitive?.contentOrNull
+                        ?: "The server rejected your message."
+                )
+            }
+            payload = response["data"] ?: response["message_data"] ?: response
+        }
+
+        val messageObject = payload as? JsonObject
+            ?: throw IllegalStateException("Unexpected response from the chat server.")
+
+        return clubJson.decodeFromJsonElement(
+            ClubMessageDto.serializer(),
+            messageObject
         )
     }
 

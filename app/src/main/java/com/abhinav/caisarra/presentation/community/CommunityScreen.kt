@@ -55,9 +55,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.layout.heightIn
+
 
 private val CommunityBackground = Color(0xFF080D13)
 private val CommunityCard = Color(0xFF151F2B)
@@ -78,6 +79,9 @@ fun CommunityScreen(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     var postText by remember { mutableStateOf("") }
+    var showGamePicker by remember { mutableStateOf(false) }
+    var gameCaption by remember { mutableStateOf("") }
+
 
     Column(
         modifier = Modifier
@@ -88,307 +92,476 @@ fun CommunityScreen(
             .imePadding()
             .clickable(
                 interactionSource = remember {
-                    androidx.compose.foundation.interaction
-                        .MutableInteractionSource()
+                    androidx.compose.foundation.interaction.MutableInteractionSource()
                 },
                 indication = null
             ) {
                 focusManager.clearFocus()
                 keyboardController?.hide()
             }
-            .padding(horizontal = 16.dp)
     ) {
-
-        Row(
+        LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 18.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                top = 8.dp,
+                bottom = 24.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            TextButton(
-                onClick = onBack,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 4.dp,
-                    vertical = 8.dp
-                )
-            ) {
-                Text(
-                    text = "← Back",
-                    color = CommunityMuted,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(Modifier.weight(1f))
-
-            Text(
-                text = "COMMUNITY",
-                color = CommunityText,
-                fontSize = 23.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
-            )
-
-            Spacer(Modifier.weight(1f))
-
-            TextButton(
-                onClick = viewModel::refresh,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 4.dp,
-                    vertical = 8.dp
-                )
-            ) {
-                Text(
-                    text = "Refresh",
-                    color = CommunityGreen,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-
-        if (isRegisteredUser) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        CommunityCard,
-                        RoundedCornerShape(20.dp)
-                    )
-                    .padding(14.dp)
-            ) {
-                Text(
-                    text = "Share with the community",
-                    color = CommunityText,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = "Your chess moments, thoughts and experiences.",
-                    color = CommunityMuted,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
-                )
-
-                OutlinedTextField(
-                    value = postText,
-                    onValueChange = {
-                        if (it.length <= 2000) postText = it
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(126.dp),
-                    placeholder = {
-                        Text(
-                            text = "What's happening on your chessboard?",
-                            color = CommunityMuted.copy(alpha = 0.8f)
-                        )
-                    },
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = CommunityText,
-                        fontSize = 16.sp
-                    ),
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Sentences
-                    ),
-                    minLines = 3,
-                    maxLines = 5,
-                    enabled = !state.isPublishing,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = CommunityText,
-                        unfocusedTextColor = CommunityText,
-                        disabledTextColor = CommunityMuted,
-                        cursorColor = CommunityPurple,
-                        focusedBorderColor = CommunityPurple,
-                        unfocusedBorderColor = CommunityOutline,
-                        focusedContainerColor = CommunityBackground,
-                        unfocusedContainerColor = CommunityBackground,
-                        disabledContainerColor = CommunityBackground,
-                        focusedPlaceholderColor = CommunityMuted,
-                        unfocusedPlaceholderColor = CommunityMuted
-                    )
-                )
-
+            item(key = "community_header") {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    TextButton(
+                        onClick = onBack,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 4.dp,
+                            vertical = 8.dp
+                        )
+                    ) {
+                        Text(
+                            "← Back",
+                            color = CommunityMuted,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(Modifier.weight(1f))
+
                     Text(
-                        text = "${postText.length}/2000",
-                        color = CommunityMuted,
-                        fontSize = 12.sp
+                        "COMMUNITY",
+                        color = CommunityText,
+                        fontSize = 23.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
                     )
 
                     Spacer(Modifier.weight(1f))
 
-                    Button(
-                        onClick = {
-                            viewModel.createPost(postText.trim())
-                            postText = ""
-                        },
-                        enabled = postText.isNotBlank() && !state.isPublishing,
-                        shape = RoundedCornerShape(24.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = CommunityPurple,
-                            contentColor = Color.White,
-                            disabledContainerColor = CommunityPurple.copy(alpha = 0.3f),
-                            disabledContentColor = CommunityMuted
+                    TextButton(
+                        onClick = viewModel::refresh,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 4.dp,
+                            vertical = 8.dp
                         )
                     ) {
                         Text(
-                            text = if (state.isPublishing) "Posting..." else "Post",
-                            fontWeight = FontWeight.Bold
+                            "Refresh",
+                            color = CommunityGreen,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
             }
-        } else {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                color = CommunityCard,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text(
-                    text = "Sign in to publish posts, react and comment.",
-                    color = CommunityMuted,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        }
 
-        state.error?.let { message ->
-            Text(
-                text = message,
-                color = CommunityDanger,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        }
-
-        state.info?.let { message ->
-            Text(
-                text = message,
-                color = CommunityGreen,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 18.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Community posts",
-                color = CommunityText,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.weight(1f))
-
-            if (state.isLoading && state.posts.isNotEmpty()) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    color = CommunityGreen,
-                    strokeWidth = 2.dp
-                )
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            when {
-                state.isLoading && state.posts.isEmpty() -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = CommunityGreen
-                    )
-                }
-
-                state.posts.isEmpty() -> {
+            if (isRegisteredUser) {
+                item(key = "community_composer") {
                     Column(
                         modifier = Modifier
-                            .align(Alignment.Center)
+                            .fillMaxWidth()
+                            .background(
+                                CommunityCard,
+                                RoundedCornerShape(20.dp)
+                            )
+                            .padding(14.dp)
+                    ) {
+                        Text(
+                            "Share with the community",
+                            color = CommunityText,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            "Your chess moments, thoughts and experiences.",
+                            color = CommunityMuted,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = postText,
+                            onValueChange = {
+                                if (it.length <= 2000) postText = it
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(126.dp),
+                            placeholder = {
+                                Text(
+                                    "What's happening on your chessboard?",
+                                    color = CommunityMuted.copy(alpha = 0.8f)
+                                )
+                            },
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                color = CommunityText,
+                                fontSize = 16.sp
+                            ),
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Sentences
+                            ),
+                            minLines = 3,
+                            maxLines = 5,
+                            enabled = !state.isPublishing,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = CommunityText,
+                                unfocusedTextColor = CommunityText,
+                                disabledTextColor = CommunityMuted,
+                                cursorColor = CommunityPurple,
+                                focusedBorderColor = CommunityPurple,
+                                unfocusedBorderColor = CommunityOutline,
+                                focusedContainerColor = CommunityBackground,
+                                unfocusedContainerColor = CommunityBackground,
+                                disabledContainerColor = CommunityBackground,
+                                focusedPlaceholderColor = CommunityMuted,
+                                unfocusedPlaceholderColor = CommunityMuted
+                            )
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "${postText.length}/2000",
+                                color = CommunityMuted,
+                                fontSize = 12.sp
+                            )
+
+                            Spacer(Modifier.weight(1f))
+
+                            Button(
+                                onClick = {
+                                    viewModel.createPost(postText.trim())
+                                    postText = ""
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                },
+                                enabled = postText.isNotBlank() && !state.isPublishing,
+                                shape = RoundedCornerShape(24.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = CommunityPurple,
+                                    contentColor = Color.White,
+                                    disabledContainerColor = CommunityPurple.copy(alpha = 0.3f),
+                                    disabledContentColor = CommunityMuted
+                                )
+                            ) {
+                                Text(
+                                    if (state.isPublishing) "Posting..." else "Post",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                gameCaption = ""
+                                viewModel.loadShareableGames()
+                                showGamePicker = true
+                            },
+                            enabled = !state.isPublishing,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CommunityGreen,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                "♟  Share a Game",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            } else {
+                item(key = "community_sign_in_notice") {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = CommunityCard,
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            "Sign in to publish posts, react and comment.",
+                            color = CommunityMuted,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
+            }
+
+            state.error?.let { message ->
+                item(key = "community_error") {
+                    Text(
+                        message,
+                        color = CommunityDanger,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+
+            state.info?.let { message ->
+                item(key = "community_info") {
+                    Text(
+                        message,
+                        color = CommunityGreen,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+
+            item(key = "community_posts_heading") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp, bottom = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Community posts",
+                        color = CommunityText,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.weight(1f))
+
+                    if (state.isLoading && state.posts.isNotEmpty()) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = CommunityGreen,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                }
+            }
+
+            if (state.isLoading && state.posts.isEmpty()) {
+                item(key = "community_loading") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = CommunityGreen)
+                    }
+                }
+            } else if (state.posts.isEmpty()) {
+                item(key = "community_empty") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text("♟", fontSize = 42.sp)
+
                         Text(
-                            text = "No posts yet",
+                            "No posts yet",
                             color = CommunityText,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = 10.dp)
                         )
+
                         Text(
-                            text = "Be the first to share a chess moment.",
+                            "Be the first to share a chess moment.",
                             color = CommunityMuted,
                             fontSize = 13.sp,
                             modifier = Modifier.padding(top = 5.dp)
                         )
                     }
                 }
+            } else {
+                items(
+                    items = state.posts,
+                    key = { it.id }
+                ) { post ->
+                    CommunityPostCard(
+                        post = post,
+                        isRegisteredUser = isRegisteredUser,
+                        onReact = { reaction ->
+                            viewModel.react(post.id, reaction)
+                        },
+                        onDelete = {
+                            viewModel.deletePost(post.id)
+                        },
+                        onComments = {
+                            viewModel.openComments(post.id)
+                        }
+                    )
+                }
 
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        items(
-                            items = state.posts,
-                            key = { it.id }
-                        ) { post ->
-                            CommunityPostCard(
-                                post = post,
-                                isRegisteredUser = isRegisteredUser,
-                                onReact = { reaction ->
-                                    viewModel.react(post.id, reaction)
-                                },
-                                onDelete = {
-                                    viewModel.deletePost(post.id)
-                                },
-                                onComments = {
-                                    viewModel.openComments(post.id)
-                                }
+                if (state.nextBeforeId != null) {
+                    item(key = "community_load_more") {
+                        TextButton(
+                            onClick = viewModel::loadMore,
+                            enabled = !state.isLoadingMore,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (state.isLoadingMore) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = CommunityGreen,
+                                    strokeWidth = 2.dp
+                                )
+                                Text("  Loading...", color = CommunityGreen)
+                            } else {
+                                Text(
+                                    "Load more posts",
+                                    color = CommunityGreen
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    if (showGamePicker) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!state.isPublishing) {
+                    showGamePicker = false
+                }
+            },
+            containerColor = CommunityCard,
+            title = {
+                Text(
+                    text = "Share a completed game",
+                    color = CommunityText,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp)
+                ) {
+                    Text(
+                        text = "Add a caption (optional)",
+                        color = CommunityMuted,
+                        fontSize = 13.sp
+                    )
+
+                    OutlinedTextField(
+                        value = gameCaption,
+                        onValueChange = {
+                            if (it.length <= 2000) {
+                                gameCaption = it
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        placeholder = {
+                            Text("Tell everyone about this game")
+                        },
+                        enabled = !state.isPublishing,
+                        maxLines = 3,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = CommunityText,
+                            unfocusedTextColor = CommunityText,
+                            cursorColor = CommunityGreen,
+                            focusedBorderColor = CommunityGreen,
+                            unfocusedBorderColor = CommunityOutline,
+                            focusedContainerColor = CommunityBackground,
+                            unfocusedContainerColor = CommunityBackground
+                        )
+                    )
+
+                    when {
+                        state.isLoadingGames -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .padding(16.dp),
+                                color = CommunityGreen
                             )
                         }
 
-                        item {
-                            if (state.nextBeforeId != null) {
-                                TextButton(
-                                    onClick = viewModel::loadMore,
-                                    enabled = !state.isLoadingMore,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp)
-                                ) {
-                                    if (state.isLoadingMore) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(18.dp),
+                        state.shareableGames.isEmpty() -> {
+                            Text(
+                                text = "No completed online games found. " +
+                                        "Play and finish a game first.",
+                                color = CommunityMuted,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        }
+
+                        else -> {
+                            Text(
+                                text = "SELECT A GAME",
+                                color = CommunityMuted,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(
+                                    top = 8.dp,
+                                    bottom = 6.dp
+                                )
+                            )
+
+                            LazyColumn(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(
+                                    items = state.shareableGames,
+                                    key = { it.id }
+                                ) { game ->
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(CommunityBackground)
+                                            .clickable(
+                                                enabled = !state.isPublishing
+                                            ) {
+                                                viewModel.shareGame(
+                                                    gameId = game.id,
+                                                    caption = gameCaption
+                                                )
+                                                showGamePicker = false
+                                            }
+                                            .padding(12.dp)
+                                    ) {
+                                        Text(
+                                            text = "${game.whiteUsername ?: "White"} " +
+                                                    "vs ${game.blackUsername ?: "Black"}",
+                                            color = CommunityText,
+                                            fontWeight = FontWeight.Bold
+                                        )
+
+                                        Text(
+                                            text = "Result: " +
+                                                    (game.result ?: "Unknown"),
                                             color = CommunityGreen,
-                                            strokeWidth = 2.dp
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.padding(top = 4.dp)
                                         )
+
                                         Text(
-                                            "  Loading...",
-                                            color = CommunityGreen
-                                        )
-                                    } else {
-                                        Text(
-                                            "Load more posts",
-                                            color = CommunityGreen
+                                            text = "${game.timeControlMode} • " +
+                                                    "${game.timeControlMinutes} min",
+                                            color = CommunityMuted,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(top = 3.dp)
                                         )
                                     }
                                 }
@@ -396,8 +569,18 @@ fun CommunityScreen(
                         }
                     }
                 }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showGamePicker = false
+                    },
+                    enabled = !state.isPublishing
+                ) {
+                    Text("Cancel", color = CommunityMuted)
+                }
             }
-        }
+        )
     }
 
     if (state.commentsPostId != null) {
@@ -513,13 +696,30 @@ private fun CommunityPostCard(
             }
         }
 
-        Text(
-            text = post.body,
-            style = MaterialTheme.typography.bodyLarge,
-            color = CommunityText,
-            lineHeight = 25.sp,
-            modifier = Modifier.padding(top = 17.dp, bottom = 14.dp)
-        )
+
+        if (post.body.isNotBlank()) {
+            Text(
+                text = post.body,
+                style = MaterialTheme.typography.bodyLarge,
+                color = CommunityText,
+                lineHeight = 25.sp,
+                modifier = Modifier.padding(
+                    top = 17.dp,
+                    bottom = 14.dp
+                )
+            )
+        }
+
+        if (post.kind == "game" || post.kind == "bot_game") {
+            post.game?.let { game ->
+                CommunityGamePostCard(
+                    game = game,
+                    fen = post.fen
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
