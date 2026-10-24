@@ -78,6 +78,11 @@ import kotlinx.coroutines.launch
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 import com.abhinav.caisarra.presentation.game.components.MoveTicker
 import com.abhinav.caisarra.presentation.game.components.CapturedPieces
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
+import com.abhinav.caisarra.presentation.game.model.GameIntent
+
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
@@ -102,6 +107,15 @@ fun OnlineGameScreen(
         moveTo = state.moveAnimationEvent?.to
     )
     val context = LocalContext.current
+    val autoQueen = isAutoQueenEnabled(context)
+
+    LaunchedEffect(state.promotionPending, autoQueen) {
+        if (state.promotionPending != null && autoQueen) {
+            viewModel.onPromote(
+                com.abhinav.caisarra.presentation.game.model.PieceType.QUEEN
+            )
+        }
+    }
     val scope = rememberCoroutineScope()
     var rematchBusy by remember { mutableStateOf(false) }
     val waiting by viewModel.waitingForOpponent.collectAsState()
@@ -375,7 +389,13 @@ fun OnlineGameScreen(
         )
     }
 
-    state.promotionPending?.let {PromotionDialog(onPieceSelected = viewModel::onPromote)}
+    if (!autoQueen) {
+        state.promotionPending?.let {
+            PromotionDialog(
+                onPieceSelected = viewModel::onPromote
+            )
+        }
+    }
     if (showResultDialog) {
         state.gameResult?.let { result ->
             if (state.isRated) {

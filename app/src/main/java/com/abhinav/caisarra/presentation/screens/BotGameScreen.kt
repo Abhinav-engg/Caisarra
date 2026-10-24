@@ -62,7 +62,9 @@ import com.abhinav.caisarra.presentation.game.components.MoveTicker
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
-
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 
@@ -100,6 +102,16 @@ fun BotGameScreen(
             showHomeResignDialog = true
         } else {
             onHome()
+        }
+    }
+    val context = LocalContext.current
+    val autoQueen = isAutoQueenEnabled(context)
+
+    LaunchedEffect(state.promotionPending, autoQueen) {
+        if (state.promotionPending != null && autoQueen) {
+            viewModel.onPromote(
+                com.abhinav.caisarra.presentation.game.model.PieceType.QUEEN
+            )
         }
     }
 
@@ -249,8 +261,12 @@ fun BotGameScreen(
         )
     }
 
-    state.promotionPending?.let {
-        PromotionDialog(onPieceSelected = viewModel::onPromote)
+    if (!autoQueen) {
+        state.promotionPending?.let {
+            PromotionDialog(
+                onPieceSelected = viewModel::onPromote
+            )
+        }
     }
 
     if (showHomeResignDialog) {

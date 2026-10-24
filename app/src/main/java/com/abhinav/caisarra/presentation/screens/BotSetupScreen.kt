@@ -61,7 +61,7 @@ import com.caisaara.ui.theme.TextSizeCaption
 import com.caisaara.ui.theme.TextSizeMicro
 import com.caisaara.ui.theme.TextSizeSubhead
 import com.caisaara.ui.theme.TextSizeTiny
-
+import com.abhinav.caisarra.presentation.game.components.AutoQueenPromotionSetting
 @Composable
 fun BotSetupScreen(
     viewModel: BotSetupViewModel,
@@ -276,6 +276,9 @@ fun BotSetupScreen(
                             fontSize = TextSizeBadge
                         )
                     }
+                    Spacer(Modifier.height(16.dp))
+
+                    AutoQueenPromotionSetting()
 
                     Spacer(Modifier.height(24.dp))
 
