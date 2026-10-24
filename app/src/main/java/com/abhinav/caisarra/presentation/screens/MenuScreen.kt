@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -56,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.components.MainTabTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
-import com.caisaara.ui.theme.AmberNormal
 import com.caisaara.ui.theme.BotLockedName
 import com.caisaara.ui.theme.GoldColor
 import com.caisaara.ui.theme.MenuBadgeBg
@@ -211,15 +209,6 @@ fun MenuScreen(
                     iconBg = ThemeNeonDeep,
                     title = "Game History",
                     onClick = onGameHistoryClick
-                )
-                ItemDivider()
-                MenuItem(
-                    icon = Icons.Default.Palette,
-                    iconTint = AmberNormal,
-                    iconBg = MenuThemeIconBg,
-                    title = "Theme",
-                    trailingBadge = "Midnight Cyan",
-                    onClick = onThemeClick
                 )
                 ItemDivider()
                 MenuItem(
