@@ -64,6 +64,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
@@ -274,7 +275,7 @@ private fun HomeTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                androidx.compose.material3.Icon(
+                Icon(
                     imageVector = Icons.Filled.LocalFireDepartment,
                     contentDescription = "Streak",
                     tint = Color(0xFFE28339),
@@ -363,7 +364,7 @@ private fun RatingCard(
                         .clickable { dropdownExpanded = true }
                         .padding(vertical = 2.dp)
                 ) {
-                    androidx.compose.material3.Text(
+                    Text(
                         text = "${selectedMode.label.uppercase()} RATING",
                         color = SecondaryText,
                         fontFamily = JetBrainsMono,
@@ -372,7 +373,7 @@ private fun RatingCard(
                         letterSpacing = 1.sp
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    androidx.compose.material3.Icon(
+                    Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = "Select rating mode",
                         tint = SecondaryText,
@@ -411,7 +412,7 @@ private fun RatingCard(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    androidx.compose.material3.Text(
+                                    Text(
                                         text = mode.label,
                                         color = if (isSelected) Green else White,
                                         fontFamily = JetBrainsMono,
@@ -421,7 +422,7 @@ private fun RatingCard(
                                     val mRating = modeRatings[mode]
                                     if (mRating != null) {
                                         Spacer(Modifier.width(16.dp))
-                                        androidx.compose.material3.Text(
+                                        Text(
                                             text = mRating.toString(),
                                             color = SecondaryText,
                                             fontFamily = JetBrainsMono,
@@ -440,7 +441,7 @@ private fun RatingCard(
                 }
             }
 
-            androidx.compose.material3.Text(
+            Text(
                 text = rating?.toString() ?: "—",
                 color = White,
                 fontFamily = JetBrainsMono,
@@ -473,7 +474,7 @@ private fun RatingCard(
                 else -> SecondaryText
             }
 
-            androidx.compose.material3.Text(
+            Text(
                 text = changeText,
                 color = changeColor,
                 fontFamily = JetBrainsMono,
@@ -537,7 +538,7 @@ private fun QuickPlayCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    androidx.compose.material3.Text(
+                    Text(
                         text = "READY TO PLAY?",
                         color = Color(0xFF00E5FF),
                         fontFamily = JetBrainsMono,

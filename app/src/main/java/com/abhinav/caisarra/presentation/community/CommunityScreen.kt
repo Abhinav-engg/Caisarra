@@ -730,8 +730,7 @@ private fun CommunityPostCard(
                             fontSize = 19.sp
                         )
                         Text(
-                            text = "${post.reactions[reaction] ?: 0}" +
-                                    if (post.myReaction == reaction) " ✓" else "",
+                            text = "${post.reactions[reaction] ?: 0}",
                             color = if (post.myReaction == reaction) {
                                 CommunityGreen
                             } else {
