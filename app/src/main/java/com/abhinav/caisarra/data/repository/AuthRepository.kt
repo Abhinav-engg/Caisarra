@@ -1,11 +1,18 @@
 package com.abhinav.caisarra.data.repository
 
 import android.content.Context
-import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
+import com.abhinav.caisarra.data.remote.TokenRefresher
 import com.abhinav.caisarra.data.remote.api.AnalysisService
+import com.abhinav.caisarra.data.remote.api.BotGameApiService
+import com.abhinav.caisarra.data.remote.api.GamesService
+import com.abhinav.caisarra.data.remote.api.MatchmakingService
+import com.abhinav.caisarra.data.remote.api.NearbyService
+import com.abhinav.caisarra.data.remote.api.ProfileService
+import com.abhinav.caisarra.data.remote.api.PuzzleApiService
+import com.abhinav.caisarra.data.remote.api.RatingService
 import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
 import com.abhinav.caisarra.data.remote.dto.RatingRequest
@@ -14,17 +21,16 @@ import com.abhinav.caisarra.data.remote.dto.RegisterRequest
 import com.abhinav.caisarra.data.remote.dto.ResetPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyRegistrationRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
-import kotlinx.coroutines.sync.withLock
 import okhttp3.Headers
 import retrofit2.HttpException
-import com.abhinav.caisarra.data.remote.api.GamesService
-import com.abhinav.caisarra.data.remote.api.ProfileService
-import com.abhinav.caisarra.data.remote.api.RatingService
-import com.abhinav.caisarra.data.remote.api.MatchmakingService
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
 class AuthRepository private constructor(context: Context) {
 
-    private val tokenManager = TokenManager(context)
+    private val tokenManager = TokenManager.get(context)
+    private val refresher = RetrofitInstance.getTokenRefresher(tokenManager)
     private val service = RetrofitInstance.createAuthService(tokenManager)
     private var pendingRegistration: RegisterRequest? = null
     private var resetToken: String? = null
@@ -71,10 +77,13 @@ class AuthRepository private constructor(context: Context) {
             if (!saveTokensFromCookies(response.headers())) {
                 return AuthResult.Error("Verification failed. Please try again.")
             }
+            tokenManager.clearGuestId()
 
             val username = pendingRegistration?.username
             if (!username.isNullOrBlank()) {
+                if (!username.contains("@")) {
                 tokenManager.saveUsername(username.trim())
+            }
             }
             pendingRegistration = null
             AuthResult.Success(response.body()?.message.orEmpty())
@@ -90,7 +99,12 @@ class AuthRepository private constructor(context: Context) {
             if (!saveTokensFromCookies(response.headers())) {
                 return AuthResult.Error("Login failed. Please try again.")
             }
-            tokenManager.saveUsername(username.trim())
+            tokenManager.clearGuestId()
+            val userToSave = response.body()?.data?.username?.takeIf { it.isNotBlank() }
+                ?: username.takeUnless { it.contains("@") }
+            if (!userToSave.isNullOrBlank()) {
+                tokenManager.saveUsername(userToSave.trim())
+            }
 
             AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
@@ -98,44 +112,7 @@ class AuthRepository private constructor(context: Context) {
         }
     }
 
-    suspend fun refreshAccessToken(): AuthResult =
-        tokenManager.refreshMutex.withLock { performRefresh() }
-
-    /** Must only be called while holding tokenManager.refreshMutex. */
-    private suspend fun performRefresh(): AuthResult {
-        val refreshToken = tokenManager.getRefreshToken()
-            ?: return AuthResult.Error("You are not logged in.")
-
-        return try {
-            val response = RetrofitInstance.plainService.refresh(RefreshTokenRequest(refreshToken))
-            tokenManager.saveTokens(response.accessToken, response.refreshToken)
-            AuthResult.Success("Token refreshed")
-        } catch (e: Exception) {
-            if (e is HttpException && (e.code() == 401 || e.code() == 403)) tokenManager.clearTokens()
-            AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
-        }
-    }
-
-    /**
-     * Returns an access token that is not expired (or expiring soon), refreshing if needed.
-     * Returns null if the user is not logged in or the refresh failed.
-     */
-    suspend fun getValidAccessToken(): String? {
-        val token = tokenManager.getAccessToken()
-        if (token != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(token)) {
-            return token
-        }
-
-        return tokenManager.refreshMutex.withLock {
-            // Another caller may have refreshed while we waited for the lock.
-            val current = tokenManager.getAccessToken()
-            if (current != null && !TokenExpiryChecker.isExpiredOrExpiringSoon(current)) {
-                return@withLock current
-            }
-
-            if (performRefresh() is AuthResult.Success) tokenManager.getAccessToken() else null
-        }
-    }
+    suspend fun getValidAccessToken(): String? = refresher.getValidAccessToken()
 
     suspend fun logout(): AuthResult {
         val refreshToken = tokenManager.getRefreshToken()
@@ -144,7 +121,7 @@ class AuthRepository private constructor(context: Context) {
         if (refreshToken != null) {
             try {
                 service.logout(RefreshTokenRequest(refreshToken))
-            } catch (e: Exception) {
+            } catch (_: Exception) {
             }
         }
 
@@ -208,14 +185,30 @@ class AuthRepository private constructor(context: Context) {
         }
     }
 
-    suspend fun isLoggedIn(): Boolean = getValidAccessToken() != null
+    val isGuestFlow: Flow<Boolean> =
+        tokenManager.refreshTokenFlow.combine(tokenManager.guestIdFlow) { refresh, guestId ->
+            refresh == null && !guestId.isNullOrBlank()
+        }
 
-    suspend fun isGuest(): Boolean = tokenManager.getGuestId() != null
+    val isLoggedInFlow: Flow<Boolean> =
+        tokenManager.refreshTokenFlow.map { it != null }
 
-    suspend fun getGuestId(): String? = tokenManager.getGuestId()
+    suspend fun isLoggedIn(): Boolean = tokenManager.getRefreshToken() != null
+
+    suspend fun isGuest(): Boolean = !isLoggedIn() && !tokenManager.getGuestId().isNullOrBlank()
+
+    suspend fun getGuestId(): String? = if (isLoggedIn()) null else tokenManager.getGuestId()
+
+    suspend fun clearGuestId() {
+        tokenManager.clearGuestId()
+    }
 
     suspend fun getUsername(): String? {
         return tokenManager.getUsername()
+    }
+
+    suspend fun saveUsername(username: String) {
+        tokenManager.saveUsername(username.trim())
     }
 
     companion object {
@@ -228,21 +221,27 @@ class AuthRepository private constructor(context: Context) {
             }
     }
 
-    fun createGamesService(): GamesService {
-        return RetrofitInstance.createGamesService(tokenManager)
-    }
+    fun createGamesService(): GamesService =
+        RetrofitInstance.createGamesService(tokenManager)
 
-    fun createProfileService(): ProfileService {
-        return RetrofitInstance.createProfileService(tokenManager)
-    }
+    fun createProfileService(): ProfileService =
+        RetrofitInstance.createProfileService(tokenManager)
 
-    fun createRatingService(): RatingService {
-        return RetrofitInstance.createRatingService(tokenManager)
-    }
+    fun createRatingService(): RatingService =
+        RetrofitInstance.createRatingService(tokenManager)
 
     fun createMatchmakingService(): MatchmakingService =
         RetrofitInstance.createMatchmakingService(tokenManager)
 
     fun createAnalysisService(): AnalysisService =
         RetrofitInstance.createAnalysisService(tokenManager)
+
+    fun createNearbyService(): NearbyService =
+        RetrofitInstance.createNearbyService(tokenManager)
+
+    fun createBotGameService(): BotGameApiService =
+        RetrofitInstance.createBotGameService(tokenManager)
+
+    fun createPuzzleService(): PuzzleApiService =
+        RetrofitInstance.createPuzzleService(tokenManager)
 }

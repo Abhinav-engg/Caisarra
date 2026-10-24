@@ -10,4 +10,8 @@ internal object SetupColors {
     val Accent = Color(0xFF00CFEA)
     val Gold = Color(0xFFFFC629)
     val Orange = Color(0xFFFF9F43)
+    val Bullet = Color(0xFFB57A42)
+    val Blitz = Color(0xFFFFD13B)
+    val Rapid = Color(0xFF3898EC)
+    val Daily = Color(0xFFEF4444)
 }

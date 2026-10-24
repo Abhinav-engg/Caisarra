@@ -24,7 +24,7 @@ import com.abhinav.caisarra.presentation.game.components.setup.TimeControlOption
 import com.abhinav.caisarra.presentation.game.components.setup.TimeControlSection
 import com.abhinav.caisarra.presentation.game.viewmodel.PassAndPlaySetupEvent
 import com.abhinav.caisarra.presentation.game.viewmodel.PassAndPlaySetupUiState
-
+import com.abhinav.caisarra.presentation.game.components.AutoQueenPromotionSetting
 @Composable
 fun PassAndPlaySetupScreen(
     state: PassAndPlaySetupUiState,
@@ -91,6 +91,8 @@ fun PassAndPlaySetupScreen(
                 }
             )
         }
+        Spacer(Modifier.height(20.dp))
+        AutoQueenPromotionSetting()
 
         if (state.clockEnabled) {
             Spacer(Modifier.height(28.dp))

@@ -1,4 +1,6 @@
 package com.abhinav.caisarra.presentation.navigation
+import com.abhinav.caisarra.data.local.RatingPreferencesStore
+import com.abhinav.caisarra.data.local.SessionExpiredEvent
 import com.abhinav.caisarra.presentation.tournament.CreateTournamentScreen
 import com.abhinav.caisarra.presentation.tournament.CreateTournamentViewModel
 import com.abhinav.caisarra.presentation.tournament.TournamentDetailScreen
@@ -19,7 +21,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
+import androidx.navigation.NavOptionsBuilder
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -72,6 +76,7 @@ import com.abhinav.caisarra.presentation.invite.JoinInviteScreen
 import com.abhinav.caisarra.presentation.invite.JoinInviteViewModel
 import com.abhinav.caisarra.presentation.screens.AllGameHistoryScreen
 import com.abhinav.caisarra.data.repository.ProfileRepository
+import com.abhinav.caisarra.data.repository.RatingRepository
 import com.abhinav.caisarra.presentation.screens.ProfileScreen
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import com.abhinav.caisarra.data.repository.ChatRepository
@@ -80,10 +85,12 @@ import com.abhinav.caisarra.presentation.game.viewmodel.MatchmakingViewModel
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.abhinav.caisarra.data.repository.GameAnalysisRepository
-import com.abhinav.caisarra.presentation.game.screens.BotSetupScreen
+import com.abhinav.caisarra.presentation.screens.BotSetupScreen
+import com.abhinav.caisarra.presentation.screens.BotGameScreen
+import com.abhinav.caisarra.presentation.screens.BotHistoryScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.BotSetupViewModel
+import com.abhinav.caisarra.presentation.game.viewmodel.BotHistoryViewModel
 import com.abhinav.caisarra.presentation.game.BotGameViewModel
-import com.abhinav.caisarra.presentation.game.screens.BotGameScreen
 import com.abhinav.caisarra.presentation.game.screens.PassAndPlaySetupScreen
 import com.abhinav.caisarra.presentation.game.viewmodel.PassAndPlaySetupViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
@@ -93,6 +100,39 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.abhinav.caisarra.presentation.invite.FriendsViewModel
 import com.abhinav.caisarra.presentation.invite.PlayWithFriendHomeScreen
 import com.abhinav.caisarra.presentation.invite.PlayWithFriendScreen
+import com.abhinav.caisarra.data.location.LocationProvider
+import com.abhinav.caisarra.data.repository.FriendsRepository
+import com.abhinav.caisarra.data.repository.NearbyRepository
+import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
+import com.abhinav.caisarra.presentation.screens.MenuScreen
+import com.abhinav.caisarra.presentation.screens.StatsScreen
+import com.abhinav.caisarra.presentation.viewmodel.StatsViewModel
+import com.abhinav.caisarra.presentation.screens.ThemeScreen
+import com.abhinav.caisarra.presentation.screens.MessagesScreen
+import com.abhinav.caisarra.presentation.screens.LeaderboardScreen
+import com.abhinav.caisarra.presentation.screens.DeleteAccountScreen
+import com.abhinav.caisarra.presentation.screens.SettingsDetailScreen
+import com.abhinav.caisarra.presentation.screens.NearbyScreen
+import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.data.remote.RetrofitInstance
+import com.abhinav.caisarra.data.repository.CommunityRepository
+import com.abhinav.caisarra.presentation.community.CommunityScreen
+import com.abhinav.caisarra.presentation.community.CommunityViewModel
+import com.abhinav.caisarra.presentation.screens.PuzzlesScreen
+import com.abhinav.caisarra.presentation.screens.DailyPuzzleScreen
+import com.abhinav.caisarra.presentation.screens.RushScreen
+import com.abhinav.caisarra.presentation.puzzles.PuzzlesHubViewModel
+import com.abhinav.caisarra.presentation.puzzles.DailyPuzzleViewModel
+import com.abhinav.caisarra.presentation.puzzles.RushViewModel
+import com.abhinav.caisarra.data.repository.PuzzleRepository
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.ui.unit.dp
+import com.abhinav.caisarra.data.repository.ClubRepository
+import com.abhinav.caisarra.presentation.club.ClubScreen
+import com.abhinav.caisarra.presentation.club.ClubViewModel
+import com.abhinav.caisarra.presentation.club.ClubDetailScreen
+import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -121,15 +161,40 @@ object AppRoutes {
     const val EDIT_PROFILE = "edit_profile"
     const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
     const val GAME_ANALYSIS = "game_analysis/{gameId}"
-
-
     const val BOT_SETUP = "bot_setup"
     const val BOT_GAME = "bot_game/{gameId}"
+    const val BOT_HISTORY = "bot_history"
     const val PASS_AND_PLAY_SETUP = "pass_and_play_setup"
     const val TOURNAMENTS = "tournaments"
     const val CREATE_TOURNAMENT = "create_tournament"
     const val PLAY_WITH_FRIEND_HOME = "play_with_friend_home"
     const val TOURNAMENT_DETAIL = "tournament/{id}?code={code}"
+    const val NEARBY = "nearby"
+    const val COMMUNITY = "community"
+    const val PUZZLES = "puzzles"
+    const val DAILY_PUZZLE = "daily_puzzle"
+    const val PUZZLE_RUSH = "puzzle_rush?mode={mode}"
+
+    fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
+    const val SOCIAL = "social"
+    const val MENU = "menu"
+    const val STATS = "stats?username={username}&mode={mode}"
+    fun stats(username: String? = null, mode: String? = null): String {
+        val queryParts = mutableListOf<String>()
+        if (!username.isNullOrBlank()) queryParts.add("username=${Uri.encode(username.trim())}")
+        if (!mode.isNullOrBlank()) queryParts.add("mode=${Uri.encode(mode.trim())}")
+        return if (queryParts.isEmpty()) "stats" else "stats?${queryParts.joinToString("&")}"
+    }
+    const val THEME = "theme"
+    const val MESSAGES = "messages"
+    const val CLUBS = "clubs"
+    const val CLUB_DETAIL = "club_detail/{clubId}"
+
+    fun clubDetail(clubId: String): String =
+        "club_detail/${Uri.encode(clubId)}"
+    const val LEADERBOARD = "leaderboard"
+    const val DELETE_ACCOUNT = "delete_account"
+    const val SETTINGS_DETAIL = "settings_detail"
 
     fun tournamentDetail(id: String, inviteCode: String? = null): String =
         "tournament/${Uri.encode(id)}" +
@@ -155,15 +220,6 @@ object AppRoutes {
                 "&clock=$clockEnabled"
     }
 
-//    fun resumeGame(): String {
-//        return "game" + "?resume=true" +
-//                "&white=" +
-//                "&black=" +
-//                "&minutes=10" +
-//                "&flip=false" +
-//                "&undo=true"
-//    }
-
     fun gameHistory(
         gameId: String
     ): String {
@@ -172,6 +228,7 @@ object AppRoutes {
     fun onlineGame(gameId: String) = "online_game/${Uri.encode(gameId)}"
 
     fun botGame(gameId: String) = "bot_game/${Uri.encode(gameId)}"
+    fun botHistory() = BOT_HISTORY
 
     fun joinInvite(code: String) = "play/${Uri.encode(code)}"
     fun matchmaking(minutes: Int, incrementSeconds: Int) = "matchmaking/$minutes/$incrementSeconds"
@@ -183,11 +240,18 @@ object AppRoutes {
 private inline fun <reified VM : ViewModel> screenViewModel(crossinline create: () -> VM): VM =
     viewModel(factory = viewModelFactory { initializer { create() } })
 
-/**
- * Navigate back safely. If the current destination has no previous entry,
- * replace the navigation stack with the supplied fallback route.
- */
+private fun NavController.isResumed(): Boolean =
+    currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED
+
+private fun NavController.navigateOnce(
+    route: String,
+    builder: NavOptionsBuilder.() -> Unit = {}
+) {
+    if (isResumed()) navigate(route, builder)
+}
+
 private fun NavController.safeBack(fallbackRoute: String) {
+    if (!isResumed()) return
     if (currentDestination?.route == fallbackRoute) return
 
     val popped = runCatching { popBackStack() }.getOrDefault(false)
@@ -234,9 +298,11 @@ fun AppNavigation(authRepository: AuthRepository) {
         PendingInviteStore.get(context)
     }
     var startDestination by remember { mutableStateOf<String?>(null) }
+    val isGuestUser by authRepository.isGuestFlow.collectAsState(initial = false)
 
     LaunchedEffect(Unit) {
         val pending = pendingOtpStore.getPendingVerification()
+        val isGuest = authRepository.isGuest()
         startDestination = when {
             pending != null -> {
                 val purpose = runCatching {
@@ -252,7 +318,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             }
 
             authRepository.isLoggedIn() -> AppRoutes.HOME
-            authRepository.isGuest() -> AppRoutes.GUEST_HOME
+            isGuest -> AppRoutes.GUEST_HOME
             else -> AppRoutes.LOGIN
         }
     }
@@ -270,35 +336,73 @@ fun AppNavigation(authRepository: AuthRepository) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
 
-    fun openPlayGame() {
-        navController.navigate(AppRoutes.GAME_SETUP)
-    }
-
-    fun startLocalGame(minutes: Int) {
-        navController.navigate(
-            AppRoutes.newGame(
-                white = "Player 1",
-                black = "Player 2",
-                minutes = minutes,
-                flip = false,
-                undo = true,
-                clockEnabled = true
-            )
-        ) {
-            popUpTo(AppRoutes.GAME_SETUP) { inclusive = true }
+    LaunchedEffect(Unit) {
+        SessionExpiredEvent.events.collect {
+            navController.navigate(AppRoutes.LOGIN) {
+                popUpTo(navController.graph.id) { inclusive = true }
+                launchSingleTop = true
+            }
         }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = start
-    ) {
+    fun openPlayGame() {
+        navController.navigateOnce(AppRoutes.GAME_SETUP)
+    }
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val bottomNavRoutes = remember {
+        setOf(
+            AppRoutes.HOME,
+            AppRoutes.GUEST_HOME,
+            AppRoutes.PUZZLES,
+            AppRoutes.NEARBY,
+            AppRoutes.COMMUNITY,
+            AppRoutes.SOCIAL,
+            AppRoutes.MENU
+        )
+    }
+    val showBottomBar = currentRoute in bottomNavRoutes
+
+    Scaffold(
+        containerColor = Color(0xFF080D13),
+        bottomBar = {
+            if (showBottomBar) {
+                AppBottomNavigationBar(
+                    currentRoute = currentRoute,
+                    onNavigateTo = { route ->
+                        val homeRoute = if (isGuestUser) AppRoutes.GUEST_HOME else AppRoutes.HOME
+                        val targetRoute = if (route == AppRoutes.HOME) {
+                            homeRoute
+                        } else {
+                            route
+                        }
+                        if (currentRoute != targetRoute) {
+                            navController.navigate(targetRoute) {
+                                popUpTo(homeRoute) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = start,
+            modifier = Modifier.padding(bottom = if (showBottomBar) innerPadding.calculateBottomPadding() else 0.dp)
+        ) {
         composable(route = AppRoutes.LOGIN) {
             LoginScreen(
                 viewModel = screenViewModel { LoginViewModel(authRepository) },
                 onLoginSuccess = { navController.goHomeThenPendingInvite(pendingInviteStore) },
-                onForgotPasswordClick = { navController.navigate(AppRoutes.RESET_PASSWORD) },
-                onSignUpClick = { navController.navigate(AppRoutes.REGISTER) },
+                onForgotPasswordClick = { navController.navigateOnce(AppRoutes.RESET_PASSWORD) },
+                onSignUpClick = { navController.navigateOnce(AppRoutes.REGISTER) },
                 onContinueAsGuestClick = {
                     scope.launch {
                         when (val result = authRepository.guestLogin()) {
@@ -374,15 +478,26 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     profileRepository = ProfileRepository(
                         service = authRepository.createProfileService()
+                    ),
+                    ratingPreferenceStore = RatingPreferencesStore.get(
+                        context.applicationContext
+                    ),
+                    puzzleRepository = PuzzleRepository(
+                        service = authRepository.createPuzzleService()
                     )
-
                 )
-
             }
 
 
             val guestHomeState by guestHomeViewModel.state.collectAsState()
             LaunchedEffect(Unit) {
+                if (authRepository.isLoggedIn()) {
+                    navController.navigate(AppRoutes.HOME) {
+                        popUpTo(AppRoutes.GUEST_HOME) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                    return@LaunchedEffect
+                }
                 guestId = authRepository.getGuestId().orEmpty()
             }
             GuestHomeScreen(
@@ -390,21 +505,21 @@ fun AppNavigation(authRepository: AuthRepository) {
                 gameHistory = guestHomeState.gameHistory,
                 isLoadingHistory = guestHomeState.isLoadingHistory,
                 onPlayGame = {
-                    navController.navigate(AppRoutes.PASS_AND_PLAY_SETUP)
+                    navController.navigateOnce(AppRoutes.PASS_AND_PLAY_SETUP)
                 },
                 onReviewGame = { gameId ->
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.gameHistory(gameId)
                     )
                 },
                 onViewAllHistory = {
-                    navController.navigate(AppRoutes.ALL_GAME_HISTORY)
+                    navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY)
                 },
                 onSignIn = {
                     navController.goToLogin()
                 },
                 onSignUp = {
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.REGISTER
                     )
                 },
@@ -429,7 +544,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
                 isLoggingOut = isLoggingOut,
                 onOpenProfile = {
-                    navController.navigate(AppRoutes.PROFILE)
+                    navController.navigateOnce(AppRoutes.PROFILE)
                 }
             )
         }
@@ -446,8 +561,13 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     profileRepository = ProfileRepository(
                         service = authRepository.createProfileService()
+                    ),
+                    ratingPreferenceStore = RatingPreferencesStore.get(
+                        context.applicationContext
+                    ),
+                    puzzleRepository = PuzzleRepository(
+                        service = authRepository.createPuzzleService()
                     )
-
                 )
             }
 
@@ -459,9 +579,43 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
                 onReviewGame = { gameId ->
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.gameHistory(gameId)
                     )
+                }
+            )
+        }
+        composable(route = AppRoutes.COMMUNITY) {
+            val tokenManager = remember {
+                TokenManager.get(context)
+            }
+
+            val accessToken by tokenManager.accessTokenFlow
+                .collectAsState(initial = null)
+
+            val communityViewModel = screenViewModel {
+                CommunityViewModel(
+                    repository = CommunityRepository(
+                        RetrofitInstance.createCommunityService(
+                            tokenManager
+                        )
+                    ),
+                    remoteGameRepository = RemoteGameRepository(
+                        RetrofitInstance.createGamesService(
+                            tokenManager
+                        )
+                    )
+                )
+            }
+
+
+            CommunityScreen(
+                viewModel = communityViewModel,
+                isRegisteredUser = !accessToken.isNullOrBlank(),
+                onBack = {
+                    scope.launch {
+                        navController.safeBack(homeRoute(authRepository))
+                    }
                 }
             )
         }
@@ -558,28 +712,71 @@ fun AppNavigation(authRepository: AuthRepository) {
                     ),
                     profileRepository = ProfileRepository(
                         service = authRepository.createProfileService()
+                    ),
+                    ratingPreferenceStore = RatingPreferencesStore.get(
+                        context.applicationContext
+                    ),
+                    puzzleRepository = PuzzleRepository(
+                        service = authRepository.createPuzzleService()
                     )
-
                 )
             }
 
             HomeScreen(
                 viewModel = homeViewModel,
-                onStartChallenge = {openPlayGame()},
-                onViewAllHistory = {navController.navigate(AppRoutes.ALL_GAME_HISTORY)},
+                onStartChallenge = { openPlayGame() },
+                onStartQuickPlay = {
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Online matchmaking requires a registered account.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            navController.navigateOnce(AppRoutes.LOGIN)
+                            return@launch
+                        }
+                        navController.navigateOnce(
+                            AppRoutes.matchmaking(10, 0)
+                        )
+                    }
+                },
+                onOpenActiveGame = { gameId ->
+                    navController.navigateOnce(
+                        AppRoutes.onlineGame(gameId)
+                    )
+                },
+                onViewAllHistory = { navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY) },
 
 
 
                 onReviewGame = { gameId ->
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.gameHistory(gameId)
                     )
                 },
                 onLogoutSuccess = {
                     navController.goToLogin()
                 },
+                onOpenNearby = {
+                    navController.navigateOnce(AppRoutes.NEARBY) {
+                        launchSingleTop = true
+                    }
+                },
+                onPlayBots = {
+                    navController.navigateOnce(AppRoutes.BOT_SETUP)
+                },
                 onOpenProfile = {
-                    navController.navigate(AppRoutes.PROFILE)
+                    navController.navigateOnce(AppRoutes.PROFILE)
+                },
+                onStreakClick = {
+                    navController.navigateOnce(AppRoutes.DAILY_PUZZLE)
+                },
+                onOpenCommunity = {
+                    navController.navigate(AppRoutes.COMMUNITY)
+                },
+                onStatsClick = { mode ->
+                    navController.navigateOnce(AppRoutes.stats(mode = mode.ratingKey))
                 }
             )
         }
@@ -590,7 +787,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             val setupState by setupViewModel.state.collectAsState()
             GameSetupScreen(
                 state = setupState,
-                onOpenTimeControls = { navController.navigate(AppRoutes.TIME_CONTROLS) },
+                onOpenTimeControls = { navController.navigateOnce(AppRoutes.TIME_CONTROLS) },
                 onStartMatch = {
                     scope.launch {
                         if (authRepository.isGuest() || !authRepository.isLoggedIn()
@@ -600,7 +797,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 Toast.LENGTH_LONG
                             ).show()
 
-                            navController.navigate(AppRoutes.LOGIN)
+                            navController.navigateOnce(AppRoutes.LOGIN)
                             return@launch
                         }
                         val minutes = setupState.minutes.toInt()
@@ -623,7 +820,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                             ).show()
                             return@launch
                         }
-                        navController.navigate(
+                        navController.navigateOnce(
                             AppRoutes.matchmaking(minutes, increment)
                         )
                     }
@@ -639,12 +836,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 Toast.LENGTH_LONG
                             ).show()
 
-                            navController.navigate(AppRoutes.LOGIN)
+                            navController.navigateOnce(AppRoutes.LOGIN)
                             return@launch
                         }
 
-                        // Open the intermediate Play a Friend screen first.
-                        navController.navigate(AppRoutes.PLAY_WITH_FRIEND_HOME) {
+                        navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND_HOME) {
                             launchSingleTop = true
                         }
                     }
@@ -658,15 +854,15 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 "Tournaments require a registered account.",
                                 Toast.LENGTH_LONG
                             ).show()
-                            navController.navigate(AppRoutes.LOGIN)
+                            navController.navigateOnce(AppRoutes.LOGIN)
                             return@launch
                         }
-                        navController.navigate(AppRoutes.TOURNAMENTS)
+                        navController.navigateOnce(AppRoutes.TOURNAMENTS)
                     }
                 },
-                onPlayBots = { navController.navigate(AppRoutes.BOT_SETUP) },
+                onPlayBots = { navController.navigateOnce(AppRoutes.BOT_SETUP) },
                 onPassAndPlay = {
-                    navController.navigate(AppRoutes.PASS_AND_PLAY_SETUP)
+                    navController.navigateOnce(AppRoutes.PASS_AND_PLAY_SETUP)
                 },
                 onBack = {
                     scope.launch {
@@ -684,7 +880,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 state = setupState,
                 onEvent = setupViewModel::onEvent,
                 onStart = {
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.newGame(
                             white = "Player 1",
                             black = "Player 2",
@@ -814,9 +1010,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
                     }
-                },
-                onAnalyze = {
-                    navController.navigate(AppRoutes.gameAnalysis(gameId))
                 }
             )
         }
@@ -887,28 +1080,30 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = gameViewModel,
                 onHome = {
                     scope.launch {
-                        val destination = if (authRepository.isGuest()) {
-                            AppRoutes.GUEST_HOME
-                        } else {
-                            AppRoutes.HOME
-                        }
-                        val popped = navController.popBackStack(
-                            destination,
-                            inclusive = false
-                        )
-                        if (!popped) {
-                            navController.navigate(destination) {
-                                popUpTo(navController.graph.id) {
-                                    inclusive = true
+                        if (navController.isResumed()) {
+                            val destination = if (authRepository.isGuest()) {
+                                AppRoutes.GUEST_HOME
+                            } else {
+                                AppRoutes.HOME
+                            }
+                            val popped = navController.popBackStack(
+                                destination,
+                                inclusive = false
+                            )
+                            if (!popped) {
+                                navController.navigate(destination) {
+                                    popUpTo(navController.graph.id) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
                                 }
-                                launchSingleTop = true
                             }
                         }
                     }
                 },
 
                 onNewGame = {
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.GAME_SETUP
                     ) {
                         popUpTo(
@@ -1114,19 +1309,15 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(route = AppRoutes.PROFILE) {
             val profileViewModel = screenViewModel {
                 ProfileViewModel(
-                    ProfileRepository(
+                    repository = ProfileRepository(
                         authRepository.createProfileService()
+                    ),
+                    ratingRepository = RatingRepository(
+                        authRepository.createRatingService()
                     )
                 )
             }
 
-            var isGuest by remember {
-                mutableStateOf(false)
-            }
-
-            LaunchedEffect(Unit) {
-                isGuest = authRepository.isGuest()
-            }
             val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
             val profileEntry = currentBackStackEntry
@@ -1150,7 +1341,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             ProfileScreen(
                 viewModel = profileViewModel,
-                isGuest = isGuest,
+                isGuest = isGuestUser,
                 onBack = {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
@@ -1160,7 +1351,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.navigate(AppRoutes.EDIT_PROFILE){
                         launchSingleTop = true
                     }
-
+                },
+                onStatsClick = { mode ->
+                    navController.navigateOnce(AppRoutes.stats(mode = mode.ratingKey))
                 }
             )
         }
@@ -1168,11 +1361,16 @@ fun AppNavigation(authRepository: AuthRepository) {
         composable(route = AppRoutes.EDIT_PROFILE) {
             val editProfileViewModel = screenViewModel {
                 ProfileViewModel(
-                    ProfileRepository(
+                    repository = ProfileRepository(
                         authRepository.createProfileService()
+                    ),
+                    ratingRepository = RatingRepository(
+                        authRepository.createRatingService()
                     )
                 )
             }
+
+
 
             EditProfileScreen(
                 viewModel = editProfileViewModel,
@@ -1184,6 +1382,68 @@ fun AppNavigation(authRepository: AuthRepository) {
                         ?.savedStateHandle
                         ?.set("profile_refresh_requested", true)
                     navController.safeBack(AppRoutes.PROFILE)
+                }
+            )
+        }
+
+        composable(route = AppRoutes.NEARBY) {
+            val nearbyViewModel = screenViewModel {
+                NearbyViewModel(
+                    repository = NearbyRepository(authRepository.createNearbyService()),
+                    locationProvider = LocationProvider(context)
+                )
+            }
+
+            NearbyScreen(
+                viewModel = nearbyViewModel,
+                onBack = { navController.safeBack(AppRoutes.HOME) },
+                onChallenge = { player ->
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Challenging players requires a registered account.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            navController.navigate(AppRoutes.CREATE_INVITE)
+                        }
+                    }
+                },
+                onAddFriend = { player ->
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Adding friends requires a registered account.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@launch
+                        }
+                        val friendsRepo = FriendsRepository(context)
+                        friendsRepo.sendFriendRequest(player.username)
+                            .onSuccess {
+                                Toast.makeText(
+                                    context,
+                                    "Friend request sent to ${player.username}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            .onFailure { error ->
+                                Toast.makeText(
+                                    context,
+                                    error.message ?: "Could not send friend request",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                    }
+                },
+                onChat = { player ->
+                    Toast.makeText(
+                        context,
+                        "Direct messaging is coming soon",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             )
         }
@@ -1201,7 +1461,29 @@ fun AppNavigation(authRepository: AuthRepository) {
                         popUpTo(AppRoutes.BOT_SETUP) { inclusive = true }
                     }
                 },
+                onViewHistory = {
+                    navController.navigateOnce(AppRoutes.BOT_HISTORY)
+                },
                 onBack = { navController.safeBack(AppRoutes.GAME_SETUP) }
+            )
+        }
+
+        composable(route = AppRoutes.BOT_HISTORY) {
+            val botHistoryViewModel = screenViewModel {
+                BotHistoryViewModel(context as Application)
+            }
+
+            BotHistoryScreen(
+                viewModel = botHistoryViewModel,
+                onOpenGame = { gameId ->
+                    navController.navigateOnce(AppRoutes.botGame(gameId))
+                },
+                onNewGame = {
+                    navController.navigate(AppRoutes.BOT_SETUP) {
+                        popUpTo(AppRoutes.BOT_HISTORY) { inclusive = true }
+                    }
+                },
+                onBack = { navController.safeBack(AppRoutes.BOT_SETUP) }
             )
         }
 
@@ -1227,5 +1509,351 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
+        composable(route = AppRoutes.PUZZLES) {
+            val tokenManager = remember { TokenManager.get(context) }
+            val hubViewModel = screenViewModel {
+                PuzzlesHubViewModel(
+                    PuzzleRepository(
+                        RetrofitInstance.createPuzzleService(tokenManager)
+                    )
+                )
+            }
+            PuzzlesScreen(
+                viewModel = hubViewModel,
+                onPlayDailyPuzzle = {
+                    navController.navigateOnce(AppRoutes.DAILY_PUZZLE) {
+                        launchSingleTop = true
+                    }
+                },
+                onPlayPuzzleRush = { mode ->
+                    navController.navigate(AppRoutes.puzzleRush(mode)) {
+                        popUpTo(AppRoutes.PUZZLES) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(route = AppRoutes.DAILY_PUZZLE) {
+            val tokenManager = remember { TokenManager.get(context) }
+            val dailyViewModel = screenViewModel {
+                DailyPuzzleViewModel(
+                    PuzzleRepository(
+                        RetrofitInstance.createPuzzleService(tokenManager)
+                    )
+                )
+            }
+            DailyPuzzleScreen(
+                viewModel = dailyViewModel,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = AppRoutes.PUZZLE_RUSH,
+            arguments = listOf(
+                navArgument("mode") {
+                    type = NavType.StringType
+                    defaultValue = "3min"
+                }
+            )
+        ) { backStackEntry ->
+            val mode = backStackEntry.arguments?.getString("mode") ?: "3min"
+            val tokenManager = remember { TokenManager.get(context) }
+            val rushViewModel = screenViewModel {
+                RushViewModel(
+                    puzzleRepository = PuzzleRepository(
+                        RetrofitInstance.createPuzzleService(tokenManager)
+                    ),
+                    mode = mode
+                )
+            }
+            RushScreen(
+                viewModel = rushViewModel,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = AppRoutes.SOCIAL) {
+            LaunchedEffect(Unit) {
+                navController.navigate(AppRoutes.COMMUNITY) {
+                    popUpTo(AppRoutes.SOCIAL) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+        }
+
+        composable(route = AppRoutes.MENU) {
+            MenuScreen(
+                onBack = {
+                    scope.launch {
+                        navController.safeBack(homeRoute(authRepository))
+                    }
+                },
+                onSettingsClick = {
+                    navController.navigateOnce(AppRoutes.SETTINGS_DETAIL)
+                },
+                onProfileClick = {
+                    navController.navigateOnce(AppRoutes.PROFILE)
+                },
+                onStatsClick = {
+                    navController.navigateOnce(AppRoutes.stats())
+                },
+                onGameHistoryClick = {
+                    navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY)
+                },
+                onThemeClick = {
+                    navController.navigateOnce(AppRoutes.THEME)
+                },
+                onFriendsClick = {
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Friends require a registered account. Please sign in.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            navController.navigateOnce(AppRoutes.LOGIN)
+                        } else {
+                            navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
+                        }
+                    }
+                },
+                onClubsClick = {
+                    navController.navigateOnce(AppRoutes.CLUBS)
+                },
+                onLeaderboardClick = {
+                    navController.navigateOnce(AppRoutes.LEADERBOARD)
+                },
+                onDeleteAccountClick = {
+                    navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)
+                },
+                onLogoutClick = {
+                    scope.launch {
+                        authRepository.logout()
+                        navController.navigate(AppRoutes.LOGIN) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = AppRoutes.STATS,
+            arguments = listOf(
+                navArgument("username") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("mode") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val usernameArg = backStackEntry.arguments?.getString("username")
+            val modeArg = backStackEntry.arguments?.getString("mode")
+            val statsViewModel = screenViewModel {
+                StatsViewModel(
+                    authRepository = authRepository,
+                    ratingRepository = RatingRepository(authRepository.createRatingService()),
+                    profileRepository = ProfileRepository(authRepository.createProfileService()),
+                    initialUsername = usernameArg,
+                    initialMode = modeArg
+                )
+            }
+            StatsScreen(
+                viewModel = statsViewModel,
+                onBack = { navController.popBackStack() },
+                onGameClick = { gameId ->
+                    navController.navigateOnce(AppRoutes.gameHistory(gameId))
+                },
+                onSignIn = {
+                    navController.navigateOnce(AppRoutes.LOGIN)
+                }
+            )
+        }
+
+        composable(route = AppRoutes.THEME) {
+            ThemeScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = AppRoutes.MESSAGES) {
+            MessagesScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+//        composable(route = AppRoutes.CLUBS) {
+//            ClubsScreen(
+//                onBack = { navController.popBackStack() }
+//            )
+//        }
+
+            composable(route = AppRoutes.CLUBS) {
+                val tokenManager = remember(context) {
+                    TokenManager.get(context)
+                }
+
+                val clubRepository = remember(tokenManager) {
+                    ClubRepository(
+                        RetrofitInstance.createClubService(tokenManager)
+                    )
+                }
+
+                val clubViewModel: ClubViewModel = viewModel(
+                    key = "club-list",
+                    factory = viewModelFactory {
+                        initializer {
+                            ClubViewModel(clubRepository)
+                        }
+                    }
+                )
+
+                var isRegisteredUser by remember {
+                    mutableStateOf(false)
+                }
+
+                LaunchedEffect(authRepository) {
+                    isRegisteredUser = runCatching {
+                        authRepository.isLoggedIn() &&
+                                !authRepository.isGuest()
+                    }.getOrDefault(false)
+                }
+
+                ClubScreen(
+                    viewModel = clubViewModel,
+                    isRegisteredUser = isRegisteredUser,
+                    onBack = {
+                        navController.safeBack(AppRoutes.MENU)
+                    },
+                    onOpenClub = { clubId ->
+                        navController.navigateOnce(
+                            AppRoutes.clubDetail(clubId)
+                        )
+                    },
+                    onSignIn = {
+                        navController.navigateOnce(AppRoutes.LOGIN)
+                    }
+                )
+            }
+
+            composable(
+                route = AppRoutes.CLUB_DETAIL,
+                arguments = listOf(
+                    navArgument("clubId") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+
+                val clubId = backStackEntry.arguments
+                    ?.getString("clubId")
+                    .orEmpty()
+
+                val tokenManager = remember(context) {
+                    TokenManager.get(context)
+                }
+
+                val clubRepository = remember(tokenManager) {
+                    ClubRepository(
+                        RetrofitInstance.createClubService(tokenManager)
+                    )
+                }
+
+                if (clubId.isBlank()) {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                } else {
+                    ClubDetailScreen(
+                        clubId = clubId,
+                        repository = clubRepository,
+                        onBack = {
+                            navController.safeBack(AppRoutes.CLUBS)
+                        }
+                    )
+                }
+            }
+
+
+            composable(route = AppRoutes.LEADERBOARD) {
+                val tokenManager = remember(context) {
+                    TokenManager.get(context)
+                }
+
+                val leaderboardService = remember(tokenManager) {
+                    RetrofitInstance.createLeaderboardService(tokenManager)
+                }
+
+                val clubService = remember(tokenManager) {
+                    RetrofitInstance.createClubService(tokenManager)
+                }
+
+                val clubRepository = remember(clubService) {
+                    ClubRepository(clubService)
+                }
+
+                val leaderboardViewModel = screenViewModel {
+                    LeaderboardViewModel(
+                        service = leaderboardService,
+                        clubService = clubService,
+                        clubRepository = clubRepository
+                    )
+                }
+
+                LeaderboardScreen(
+                    onBack = {
+                        navController.safeBack(AppRoutes.MENU)
+                    },
+                    viewModel = leaderboardViewModel
+                )
+            }
+
+
+
+            composable(route = AppRoutes.SETTINGS_DETAIL) {
+            SettingsDetailScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = AppRoutes.DELETE_ACCOUNT) {
+            DeleteAccountScreen(
+                onBack = { navController.popBackStack() },
+                onConfirmDelete = {
+                    scope.launch {
+                        authRepository.logout()
+                        Toast.makeText(
+                            context,
+                            "Account deletion request submitted.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        navController.navigate(AppRoutes.LOGIN) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+        }
+
+    }
     }
 }

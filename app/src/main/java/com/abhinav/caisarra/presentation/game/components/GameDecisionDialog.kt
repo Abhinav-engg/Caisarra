@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.abhinav.caisarra.presentation.common.singleClick
 import com.caisaara.ui.theme.ButtonGradientEnd
 import com.caisaara.ui.theme.ButtonGradientMid
 import com.caisaara.ui.theme.ButtonGradientStart
@@ -86,7 +87,7 @@ fun GameDecisionDialog(decision: GameDecision, opponentName: String = "Your oppo
                         tint = Color(0xFF91A1B5),
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .clickable(onClick = onDismiss)
+                            .clickable(onClick = singleClick(onDismiss))
                     )
                 }
             }
@@ -95,7 +96,7 @@ fun GameDecisionDialog(decision: GameDecision, opponentName: String = "Your oppo
                 label = confirmLabel,
                 icon = if (isIncoming) Icons.Default.Check else icon,
                 color = if (isResign) Color(0xFFE9232B) else null,
-                onClick = onConfirm
+                onClick = singleClick(onConfirm)
             )
             GameDecisionButton(
                 label = dismissLabel,

@@ -1,5 +1,13 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material3.Icon
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.game.components.CapturedPieces
@@ -53,6 +62,9 @@ import com.abhinav.caisarra.presentation.game.components.GameDecision
 import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 import com.abhinav.caisarra.presentation.game.components.MoveTicker
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 
@@ -63,14 +75,36 @@ fun GameScreen(
     onNewGame: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+
+    val autoQueen = isAutoQueenEnabled(context)
+
+    LaunchedEffect(state.promotionPending, autoQueen) {
+        if (state.promotionPending != null && autoQueen) {
+            viewModel.onIntent(GameIntent.Promote(
+                com.abhinav.caisarra.presentation.game.model.PieceType.QUEEN
+            ))
+        }
+    }
     ChessMoveSound(
         board = state.board,
         moveEventId = state.moveAnimationEvent?.id,
         moveTo = state.moveAnimationEvent?.to
     )
     var showHomeResignDialog by remember { mutableStateOf(false) }
+    var showResultDialog by remember(state.gameResult != null) { mutableStateOf(state.gameResult != null) }
     val requestHome = {
         if (state.gameResult == null) showHomeResignDialog = true else onHome()
+    }
+
+    BackHandler(enabled = true) {
+        if (showResultDialog) {
+            showResultDialog = false
+        } else if (state.gameResult == null) {
+            showHomeResignDialog = true
+        } else {
+            onHome()
+        }
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -189,6 +223,10 @@ fun GameScreen(
                         }
                     )
 
+                    if (state.gameResult != null && !showResultDialog) {
+                        GameOverPill(onClick = { showResultDialog = true })
+                    }
+
                     Spacer(modifier = Modifier.height(2.dp))
                     MoveTicker(
                         moves = state.moves,
@@ -224,12 +262,14 @@ fun GameScreen(
 
     }
 
-    state.promotionPending?.let {
-        PromotionDialog(
-            onPieceSelected = { pieceType ->
-                onIntent(GameIntent.Promote(pieceType))
-            }
-        )
+    if (!autoQueen) {
+        state.promotionPending?.let {
+            PromotionDialog(
+                onPieceSelected = { pieceType ->
+                    onIntent(GameIntent.Promote(pieceType))
+                }
+            )
+        }
     }
     if (showHomeResignDialog) {
         GameDecisionDialog(
@@ -242,14 +282,17 @@ fun GameScreen(
         )
     }
 
-    state.gameResult?.let { result ->
-        GameResultDialog(
-            result = result,
-            onNewGame = onNewGame,
-            onHome = onHome,
-            whitePlayerName = state.whitePlayerName,
-            blackPlayerName = state.blackPlayerName
-        )
+    if (showResultDialog) {
+        state.gameResult?.let { result ->
+            GameResultDialog(
+                result = result,
+                onNewGame = onNewGame,
+                onHome = onHome,
+                whitePlayerName = state.whitePlayerName,
+                blackPlayerName = state.blackPlayerName,
+                onDismiss = { showResultDialog = false }
+            )
+        }
     }
 }
 
@@ -319,6 +362,7 @@ private fun TopPlayerStrip(
             hasClock = state.hasClock,
             captured = state.capturedBlackPieces,
             capturedOnTop = false,
+            advantage = state.whiteAdvantage,
             modifier = modifier
         )
     } else {
@@ -329,6 +373,7 @@ private fun TopPlayerStrip(
             hasClock = state.hasClock,
             captured = state.capturedWhitePieces,
             capturedOnTop = false,
+            advantage = state.blackAdvantage,
             modifier = modifier
         )
     }
@@ -347,6 +392,7 @@ private fun BottomPlayerStrip(
             hasClock = state.hasClock,
             captured = state.capturedWhitePieces,
             capturedOnTop = true,
+            advantage = state.blackAdvantage,
             modifier = modifier
         )
     } else {
@@ -357,6 +403,7 @@ private fun BottomPlayerStrip(
             hasClock = state.hasClock,
             captured = state.capturedBlackPieces,
             capturedOnTop = true,
+            advantage = state.whiteAdvantage,
             modifier = modifier
         )
     }
@@ -370,6 +417,7 @@ private fun PlayerStrip(
     hasClock: Boolean,
     captured: List<Piece>,
     capturedOnTop: Boolean,
+    advantage: Int = 0,
     modifier: Modifier = Modifier
 ) {
     if (hasClock) {
@@ -378,6 +426,7 @@ private fun PlayerStrip(
             timeMillis = timeMillis,
             isActive = isActive,
             capturedPieces = captured,
+            advantage = advantage,
             modifier = modifier
         )
     } else {
@@ -407,12 +456,15 @@ private fun PlayerStrip(
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
 
-                if (captured.isNotEmpty()) {
+                if (captured.isNotEmpty() || advantage > 0) {
                     CapturedPieces(
-                        pieces = captured
+                        pieces = captured,
+                        advantage = advantage
                     )
                 }
             }
@@ -450,5 +502,36 @@ private fun CenteredColumn(content: @Composable () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         content()
+    }
+}
+
+@Composable
+private fun GameOverPill(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF1E293B))
+            .border(1.dp, Color(0xFF3B82F6), RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.EmojiEvents,
+                contentDescription = null,
+                tint = Color(0xFF60A5FA),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Game Over • Tap to view result",
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }

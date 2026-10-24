@@ -3,30 +3,45 @@ package com.abhinav.caisarra.presentation.game.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.model.PieceType
+import com.abhinav.caisarra.presentation.game.model.pointValue
 
 @Composable
 fun CapturedPieces(
     pieces: List<Piece>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    advantage: Int = 0
 ) {
+    val sortedPieces = remember(pieces) {
+        pieces.sortedWith(
+            compareBy<Piece> { it.type.pointValue }
+                .thenBy { it.type.ordinal }
+        )
+    }
+
     Row(
         modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-
-        pieces.forEach { piece ->
-
+        sortedPieces.forEach { piece ->
             val resource = when (piece.color) {
-
                 PieceColor.WHITE -> {
                     when (piece.type) {
                         PieceType.KING -> R.drawable.white_king
@@ -51,12 +66,20 @@ fun CapturedPieces(
             }
 
             Image(
-                painter = painterResource(
-                    id = resource
-                ),
+                painter = painterResource(id = resource),
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                modifier = Modifier.size(18.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        if (advantage > 0) {
+            Text(
+                text = "+$advantage",
+                color = Color(0xFF9FB0C3),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 2.dp)
             )
         }
     }

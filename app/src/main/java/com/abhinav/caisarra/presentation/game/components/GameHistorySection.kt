@@ -5,8 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +25,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.abhinav.caisarra.presentation.screens.components.SkeletonBox
+import com.abhinav.caisarra.presentation.screens.components.rememberShimmerBrush
 
 private val HistoryCardColor = Color(0xFF071821)
 private val HistoryBorderColor = Color(0xFF173541)
@@ -74,34 +76,107 @@ fun GameHistorySection(
 
         when {
             isLoading -> {
+                val shimmerBrush = rememberShimmerBrush()
+
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            HistoryCardColor,
-                            RoundedCornerShape(20.dp)
-                        )
-                        .border(
-                            1.dp,
-                            HistoryBorderColor,
-                            RoundedCornerShape(20.dp)
-                        )
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    CircularProgressIndicator(
-                        color = HistoryAccent,
-                        modifier = Modifier.size(28.dp),
-                        strokeWidth = 3.dp
-                    )
+                    repeat(3) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    HistoryCardColor,
+                                    RoundedCornerShape(20.dp)
+                                )
+                                .border(
+                                    1.dp,
+                                    HistoryBorderColor,
+                                    RoundedCornerShape(20.dp)
+                                )
+                                .padding(
+                                    horizontal = 14.dp,
+                                    vertical = 16.dp
+                                ),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Player names and chess pieces
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                SkeletonBox(
+                                    modifier = Modifier.size(28.dp),
+                                    shape = CircleShape,
+                                    brush = shimmerBrush
+                                )
 
-                    Text(
-                        text = "Loading game history...",
-                        color = HistorySecondary,
-                        fontFamily = JetBrainsMono,
-                        fontSize = 12.sp
-                    )
+                                SkeletonBox(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(13.dp),
+                                    brush = shimmerBrush
+                                )
+
+                                SkeletonBox(
+                                    modifier = Modifier
+                                        .width(24.dp)
+                                        .height(10.dp),
+                                    brush = shimmerBrush
+                                )
+
+                                SkeletonBox(
+                                    modifier = Modifier.size(28.dp),
+                                    shape = CircleShape,
+                                    brush = shimmerBrush
+                                )
+                            }
+
+                            // Date and time
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                SkeletonBox(
+                                    modifier = Modifier
+                                        .width(105.dp)
+                                        .height(10.dp),
+                                    brush = shimmerBrush
+                                )
+
+                                SkeletonBox(
+                                    modifier = Modifier
+                                        .width(65.dp)
+                                        .height(10.dp),
+                                    brush = shimmerBrush
+                                )
+                            }
+
+                            // Result and review button
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                SkeletonBox(
+                                    modifier = Modifier
+                                        .width(115.dp)
+                                        .height(12.dp),
+                                    brush = shimmerBrush
+                                )
+
+                                SkeletonBox(
+                                    modifier = Modifier
+                                        .width(78.dp)
+                                        .height(30.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    brush = shimmerBrush
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -203,7 +278,6 @@ private fun GameHistoryCard(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Both players stay in the same row.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -251,7 +325,6 @@ private fun GameHistoryCard(
                 )
             }
 
-            // Date followed by time.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)

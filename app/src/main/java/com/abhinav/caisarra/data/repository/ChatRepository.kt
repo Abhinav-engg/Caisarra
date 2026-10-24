@@ -9,7 +9,7 @@ import com.abhinav.caisarra.data.remote.dto.SendChatRequest
 
 class ChatRepository private constructor(context: Context) {
 
-    private val service = RetrofitInstance.createChatService(TokenManager(context))
+    private val service = RetrofitInstance.createChatService(TokenManager.get(context))
 
     suspend fun getMessages(gameId: String): Result<List<ChatMessageDto>> =
         call { service.getMessages(gameId) }

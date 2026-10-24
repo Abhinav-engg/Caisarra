@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.game
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.GameSocketClient
@@ -54,12 +55,12 @@ class OnlineGameViewModel(
     private val socket = GameSocketClient(application)
     private val chatRepository = ChatRepository.get(application)
     private val gameRepository = RemoteGameRepository(
-        RetrofitInstance.createGamesService(TokenManager(application))
+        RetrofitInstance.createGamesService(TokenManager.get(application))
     )
     private val profileRepository = ProfileRepository(
-        RetrofitInstance.createProfileService(TokenManager(application))
+        RetrofitInstance.createProfileService(TokenManager.get(application))
     )
-    private val ratingService = RetrofitInstance.createRatingService(TokenManager(application))
+    private val ratingService = RetrofitInstance.createRatingService(TokenManager.get(application))
     private val inviteRepository = InviteRepository.get(application)
     private val clock = GameClock(viewModelScope, 0L, 0L) { }
 
@@ -82,12 +83,21 @@ class OnlineGameViewModel(
 
     private val _myUserId = MutableStateFlow<Long?>(null)
     val myUserId: StateFlow<Long?> = _myUserId.asStateFlow()
+    private val _myUsername = MutableStateFlow<String?>(null)
     private val _drawOfferedBy = MutableStateFlow<Long?>(null)
     val drawOfferedBy: StateFlow<Long?> = _drawOfferedBy.asStateFlow()
     private val _chatMuted = MutableStateFlow(false)
     val chatMuted: StateFlow<Boolean> = _chatMuted.asStateFlow()
     private val _opponentName = MutableStateFlow("Your opponent")
     val opponentName: StateFlow<String> = _opponentName.asStateFlow()
+    private val _opponentAvatarUrl = MutableStateFlow<String?>(null)
+    val opponentAvatarUrl: StateFlow<String?> = _opponentAvatarUrl.asStateFlow()
+    private val _myAvatarUrl = MutableStateFlow<String?>(null)
+    val myAvatarUrl: StateFlow<String?> = _myAvatarUrl.asStateFlow()
+    private var whitePlayerId: Long? = null
+    private var blackPlayerId: Long? = null
+    private var whitePlayerUsername: String? = null
+    private var blackPlayerUsername: String? = null
     private var myColor: PieceColor? = null
     private var pendingPromotionFrom: Square? = null
     private var finished = false
@@ -98,6 +108,8 @@ class OnlineGameViewModel(
     private var lastOpponentUsername: String? = null
     private var animationSequence = 0L
     private var lastAnimatedMoveKey: String? = null
+    private var uciMoves: List<String> = emptyList()
+    private var viewedPly: Int? = null
 
     init {
         viewModelScope.launch {
@@ -127,46 +139,113 @@ class OnlineGameViewModel(
                 }
             }
         }
+        val tokenManager = TokenManager.get(getApplication())
+        viewModelScope.launch {
+            val token = tokenManager.getAccessToken()
+            _myUserId.value = token?.let { TokenExpiryChecker.getUserId(it) }
+            _myUsername.value = tokenManager.getUsername()
+            runCatching { profileRepository.getMyProfile() }.getOrNull()?.let { profile ->
+                _myAvatarUrl.value = profile.avatarUrl
+                if (_myUsername.value.isNullOrBlank() && profile.username.isNotBlank()) {
+                    _myUsername.value = profile.username
+                }
+            }
+            enrichChatMessages()
+        }
         viewModelScope.launch {
             if (!socket.connect(gameId)) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "Please log in to play online.") }
                 return@launch
             }
-            _myUserId.value = TokenManager(getApplication()).getAccessToken()
-                ?.let { TokenExpiryChecker.getUserId(it) }
             if (withTimeoutOrNull(8000) { socket.connected.first { it } } == null) reconnect()
         }
         viewModelScope.launch {
             chatRepository.getMessages(gameId).onSuccess { history ->
                 _chat.update { current -> (history + current).distinctBy { it.id }.sortedBy { it.createdAt } }
+                enrichChatMessages()
             }
         }
         viewModelScope.launch { loadGameDetailsAndRating() }
     }
 
+    private fun resolveMode(timeControlMinutes: Int, explicitMode: String? = null): String {
+        val normalized = explicitMode?.trim()?.lowercase()
+        if (normalized in setOf("bullet", "blitz", "rapid", "daily")) {
+            return normalized!!
+        }
+        return when {
+            timeControlMinutes >= 1440 -> "daily"
+            timeControlMinutes < 3 -> "bullet"
+            timeControlMinutes < 10 -> "blitz"
+            else -> "rapid"
+        }
+    }
+
     private suspend fun loadGameDetailsAndRating() {
         val game = runCatching { gameRepository.getGame(gameId) }.getOrNull()
-        mode = game?.timeControlMode?.lowercase()
+        if (game != null) {
+            if (game.whitePlayerId != 0L) whitePlayerId = game.whitePlayerId
+            if (game.blackPlayerId != 0L) blackPlayerId = game.blackPlayerId
+            if (!game.whiteUsername.isNullOrBlank()) whitePlayerUsername = game.whiteUsername
+            if (!game.blackUsername.isNullOrBlank()) blackPlayerUsername = game.blackUsername
+        }
+        val minutes = game?.timeControlMinutes ?: _uiState.value.timeControlMinutes
+        mode = resolveMode(minutes, game?.timeControlMode ?: mode)
+        val daily = minutes >= 1440
         _uiState.update { current ->
             current.copy(
                 isRated = game?.rated ?: current.isRated,
                 timeControlMinutes = game?.timeControlMinutes ?: current.timeControlMinutes,
-                incrementSeconds = game?.incrementMs?.div(1000L)?.toInt() ?: current.incrementSeconds
+                incrementSeconds = game?.incrementMs?.div(1000L)?.toInt() ?: current.incrementSeconds,
+                isDailyMode = if (daily) true else current.isDailyMode
             )
+        }
+        if (game != null && game.position.isNotBlank()) {
+            runCatching {
+                if (_uiState.value.board.isEmpty()) {
+                    engine.loadFen(game.position)
+                    _uiState.update { current ->
+                        if (current.board.isEmpty()) {
+                            current.copy(
+                                isLoading = false,
+                                board = engine.pieces().toUiBoard(),
+                                isDailyMode = daily
+                            )
+                        } else current
+                    }
+                }
+            }
+        }
+        val myId = _myUserId.value
+        val myName = _myUsername.value
+        val resolvedOpponent = when {
+            myId != null && myId == game?.whitePlayerId -> game?.blackUsername
+            myId != null && myId == game?.blackPlayerId -> game?.whiteUsername
+            myName != null && myName.equals(game?.whiteUsername, ignoreCase = true) -> game?.blackUsername
+            myName != null && myName.equals(game?.blackUsername, ignoreCase = true) -> game?.whiteUsername
+            else -> game?.blackUsername ?: game?.whiteUsername
+        }?.takeIf { it.isNotBlank() && !it.equals("Opponent", true) && !it.equals("Your opponent", true) }
+
+        if (!resolvedOpponent.isNullOrBlank()) {
+            lastOpponentUsername = resolvedOpponent
+            _opponentName.value = resolvedOpponent
+            loadOpponentProfile(resolvedOpponent)
         }
         refreshRating(captureChange = false)
     }
 
     private suspend fun refreshRating(captureChange: Boolean) {
         val profile = runCatching { profileRepository.getMyProfile() }.getOrNull() ?: return
-        val currentRating = mode
-            ?.let { profile.ratings?.get(it)?.rating }
-            ?: profile.rating
+        val currentMode = mode ?: resolveMode(_uiState.value.timeControlMinutes)
+        val currentRating = profile.ratings?.get(currentMode)?.rating ?: profile.rating
         _uiState.update { current ->
             val change = if (captureChange && current.playerRating != null && currentRating != null) {
                 currentRating - current.playerRating
             } else {
                 current.ratingChange
+            }
+            if (captureChange && change != null) {
+                RatingPreferencesStore.get(getApplication()).setRatingChange(currentMode, change)
             }
             current.copy(
                 ratingChange = change,
@@ -241,10 +320,120 @@ class OnlineGameViewModel(
         }
     }
 
+    fun undo() {
+        val totalPlies = uciMoves.size
+        if (totalPlies == 0) return
+        val currentPly = viewedPly ?: totalPlies
+        if (currentPly <= 0) return
+        viewPly(currentPly - 1)
+    }
+
+    fun redo() {
+        val totalPlies = uciMoves.size
+        val currentPly = viewedPly ?: totalPlies
+        if (currentPly >= totalPlies) return
+        viewPly(currentPly + 1)
+    }
+
+    private fun viewPly(ply: Int) {
+        val totalPlies = uciMoves.size
+        if (ply < 0 || ply > totalPlies) return
+
+        if (ply == totalPlies) {
+            viewedPly = null
+            val inCheck = engine.checkSquare() != null
+            val turn = engine.turn()
+            val whiteTurn = turn == DomainPieceColor.White
+            val (capturedWhite, capturedBlack) = calculateCapturedPieces(uciMoves)
+            val lastMove = uciMoves.lastOrNull()
+            _uiState.update {
+                it.copy(
+                    board = engine.pieces().toUiBoard(),
+                    selectedSquare = null,
+                    legalMoves = emptyList(),
+                    promotionPending = null,
+                    lastMoveFrom = lastMove?.let { m -> squareFrom(m.take(2)) },
+                    lastMoveTo = lastMove?.let { m -> squareFrom(m.drop(2).take(2)) },
+                    isWhiteInCheck = inCheck && whiteTurn,
+                    isBlackInCheck = inCheck && !whiteTurn,
+                    isWhiteTurn = whiteTurn,
+                    capturedWhitePieces = capturedWhite,
+                    capturedBlackPieces = capturedBlack,
+                    canUndo = totalPlies > 0,
+                    canRedo = false,
+                    undoEnabled = true,
+                    redoEnabled = false
+                )
+            }
+            return
+        }
+
+        viewedPly = ply
+        val replayEngine = ChesslibEngine()
+        var lastFrom: Square? = null
+        var lastTo: Square? = null
+        val historyMoves = uciMoves.take(ply)
+
+        for (uci in historyMoves) {
+            if (uci.length < 4) continue
+            val fromFile = uci[0] - 'a'
+            val fromRank = uci[1].digitToIntOrNull()?.minus(1) ?: continue
+            val toFile = uci[2] - 'a'
+            val toRank = uci[3].digitToIntOrNull()?.minus(1) ?: continue
+            if (fromFile !in 0..7 || toFile !in 0..7 || fromRank !in 0..7 || toRank !in 0..7) continue
+
+            val promotion = when (uci.getOrNull(4)?.lowercaseChar()) {
+                'q' -> DomainPieceType.Queen
+                'r' -> DomainPieceType.Rook
+                'b' -> DomainPieceType.Bishop
+                'n' -> DomainPieceType.Knight
+                else -> null
+            }
+            val move = DomainMove(
+                from = DomainSquare(fromFile, fromRank),
+                to = DomainSquare(toFile, toRank),
+                promotion = promotion
+            )
+            replayEngine.play(move)
+        }
+
+        val lastMove = historyMoves.lastOrNull()
+        if (lastMove != null && lastMove.length >= 4) {
+            lastFrom = squareFrom(lastMove.take(2))
+            lastTo = squareFrom(lastMove.drop(2).take(2))
+        }
+
+        val inCheck = replayEngine.checkSquare() != null
+        val turn = replayEngine.turn()
+        val whiteTurn = turn == DomainPieceColor.White
+        val (capturedWhite, capturedBlack) = calculateCapturedPieces(historyMoves)
+
+        _uiState.update {
+            it.copy(
+                board = replayEngine.pieces().toUiBoard(),
+                selectedSquare = null,
+                legalMoves = emptyList(),
+                promotionPending = null,
+                lastMoveFrom = lastFrom,
+                lastMoveTo = lastTo,
+                isWhiteInCheck = inCheck && whiteTurn,
+                isBlackInCheck = inCheck && !whiteTurn,
+                isWhiteTurn = whiteTurn,
+                capturedWhitePieces = capturedWhite,
+                capturedBlackPieces = capturedBlack,
+                canUndo = ply > 0,
+                canRedo = true,
+                undoEnabled = true,
+                redoEnabled = true
+            )
+        }
+    }
+
     fun onSquareClick(square: Square) {
         val state = _uiState.value
         val color = myColor ?: return
 
+        if (viewedPly != null && viewedPly != uciMoves.size) return
         if (finished || awaitingServer || state.promotionPending != null) return
         if (state.isWhiteTurn != (color == PieceColor.WHITE)) return
 
@@ -431,45 +620,144 @@ class OnlineGameViewModel(
     }
 
     private fun addChat(message: SocketIncoming.ChatMessage) {
+        val myId = _myUserId.value
+        val myName = _myUsername.value
+        val isMe = (myId != null && message.senderId == myId) ||
+                (myName != null && message.username.equals(myName, true))
+
+        val senderOpponentName = when (message.senderId) {
+            whitePlayerId -> whitePlayerUsername
+            blackPlayerId -> blackPlayerUsername
+            else -> null
+        }
+        val oppName = senderOpponentName
+            ?: _opponentName.value.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) }
+            ?: lastOpponentUsername
+
+        val oppAvatar = _opponentAvatarUrl.value
+
+        val username = if (isMe) {
+            myName ?: message.username ?: "You"
+        } else {
+            message.username?.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) }
+                ?: oppName
+                ?: "Opponent"
+        }
+
+        val avatar = if (isMe) {
+            message.avatarUrl ?: _myAvatarUrl.value
+        } else {
+            message.avatarUrl ?: oppAvatar
+        }
+
         val dto = ChatMessageDto(
             id = message.id,
             gameId = message.gameId,
             senderId = message.senderId,
+            username = username,
             message = message.message,
-            createdAt = message.createdAt
+            createdAt = message.createdAt,
+            avatarUrl = avatar
         )
         _chat.update { current -> (current + dto).distinctBy { it.id } }
+
+        if (!isMe && oppName != null && _opponentAvatarUrl.value == null) {
+            viewModelScope.launch { loadOpponentProfile(oppName) }
+        }
+    }
+
+    private fun enrichChatMessages() {
+        val myId = _myUserId.value
+        val myName = _myUsername.value
+        val myAvatar = _myAvatarUrl.value
+        val oppName = _opponentName.value.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) }
+            ?: lastOpponentUsername
+        val oppAvatar = _opponentAvatarUrl.value
+
+        _chat.update { messages ->
+            messages.map { msg ->
+                val isMe = (myId != null && msg.senderId == myId) ||
+                        (myName != null && msg.username.equals(myName, true))
+                val targetName = if (isMe) {
+                    myName ?: msg.username ?: "You"
+                } else {
+                    msg.username?.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) }
+                        ?: oppName
+                        ?: "Opponent"
+                }
+                val targetAvatar = if (isMe) {
+                    msg.avatarUrl ?: myAvatar
+                } else {
+                    msg.avatarUrl ?: oppAvatar
+                }
+
+                if (msg.username != targetName || msg.avatarUrl != targetAvatar) {
+                    msg.copy(username = targetName, avatarUrl = targetAvatar)
+                } else {
+                    msg
+                }
+            }
+        }
     }
 
     private suspend fun applyState(state: SocketIncoming.GameState) {
         val moveWasAwaitingServer = awaitingServer
         awaitingServer = false
 
+        if (state.whitePlayerId != 0L) whitePlayerId = state.whitePlayerId
+        if (state.blackPlayerId != 0L) blackPlayerId = state.blackPlayerId
+        if (!state.whiteUsername.isNullOrBlank()) whitePlayerUsername = state.whiteUsername
+        if (!state.blackUsername.isNullOrBlank()) blackPlayerUsername = state.blackUsername
+
         val colorWasUnknown = myColor == null
         if (colorWasUnknown) myColor = resolveColor(state)
 
-        val whiteName = state.whiteUsername?.takeIf { it.isNotBlank() } ?: when (myColor) {
-            PieceColor.WHITE -> "You"
-            PieceColor.BLACK -> "Opponent"
+        val myId = _myUserId.value
+        val myName = _myUsername.value
+
+        val candidateOpponent = when {
+            myColor == PieceColor.WHITE -> state.blackUsername ?: blackPlayerUsername
+            myColor == PieceColor.BLACK -> state.whiteUsername ?: whitePlayerUsername
+            myId != null && myId == state.whitePlayerId -> state.blackUsername ?: blackPlayerUsername
+            myId != null && myId == state.blackPlayerId -> state.whiteUsername ?: whitePlayerUsername
+            myName != null && myName.equals(state.whiteUsername, ignoreCase = true) -> state.blackUsername ?: blackPlayerUsername
+            myName != null && myName.equals(state.blackUsername, ignoreCase = true) -> state.whiteUsername ?: whitePlayerUsername
             else -> null
-        }
-        val blackName = state.blackUsername?.takeIf { it.isNotBlank() } ?: when (myColor) {
-            PieceColor.BLACK -> "You"
-            PieceColor.WHITE -> "Opponent"
-            else -> null
-        }
-        val resolvedOpponent = when (myColor) {
-            PieceColor.WHITE -> blackName
-            PieceColor.BLACK -> whiteName
-            else -> null
-        }
+        }?.takeIf { it.isNotBlank() && !it.equals("Opponent", true) && !it.equals("Your opponent", true) }
+
+        val resolvedOpponent = candidateOpponent
+            ?: _opponentName.value.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) }
+            ?: lastOpponentUsername
+
+        val resolvedMode = resolveMode(state.timeControlMinutes, mode)
+        val modeChanged = mode != resolvedMode
+        mode = resolvedMode
+
         if (!resolvedOpponent.isNullOrBlank()) {
             _opponentName.value = resolvedOpponent
-            if (lastOpponentUsername != resolvedOpponent) {
+            if (lastOpponentUsername != resolvedOpponent || _uiState.value.opponentRating == null || _opponentAvatarUrl.value == null || modeChanged) {
                 lastOpponentUsername = resolvedOpponent
-                viewModelScope.launch { loadOpponentRating(resolvedOpponent) }
+                viewModelScope.launch { loadOpponentProfile(resolvedOpponent) }
             }
         }
+        if (modeChanged) {
+            viewModelScope.launch { refreshRating(captureChange = false) }
+        }
+
+        val whiteName = state.whiteUsername?.takeIf { it.isNotBlank() }
+            ?: whitePlayerUsername
+            ?: when (myColor) {
+                PieceColor.WHITE -> "You"
+                PieceColor.BLACK -> resolvedOpponent ?: "Opponent"
+                else -> null
+            }
+        val blackName = state.blackUsername?.takeIf { it.isNotBlank() }
+            ?: blackPlayerUsername
+            ?: when (myColor) {
+                PieceColor.BLACK -> "You"
+                PieceColor.WHITE -> resolvedOpponent ?: "Opponent"
+                else -> null
+            }
 
         val previousBoard = _uiState.value.board
         val moveKey = state.lastMove?.let {
@@ -531,6 +819,10 @@ class OnlineGameViewModel(
             0
         }
 
+        val initialDailyTimeMs = state.timeControlMinutes.toLong() * 60L * 1000L
+        val whiteTimeMs = if (dailyMode && state.whiteTimeMs <= 0L && !finished) initialDailyTimeMs else state.whiteTimeMs
+        val blackTimeMs = if (dailyMode && state.blackTimeMs <= 0L && !finished) initialDailyTimeMs else state.blackTimeMs
+
         if (dailyMode || finished) {
             clock.stop()
         } else {
@@ -540,76 +832,128 @@ class OnlineGameViewModel(
             )
             clock.start(turn)
         }
+        val newUciMoves = state.moves?.map { it.move }.orEmpty()
+        val wasAtLatest = viewedPly == null || viewedPly == uciMoves.size
+        uciMoves = newUciMoves
+
         val (capturedWhite, capturedBlack) =
-            calculateCapturedPieces(
-                state.moves?.map { it.move }.orEmpty()
-            )
+            calculateCapturedPieces(uciMoves)
 
-        _uiState.update { previous ->
-            previous.copy(
-                isLoading = false,
-                errorMessage = null,
-                board = engine.pieces().toUiBoard(),
-                moveAnimationEvent = animationEvent ?: previous.moveAnimationEvent,
-                capturedWhitePieces = capturedWhite,
-                capturedBlackPieces = capturedBlack,
+        if (wasAtLatest) {
+            viewedPly = null
+            _uiState.update { previous ->
+                previous.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                    board = engine.pieces().toUiBoard(),
+                    moveAnimationEvent = animationEvent ?: previous.moveAnimationEvent,
+                    capturedWhitePieces = capturedWhite,
+                    capturedBlackPieces = capturedBlack,
 
-                whitePlayerName = whiteName
-                    ?: previous.whitePlayerName,
-                blackPlayerName = blackName
-                    ?: previous.blackPlayerName,
+                    whitePlayerName = whiteName
+                        ?: previous.whitePlayerName,
+                    blackPlayerName = blackName
+                        ?: previous.blackPlayerName,
 
-                whiteTimeMillis = state.whiteTimeMs,
-                blackTimeMillis = state.blackTimeMs,
+                    whiteTimeMillis = whiteTimeMs,
+                    blackTimeMillis = blackTimeMs,
 
-                isDailyMode = dailyMode,
-                dailyDaysPerMove = daysPerMove,
+                    isDailyMode = dailyMode,
+                    dailyDaysPerMove = daysPerMove,
 
-                lastMoveAccepted = if (
-                    dailyMode && moveWasAwaitingServer
-                ) {
-                    true
-                } else {
-                    null
-                },
+                    lastMoveAccepted = if (
+                        dailyMode && moveWasAwaitingServer
+                    ) {
+                        true
+                    } else {
+                        null
+                    },
 
-                myColor = myColor,
-                isWhiteTurn = whiteTurn,
-                selectedSquare = null,
-                legalMoves = emptyList(),
-                promotionPending = null,
+                    myColor = myColor,
+                    isWhiteTurn = whiteTurn,
+                    selectedSquare = null,
+                    legalMoves = emptyList(),
+                    promotionPending = null,
 
-                lastMoveFrom = state.lastMove?.let {
-                    squareFrom(it.take(2))
-                } ?: previous.lastMoveFrom,
+                    lastMoveFrom = state.lastMove?.let {
+                        squareFrom(it.take(2))
+                    } ?: previous.lastMoveFrom,
 
-                lastMoveTo = state.lastMove?.let {
-                    squareFrom(it.drop(2).take(2))
-                } ?: previous.lastMoveTo,
+                    lastMoveTo = state.lastMove?.let {
+                        squareFrom(it.drop(2).take(2))
+                    } ?: previous.lastMoveTo,
 
-                isWhiteInCheck = inCheck && whiteTurn,
-                isBlackInCheck = inCheck && !whiteTurn,
+                    isWhiteInCheck = inCheck && whiteTurn,
+                    isBlackInCheck = inCheck && !whiteTurn,
 
-                moves = state.moves
-                    ?.map { it.move }
-                    ?.toMoveUi()
-                    ?: previous.moves,
+                    moves = state.moves
+                        ?.map { it.move }
+                        ?.toMoveUi()
+                        ?: previous.moves,
 
-                isBoardFlipped = if (colorWasUnknown) {
-                    myColor == PieceColor.BLACK
-                } else {
-                    previous.isBoardFlipped
-                },
+                    isBoardFlipped = if (colorWasUnknown) {
+                        myColor == PieceColor.BLACK
+                    } else {
+                        previous.isBoardFlipped
+                    },
 
-                undoEnabled = false,
-                gameResult = if (finished) resultFrom(state.result) else null
-            ).withSideRatings()
+                    undoEnabled = true,
+                    redoEnabled = false,
+                    canUndo = uciMoves.isNotEmpty(),
+                    canRedo = false,
+                    gameResult = if (finished) resultFrom(state.result) else null
+                ).withSideRatings()
+            }
+        } else {
+            _uiState.update { previous ->
+                previous.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                    whitePlayerName = whiteName
+                        ?: previous.whitePlayerName,
+                    blackPlayerName = blackName
+                        ?: previous.blackPlayerName,
+
+                    whiteTimeMillis = whiteTimeMs,
+                    blackTimeMillis = blackTimeMs,
+
+                    isDailyMode = dailyMode,
+                    dailyDaysPerMove = daysPerMove,
+
+                    lastMoveAccepted = if (
+                        dailyMode && moveWasAwaitingServer
+                    ) {
+                        true
+                    } else {
+                        null
+                    },
+
+                    myColor = myColor,
+
+                    moves = state.moves
+                        ?.map { it.move }
+                        ?.toMoveUi()
+                        ?: previous.moves,
+
+                    isBoardFlipped = if (colorWasUnknown) {
+                        myColor == PieceColor.BLACK
+                    } else {
+                        previous.isBoardFlipped
+                    },
+
+                    undoEnabled = true,
+                    redoEnabled = true,
+                    canUndo = (viewedPly ?: 0) > 0,
+                    canRedo = (viewedPly ?: 0) < uciMoves.size,
+                    gameResult = if (finished) resultFrom(state.result) else null
+                ).withSideRatings()
+            }
         }
         if (finished && _uiState.value.isRated && !ratingWasRefreshed) {
             ratingWasRefreshed = true
             viewModelScope.launch {
                 refreshRating(captureChange = true)
-                lastOpponentUsername?.let { loadOpponentRating(it) }
+                lastOpponentUsername?.let { loadOpponentProfile(it) }
             }
         }
     }
@@ -673,13 +1017,23 @@ class OnlineGameViewModel(
     }
 
 
-    private suspend fun loadOpponentRating(username: String) {
-        if (username.equals("You", true) || username.equals("Opponent", true)) return
-        val profile = runCatching { ratingService.getPublicProfile(username).data }.getOrNull() ?: return
-        val rating = mode?.let { profile.ratings?.get(it)?.rating } ?: profile.rating
-        _uiState.update { current ->
-            current.copy(opponentRating = rating ?: current.opponentRating).withSideRatings()
+    private suspend fun loadOpponentProfile(username: String) {
+        if (username.isBlank() || username.equals("You", true) || username.equals("Opponent", true) || username.equals("Your opponent", true)) return
+        lastOpponentUsername = username
+        _opponentName.value = username
+
+        val profile = runCatching { ratingService.getPublicProfile(username).data }.getOrNull()
+        if (profile != null) {
+            val currentMode = mode ?: resolveMode(_uiState.value.timeControlMinutes)
+            val rating = profile.ratings?.get(currentMode)?.rating ?: profile.rating
+            _uiState.update { current ->
+                current.copy(opponentRating = rating ?: current.opponentRating).withSideRatings()
+            }
+            if (!profile.avatarUrl.isNullOrBlank()) {
+                _opponentAvatarUrl.value = profile.avatarUrl
+            }
         }
+        enrichChatMessages()
     }
 
     private fun GameUiState.withSideRatings(): GameUiState {
@@ -689,30 +1043,35 @@ class OnlineGameViewModel(
             whiteRating = when (myColor) {
                 PieceColor.WHITE -> mine
                 PieceColor.BLACK -> theirs
-                null -> whiteRating
+                null -> whiteRating ?: (if (whitePlayerName == "You") mine else theirs)
             },
             blackRating = when (myColor) {
                 PieceColor.BLACK -> mine
                 PieceColor.WHITE -> theirs
-                null -> blackRating
+                null -> blackRating ?: (if (blackPlayerName == "You") mine else theirs)
             }
         )
     }
 
     private suspend fun resolveColor(state: SocketIncoming.GameState): PieceColor? {
-        val myId = _myUserId.value ?: return null
+        val myId = _myUserId.value
+        val myUsername = _myUsername.value
         var white = state.whitePlayerId
         var black = state.blackPlayerId
         if (white == 0L && black == 0L) {
-            val game = runCatching { gameRepository.getGame(gameId) }.getOrNull() ?: return null
-            white = game.whitePlayerId.toLong()
-            black = game.blackPlayerId.toLong()
+            val game = runCatching { gameRepository.getGame(gameId) }.getOrNull()
+            white = game?.whitePlayerId ?: 0L
+            black = game?.blackPlayerId ?: 0L
         }
-        return when (myId) {
-            white -> PieceColor.WHITE
-            black -> PieceColor.BLACK
-            else -> null
+        if (myId != null && (white != 0L || black != 0L)) {
+            if (myId == white) return PieceColor.WHITE
+            if (myId == black) return PieceColor.BLACK
         }
+        if (!myUsername.isNullOrBlank()) {
+            if (state.whiteUsername.equals(myUsername, ignoreCase = true)) return PieceColor.WHITE
+            if (state.blackUsername.equals(myUsername, ignoreCase = true)) return PieceColor.BLACK
+        }
+        return null
     }
 
     private fun resultFrom(result: String?) = when (result) {

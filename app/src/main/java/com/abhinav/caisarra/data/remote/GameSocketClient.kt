@@ -2,7 +2,6 @@ package com.abhinav.caisarra.data.remote
 
 import android.util.Log
 import android.content.Context
-import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.dto.SocketIncoming
 import com.abhinav.caisarra.data.remote.dto.SocketOutgoing
 import com.abhinav.caisarra.data.repository.AuthRepository
@@ -45,7 +44,7 @@ class GameSocketClient(context: Context) {
         if (!AuthRepository.get(appContext).isLoggedIn()) {
             return false
         }
-        val token = TokenManager(appContext).getAccessToken() ?: return false
+        val token = AuthRepository.get(appContext).getValidAccessToken() ?: return false
 
         val url = RetrofitInstance.BASE_URL.toHttpUrl().newBuilder()
             .addPathSegment("ws")

@@ -30,16 +30,60 @@ fun TimeControlsScreen(
     SetupPage {
         SetupHeader("Time Controls", onBack)
         Spacer(Modifier.height(24.dp))
-        TimeControlSection("BULLET", Icons.Default.EmojiEvents, SetupColors.Gold, listOf(TimeControlOption("1 min", 1f, 0f, GameMode.BULLET), TimeControlOption("1 + 1", 1f, 1f, GameMode.BULLET), TimeControlOption("2 + 1", 2f, 1f, GameMode.BULLET), TimeControlOption("3 min", 3f, 0f, GameMode.BULLET)), state.selectedControl) { onEvent(GameSetupEvent.ControlSelected(it.label, it.minutes, it.incrementSeconds, it.mode)) }
+        TimeControlSection(
+            title = "BULLET",
+            icon = Icons.Default.EmojiEvents,
+            color = SetupColors.Bullet,
+            options = listOf(
+                TimeControlOption("1 min", 1f, 0f, GameMode.BULLET),
+                TimeControlOption("1 + 1", 1f, 1f, GameMode.BULLET),
+                TimeControlOption("2 + 1", 2f, 1f, GameMode.BULLET)
+            ),
+            selected = state.selectedControl,
+            selectedMode = state.mode
+        ) {
+            onEvent(GameSetupEvent.ControlSelected(it.label, it.minutes, it.incrementSeconds, it.mode))
+        }
         Spacer(Modifier.height(24.dp))
-        TimeControlSection("BLITZ", Icons.Default.FlashOn, SetupColors.Gold, listOf(TimeControlOption("3 min", 3f, 0f, GameMode.BLITZ), TimeControlOption("3 + 2", 3f, 2f, GameMode.BLITZ), TimeControlOption("5 min", 5f, 0f, GameMode.BLITZ), TimeControlOption("5 + 2", 5f, 2f, GameMode.BLITZ), TimeControlOption("5 + 5", 5f, 5f, GameMode.BLITZ), TimeControlOption("10 min", 10f, 0f, GameMode.BLITZ)), state.selectedControl) { onEvent(GameSetupEvent.ControlSelected(it.label, it.minutes, it.incrementSeconds, it.mode)) }
+        TimeControlSection(
+            title = "BLITZ",
+            icon = Icons.Default.FlashOn,
+            color = SetupColors.Blitz,
+            options = listOf(
+                TimeControlOption("3 min", 3f, 0f, GameMode.BLITZ),
+                TimeControlOption("3 + 2", 3f, 2f, GameMode.BLITZ),
+                TimeControlOption("5 min", 5f, 0f, GameMode.BLITZ),
+                TimeControlOption("5 + 5", 5f, 5f, GameMode.BLITZ),
+                TimeControlOption("5 + 2", 5f, 2f, GameMode.BLITZ)
+            ),
+            selected = state.selectedControl,
+            selectedMode = state.mode
+        ) {
+            onEvent(GameSetupEvent.ControlSelected(it.label, it.minutes, it.incrementSeconds, it.mode))
+        }
         Spacer(Modifier.height(24.dp))
-        TimeControlSection("RAPID", Icons.Default.Schedule, SetupColors.Accent, listOf(TimeControlOption("10 min", 10f, 0f, GameMode.RAPID), TimeControlOption("10 + 5", 10f, 5f, GameMode.RAPID), TimeControlOption("15 + 10", 15f, 10f, GameMode.RAPID), TimeControlOption("20 min", 20f, 0f, GameMode.RAPID), TimeControlOption("30 min", 30f, 0f, GameMode.RAPID), TimeControlOption("60 min", 60f, 0f, GameMode.RAPID)), state.selectedControl) { onEvent(GameSetupEvent.ControlSelected(it.label, it.minutes, it.incrementSeconds, it.mode)) }
+        TimeControlSection(
+            title = "RAPID",
+            icon = Icons.Default.Schedule,
+            color = SetupColors.Rapid,
+            options = listOf(
+                TimeControlOption("10 min", 10f, 0f, GameMode.RAPID),
+                TimeControlOption("15 + 10", 15f, 10f, GameMode.RAPID),
+                TimeControlOption("30 min", 30f, 0f, GameMode.RAPID),
+                TimeControlOption("10 + 5", 10f, 5f, GameMode.RAPID),
+                TimeControlOption("20 min", 20f, 0f, GameMode.RAPID),
+                TimeControlOption("60 min", 60f, 0f, GameMode.RAPID)
+            ),
+            selected = state.selectedControl,
+            selectedMode = state.mode
+        ) {
+            onEvent(GameSetupEvent.ControlSelected(it.label, it.minutes, it.incrementSeconds, it.mode))
+        }
         Spacer(Modifier.height(24.dp))
         TimeControlSection(
             title = "DAILY",
             icon = Icons.Default.Schedule,
-            color = SetupColors.Accent,
+            color = SetupColors.Daily,
             options = listOf(
                 TimeControlOption("1 day", 1440f, 0f, GameMode.DAILY),
                 TimeControlOption("2 days", 2880f, 0f, GameMode.DAILY),
@@ -48,7 +92,8 @@ fun TimeControlsScreen(
                 TimeControlOption("7 days", 10080f, 0f, GameMode.DAILY),
                 TimeControlOption("14 days", 20160f, 0f, GameMode.DAILY)
             ),
-            selected = state.selectedControl
+            selected = state.selectedControl,
+            selectedMode = state.mode
         ) {
             onEvent(
                 GameSetupEvent.ControlSelected(

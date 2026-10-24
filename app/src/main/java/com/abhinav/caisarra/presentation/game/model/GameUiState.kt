@@ -48,4 +48,28 @@ data class GameUiState(
     val canRedo: Boolean = false,
     val moveAnimationEvent: PieceMoveAnimationEvent? = null,
     val moveAnimationConsumedId: Long? = null
-)
+) {
+    val whiteAdvantage: Int
+        get() {
+            if (board.isNotEmpty()) {
+                val whiteScore = board.values.filter { it.color == PieceColor.WHITE }.sumOf { it.pointValue }
+                val blackScore = board.values.filter { it.color == PieceColor.BLACK }.sumOf { it.pointValue }
+                return (whiteScore - blackScore).coerceAtLeast(0)
+            }
+            val whiteCapturedScore = capturedBlackPieces.sumOf { it.pointValue }
+            val blackCapturedScore = capturedWhitePieces.sumOf { it.pointValue }
+            return (whiteCapturedScore - blackCapturedScore).coerceAtLeast(0)
+        }
+
+    val blackAdvantage: Int
+        get() {
+            if (board.isNotEmpty()) {
+                val whiteScore = board.values.filter { it.color == PieceColor.WHITE }.sumOf { it.pointValue }
+                val blackScore = board.values.filter { it.color == PieceColor.BLACK }.sumOf { it.pointValue }
+                return (blackScore - whiteScore).coerceAtLeast(0)
+            }
+            val whiteCapturedScore = capturedBlackPieces.sumOf { it.pointValue }
+            val blackCapturedScore = capturedWhitePieces.sumOf { it.pointValue }
+            return (blackCapturedScore - whiteCapturedScore).coerceAtLeast(0)
+        }
+}

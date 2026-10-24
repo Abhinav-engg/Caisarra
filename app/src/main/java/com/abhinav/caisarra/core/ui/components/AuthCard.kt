@@ -65,7 +65,6 @@ fun AuthCard(
             val topInset = insets.calculateTopPadding()
             val availableHeight = maxHeight - topInset - insets.calculateBottomPadding()
             val width = minOf(maxWidth * 0.88f, AuthCardMaxWidth)
-            //val height = minOf(cardHeight + 40.dp, availableHeight - 24.dp)
             val height = if (useContentHeight) {
                            cardHeight
                    } else { minOf(cardHeight + 40.dp, availableHeight - 24.dp)

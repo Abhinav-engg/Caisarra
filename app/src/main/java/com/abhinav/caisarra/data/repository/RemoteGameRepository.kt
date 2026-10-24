@@ -32,7 +32,11 @@ class RemoteGameRepository(
             .sortedBy { it.moveNumber }
     }
 
-    private fun GameHistoryDto.toGameEntity(
+    suspend fun getRawGameHistory(): List<GameHistoryDto> {
+        return gamesService.getGameHistory()
+    }
+
+    fun GameHistoryDto.toGameEntity(
         username: String
     ): GameEntity {
         val isFinished = status.equals(
@@ -43,8 +47,8 @@ class RemoteGameRepository(
         return GameEntity(
             id = id,
             ownerId = username,
-            whiteName = "White #$whitePlayerId",
-            blackName = "Black #$blackPlayerId",
+            whiteName = whiteUsername?.takeIf { it.isNotBlank() } ?: "White #$whitePlayerId",
+            blackName = blackUsername?.takeIf { it.isNotBlank() } ?: "Black #$blackPlayerId",
             timeControlMinutes = timeControlMinutes,
             incrementSeconds = (incrementMs / 1000L).toInt(),
             moves = "",

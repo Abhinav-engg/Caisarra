@@ -34,10 +34,10 @@ class RatingDataViewModel(
         }
     }
 
-    fun loadModeStats(username: String, mode: String) {
+    fun loadModeStats(username: String, mode: String, range: String? = null) {
         loadData {
             _state.value = _state.value.copy(
-                modeStats = repository.getModeStats(username, mode)
+                modeStats = repository.getModeStats(username, mode, range)
             )
         }
     }

@@ -73,6 +73,8 @@ sealed interface SocketIncoming {
         @SerialName("game_id") val gameId: String,
         @SerialName("sender_id") @JsonNames("user_id") val senderId: Long,
         val message: String,
-        @SerialName("created_at") val createdAt: String
+        @SerialName("created_at") val createdAt: String,
+        @JsonNames("sender_username", "user_name") val username: String? = null,
+        @SerialName("avatar_url") @JsonNames("sender_avatar_url") val avatarUrl: String? = null
     ) : SocketIncoming
 }

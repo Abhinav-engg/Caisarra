@@ -8,7 +8,12 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -73,6 +78,11 @@ import kotlinx.coroutines.launch
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 import com.abhinav.caisarra.presentation.game.components.MoveTicker
 import com.abhinav.caisarra.presentation.game.components.CapturedPieces
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
+import com.abhinav.caisarra.presentation.game.model.GameIntent
+
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
@@ -97,6 +107,15 @@ fun OnlineGameScreen(
         moveTo = state.moveAnimationEvent?.to
     )
     val context = LocalContext.current
+    val autoQueen = isAutoQueenEnabled(context)
+
+    LaunchedEffect(state.promotionPending, autoQueen) {
+        if (state.promotionPending != null && autoQueen) {
+            viewModel.onPromote(
+                com.abhinav.caisarra.presentation.game.model.PieceType.QUEEN
+            )
+        }
+    }
     val scope = rememberCoroutineScope()
     var rematchBusy by remember { mutableStateOf(false) }
     val waiting by viewModel.waitingForOpponent.collectAsState()
@@ -105,6 +124,8 @@ fun OnlineGameScreen(
     val myUserId by viewModel.myUserId.collectAsState()
     val drawOfferedBy by viewModel.drawOfferedBy.collectAsState()
     val opponentName by viewModel.opponentName.collectAsState()
+    val opponentAvatarUrl by viewModel.opponentAvatarUrl.collectAsState()
+    val myAvatarUrl by viewModel.myAvatarUrl.collectAsState()
 
     var showChat by remember { mutableStateOf(false) }
     var showHomeResignDialog by remember { mutableStateOf(false) }
@@ -116,13 +137,20 @@ fun OnlineGameScreen(
         }
     }
     var seenCount by remember { mutableIntStateOf(0) }
+    var showResultDialog by remember(state.gameResult != null) { mutableStateOf(state.gameResult != null) }
 
     LaunchedEffect(showChat, chatMuted, chat.size) {
         if (showChat || chatMuted) seenCount = chat.size
     }
 
-    BackHandler(enabled = showChat || state.gameResult != null) {
-        if (showChat) showChat = false else onHome()
+    BackHandler(enabled = showChat || showResultDialog || state.gameResult != null) {
+        if (showChat) {
+            showChat = false
+        } else if (showResultDialog) {
+            showResultDialog = false
+        } else {
+            onHome()
+        }
     }
 
     val unread = if (showChat || chatMuted) 0 else chat.drop(seenCount).count { it.senderId != myUserId }
@@ -223,9 +251,13 @@ fun OnlineGameScreen(
 
                         Spacer(Modifier.height(8.dp))
                         OnlineActions(
-                            gameOngoing,
-                            viewModel::offerDraw,
-                            viewModel::resign
+                            canUndo = state.canUndo,
+                            canRedo = state.canRedo,
+                            onUndo = viewModel::undo,
+                            onRedo = viewModel::redo,
+                            gameOngoing = gameOngoing,
+                            onOfferDraw = viewModel::offerDraw,
+                            onResign = viewModel::resign
                         )
                     }
                 }
@@ -253,6 +285,10 @@ fun OnlineGameScreen(
                     onFlip = viewModel::flipBoard,
                     onChat = { showChat = true }
                 )
+
+                if (state.gameResult != null && !showResultDialog) {
+                    GameOverPill(onClick = { showResultDialog = true })
+                }
 
                 Spacer(modifier = Modifier.height(2.dp))
                 MoveTicker(
@@ -307,9 +343,13 @@ fun OnlineGameScreen(
             }
 
             OnlineActions(
-                gameOngoing,
-                viewModel::offerDraw,
-                viewModel::resign
+                canUndo = state.canUndo,
+                canRedo = state.canRedo,
+                onUndo = viewModel::undo,
+                onRedo = viewModel::redo,
+                gameOngoing = gameOngoing,
+                onOfferDraw = viewModel::offerDraw,
+                onResign = viewModel::resign
             )
         }
     }
@@ -318,6 +358,9 @@ fun OnlineGameScreen(
             ChatOverlay(
                 chat = chat,
                 myUserId = myUserId,
+                opponentUsername = opponentName,
+                opponentAvatarUrl = opponentAvatarUrl,
+                myAvatarUrl = myAvatarUrl,
                 muted = chatMuted,
                 onToggleMute = viewModel::toggleChatMute,
                 onSend = viewModel::sendChat,
@@ -346,58 +389,67 @@ fun OnlineGameScreen(
         )
     }
 
-    state.promotionPending?.let {PromotionDialog(onPieceSelected = viewModel::onPromote)}
-    state.gameResult?.let { result ->
-        if (state.isRated) {
-            RatedGameResultScreen(
-                state = state,
-                result = result,
-                rematchBusy = rematchBusy,
-                onClose = onHome,
-                onShare = { shareGame(context, viewModel.pgn(), resultShareText(state, result)) },
-                onStartAnalysis = onStartAnalysis,
-                onRematch = {
-                    if (rematchBusy) return@RatedGameResultScreen
-                    rematchBusy = true
-                    scope.launch {
-                        viewModel.createRematch()
-                            .onSuccess { invite ->
-                                copyText(context, invite.link, "Rematch link copied — share it with $opponentName")
-                                shareGame(
-                                    context,
-                                    invite.link,
-                                    "Rematch on Caisaara with $opponentName: ${invite.link}"
-                                )
-                                onRematchStarted(invite.gameId, invite.link, opponentName)
-                            }
-                            .onFailure { error ->
-                                rematchBusy = false
-                                Toast.makeText(
-                                    context,
-                                    error.message ?: "Could not start a rematch with this opponent.",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-                    }
-                },
-                onNewOpponent = {
-                    onNewOpponent(state.timeControlMinutes, state.incrementSeconds)
-                },
-                onSavePgn = { savePgn(context, viewModel.pgn()) },
-                analysisViewModel = analysisViewModel
+    if (!autoQueen) {
+        state.promotionPending?.let {
+            PromotionDialog(
+                onPieceSelected = viewModel::onPromote
             )
-        } else {
-            GameResultDialog(
-                result = result,
-                onNewGame = { onNewOpponent(state.timeControlMinutes, state.incrementSeconds) },
-                onHome = onHome,
-                playerColor = state.myColor,
-                playerRating = state.playerRating,
-                ratingChange = state.ratingChange,
-                isRated = state.isRated,
-                whitePlayerName = state.whitePlayerName,
-                blackPlayerName = state.blackPlayerName
-            )
+        }
+    }
+    if (showResultDialog) {
+        state.gameResult?.let { result ->
+            if (state.isRated) {
+                RatedGameResultScreen(
+                    state = state,
+                    result = result,
+                    rematchBusy = rematchBusy,
+                    onClose = { showResultDialog = false },
+                    onShare = { shareGame(context, viewModel.pgn(), resultShareText(state, result)) },
+                    onStartAnalysis = onStartAnalysis,
+                    onRematch = {
+                        if (rematchBusy) return@RatedGameResultScreen
+                        rematchBusy = true
+                        scope.launch {
+                            viewModel.createRematch()
+                                .onSuccess { invite ->
+                                    copyText(context, invite.link, "Rematch link copied — share it with $opponentName")
+                                    shareGame(
+                                        context,
+                                        invite.link,
+                                        "Rematch on Caisaara with $opponentName: ${invite.link}"
+                                    )
+                                    onRematchStarted(invite.gameId, invite.link, opponentName)
+                                }
+                                .onFailure { error ->
+                                    rematchBusy = false
+                                    Toast.makeText(
+                                        context,
+                                        error.message ?: "Could not start a rematch with this opponent.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                        }
+                    },
+                    onNewOpponent = {
+                        onNewOpponent(state.timeControlMinutes, state.incrementSeconds)
+                    },
+                    onSavePgn = { savePgn(context, viewModel.pgn()) },
+                    analysisViewModel = analysisViewModel
+                )
+            } else {
+                GameResultDialog(
+                    result = result,
+                    onNewGame = { onNewOpponent(state.timeControlMinutes, state.incrementSeconds) },
+                    onHome = onHome,
+                    playerColor = state.myColor,
+                    playerRating = state.playerRating,
+                    ratingChange = state.ratingChange,
+                    isRated = state.isRated,
+                    whitePlayerName = state.whitePlayerName,
+                    blackPlayerName = state.blackPlayerName,
+                    onDismiss = { showResultDialog = false }
+                )
+            }
         }
     }
 }
@@ -463,17 +515,25 @@ private fun OnlineBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra
 }
 
 @Composable
-private fun OnlineActions(gameOngoing: Boolean, onOfferDraw: () -> Unit, onResign: () -> Unit) {
+private fun OnlineActions(
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    gameOngoing: Boolean,
+    onOfferDraw: () -> Unit,
+    onResign: () -> Unit
+) {
     GameBottomBar(
-        canUndo = false,
-        canRedo = false,
+        canUndo = canUndo,
+        canRedo = canRedo,
         optionsEnabled = gameOngoing,
-        onUndo = {},
-        onRedo = {},
+        onUndo = onUndo,
+        onRedo = onRedo,
         onOfferDraw = onOfferDraw,
         onResign = onResign,
         showDraw = true,
-        showUndoRedo = false
+        showUndoRedo = true
     )
 }
 
@@ -481,6 +541,9 @@ private fun OnlineActions(gameOngoing: Boolean, onOfferDraw: () -> Unit, onResig
 private fun ChatOverlay(
     chat: List<ChatMessageDto>,
     myUserId: Long?,
+    opponentUsername: String? = null,
+    opponentAvatarUrl: String? = null,
+    myAvatarUrl: String? = null,
     muted: Boolean,
     onToggleMute: () -> Unit,
     onSend: (String) -> Unit,
@@ -530,6 +593,9 @@ private fun ChatOverlay(
             ChatPanel(
                 messages = chat,
                 myUserId = myUserId,
+                opponentUsername = opponentUsername,
+                opponentAvatarUrl = opponentAvatarUrl,
+                myAvatarUrl = myAvatarUrl,
                 muted = muted,
                 onToggleMute = onToggleMute,
                 onSend = onSend,
@@ -551,6 +617,7 @@ private fun Banner(text: String, background: Color, modifier: Modifier = Modifie
     )
 }
 
+
 @Composable
 private fun OnlineTopBar(
     isRated: Boolean,
@@ -560,47 +627,75 @@ private fun OnlineTopBar(
     onFlip: () -> Unit,
     onChat: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
     ) {
-        TextButton(onClick = onHome) {
-            Text(text = "Home", color = Color.White)
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        val compact = maxWidth < 380.dp
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
                 text = "MOSAIC",
                 color = Color.White,
-                fontSize = 16.sp,
+                fontSize = if (compact) 15.sp else 17.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+                letterSpacing = if (compact) 1.sp else 1.5.sp,
+                maxLines = 1
             )
+
             Text(
                 text = if (isRated) "RATED" else "UNRATED",
                 color = if (isRated) Accent else Color(0xFFA6C1D4),
-                fontSize = 9.sp,
+                fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+                letterSpacing = 1.sp,
+                maxLines = 1
             )
         }
-        Row {
+        TextButton(
+            onClick = onHome,
+            modifier = Modifier.align(Alignment.CenterStart)
+        ) {
+            Text(
+                text = "Home",
+                color = Color.White,
+                fontSize = if (compact) 12.sp else 14.sp,
+                maxLines = 1
+            )
+        }
+        Row(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TextButton(onClick = onFlip) {
-                Text(text = "Flip", color = Color.White)
+                Text(
+                    text = "Flip",
+                    color = Color.White,
+                    fontSize = if (compact) 12.sp else 14.sp,
+                    maxLines = 1
+                )
             }
+
             TextButton(onClick = onChat) {
                 Text(
                     text = when {
-                        muted -> "Chat (muted)"
+                        muted -> if (compact) "Muted" else "Chat (muted)"
                         unread > 0 -> "Chat ($unread)"
                         else -> "Chat"
                     },
-                    color = if (unread > 0) Accent else Color.White
+                    color = if (unread > 0) Accent else Color.White,
+                    fontSize = if (compact) 12.sp else 14.sp,
+                    maxLines = 1
                 )
             }
         }
     }
 }
+
 
 
 @Composable
@@ -609,23 +704,25 @@ private fun TopClock(
     modifier: Modifier = Modifier
 ) {
     if (state.isBoardFlipped) {
-        // White is at the top; show black pieces captured by White.
         ClockBar(
             playerName = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
+            rating = state.whiteRating,
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedBlackPieces,
+            advantage = state.whiteAdvantage,
             modifier = modifier
         )
     } else {
-        // Black is at the top; show white pieces captured by Black.
         ClockBar(
             playerName = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
+            rating = state.blackRating,
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedWhitePieces,
+            advantage = state.blackAdvantage,
             modifier = modifier
         )
     }
@@ -637,25 +734,25 @@ private fun BottomClock(
     modifier: Modifier = Modifier
 ) {
     if (state.isBoardFlipped) {
-        // Black is at the bottom; show white pieces captured by Black.
         ClockBar(
             playerName = state.blackPlayerName,
             timeMillis = state.blackTimeMillis,
             isActive = !state.isWhiteTurn,
-            rating = state.playerRating,
+            rating = state.blackRating,
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedWhitePieces,
+            advantage = state.blackAdvantage,
             modifier = modifier
         )
     } else {
-        // White is at the bottom; show black pieces captured by White.
         ClockBar(
             playerName = state.whitePlayerName,
             timeMillis = state.whiteTimeMillis,
             isActive = state.isWhiteTurn,
-            rating = state.playerRating,
+            rating = state.whiteRating,
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedBlackPieces,
+            advantage = state.whiteAdvantage,
             modifier = modifier
         )
     }
@@ -673,5 +770,36 @@ private fun CenteredColumn(content: @Composable () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         content()
+    }
+}
+
+@Composable
+private fun GameOverPill(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF1E293B))
+            .border(1.dp, Color(0xFF3B82F6), RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.EmojiEvents,
+                contentDescription = null,
+                tint = Color(0xFF60A5FA),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Game Over • Tap to view result",
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }

@@ -17,9 +17,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.R
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.Dp
+
 @Composable
 fun ChallengeCardBackground(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    piecesAlignment: Alignment = Alignment.BottomStart,
+    piecesOffsetY: Dp = 0.dp,
+    alpha: Float = 0.68f
 ) {
     val shape = RoundedCornerShape(20.dp)
     Box(
@@ -40,11 +46,12 @@ fun ChallengeCardBackground(
             ),
             contentDescription = null,
             modifier = Modifier
-                .width(105.dp)
-                .height(125.dp)
-                .align(Alignment.BottomStart),
+                .width(115.dp)
+                .height(135.dp)
+                .align(piecesAlignment)
+                .offset(y = piecesOffsetY),
             contentScale = ContentScale.Fit,
-            alpha = 0.42f
+            alpha = alpha
         )
     }
 }

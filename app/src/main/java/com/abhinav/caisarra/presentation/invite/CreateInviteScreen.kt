@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,6 +44,10 @@ import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
 import com.abhinav.caisarra.presentation.game.components.setup.SetupHeader
 import com.abhinav.caisarra.presentation.game.components.setup.SetupPage
+import com.abhinav.caisarra.presentation.game.components.setup.TimeControlRow
+import com.abhinav.caisarra.presentation.game.screens.TimeControlsScreen
+import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupEvent
+import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupUiState
 
 private val InviteBorder = Color(0xFF26384D)
 private val InviteIcon = Color(0xFF20324C)
@@ -56,77 +61,105 @@ fun CreateInviteScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showQr by remember { mutableStateOf(false) }
+    var showTimeControls by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.link) {
         state.link?.let { shareLink(context, it) }
     }
 
-    SetupPage {
-        SetupHeader("Create Invite", onBack)
-        Spacer(Modifier.height(24.dp))
-        Text("CHOOSE YOUR SIDE", color = SetupColors.Secondary, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SideOption("white", "White", state.color, viewModel::onColorChange, Modifier.weight(1f))
-            SideOption("random", "Random", state.color, viewModel::onColorChange, Modifier.weight(1f))
-            SideOption("black", "Black", state.color, viewModel::onColorChange, Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(20.dp))
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(SetupColors.Card, RoundedCornerShape(18.dp))
-                .border(1.dp, InviteBorder, RoundedCornerShape(18.dp))
-                .padding(horizontal = 14.dp)
-        ) {
-            InviteSwitchRow(
-                title = "Allow Takebacks",
-                subtitle = if (state.allowTakebacks) {
-                    "This friendly game will be unrated"
-                } else {
-                    "Rated by default - turn on for an unrated game"
-                },
-                icon = Icons.AutoMirrored.Filled.Undo,
-                checked = state.allowTakebacks,
-                onCheckedChange = viewModel::onTakebacksChanged
-            )
-            Box(Modifier.fillMaxWidth().height(1.dp).background(InviteBorder))
-            InviteSwitchRow(
-                "Public Spectators",
-                "Friends can watch match live",
-                Icons.Default.RemoveRedEye,
-                true,
-                onCheckedChange = {}
-            )
-        }
-        state.error?.let {
-            Spacer(Modifier.height(14.dp))
-            Text(it, color = Color(0xFFEF4444), fontSize = 13.sp)
-        }
-        Spacer(Modifier.weight(1f))
-        GeneralButton(
-            text = if (state.isLoading) "CREATING..." else "CREATE INVITE",
-            onClick = viewModel::createInvite,
-            enabled = !state.isLoading
+    if (showTimeControls) {
+        BackHandler { showTimeControls = false }
+        TimeControlsScreen(
+            state = GameSetupUiState(
+                minutes = state.timeControlMinutes.toFloat(),
+                bonusSeconds = state.incrementSeconds.toFloat(),
+                selectedControl = state.selectedControl,
+                mode = state.mode
+            ),
+            onEvent = { event ->
+                when (event) {
+                    is GameSetupEvent.ControlSelected -> viewModel.onControlSelected(
+                        event.label, event.minutes, event.incrementSeconds, event.mode
+                    )
+                    is GameSetupEvent.TimeChanged -> viewModel.onTimeChanged(event.minutes)
+                    is GameSetupEvent.BonusChanged -> viewModel.onBonusChanged(event.seconds)
+                }
+            },
+            onConfirm = { showTimeControls = false },
+            onBack = { showTimeControls = false }
         )
-        state.link?.let { link ->
-            Spacer(Modifier.height(16.dp))
-            InviteLink(
-                link = link,
-                context = context,
-                onShowQr = { showQr = true }
-            )
-            Spacer(Modifier.height(16.dp))
-            GeneralButton(
-                text = "ENTER WAITING BOARD",
-                onClick = { state.gameId?.let(onEnterWaitingBoard) }
-            )
-
-            if (showQr) {
-                InviteQrDialog(
-                    link = link,
-                    onDismiss = { showQr = false }
+    } else {
+        SetupPage {
+            SetupHeader("Create Invite", onBack)
+            Spacer(Modifier.height(24.dp))
+            TimeControlRow("${state.mode.label} · ${state.selectedControl}") {
+                showTimeControls = true
+            }
+            Spacer(Modifier.height(20.dp))
+            Text("CHOOSE YOUR SIDE", color = SetupColors.Secondary, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SideOption("white", "White", state.color, viewModel::onColorChange, Modifier.weight(1f))
+                SideOption("random", "Random", state.color, viewModel::onColorChange, Modifier.weight(1f))
+                SideOption("black", "Black", state.color, viewModel::onColorChange, Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SetupColors.Card, RoundedCornerShape(18.dp))
+                    .border(1.dp, InviteBorder, RoundedCornerShape(18.dp))
+                    .padding(horizontal = 14.dp)
+            ) {
+                InviteSwitchRow(
+                    title = "Allow Takebacks",
+                    subtitle = if (state.allowTakebacks) {
+                        "This friendly game will be unrated"
+                    } else {
+                        "Rated by default - turn on for an unrated game"
+                    },
+                    icon = Icons.AutoMirrored.Filled.Undo,
+                    checked = state.allowTakebacks,
+                    onCheckedChange = viewModel::onTakebacksChanged
                 )
+                Box(Modifier.fillMaxWidth().height(1.dp).background(InviteBorder))
+                InviteSwitchRow(
+                    "Public Spectators",
+                    "Friends can watch match live",
+                    Icons.Default.RemoveRedEye,
+                    true,
+                    onCheckedChange = {}
+                )
+            }
+            state.error?.let {
+                Spacer(Modifier.height(14.dp))
+                Text(it, color = Color(0xFFEF4444), fontSize = 13.sp)
+            }
+            Spacer(Modifier.height(28.dp))
+            GeneralButton(
+                text = if (state.isLoading) "CREATING..." else "CREATE INVITE",
+                onClick = viewModel::createInvite,
+                enabled = !state.isLoading
+            )
+            state.link?.let { link ->
+                Spacer(Modifier.height(16.dp))
+                InviteLink(
+                    link = link,
+                    context = context,
+                    onShowQr = { showQr = true }
+                )
+                Spacer(Modifier.height(16.dp))
+                GeneralButton(
+                    text = "ENTER WAITING BOARD",
+                    onClick = { state.gameId?.let(onEnterWaitingBoard) }
+                )
+
+                if (showQr) {
+                    InviteQrDialog(
+                        link = link,
+                        onDismiss = { showQr = false }
+                    )
+                }
             }
         }
     }

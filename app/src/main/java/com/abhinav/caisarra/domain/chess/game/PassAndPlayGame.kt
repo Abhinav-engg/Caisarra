@@ -25,8 +25,8 @@ class PassAndPlayGame(private val engine: ChessEngine = ChesslibEngine()) {
 
     private val redoStack = mutableListOf<Move>()
 
-    val canUndo: Boolean get() = moves.isNotEmpty() && !status.isOver
-    val canRedo: Boolean get() = redoStack.isNotEmpty() && !status.isOver
+    val canUndo: Boolean get() = moves.isNotEmpty()
+    val canRedo: Boolean get() = redoStack.isNotEmpty()
 
 
     fun legalTargets(square: Square): List<Square> =
@@ -45,7 +45,11 @@ class PassAndPlayGame(private val engine: ChessEngine = ChesslibEngine()) {
 
     fun redo(): Boolean {
         if (!canRedo) return false
-        if (!apply(redoStack.last())) return false
+        val move = redoStack.last()
+        val capturedPiece = engine.capturedBy(move)
+        if (!engine.play(move)) return false
+        moves += move
+        captures += capturedPiece
         redoStack.removeAt(redoStack.lastIndex)
         return true
     }
@@ -55,14 +59,6 @@ class PassAndPlayGame(private val engine: ChessEngine = ChesslibEngine()) {
         if (!engine.undo()) return false
         redoStack += moves.removeAt(moves.lastIndex)
         captures.removeAt(captures.lastIndex)
-        return true
-    }
-    private fun apply(move: Move): Boolean {
-        if (status.isOver) return false
-        val capturedPiece = engine.capturedBy(move)
-        if (!engine.play(move)) return false
-        moves += move
-        captures += capturedPiece
         return true
     }
 
