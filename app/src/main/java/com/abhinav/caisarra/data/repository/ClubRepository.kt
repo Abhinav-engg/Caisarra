@@ -99,12 +99,50 @@ class ClubRepository(
 
     suspend fun getClub(id: String): ClubDto = service.getClub(id)
 
-    suspend fun joinClub(clubId: String): ClubDto =
-        requireData(service.joinClub(clubId))
+    suspend fun joinClub(clubId: String): ClubDto {
+        require(clubId.isNotBlank()) { "Invalid club ID." }
+        return decodeJoinedClub(service.joinClub(clubId))
+    }
 
     suspend fun joinByCode(code: String): ClubDto {
         require(code.isNotBlank()) { "Enter a club share code." }
-        return requireData(service.joinClubByCode(code.trim()))
+        return decodeJoinedClub(service.joinClubByCode(code.trim()))
+    }
+
+    /** Accept direct club JSON and common success/data or club/result envelopes. */
+    private fun decodeJoinedClub(response: JsonElement): ClubDto {
+        var current = response
+        repeat(6) {
+            val obj = current as? JsonObject
+                ?: throw IllegalStateException(
+                    "Unexpected response format while joining club."
+                )
+
+            val success = (obj["success"] as? JsonPrimitive)?.booleanOrNull
+            if (success == false) {
+                throw IllegalStateException(
+                    obj["error"]?.jsonPrimitive?.contentOrNull
+                        ?: obj["message"]?.jsonPrimitive?.contentOrNull
+                        ?: "The server rejected the join request."
+                )
+            }
+
+            val nested = obj["data"] ?: obj["club"] ?: obj["result"]
+            if (nested != null && nested != current) {
+                current = nested
+            } else {
+                return try {
+                    clubJson.decodeFromJsonElement(ClubDto.serializer(), obj)
+                } catch (e: Exception) {
+                    throw IllegalStateException(
+                        obj["message"]?.jsonPrimitive?.contentOrNull
+                            ?: "The server returned an unexpected club format.",
+                        e
+                    )
+                }
+            }
+        }
+        throw IllegalStateException("Club response nesting is too deep.")
     }
 
     private fun checkActionResponse(
