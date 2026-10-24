@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,6 +40,17 @@ import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.puzzles.PuzzlesHubViewModel
+import com.caisaara.ui.theme.PuzzleCardBorder
+import com.caisaara.ui.theme.PuzzleHeaderBg
+import com.caisaara.ui.theme.PuzzleItemBg
+import com.caisaara.ui.theme.PuzzleItemBorder
+import com.caisaara.ui.theme.StatsBg
+import com.caisaara.ui.theme.StatsCyan
+import com.caisaara.ui.theme.StatsSkeletonChartBg
+import com.caisaara.ui.theme.TextSizeBadge
+import com.caisaara.ui.theme.TextSizeCaption
+import com.caisaara.ui.theme.TextSizeSubhead
+import com.caisaara.ui.theme.ThemeSlateAccent
 
 @Composable
 fun PuzzlesScreen(
@@ -55,7 +67,7 @@ fun PuzzlesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF080D13))
+            .background(StatsBg)
             .statusBarsPadding()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -87,12 +99,12 @@ private fun PuzzlesHeader() {
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = Color(0xFF0D141E),
+                color = PuzzleHeaderBg,
                 shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
             )
             .border(
                 width = 1.dp,
-                color = Color(0xFF1B2A3A),
+                color = PuzzleCardBorder,
                 shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
             )
             .padding(vertical = 14.dp),
@@ -105,7 +117,7 @@ private fun PuzzlesHeader() {
             Icon(
                 painter = painterResource(id = R.drawable.ic_puzzle_piece),
                 contentDescription = null,
-                tint = Color(0xFF23CDE8),
+                tint = StatsCyan,
                 modifier = Modifier.size(20.dp)
             )
             Text(
@@ -131,8 +143,8 @@ private fun DailyPuzzleCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF0C131D)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1B2A3A))
+        colors = CardDefaults.cardColors(containerColor = StatsSkeletonChartBg),
+        border = BorderStroke(1.dp, PuzzleCardBorder)
     ) {
         Column(
             modifier = Modifier
@@ -163,8 +175,8 @@ private fun DailyPuzzleCard(
             val ratingText = if (rating > 0) "#$rating Rated" else "Unrated"
             Text(
                 text = "Streak: $streak Days • $ratingText",
-                color = Color(0xFF94A3B8),
-                fontSize = 13.sp
+                color = ThemeSlateAccent,
+                fontSize = TextSizeBadge
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -187,8 +199,8 @@ private fun ModesSection(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF0C131D)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1B2A3A))
+        colors = CardDefaults.cardColors(containerColor = StatsSkeletonChartBg),
+        border = BorderStroke(1.dp, PuzzleCardBorder)
     ) {
         Column(
             modifier = Modifier
@@ -223,8 +235,8 @@ private fun ModeItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF131D2A), RoundedCornerShape(16.dp))
-            .border(1.dp, Color(0xFF1F2E40), RoundedCornerShape(16.dp))
+            .background(PuzzleItemBg, RoundedCornerShape(16.dp))
+            .border(1.dp, PuzzleItemBorder, RoundedCornerShape(16.dp))
             .singleClickable(onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 14.dp)
     ) {
@@ -235,7 +247,7 @@ private fun ModeItem(
             Icon(
                 painter = painterResource(id = iconRes),
                 contentDescription = title,
-                tint = Color(0xFF23CDE8),
+                tint = StatsCyan,
                 modifier = Modifier.size(26.dp)
             )
 
@@ -245,14 +257,14 @@ private fun ModeItem(
                 Text(
                     text = title,
                     color = Color.White,
-                    fontSize = 15.sp,
+                    fontSize = TextSizeSubhead,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
-                    color = Color(0xFF94A3B8),
-                    fontSize = 12.sp
+                    color = ThemeSlateAccent,
+                    fontSize = TextSizeCaption
                 )
             }
         }

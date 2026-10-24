@@ -7,14 +7,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -23,7 +24,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -32,17 +32,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.RatingHistoryPoint
+import com.caisaara.ui.theme.StatsCardBg
+import com.caisaara.ui.theme.StatsCardBorder
+import com.caisaara.ui.theme.StatsCyan
+import com.caisaara.ui.theme.StatsTextMuted
+import com.caisaara.ui.theme.TextSizeTiny
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
-
-private val CyanPrimary = Color(0xFF22D3EE)
-private val GridLineColor = Color(0xFF1B2838)
-private val AxisTextColor = Color(0xFF82909E)
-private val TooltipBgColor = Color(0xFF0F1722)
-private val TooltipBorderColor = Color(0xFF22D3EE)
 
 private val DisplayDateFormatter = DateTimeFormatter.ofPattern("dd MMM", Locale.US)
 
@@ -63,7 +62,6 @@ fun RatingGraphView(
     val textMeasurer = rememberTextMeasurer()
     var selectedPointIndex by remember { mutableStateOf<Int?>(null) }
 
-    // Parse dates safely
     val parsedPoints = remember(ratingHistory, startRating) {
         ratingHistory.mapIndexed { index, point ->
             val parsedDate = try {
@@ -92,9 +90,7 @@ fun RatingGraphView(
                     onPress = { offset ->
                         selectedPointIndex = findClosestPointIndex(offset.x, size.width.toFloat(), parsedPoints)
                     },
-                    onTap = {
-                        // Keep or dismiss on tap
-                    }
+                    onTap = {}
                 )
             }
             .pointerInput(parsedPoints) {
@@ -108,9 +104,7 @@ fun RatingGraphView(
                         change.consume()
                         selectedPointIndex = findClosestPointIndex(change.position.x, size.width.toFloat(), parsedPoints)
                     },
-                    onDragEnd = {
-                        // keep selection or clear after short delay
-                    },
+                    onDragEnd = {},
                     onDragCancel = {
                         selectedPointIndex = null
                     }
@@ -129,7 +123,6 @@ fun RatingGraphView(
             val chartWidth = (width - leftAxisPadding - rightPadding).coerceAtLeast(10f)
             val chartHeight = (height - topPadding - bottomPadding).coerceAtLeast(10f)
 
-            // Rating Bounds
             val ratings = if (parsedPoints.isNotEmpty()) {
                 parsedPoints.map { it.rating } + listOf(startRating, currentRating)
             } else {
@@ -152,7 +145,6 @@ fun RatingGraphView(
                 return topPadding + (1f - fraction.coerceIn(0f, 1f)) * chartHeight
             }
 
-            // Draw horizontal gridlines & Y labels
             val gridYPositions = listOf(
                 rawMax to topPadding,
                 rawMid to (topPadding + chartHeight / 2f),
@@ -161,21 +153,19 @@ fun RatingGraphView(
 
             val textStyle = TextStyle(
                 fontFamily = JetBrainsMono,
-                fontSize = 11.sp,
+                fontSize = TextSizeTiny,
                 fontWeight = FontWeight.Medium,
-                color = AxisTextColor
+                color = StatsTextMuted
             )
 
             for ((ratingVal, yPos) in gridYPositions) {
-                // Grid line
                 drawLine(
-                    color = GridLineColor,
+                    color = StatsCardBorder,
                     start = Offset(leftAxisPadding, yPos),
                     end = Offset(width - rightPadding, yPos),
                     strokeWidth = 1.dp.toPx()
                 )
 
-                // Y Axis text
                 val textLayout = textMeasurer.measure(
                     text = ratingVal.toString(),
                     style = textStyle
@@ -190,10 +180,9 @@ fun RatingGraphView(
             }
 
             if (parsedPoints.isEmpty()) {
-                // Empty state: flat line at startRating
                 val baselineY = getY(startRating)
                 drawLine(
-                    color = CyanPrimary.copy(alpha = 0.4f),
+                    color = StatsCyan.copy(alpha = 0.4f),
                     start = Offset(leftAxisPadding, baselineY),
                     end = Offset(width - rightPadding, baselineY),
                     strokeWidth = 2.dp.toPx(),
@@ -202,7 +191,7 @@ fun RatingGraphView(
 
                 val emptyTextLayout = textMeasurer.measure(
                     text = "No rated games in this period",
-                    style = textStyle.copy(color = AxisTextColor.copy(alpha = 0.7f))
+                    style = textStyle.copy(color = StatsTextMuted.copy(alpha = 0.7f))
                 )
                 drawText(
                     textLayoutResult = emptyTextLayout,
@@ -214,7 +203,6 @@ fun RatingGraphView(
                 return@Canvas
             }
 
-            // Calculate X positions for parsedPoints
             val minEpoch = parsedPoints.first().epochDay
             val maxEpoch = parsedPoints.last().epochDay
             val epochSpan = (maxEpoch - minEpoch).coerceAtLeast(1L)
@@ -235,22 +223,21 @@ fun RatingGraphView(
                 )
             }
 
-            // Draw line and gradient
             if (pointOffsets.size == 1) {
                 val single = pointOffsets.first()
                 drawLine(
-                    color = CyanPrimary.copy(alpha = 0.5f),
+                    color = StatsCyan.copy(alpha = 0.5f),
                     start = Offset(leftAxisPadding, single.y),
                     end = Offset(width - rightPadding, single.y),
                     strokeWidth = 2.dp.toPx()
                 )
                 drawCircle(
-                    color = TooltipBgColor,
+                    color = StatsCardBg,
                     radius = 6.dp.toPx(),
                     center = single
                 )
                 drawCircle(
-                    color = CyanPrimary,
+                    color = StatsCyan,
                     radius = 4.dp.toPx(),
                     center = single
                 )
@@ -271,23 +258,21 @@ fun RatingGraphView(
                 fillPath.lineTo(pointOffsets.last().x, topPadding + chartHeight)
                 fillPath.close()
 
-                // Gradient fill
                 drawPath(
                     path = fillPath,
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            CyanPrimary.copy(alpha = 0.25f),
-                            CyanPrimary.copy(alpha = 0.02f)
+                            StatsCyan.copy(alpha = 0.25f),
+                            StatsCyan.copy(alpha = 0.02f)
                         ),
                         startY = topPadding,
                         endY = topPadding + chartHeight
                     )
                 )
 
-                // Neon stroke line
                 drawPath(
                     path = linePath,
-                    color = CyanPrimary,
+                    color = StatsCyan,
                     style = Stroke(
                         width = 2.5.dp.toPx(),
                         cap = StrokeCap.Round,
@@ -295,22 +280,20 @@ fun RatingGraphView(
                     )
                 )
 
-                // Draw dots at each point
                 for (pt in pointOffsets) {
                     drawCircle(
-                        color = TooltipBgColor,
+                        color = StatsCardBg,
                         radius = 4.5.dp.toPx(),
                         center = pt
                     )
                     drawCircle(
-                        color = CyanPrimary,
+                        color = StatsCyan,
                         radius = 2.5.dp.toPx(),
                         center = pt
                     )
                 }
             }
 
-            // Draw X-axis date labels
             val dateLabels = mutableListOf<Pair<String, Float>>()
             if (parsedPoints.isNotEmpty()) {
                 val firstPt = parsedPoints.first()
@@ -349,24 +332,21 @@ fun RatingGraphView(
                 )
             }
 
-            // Draw interactive inspection tooltip if point selected
             selectedPointIndex?.let { selIdx ->
                 if (selIdx in pointOffsets.indices) {
                     val targetOffset = pointOffsets[selIdx]
                     val selPoint = parsedPoints[selIdx]
 
-                    // Vertical guide line
                     drawLine(
-                        color = CyanPrimary.copy(alpha = 0.5f),
+                        color = StatsCyan.copy(alpha = 0.5f),
                         start = Offset(targetOffset.x, topPadding),
                         end = Offset(targetOffset.x, topPadding + chartHeight),
                         strokeWidth = 1.dp.toPx(),
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
                     )
 
-                    // Big glowing center circle
                     drawCircle(
-                        color = CyanPrimary,
+                        color = StatsCyan,
                         radius = 6.dp.toPx(),
                         center = targetOffset
                     )
@@ -376,7 +356,6 @@ fun RatingGraphView(
                         center = targetOffset
                     )
 
-                    // Tooltip text
                     val formattedDate = selPoint.localDate?.format(DisplayDateFormatter) ?: selPoint.dateStr
                     val tooltipText = "${selPoint.rating} ELO • $formattedDate"
                     val tooltipLayout = textMeasurer.measure(
@@ -384,7 +363,7 @@ fun RatingGraphView(
                         style = TextStyle(
                             fontFamily = JetBrainsMono,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
+                            fontSize = TextSizeTiny,
                             color = Color.White
                         )
                     )
@@ -400,16 +379,16 @@ fun RatingGraphView(
                     val tooltipY = (targetOffset.y - tooltipH - 10.dp.toPx()).coerceAtLeast(0f)
 
                     drawRoundRect(
-                        color = TooltipBgColor,
+                        color = StatsCardBg,
                         topLeft = Offset(tooltipX, tooltipY),
-                        size = androidx.compose.ui.geometry.Size(tooltipW, tooltipH),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx())
+                        size = Size(tooltipW, tooltipH),
+                        cornerRadius = CornerRadius(6.dp.toPx())
                     )
                     drawRoundRect(
-                        color = TooltipBorderColor,
+                        color = StatsCyan,
                         topLeft = Offset(tooltipX, tooltipY),
-                        size = androidx.compose.ui.geometry.Size(tooltipW, tooltipH),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx()),
+                        size = Size(tooltipW, tooltipH),
+                        cornerRadius = CornerRadius(6.dp.toPx()),
                         style = Stroke(width = 1.dp.toPx())
                     )
                     drawText(

@@ -30,14 +30,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
-
-private val CardBg = Color(0xFF0F1722)
-private val CardBorderColor = Color(0xFF1B2838)
-private val ShimmerBase = Color(0xFF141F2D)
-private val ShimmerHighlight = Color(0xFF223247)
+import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
+import com.abhinav.caisarra.core.ui.theme.StatsCardItemSpacing
+import com.abhinav.caisarra.core.ui.theme.StatsCardPadding
+import com.abhinav.caisarra.core.ui.theme.StatsScreenPadding
+import com.abhinav.caisarra.core.ui.theme.StatsSectionSpacing
+import com.caisaara.ui.theme.StatsCardBg
+import com.caisaara.ui.theme.StatsCardBorder
+import com.caisaara.ui.theme.StatsShimmerBase
+import com.caisaara.ui.theme.StatsShimmerHighlight
+import com.caisaara.ui.theme.StatsSkeletonChartBg
 
 @Composable
 fun rememberShimmerBrush(): Brush {
@@ -54,9 +58,9 @@ fun rememberShimmerBrush(): Brush {
 
     return Brush.linearGradient(
         colors = listOf(
-            ShimmerBase,
-            ShimmerHighlight,
-            ShimmerBase
+            StatsShimmerBase,
+            StatsShimmerHighlight,
+            StatsShimmerBase
         ),
         start = Offset(translateAnim, translateAnim),
         end = Offset(translateAnim + 400f, translateAnim + 400f)
@@ -86,19 +90,12 @@ fun StatsSkeletonScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(StatsScreenPadding),
+        verticalArrangement = Arrangement.spacedBy(StatsSectionSpacing)
     ) {
-        // 1. Rating Progression Card Skeleton
         RatingProgressionCardSkeleton(brush)
-
-        // 2. Results Card Skeleton
         ResultsCardSkeleton(brush)
-
-        // 3. Key Metrics Grid Skeleton
         KeyMetricsGridSkeleton(brush)
-
-        // 4. Color Performance Card Skeleton
         ColorPerformanceCardSkeleton(brush)
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -110,15 +107,14 @@ private fun RatingProgressionCardSkeleton(brush: Brush) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(StatsCardCornerRadius))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
             .padding(18.dp)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
-            // Header Row: MODE RATING placeholder + Badge placeholder
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -139,7 +135,6 @@ private fun RatingProgressionCardSkeleton(brush: Brush) {
                 )
             }
 
-            // Big Rating + ELO placeholder
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -161,7 +156,6 @@ private fun RatingProgressionCardSkeleton(brush: Brush) {
                 )
             }
 
-            // Range Filter Chips placeholder (5 chips)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -177,15 +171,14 @@ private fun RatingProgressionCardSkeleton(brush: Brush) {
                 }
             }
 
-            // Chart area skeleton box
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(170.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF0C131D))
-                    .border(1.dp, CardBorderColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .padding(16.dp)
+                    .background(StatsSkeletonChartBg)
+                    .border(1.dp, StatsCardBorder.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .padding(StatsCardPadding)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -214,7 +207,6 @@ private fun RatingProgressionCardSkeleton(brush: Brush) {
                 }
             }
 
-            // Footer: Started at ... | Peak ...
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -242,15 +234,14 @@ private fun ResultsCardSkeleton(brush: Brush) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(StatsCardCornerRadius))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
             .padding(18.dp)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
-            // Header Row: Results | XX rated games
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -270,7 +261,6 @@ private fun ResultsCardSkeleton(brush: Brush) {
                 )
             }
 
-            // 3-Column Metrics Skeleton
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -297,7 +287,6 @@ private fun ResultsCardSkeleton(brush: Brush) {
                 }
             }
 
-            // Stacked Bar skeleton
             SkeletonBox(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -306,7 +295,6 @@ private fun ResultsCardSkeleton(brush: Brush) {
                 brush = brush
             )
 
-            // Subtitle text skeleton
             SkeletonBox(
                 modifier = Modifier
                     .fillMaxWidth(0.72f)
@@ -332,9 +320,9 @@ private fun KeyMetricsGridSkeleton(brush: Brush) {
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(CardBg)
-                            .border(1.dp, CardBorderColor, RoundedCornerShape(14.dp))
-                            .padding(16.dp)
+                            .background(StatsCardBg)
+                            .border(1.dp, StatsCardBorder, RoundedCornerShape(14.dp))
+                            .padding(StatsCardPadding)
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             SkeletonBox(
@@ -362,13 +350,13 @@ private fun ColorPerformanceCardSkeleton(brush: Brush) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(StatsCardCornerRadius))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
             .padding(18.dp)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
             SkeletonBox(
                 modifier = Modifier

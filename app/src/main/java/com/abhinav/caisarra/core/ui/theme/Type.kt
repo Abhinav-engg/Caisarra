@@ -99,3 +99,16 @@ val CaisaaraM3Typography = Typography(
     labelMedium = CaisaaraTypography.Notation,
     labelSmall = CaisaaraTypography.MicroBold,
 )
+
+val TextSizeMicro = 10.sp
+val TextSizeTiny = 11.sp
+val TextSizeCaption = 12.sp
+val TextSizeBadge = 13.sp
+val TextSizeBody = 14.sp
+val TextSizeSubhead = 15.sp
+val TextSizeMedium = 16.sp
+val TextSizeTitle = 18.sp
+val TextSizeHeading = 20.sp
+val TextSizeLarge = 24.sp
+val TextSizeStat = 28.sp
+val TextSizeHuge = 44.sp

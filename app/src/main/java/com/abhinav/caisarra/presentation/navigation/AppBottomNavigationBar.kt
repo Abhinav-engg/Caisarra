@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Groups
@@ -30,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -38,6 +38,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
+import com.caisaara.ui.theme.NavBackground
+import com.caisaara.ui.theme.NavPillSelected
+import com.caisaara.ui.theme.StatsCyan
+import com.caisaara.ui.theme.TextSizeMicro
+import com.caisaara.ui.theme.ThemeSlateAccent
+import com.caisaara.ui.theme.TopGlowColor
 
 enum class BottomNavItem(
     val route: String,
@@ -77,11 +83,6 @@ enum class BottomNavItem(
     )
 }
 
-private val NavBackground = Color(0xFF0B1017)
-private val TopGlowColor = Color(0xFF133E4D)
-private val ActiveCyan = Color(0xFF23CDE8)
-private val InactiveSlate = Color(0xFF94A4B8)
-
 @Composable
 fun AppBottomNavigationBar(
     currentRoute: String?,
@@ -93,7 +94,6 @@ fun AppBottomNavigationBar(
             .fillMaxWidth()
             .background(NavBackground)
     ) {
-        // Subtle glow line on top
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -103,7 +103,7 @@ fun AppBottomNavigationBar(
                         colors = listOf(
                             NavBackground,
                             TopGlowColor,
-                            ActiveCyan.copy(alpha = 0.5f),
+                            StatsCyan.copy(alpha = 0.5f),
                             TopGlowColor,
                             NavBackground
                         )
@@ -126,7 +126,7 @@ fun AppBottomNavigationBar(
                     else -> currentRoute == item.route
                 }
                 val icon = if (isSelected) item.selectedIcon else item.unselectedIcon
-                val tint = if (isSelected) ActiveCyan else InactiveSlate
+                val tint = if (isSelected) StatsCyan else ThemeSlateAccent
 
                 Box(
                     modifier = Modifier
@@ -138,7 +138,7 @@ fun AppBottomNavigationBar(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(if (isSelected) Color(0xFF132A38) else Color.Transparent)
+                            .background(if (isSelected) NavPillSelected else Color.Transparent)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
@@ -159,7 +159,7 @@ fun AppBottomNavigationBar(
                             text = item.label,
                             color = tint,
                             fontFamily = JetBrainsMono,
-                            fontSize = 10.sp,
+                            fontSize = TextSizeMicro,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             letterSpacing = 0.5.sp
                         )

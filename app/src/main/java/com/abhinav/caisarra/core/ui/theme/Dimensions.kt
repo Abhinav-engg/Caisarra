@@ -22,3 +22,16 @@ val SetNewPasswordCardHeight = 420.dp
 val GuestOptionsCardHeight = 220.dp
 
 val RatingCardHeight = 460.dp
+
+val StatsScreenPadding = 16.dp
+val StatsCardCornerRadius = 16.dp
+val StatsCardPadding = 16.dp
+val StatsCardItemSpacing = 14.dp
+val StatsSectionSpacing = 16.dp
+val StatsModeBarHeight = 44.dp
+val StatsRangeChipHeight = 34.dp
+val StatsChartHeight = 220.dp
+val StatsProgressBarHeight = 10.dp
+val StatsIconSizeSmall = 14.dp
+val StatsIconSizeMedium = 18.dp
+val StatsIconSizeLarge = 24.dp

@@ -32,6 +32,7 @@ sealed interface RushUiState {
         val moveAnimationConsumedId: Long? = null,
         val promotionPending: Pair<Square, Square>? = null,
         val isAwaitingServer: Boolean = false,
+        val isSkipping: Boolean = false,
         val isCorrectFlash: Boolean = false,
         val isStrikeFlash: Boolean = false,
         val highlightedSquare: Square? = null

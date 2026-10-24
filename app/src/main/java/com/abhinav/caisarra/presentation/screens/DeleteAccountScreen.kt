@@ -37,13 +37,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
-
-private val BackgroundColor = Color(0xFF080D13)
-private val CardBg = Color(0xFF0F1722)
-private val CardBorderColor = Color(0xFF1B2838)
-private val TextWhiteColor = Color(0xFFF1F5F9)
-private val TextMutedColor = Color(0xFF82909E)
-private val RedAlertColor = Color(0xFFEF4444)
+import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
+import com.caisaara.ui.theme.DeleteWarningBg
+import com.caisaara.ui.theme.DeleteWarningBorder
+import com.caisaara.ui.theme.RedNormal
+import com.caisaara.ui.theme.StatsBg
+import com.caisaara.ui.theme.StatsCardBg
+import com.caisaara.ui.theme.StatsCardBorder
+import com.caisaara.ui.theme.StatsTabBg
+import com.caisaara.ui.theme.StatsTabBorder
+import com.caisaara.ui.theme.StatsTextMuted
+import com.caisaara.ui.theme.StatsTextWhite
+import com.caisaara.ui.theme.TextSizeBadge
+import com.caisaara.ui.theme.TextSizeBody
+import com.caisaara.ui.theme.TextSizeCaption
+import com.caisaara.ui.theme.TextSizeHeading
+import com.caisaara.ui.theme.TextSizeTitle
 
 @Composable
 fun DeleteAccountScreen(
@@ -53,7 +62,7 @@ fun DeleteAccountScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundColor)
+            .background(StatsBg)
             .statusBarsPadding()
     ) {
         Row(
@@ -66,10 +75,10 @@ fun DeleteAccountScreen(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF101924))
+                    .background(StatsTabBg)
                     .border(
                         width = 1.dp,
-                        color = Color(0xFF202E3E),
+                        color = StatsTabBorder,
                         shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -81,7 +90,7 @@ fun DeleteAccountScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = TextWhiteColor,
+                        tint = StatsTextWhite,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -93,8 +102,8 @@ fun DeleteAccountScreen(
                 text = "Delete Account",
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = RedAlertColor
+                fontSize = TextSizeHeading,
+                color = RedNormal
             )
         }
 
@@ -112,14 +121,14 @@ fun DeleteAccountScreen(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF2E171A))
-                    .border(1.dp, Color(0xFF4E2024), CircleShape),
+                    .background(DeleteWarningBg)
+                    .border(1.dp, DeleteWarningBorder, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.WarningAmber,
                     contentDescription = null,
-                    tint = RedAlertColor,
+                    tint = RedNormal,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -128,17 +137,17 @@ fun DeleteAccountScreen(
                 text = "Permanently Delete Account?",
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = TextWhiteColor,
+                fontSize = TextSizeTitle,
+                color = StatsTextWhite,
                 textAlign = TextAlign.Center
             )
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CardBg)
-                    .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(StatsCardCornerRadius))
+                    .background(StatsCardBg)
+                    .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
                     .padding(18.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -146,8 +155,8 @@ fun DeleteAccountScreen(
                         text = "This action is permanent and cannot be reversed:",
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                        color = TextWhiteColor
+                        fontSize = TextSizeBadge,
+                        color = StatsTextWhite
                     )
 
                     BulletPoint(text = "Your profile, username, and bio will be erased.")
@@ -162,7 +171,7 @@ fun DeleteAccountScreen(
             Button(
                 onClick = onConfirmDelete,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = RedAlertColor
+                    containerColor = RedNormal
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
@@ -173,7 +182,7 @@ fun DeleteAccountScreen(
                     text = "DELETE MY ACCOUNT",
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
+                    fontSize = TextSizeBody,
                     color = Color.White
                 )
             }
@@ -189,8 +198,8 @@ fun DeleteAccountScreen(
                     text = "CANCEL & KEEP ACCOUNT",
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp,
-                    color = TextWhiteColor
+                    fontSize = TextSizeBody,
+                    color = StatsTextWhite
                 )
             }
         }
@@ -206,15 +215,15 @@ private fun BulletPoint(text: String) {
         Text(
             text = "•",
             fontFamily = JetBrainsMono,
-            color = RedAlertColor,
-            fontSize = 14.sp
+            color = RedNormal,
+            fontSize = TextSizeBody
         )
         Text(
             text = text,
             fontFamily = JetBrainsMono,
-            color = TextMutedColor,
-            fontSize = 12.sp,
-            lineHeight = 18.sp
+            color = StatsTextMuted,
+            fontSize = TextSizeCaption,
+            lineHeight = TextSizeTitle
         )
     }
 }

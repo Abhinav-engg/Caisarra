@@ -7,8 +7,8 @@ import kotlinx.serialization.Serializable
 data class RushMoveResponse(
     val correct: Boolean = false,
     val score: Int = 0,
-    val strikes: Int = 0,
-    @SerialName("strikes_left") val strikesLeft: Int = 3,
+    val strikes: Int? = null,
+    @SerialName("strikes_left") val strikesLeft: Int? = null,
     @SerialName("game_over") val gameOver: Boolean = false,
     val reason: String? = null,
     @SerialName("next_puzzle") val nextPuzzle: RushPuzzleData? = null,

@@ -16,10 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -46,12 +44,23 @@ import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
 import com.abhinav.caisarra.presentation.game.components.setup.SetupHeader
 import com.abhinav.caisarra.presentation.game.components.setup.SetupPage
 import com.abhinav.caisarra.presentation.game.viewmodel.BotSetupViewModel
-
-private val CardBg = Color(0xFF131D27)
-private val CardBorder = Color(0xFF1E2D3D)
-private val SelectedBorder = Color(0xFF10B981)
-private val LockedBg = Color(0xFF0D141C)
-private val WarningBg = Color(0xFF3B1F24)
+import com.caisaara.ui.theme.BotCardBg
+import com.caisaara.ui.theme.BotCardBorder
+import com.caisaara.ui.theme.BotLockedBg
+import com.caisaara.ui.theme.BotLockedBorder
+import com.caisaara.ui.theme.BotLockedName
+import com.caisaara.ui.theme.BotLockedRating
+import com.caisaara.ui.theme.BotLockedStatus
+import com.caisaara.ui.theme.BotLossRed
+import com.caisaara.ui.theme.BotSelectedBorder
+import com.caisaara.ui.theme.BotSliderTrack
+import com.caisaara.ui.theme.BotWarningBg
+import com.caisaara.ui.theme.TextSizeBadge
+import com.caisaara.ui.theme.TextSizeBody
+import com.caisaara.ui.theme.TextSizeCaption
+import com.caisaara.ui.theme.TextSizeMicro
+import com.caisaara.ui.theme.TextSizeSubhead
+import com.caisaara.ui.theme.TextSizeTiny
 
 @Composable
 fun BotSetupScreen(
@@ -89,7 +98,7 @@ fun BotSetupScreen(
                         color = SetupColors.Accent,
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                        fontSize = TextSizeBadge
                     )
                 }
             }
@@ -109,178 +118,178 @@ fun BotSetupScreen(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                SectionTitle("CHOOSE BOT")
-                Spacer(Modifier.height(8.dp))
+                    SectionTitle("CHOOSE BOT")
+                    Spacer(Modifier.height(8.dp))
 
-                val levels = listOf("easy", "medium", "hard", "expert")
-                levels.forEach { level ->
-                    val botsInLevel = state.bots.filter { it.level.equals(level, ignoreCase = true) }
-                    if (botsInLevel.isNotEmpty()) {
-                        Text(
-                            text = level.uppercase(),
-                            color = SetupColors.Secondary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = JetBrainsMono,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 6.dp)
-                        )
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            items(botsInLevel) { bot ->
-                                BotCard(
-                                    bot = bot,
-                                    isSelected = !state.isCustomRating && state.selectedBotId == bot.id,
-                                    onSelect = {
-                                        if (ClickGuard.canClick()) {
-                                            viewModel.onBotSelected(bot)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(20.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(if (state.isCustomRating) SetupColors.Card else CardBg)
-                        .border(
-                            1.dp,
-                            if (state.isCustomRating) SelectedBorder else CardBorder,
-                            RoundedCornerShape(14.dp)
-                        )
-                        .clickable(onClick = singleClick { viewModel.onCustomRatingSelected() })
-                        .padding(16.dp)
-                ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                    val levels = listOf("easy", "medium", "hard", "expert")
+                    levels.forEach { level ->
+                        val botsInLevel = state.bots.filter { it.level.equals(level, ignoreCase = true) }
+                        if (botsInLevel.isNotEmpty()) {
                             Text(
-                                text = "Custom Rating Bot",
-                                color = if (state.isCustomRating) SetupColors.Accent else SetupColors.Text,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "${state.customRating}",
-                                color = SetupColors.Accent,
-                                fontSize = 15.sp,
+                                text = level.uppercase(),
+                                color = SetupColors.Secondary,
+                                fontSize = TextSizeTiny,
                                 fontWeight = FontWeight.Bold,
-                                fontFamily = JetBrainsMono
+                                fontFamily = JetBrainsMono,
+                                modifier = Modifier.padding(top = 8.dp, bottom = 6.dp)
                             )
-                        }
-
-                        if (state.isCustomRating) {
-                            Spacer(Modifier.height(12.dp))
-                            Slider(
-                                value = state.customRating.toFloat(),
-                                onValueChange = { viewModel.onCustomRatingChanged(it.toInt()) },
-                                valueRange = 400f..3000f,
-                                steps = 25,
-                                colors = SliderDefaults.colors(
-                                    thumbColor = Color.White,
-                                    activeTrackColor = SetupColors.Accent,
-                                    inactiveTrackColor = Color(0xFF253241)
-                                )
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("400", color = SetupColors.Secondary, fontSize = 11.sp)
-                                Text("1500", color = SetupColors.Secondary, fontSize = 11.sp)
-                                Text("3000", color = SetupColors.Secondary, fontSize = 11.sp)
+                                items(botsInLevel) { bot ->
+                                    BotCard(
+                                        bot = bot,
+                                        isSelected = !state.isCustomRating && state.selectedBotId == bot.id,
+                                        onSelect = {
+                                            if (ClickGuard.canClick()) {
+                                                viewModel.onBotSelected(bot)
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                Spacer(Modifier.height(20.dp))
-                SectionTitle("PLAY AS")
-                Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(20.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    listOf("white", "random", "black").forEach { color ->
-                        val isSelected = state.selectedColor.equals(color, ignoreCase = true)
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(CardBg)
-                                .border(
-                                    1.dp,
-                                    if (isSelected) SelectedBorder else CardBorder,
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .clickable(onClick = singleClick { viewModel.onColorSelected(color) }),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = color.replaceFirstChar { it.uppercase() },
-                                color = if (isSelected) SetupColors.Accent else SetupColors.Text,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                }
-
-                if (state.hasActiveLimitReached) {
-                    Spacer(Modifier.height(16.dp))
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(WarningBg)
-                            .border(1.dp, Color(0xFFFF626B), RoundedCornerShape(12.dp))
-                            .padding(14.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (state.isCustomRating) SetupColors.Card else BotCardBg)
+                            .border(
+                                1.dp,
+                                if (state.isCustomRating) BotSelectedBorder else BotCardBorder,
+                                RoundedCornerShape(14.dp)
+                            )
+                            .clickable(onClick = singleClick { viewModel.onCustomRatingSelected() })
+                            .padding(16.dp)
                     ) {
-                        Text(
-                            text = state.errorMessage ?: "You can play at most 5 bot games at a time.",
-                            color = Color.White,
-                            fontSize = 13.sp
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        TextButton(onClick = singleClick(onViewHistory)) {
-                            Text("VIEW ACTIVE GAMES", color = SetupColors.Accent, fontWeight = FontWeight.Bold)
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Custom Rating Bot",
+                                    color = if (state.isCustomRating) SetupColors.Accent else SetupColors.Text,
+                                    fontSize = TextSizeSubhead,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "${state.customRating}",
+                                    color = SetupColors.Accent,
+                                    fontSize = TextSizeSubhead,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = JetBrainsMono
+                                )
+                            }
+
+                            if (state.isCustomRating) {
+                                Spacer(Modifier.height(12.dp))
+                                Slider(
+                                    value = state.customRating.toFloat(),
+                                    onValueChange = { viewModel.onCustomRatingChanged(it.toInt()) },
+                                    valueRange = 400f..3000f,
+                                    steps = 25,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = Color.White,
+                                        activeTrackColor = SetupColors.Accent,
+                                        inactiveTrackColor = BotSliderTrack
+                                    )
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("400", color = SetupColors.Secondary, fontSize = TextSizeTiny)
+                                    Text("1500", color = SetupColors.Secondary, fontSize = TextSizeTiny)
+                                    Text("3000", color = SetupColors.Secondary, fontSize = TextSizeTiny)
+                                }
+                            }
                         }
                     }
-                } else if (state.errorMessage != null) {
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = state.errorMessage.orEmpty(),
-                        color = Color(0xFFFF626B),
-                        fontSize = 13.sp
+
+                    Spacer(Modifier.height(20.dp))
+                    SectionTitle("PLAY AS")
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        listOf("white", "random", "black").forEach { color ->
+                            val isSelected = state.selectedColor.equals(color, ignoreCase = true)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(52.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(BotCardBg)
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) BotSelectedBorder else BotCardBorder,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable(onClick = singleClick { viewModel.onColorSelected(color) }),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = color.replaceFirstChar { it.uppercase() },
+                                    color = if (isSelected) SetupColors.Accent else SetupColors.Text,
+                                    fontSize = TextSizeSubhead,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+
+                    if (state.hasActiveLimitReached) {
+                        Spacer(Modifier.height(16.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(BotWarningBg)
+                                .border(1.dp, BotLossRed, RoundedCornerShape(12.dp))
+                                .padding(14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = state.errorMessage ?: "You can play at most 5 bot games at a time.",
+                                color = Color.White,
+                                fontSize = TextSizeBadge
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            TextButton(onClick = singleClick(onViewHistory)) {
+                                Text("VIEW ACTIVE GAMES", color = SetupColors.Accent, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    } else if (state.errorMessage != null) {
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = state.errorMessage.orEmpty(),
+                            color = BotLossRed,
+                            fontSize = TextSizeBadge
+                        )
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    GeneralButton(
+                        text = if (state.isStartingGame) "STARTING..." else "START GAME",
+                        onClick = { viewModel.startGame() },
+                        enabled = !state.isStartingGame
                     )
+
+                    Spacer(Modifier.height(24.dp))
                 }
-
-                Spacer(Modifier.height(24.dp))
-
-                GeneralButton(
-                    text = if (state.isStartingGame) "STARTING..." else "START GAME",
-                    onClick = { viewModel.startGame() },
-                    enabled = !state.isStartingGame
-                )
-
-                Spacer(Modifier.height(24.dp))
             }
         }
     }
-}
 }
 
 @Composable
@@ -296,13 +305,13 @@ private fun BotCard(
             .width(115.dp)
             .height(110.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(if (isLocked) LockedBg else CardBg)
+            .background(if (isLocked) BotLockedBg else BotCardBg)
             .border(
                 1.dp,
                 when {
-                    isSelected -> SelectedBorder
-                    isLocked -> Color(0xFF16202A)
-                    else -> CardBorder
+                    isSelected -> BotSelectedBorder
+                    isLocked -> BotLockedBorder
+                    else -> BotCardBorder
                 },
                 RoundedCornerShape(14.dp)
             )
@@ -320,25 +329,25 @@ private fun BotCard(
             ) {
                 Text(
                     text = "${bot.rating}",
-                    color = if (isLocked) Color(0xFF4A5A6D) else SetupColors.Accent,
-                    fontSize = 12.sp,
+                    color = if (isLocked) BotLockedRating else SetupColors.Accent,
+                    fontSize = TextSizeCaption,
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold
                 )
 
                 when {
                     isLocked -> {
-                        Text("🔒", fontSize = 12.sp)
+                        Text("🔒", fontSize = TextSizeCaption)
                     }
                     bot.beaten -> {
                         Box(
                             modifier = Modifier
                                 .size(16.dp)
                                 .clip(CircleShape)
-                                .background(SelectedBorder),
+                                .background(BotSelectedBorder),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("✓", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("✓", color = Color.Black, fontSize = TextSizeMicro, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -347,15 +356,15 @@ private fun BotCard(
             Column {
                 Text(
                     text = bot.name,
-                    color = if (isLocked) Color(0xFF5A6B7E) else SetupColors.Text,
-                    fontSize = 14.sp,
+                    color = if (isLocked) BotLockedName else SetupColors.Text,
+                    fontSize = TextSizeBody,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1
                 )
                 Text(
                     text = if (isLocked) "Locked" else if (bot.beaten) "Beaten" else "Unlocked",
-                    color = if (isLocked) Color(0xFF425161) else SetupColors.Secondary,
-                    fontSize = 11.sp
+                    color = if (isLocked) BotLockedStatus else SetupColors.Secondary,
+                    fontSize = TextSizeTiny
                 )
             }
         }
@@ -367,7 +376,7 @@ private fun SectionTitle(text: String) {
     Text(
         text = text,
         color = SetupColors.Secondary,
-        fontSize = 12.sp,
+        fontSize = TextSizeCaption,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.sp,
         fontFamily = JetBrainsMono

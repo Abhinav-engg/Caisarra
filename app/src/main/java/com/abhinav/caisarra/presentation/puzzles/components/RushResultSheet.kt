@@ -17,13 +17,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.RushSummaryDto
+import com.caisaara.ui.theme.EmeraldDarker
+import com.caisaara.ui.theme.EmeraldNormal
+import com.caisaara.ui.theme.GoldColor
+import com.caisaara.ui.theme.MenuFriendsGreen
+import com.caisaara.ui.theme.PuzzleDarkCard
+import com.caisaara.ui.theme.StatsCyan
+import com.caisaara.ui.theme.StatsPieceCircleDarkBorder
+import com.caisaara.ui.theme.StatsRed
+import com.caisaara.ui.theme.White
 
 @Composable
 fun RushResultSheet(
@@ -35,7 +43,7 @@ fun RushResultSheet(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
+        colors = CardDefaults.cardColors(containerColor = PuzzleDarkCard)
     ) {
         Column(
             modifier = Modifier
@@ -48,7 +56,7 @@ fun RushResultSheet(
                 fontFamily = JetBrainsMono,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF23CDE8),
+                color = StatsCyan,
                 letterSpacing = 1.sp
             )
 
@@ -57,13 +65,13 @@ fun RushResultSheet(
             if (summary.isNewHighScore) {
                 Box(
                     modifier = Modifier
-                        .background(Color(0xFF064E3B), RoundedCornerShape(8.dp))
-                        .border(1.dp, Color(0xFF059669), RoundedCornerShape(8.dp))
+                        .background(EmeraldDarker, RoundedCornerShape(8.dp))
+                        .border(1.dp, EmeraldNormal, RoundedCornerShape(8.dp))
                         .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = "NEW HIGH SCORE!",
-                        color = Color(0xFF34D399),
+                        color = MenuFriendsGreen,
                         fontSize = 12.sp,
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold
@@ -77,14 +85,14 @@ fun RushResultSheet(
                 fontSize = 54.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = JetBrainsMono,
-                color = Color.White
+                color = White
             )
 
             Text(
                 text = "PUZZLES SOLVED",
                 fontSize = 11.sp,
                 fontFamily = JetBrainsMono,
-                color = Color(0xFF64748B),
+                color = StatsPieceCircleDarkBorder,
                 letterSpacing = 1.sp
             )
 
@@ -100,14 +108,14 @@ fun RushResultSheet(
                         text = "BEST SCORE",
                         fontSize = 11.sp,
                         fontFamily = JetBrainsMono,
-                        color = Color(0xFF64748B)
+                        color = StatsPieceCircleDarkBorder
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${summary.bestScore}",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFBBF24)
+                        color = GoldColor
                     )
                 }
 
@@ -116,14 +124,14 @@ fun RushResultSheet(
                         text = "STRIKES",
                         fontSize = 11.sp,
                         fontFamily = JetBrainsMono,
-                        color = Color(0xFF64748B)
+                        color = StatsPieceCircleDarkBorder
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${summary.totalStrikes}/3",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF87171)
+                        color = StatsRed
                     )
                 }
 
@@ -133,7 +141,7 @@ fun RushResultSheet(
                             text = "DURATION",
                             fontSize = 11.sp,
                             fontFamily = JetBrainsMono,
-                            color = Color(0xFF64748B)
+                            color = StatsPieceCircleDarkBorder
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         val mins = summary.durationSec / 60
@@ -142,7 +150,7 @@ fun RushResultSheet(
                             text = String.format("%02d:%02d", mins, secs),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = White
                         )
                     }
                 }

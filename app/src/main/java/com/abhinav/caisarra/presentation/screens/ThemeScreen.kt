@@ -34,13 +34,41 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
-
-private val BackgroundColor = Color(0xFF080D13)
-private val CardBg = Color(0xFF0F1722)
-private val CardBorderColor = Color(0xFF1B2838)
-private val TextWhiteColor = Color(0xFFF1F5F9)
-private val TextMutedColor = Color(0xFF82909E)
-private val CyanColor = Color(0xFF23CDE8)
+import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
+import com.abhinav.caisarra.core.ui.theme.StatsScreenPadding
+import com.abhinav.caisarra.core.ui.theme.StatsSectionSpacing
+import com.caisaara.ui.theme.AmberNormal
+import com.caisaara.ui.theme.EmeraldNormal
+import com.caisaara.ui.theme.StatsBg
+import com.caisaara.ui.theme.StatsCardBg
+import com.caisaara.ui.theme.StatsCardBorder
+import com.caisaara.ui.theme.StatsCyan
+import com.caisaara.ui.theme.StatsTabBg
+import com.caisaara.ui.theme.StatsTabBorder
+import com.caisaara.ui.theme.StatsTextMuted
+import com.caisaara.ui.theme.StatsTextWhite
+import com.caisaara.ui.theme.TextSizeBadge
+import com.caisaara.ui.theme.TextSizeCaption
+import com.caisaara.ui.theme.TextSizeHeading
+import com.caisaara.ui.theme.TextSizeMicro
+import com.caisaara.ui.theme.TextSizeSubhead
+import com.caisaara.ui.theme.TextSizeTitle
+import com.caisaara.ui.theme.ThemeActiveBadge
+import com.caisaara.ui.theme.ThemeActiveCard
+import com.caisaara.ui.theme.ThemeEmeraldCard
+import com.caisaara.ui.theme.ThemeEmeraldDeep
+import com.caisaara.ui.theme.ThemeInactiveBadge
+import com.caisaara.ui.theme.ThemeNeonDeep
+import com.caisaara.ui.theme.ThemeNeonSky
+import com.caisaara.ui.theme.ThemePreviewBg
+import com.caisaara.ui.theme.ThemePreviewBorder
+import com.caisaara.ui.theme.ThemePurpleAccent
+import com.caisaara.ui.theme.ThemePurpleCard
+import com.caisaara.ui.theme.ThemePurpleBg
+import com.caisaara.ui.theme.ThemePurpleLight
+import com.caisaara.ui.theme.ThemeSlateAccent
+import com.caisaara.ui.theme.ThemeSlateCard
+import com.caisaara.ui.theme.ThemeSlateBg
 
 @Composable
 fun ThemeScreen(
@@ -49,7 +77,7 @@ fun ThemeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundColor)
+            .background(StatsBg)
             .statusBarsPadding()
     ) {
         Row(
@@ -62,10 +90,10 @@ fun ThemeScreen(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF101924))
+                    .background(StatsTabBg)
                     .border(
                         width = 1.dp,
-                        color = Color(0xFF202E3E),
+                        color = StatsTabBorder,
                         shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -77,7 +105,7 @@ fun ThemeScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = TextWhiteColor,
+                        tint = StatsTextWhite,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -89,8 +117,8 @@ fun ThemeScreen(
                 text = "Theme",
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = TextWhiteColor
+                fontSize = TextSizeHeading,
+                color = StatsTextWhite
             )
         }
 
@@ -98,40 +126,38 @@ fun ThemeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(StatsScreenPadding),
+            verticalArrangement = Arrangement.spacedBy(StatsSectionSpacing)
         ) {
             Text(
                 text = "Choose your board and interface aesthetic.",
                 fontFamily = JetBrainsMono,
-                fontSize = 13.sp,
-                color = TextMutedColor
+                fontSize = TextSizeBadge,
+                color = StatsTextMuted
             )
 
-            // Active Theme
             ThemeOptionCard(
                 name = "Midnight Cyan",
                 description = "Dark cyberpunk aesthetic with luminous cyan accents",
                 isActive = true,
                 palette = listOf(
-                    Color(0xFF080D13),
-                    Color(0xFF132B3A),
-                    Color(0xFF23CDE8),
-                    Color(0xFF38BDF8)
+                    StatsBg,
+                    ThemeNeonDeep,
+                    StatsCyan,
+                    ThemeNeonSky
                 )
             )
 
-            // Upcoming Themes
             ThemeOptionCard(
                 name = "Obsidian Dark",
                 description = "Monochrome stealth palette with slate highlights",
                 isActive = false,
                 tag = "Coming Soon",
                 palette = listOf(
-                    Color(0xFF0B0E14),
-                    Color(0xFF1E232A),
-                    Color(0xFF94A4B8),
-                    Color(0xFFF1F5F9)
+                    ThemeSlateBg,
+                    ThemeSlateCard,
+                    ThemeSlateAccent,
+                    StatsTextWhite
                 )
             )
 
@@ -141,10 +167,10 @@ fun ThemeScreen(
                 isActive = false,
                 tag = "Coming Soon",
                 palette = listOf(
-                    Color(0xFF10081C),
-                    Color(0xFF2E1948),
-                    Color(0xFFC084FC),
-                    Color(0xFFE9D5FF)
+                    ThemePurpleBg,
+                    ThemePurpleCard,
+                    ThemePurpleAccent,
+                    ThemePurpleLight
                 )
             )
 
@@ -154,10 +180,10 @@ fun ThemeScreen(
                 isActive = false,
                 tag = "Coming Soon",
                 palette = listOf(
-                    Color(0xFF071A12),
-                    Color(0xFF0E3D29),
-                    Color(0xFF10B981),
-                    Color(0xFFF59E0B)
+                    ThemeEmeraldDeep,
+                    ThemeEmeraldCard,
+                    EmeraldNormal,
+                    AmberNormal
                 )
             )
         }
@@ -172,15 +198,15 @@ private fun ThemeOptionCard(
     tag: String? = null,
     palette: List<Color>
 ) {
-    val borderColor = if (isActive) CyanColor else CardBorderColor
-    val cardBackground = if (isActive) Color(0xFF0D1E2A) else CardBg
+    val borderColor = if (isActive) StatsCyan else StatsCardBorder
+    val cardBackground = if (isActive) ThemeActiveCard else StatsCardBg
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(StatsCardCornerRadius))
             .background(cardBackground)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(StatsCardCornerRadius))
             .padding(18.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -197,13 +223,13 @@ private fun ThemeOptionCard(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (isActive) Color(0xFF183B4E) else Color(0xFF182230)),
+                            .background(if (isActive) ThemeActiveBadge else ThemeInactiveBadge),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Palette,
                             contentDescription = null,
-                            tint = if (isActive) CyanColor else TextMutedColor,
+                            tint = if (isActive) StatsCyan else StatsTextMuted,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -211,8 +237,8 @@ private fun ThemeOptionCard(
                         text = name,
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = TextWhiteColor
+                        fontSize = TextSizeSubhead,
+                        color = StatsTextWhite
                     )
                 }
 
@@ -220,21 +246,21 @@ private fun ThemeOptionCard(
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Active",
-                        tint = CyanColor,
+                        tint = StatsCyan,
                         modifier = Modifier.size(20.dp)
                     )
                 } else if (tag != null) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF192330))
+                            .background(ThemePreviewBg)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = tag,
                             fontFamily = JetBrainsMono,
-                            fontSize = 10.sp,
-                            color = TextMutedColor
+                            fontSize = TextSizeMicro,
+                            color = StatsTextMuted
                         )
                     }
                 }
@@ -243,12 +269,11 @@ private fun ThemeOptionCard(
             Text(
                 text = description,
                 fontFamily = JetBrainsMono,
-                fontSize = 12.sp,
-                color = TextMutedColor,
-                lineHeight = 18.sp
+                fontSize = TextSizeCaption,
+                color = StatsTextMuted,
+                lineHeight = TextSizeTitle
             )
 
-            // Color dots preview
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -259,7 +284,7 @@ private fun ThemeOptionCard(
                             .size(20.dp)
                             .clip(CircleShape)
                             .background(color)
-                            .border(1.dp, Color(0xFF2D3C4E), CircleShape)
+                            .border(1.dp, ThemePreviewBorder, CircleShape)
                     )
                 }
             }
