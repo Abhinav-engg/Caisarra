@@ -26,7 +26,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AutoGraph
-import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Menu
@@ -59,7 +58,6 @@ import com.abhinav.caisarra.core.ui.components.MainTabTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.caisaara.ui.theme.AmberNormal
 import com.caisaara.ui.theme.BotLockedName
-import com.caisaara.ui.theme.DeleteWarningBg
 import com.caisaara.ui.theme.GoldColor
 import com.caisaara.ui.theme.MenuBadgeBg
 import com.caisaara.ui.theme.MenuBadgeBorder
@@ -268,16 +266,6 @@ fun MenuScreen(
             SectionHeader(title = "Account")
             Spacer(modifier = Modifier.height(8.dp))
             MenuCard {
-                MenuItem(
-                    icon = Icons.Default.DeleteOutline,
-                    iconTint = StatsRed,
-                    iconBg = DeleteWarningBg,
-                    title = "Delete Account",
-                    titleColor = StatsRed,
-                    chevronColor = StatsRed.copy(alpha = 0.7f),
-                    onClick = onDeleteAccountClick
-                )
-                ItemDivider()
                 MenuItem(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     iconTint = ThemeSlateAccent,

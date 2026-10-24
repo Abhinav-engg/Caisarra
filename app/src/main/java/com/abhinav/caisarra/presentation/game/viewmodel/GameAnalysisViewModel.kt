@@ -41,7 +41,7 @@ data class GameAnalysisUiState(
     val isWhiteTurn: Boolean = true,
     val isFlipped: Boolean = false,
     val isPlayingToImportantMove: Boolean = false,
-    val activeTab: Int = 0 // 0 = Moves / Review, 1 = Summary / Report
+    val activeTab: Int = 0
 )
 
 class GameAnalysisViewModel(
@@ -140,12 +140,10 @@ class GameAnalysisViewModel(
         var targetPly = moves.firstOrNull { it.moveNumber > currentPly && isImportantMove(it) }?.moveNumber
 
         if (targetPly == null) {
-            // Wrap around: check from beginning
             targetPly = moves.firstOrNull { isImportantMove(it) }?.moveNumber
         }
 
         if (targetPly == null) {
-            // Fallback to the final move if no move is classified as important
             targetPly = moves.size
         }
 

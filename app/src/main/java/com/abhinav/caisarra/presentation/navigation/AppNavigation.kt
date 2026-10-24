@@ -256,13 +256,10 @@ private fun NavController.navigateOnce(
 
 
 private fun NavController.safeBack(fallbackRoute: String) {
-    // Ignore repeated clicks while navigation is in progress.
     if (!isResumed()) return
 
-    // Never pop the fallback screen itself.
     if (currentDestination?.route == fallbackRoute) return
 
-    // Prefer returning directly to the intended fallback screen.
     val fallbackExists = runCatching {
         getBackStackEntry(fallbackRoute)
     }.isSuccess
@@ -273,7 +270,6 @@ private fun NavController.safeBack(fallbackRoute: String) {
             inclusive = false
         )
     } else {
-        // Recover safely if the fallback screen is not on the stack.
         navigate(fallbackRoute) {
             popUpTo(graph.id) {
                 inclusive = true

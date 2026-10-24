@@ -115,7 +115,6 @@ fun TournamentDetailScreen(
                 else -> {
                     Spacer(Modifier.height(12.dp))
 
-                    // Centered Tournament Name
                     Text(
                         text = tournament.name,
                         color = Color.White,
@@ -129,7 +128,6 @@ fun TournamentDetailScreen(
 
                     Spacer(Modifier.height(18.dp))
 
-                    // Tabs: Overview, Standings, Rounds
                     SecondaryTabRow(
                         selectedTabIndex = tab,
                         containerColor = Color.Transparent,
@@ -229,7 +227,6 @@ private fun OverviewTab(
             Spacer(Modifier.height(16.dp))
         }
 
-        // Key-Value rows matching design
         InfoRow("Format", formatLabel(tournament.format))
         InfoRow("Time Control", timeControlDisplay(tournament.timeControl))
 

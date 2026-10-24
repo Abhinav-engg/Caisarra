@@ -41,7 +41,6 @@ class RushViewModel(
     }
 
     fun startRush() {
-        // Ignore repeated taps while a session is being created.
         if (startJob?.isActive == true) return
 
         timerJob?.cancel()

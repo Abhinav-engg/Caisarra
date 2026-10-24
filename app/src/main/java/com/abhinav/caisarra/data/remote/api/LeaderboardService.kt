@@ -8,22 +8,18 @@ import retrofit2.http.Query
 
 interface LeaderboardService {
 
-    // 1. Global daily-rating leaderboard
     @GET("api/leaderboard")
     suspend fun getGlobalLeaderboard(
         @Query("limit") limit: Int = 50,
         @Query("offset") offset: Int = 0
     ): GlobalLeaderboardResponse
 
-    // 2. Leaderboard for a particular club
     @GET("api/clubs/{clubID}/leaderboard")
     suspend fun getClubLeaderboard(
         @Path("clubID") clubId: String,
         @Query("mode") mode: String = "blitz"
     ): List<LeaderboardEntry>
 
-    // 3. Puzzle Rush leaderboard
-    // This endpoint intentionally has no /api prefix.
     @GET("puzzles/rush/leaderboard")
     suspend fun getPuzzleRushLeaderboard(
         @Query("mode") mode: String = "3min",

@@ -213,7 +213,6 @@ private fun AnalysisContent(
                 state.moves.getOrNull(state.currentPly - 1)?.evalAfter ?: 0
             }
 
-            // Board and Advantage Evaluation Bar
             Row(
                 modifier = Modifier.padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -246,7 +245,6 @@ private fun AnalysisContent(
                 }
             }
 
-            // Current Move Explanation Card
             CurrentMoveCard(
                 currentPly = state.currentPly,
                 moves = state.moves,
@@ -255,7 +253,6 @@ private fun AnalysisContent(
                     .padding(horizontal = 14.dp, vertical = 4.dp)
             )
 
-            // Navigation Controls (First, Prev, Key Move, Next, Last)
             AnalysisNavigationControls(
                 currentPly = state.currentPly,
                 totalPlies = state.totalPlies,
@@ -270,7 +267,6 @@ private fun AnalysisContent(
                     .padding(horizontal = 14.dp, vertical = 4.dp)
             )
 
-            // Segmented Tabs: Moves (Review) vs Report (Summary)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -294,7 +290,6 @@ private fun AnalysisContent(
                 )
             }
 
-            // Tab Content
             if (state.activeTab == 0) {
                 MovesListTab(
                     moves = state.moves,
@@ -400,7 +395,6 @@ private fun CurrentMoveCard(
             )
             Spacer(Modifier.width(8.dp))
 
-            // Classification badge
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
@@ -418,7 +412,6 @@ private fun CurrentMoveCard(
 
             Spacer(Modifier.weight(1f))
 
-            // Eval display
             Text(
                 formatEval(move.evalAfter),
                 color = if (move.evalAfter >= 0) Win else Loss,
@@ -458,7 +451,6 @@ private fun AnalysisNavigationControls(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // First move |<
         IconButton(
             onClick = onFirst,
             enabled = currentPly > 0,
@@ -472,7 +464,6 @@ private fun AnalysisNavigationControls(
             )
         }
 
-        // Prev move <
         IconButton(
             onClick = onPrev,
             enabled = currentPly > 0,
@@ -486,7 +477,6 @@ private fun AnalysisNavigationControls(
             )
         }
 
-        // Important Move Button (Plays until it reaches an important move!)
         Button(
             onClick = onPlayImportant,
             colors = ButtonDefaults.buttonColors(
@@ -529,7 +519,6 @@ private fun AnalysisNavigationControls(
             }
         }
 
-        // Next move >
         IconButton(
             onClick = onNext,
             enabled = currentPly < totalPlies,
@@ -543,7 +532,6 @@ private fun AnalysisNavigationControls(
             )
         }
 
-        // Last move >|
         IconButton(
             onClick = onLast,
             enabled = currentPly < totalPlies,
@@ -568,7 +556,6 @@ private fun MovesListTab(
 ) {
     val listState = rememberLazyListState()
 
-    // Auto-scroll to selected move
     LaunchedEffect(currentPly) {
         if (currentPly > 0) {
             val rowIndex = (currentPly - 1) / 2
@@ -669,7 +656,6 @@ private fun MoveChip(
                 fontFamily = JetBrainsMono
             )
 
-            // Small classification symbol
             Text(
                 classificationSymbol(move.classification),
                 color = color,
@@ -890,7 +876,6 @@ private fun EvaluationBar(
             .border(1.dp, Border, RoundedCornerShape(6.dp))
             .background(Color(0xFF121A22))
     ) {
-        // Top section
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -911,7 +896,6 @@ private fun EvaluationBar(
             }
         }
 
-        // Bottom section
         Box(
             modifier = Modifier
                 .fillMaxWidth()

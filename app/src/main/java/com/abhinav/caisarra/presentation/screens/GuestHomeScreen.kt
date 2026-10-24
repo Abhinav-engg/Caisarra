@@ -66,7 +66,6 @@ fun GuestHomeScreen(
             .fillMaxSize()
             .background(GuestBg)
     ) {
-        // Soft decorative glow, without adding a bottom navigation bar.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
