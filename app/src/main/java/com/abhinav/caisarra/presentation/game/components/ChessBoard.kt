@@ -42,6 +42,10 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.padding
 
 private val LightSquare = Color(0xFFE8EDF3)
 private val DarkSquare = Color(0xFF253449)
@@ -219,6 +223,38 @@ fun ChessBoard(
                             val isMovingDestination = activeMove?.to == square
                             if (piece != null && !isMovingDestination) {
                                 PieceView(piece = piece)
+                            }
+                            if (displayColumn == 0) {
+                                Text(
+                                    text = (8 - actualRow).toString(),
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(start = 3.dp, top = 1.dp),
+                                    color = if (isDark) {
+                                        LightSquare.copy(alpha = 0.78f)
+                                    } else {
+                                        DarkSquare.copy(alpha = 0.55f)
+                                    },
+                                    fontSize = 10.sp,
+                                    lineHeight = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            if (displayRow == 7) {
+                                Text(
+                                    text = ('a' + actualColumn).toString(),
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(end = 3.dp, bottom = 1.dp),
+                                    color = if (isDark) {
+                                        LightSquare.copy(alpha = 0.78f)
+                                    } else {
+                                        DarkSquare.copy(alpha = 0.55f)
+                                    },
+                                    fontSize = 10.sp,
+                                    lineHeight = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
 
                             if (isLegalMove) {
