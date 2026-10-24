@@ -69,7 +69,7 @@ fun PuzzlesScreen(
 
 
     var isLaunchingPuzzle by remember { mutableStateOf(false) }
-    
+
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
