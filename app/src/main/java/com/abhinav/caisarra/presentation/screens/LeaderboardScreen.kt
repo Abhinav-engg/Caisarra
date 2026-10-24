@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -31,17 +30,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
-
-private val BackgroundColor = Color(0xFF080D13)
-private val CardBg = Color(0xFF0F1722)
-private val CardBorderColor = Color(0xFF1B2838)
-private val TextWhiteColor = Color(0xFFF1F5F9)
-private val TextMutedColor = Color(0xFF82909E)
-private val GoldColor = Color(0xFFFBBF24)
-private val SilverColor = Color(0xFFE2E8F0)
-private val BronzeColor = Color(0xFFF59E0B)
+import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
+import com.abhinav.caisarra.core.ui.theme.StatsCardItemSpacing
+import com.abhinav.caisarra.core.ui.theme.StatsScreenPadding
+import com.abhinav.caisarra.core.ui.theme.StatsSectionSpacing
+import com.caisaara.ui.theme.BronzeColor
+import com.caisaara.ui.theme.GoldColor
+import com.caisaara.ui.theme.LeaderboardRowBg
+import com.caisaara.ui.theme.SilverColor
+import com.caisaara.ui.theme.StatsBg
+import com.caisaara.ui.theme.StatsCardBg
+import com.caisaara.ui.theme.StatsCardBorder
+import com.caisaara.ui.theme.StatsCyan
+import com.caisaara.ui.theme.StatsTabBg
+import com.caisaara.ui.theme.StatsTabBorder
+import com.caisaara.ui.theme.StatsTextMuted
+import com.caisaara.ui.theme.StatsTextWhite
+import com.caisaara.ui.theme.TextSizeBadge
+import com.caisaara.ui.theme.TextSizeBody
+import com.caisaara.ui.theme.TextSizeHeading
+import com.caisaara.ui.theme.TextSizeMedium
 
 @Composable
 fun LeaderboardScreen(
@@ -50,7 +59,7 @@ fun LeaderboardScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundColor)
+            .background(StatsBg)
             .statusBarsPadding()
     ) {
         Row(
@@ -63,10 +72,10 @@ fun LeaderboardScreen(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF101924))
+                    .background(StatsTabBg)
                     .border(
                         width = 1.dp,
-                        color = Color(0xFF202E3E),
+                        color = StatsTabBorder,
                         shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -78,7 +87,7 @@ fun LeaderboardScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = TextWhiteColor,
+                        tint = StatsTextWhite,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -90,8 +99,8 @@ fun LeaderboardScreen(
                 text = "Leaderboard",
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = TextWhiteColor
+                fontSize = TextSizeHeading,
+                color = StatsTextWhite
             )
         }
 
@@ -99,26 +108,25 @@ fun LeaderboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(StatsScreenPadding),
+            verticalArrangement = Arrangement.spacedBy(StatsSectionSpacing)
         ) {
             Text(
                 text = "Top ranked players across all competitive modes.",
                 fontFamily = JetBrainsMono,
-                fontSize = 13.sp,
-                color = TextMutedColor
+                fontSize = TextSizeBadge,
+                color = StatsTextMuted
             )
 
-            // Top 3 Podium Card
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CardBg)
-                    .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(StatsCardCornerRadius))
+                    .background(StatsCardBg)
+                    .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
                     .padding(20.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -133,16 +141,16 @@ fun LeaderboardScreen(
                             text = "Global Standings",
                             fontFamily = JetBrainsMono,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = TextWhiteColor
+                            fontSize = TextSizeMedium,
+                            color = StatsTextWhite
                         )
                     }
 
                     LeaderboardRow(rank = "1", name = "GrandmasterAlex", rating = "2480", badgeColor = GoldColor)
                     LeaderboardRow(rank = "2", name = "TacticsTitan", rating = "2395", badgeColor = SilverColor)
                     LeaderboardRow(rank = "3", name = "KnightRider99", rating = "2310", badgeColor = BronzeColor)
-                    LeaderboardRow(rank = "4", name = "CheckmateQueen", rating = "2250", badgeColor = TextMutedColor)
-                    LeaderboardRow(rank = "5", name = "EndgameGuru", rating = "2180", badgeColor = TextMutedColor)
+                    LeaderboardRow(rank = "4", name = "CheckmateQueen", rating = "2250", badgeColor = StatsTextMuted)
+                    LeaderboardRow(rank = "5", name = "EndgameGuru", rating = "2180", badgeColor = StatsTextMuted)
                 }
             }
         }
@@ -160,7 +168,7 @@ private fun LeaderboardRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF131D28))
+            .background(LeaderboardRowBg)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -175,7 +183,7 @@ private fun LeaderboardRow(
                 text = rank,
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
+                fontSize = TextSizeBadge,
                 color = badgeColor
             )
         }
@@ -186,8 +194,8 @@ private fun LeaderboardRow(
             text = name,
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            color = TextWhiteColor,
+            fontSize = TextSizeBody,
+            color = StatsTextWhite,
             modifier = Modifier.weight(1f)
         )
 
@@ -195,8 +203,8 @@ private fun LeaderboardRow(
             text = rating,
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
-            color = Color(0xFF23CDE8)
+            fontSize = TextSizeBody,
+            color = StatsCyan
         )
     }
 }

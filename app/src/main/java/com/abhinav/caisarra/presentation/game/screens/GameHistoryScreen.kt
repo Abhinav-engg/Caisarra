@@ -313,58 +313,70 @@ private fun HistoryNavigationButtons(
         OutlinedButton(
             onClick = onFirst,
             enabled = canGoBack,
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.weight(0.9f),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
         ) {
             Text(
                 text = "|‹",
                 color = if (canGoBack) White else Secondary,
                 fontFamily = JetBrainsMono,
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                softWrap = false
             )
         }
 
         OutlinedButton(
             onClick = onBack,
             enabled = canGoBack,
-            modifier = Modifier.weight(1.5f),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.weight(1.6f),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "‹  BACK",
+                text = "‹ BACK",
                 color = if (canGoBack) White else Secondary,
                 fontFamily = JetBrainsMono,
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                maxLines = 1,
+                softWrap = false
             )
         }
 
         OutlinedButton(
             onClick = onForward,
             enabled = canGoForward,
-            modifier = Modifier.weight(1.5f),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.weight(1.6f),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "FORWARD  ›",
+                text = "FORWARD ›",
                 color = if (canGoForward) White else Secondary,
                 fontFamily = JetBrainsMono,
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                maxLines = 1,
+                softWrap = false
             )
         }
 
         OutlinedButton(
             onClick = onLast,
             enabled = canGoForward,
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.weight(0.9f),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
         ) {
             Text(
                 text = "›|",
                 color = if (canGoForward) White else Secondary,
                 fontFamily = JetBrainsMono,
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }

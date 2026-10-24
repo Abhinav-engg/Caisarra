@@ -125,4 +125,13 @@ class ActiveGameModesTest {
         assertEquals(1, nonExpired.size)
         assertEquals("act_1", nonExpired.first().id)
     }
+
+    @Test
+    fun testHomeUiStateStreakDefaultsAndUpdates() {
+        val initialState = HomeUiState()
+        assertEquals(0, initialState.streak)
+
+        val updatedState = initialState.copy(streak = 14)
+        assertEquals(14, updatedState.streak)
+    }
 }

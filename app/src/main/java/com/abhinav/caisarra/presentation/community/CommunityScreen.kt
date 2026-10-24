@@ -19,10 +19,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -47,8 +52,10 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.abhinav.caisarra.core.ui.components.MainTabTopBar
 import com.abhinav.caisarra.data.remote.dto.CommunityCommentDto
 import com.abhinav.caisarra.data.remote.dto.CommunityPostDto
+import com.caisaara.ui.theme.StatsCyan
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -73,7 +80,7 @@ private val CommunityDanger = Color(0xFFFF8989)
 fun CommunityScreen(
     viewModel: CommunityViewModel,
     isRegisteredUser: Boolean,
-    onBack: () -> Unit
+    onBack: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -100,67 +107,36 @@ fun CommunityScreen(
                 keyboardController?.hide()
             }
     ) {
+        MainTabTopBar(
+            title = "COMMUNITY",
+            icon = Icons.Filled.Groups,
+            trailingContent = {
+                IconButton(
+                    onClick = viewModel::refresh,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = "Refresh",
+                        tint = StatsCyan,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                top = 8.dp,
+                top = 0.dp,
                 bottom = 24.dp
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item(key = "community_header") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(
-                        onClick = onBack,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 4.dp,
-                            vertical = 8.dp
-                        )
-                    ) {
-                        Text(
-                            "← Back",
-                            color = CommunityMuted,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    Spacer(Modifier.weight(1f))
-
-                    Text(
-                        "COMMUNITY",
-                        color = CommunityText,
-                        fontSize = 23.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    )
-
-                    Spacer(Modifier.weight(1f))
-
-                    TextButton(
-                        onClick = viewModel::refresh,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 4.dp,
-                            vertical = 8.dp
-                        )
-                    ) {
-                        Text(
-                            "Refresh",
-                            color = CommunityGreen,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-
             if (isRegisteredUser) {
                 item(key = "community_composer") {
                     Column(

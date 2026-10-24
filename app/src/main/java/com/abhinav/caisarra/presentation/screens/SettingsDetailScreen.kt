@@ -38,13 +38,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
-
-private val BackgroundColor = Color(0xFF080D13)
-private val CardBg = Color(0xFF0F1722)
-private val CardBorderColor = Color(0xFF1B2838)
-private val TextWhiteColor = Color(0xFFF1F5F9)
-private val TextMutedColor = Color(0xFF82909E)
-private val CyanColor = Color(0xFF23CDE8)
+import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
+import com.abhinav.caisarra.core.ui.theme.StatsScreenPadding
+import com.abhinav.caisarra.core.ui.theme.StatsSectionSpacing
+import com.caisaara.ui.theme.SettingsDivider
+import com.caisaara.ui.theme.StatsBg
+import com.caisaara.ui.theme.StatsCardBg
+import com.caisaara.ui.theme.StatsCardBorder
+import com.caisaara.ui.theme.StatsCyan
+import com.caisaara.ui.theme.StatsTabBg
+import com.caisaara.ui.theme.StatsTabBorder
+import com.caisaara.ui.theme.StatsTextMuted
+import com.caisaara.ui.theme.StatsTextWhite
+import com.caisaara.ui.theme.TextSizeBadge
+import com.caisaara.ui.theme.TextSizeBody
+import com.caisaara.ui.theme.TextSizeCaption
+import com.caisaara.ui.theme.TextSizeHeading
+import com.caisaara.ui.theme.TextSizeTiny
+import com.caisaara.ui.theme.ThemeSlateAccent
 
 @Composable
 fun SettingsDetailScreen(
@@ -58,7 +69,7 @@ fun SettingsDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundColor)
+            .background(StatsBg)
             .statusBarsPadding()
     ) {
         Row(
@@ -71,10 +82,10 @@ fun SettingsDetailScreen(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF101924))
+                    .background(StatsTabBg)
                     .border(
                         width = 1.dp,
-                        color = Color(0xFF202E3E),
+                        color = StatsTabBorder,
                         shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -86,7 +97,7 @@ fun SettingsDetailScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = TextWhiteColor,
+                        tint = StatsTextWhite,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -98,8 +109,8 @@ fun SettingsDetailScreen(
                 text = "Preferences",
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = TextWhiteColor
+                fontSize = TextSizeHeading,
+                color = StatsTextWhite
             )
         }
 
@@ -107,23 +118,23 @@ fun SettingsDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(StatsScreenPadding),
+            verticalArrangement = Arrangement.spacedBy(StatsSectionSpacing)
         ) {
             Text(
                 text = "GAMEPLAY & AUDIO",
                 fontFamily = JetBrainsMono,
-                fontSize = 12.sp,
+                fontSize = TextSizeCaption,
                 fontWeight = FontWeight.SemiBold,
-                color = TextMutedColor
+                color = StatsTextMuted
             )
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CardBg)
-                    .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(StatsCardCornerRadius))
+                    .background(StatsCardBg)
+                    .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Column {
@@ -133,21 +144,21 @@ fun SettingsDetailScreen(
                         checked = soundEnabled,
                         onCheckedChange = { soundEnabled = it }
                     )
-                    HorizontalDivider(color = Color(0xFF162230), thickness = 1.dp)
+                    HorizontalDivider(color = SettingsDivider, thickness = 1.dp)
                     PreferenceToggleRow(
                         title = "Haptic Feedback",
                         subtitle = "Vibrate device on piece drop",
                         checked = hapticsEnabled,
                         onCheckedChange = { hapticsEnabled = it }
                     )
-                    HorizontalDivider(color = Color(0xFF162230), thickness = 1.dp)
+                    HorizontalDivider(color = SettingsDivider, thickness = 1.dp)
                     PreferenceToggleRow(
                         title = "Board Coordinates",
                         subtitle = "Show rank and file letters on board edges",
                         checked = coordinatesEnabled,
                         onCheckedChange = { coordinatesEnabled = it }
                     )
-                    HorizontalDivider(color = Color(0xFF162230), thickness = 1.dp)
+                    HorizontalDivider(color = SettingsDivider, thickness = 1.dp)
                     PreferenceToggleRow(
                         title = "Auto-Queen Promotion",
                         subtitle = "Always promote pawn to Queen automatically",
@@ -162,17 +173,17 @@ fun SettingsDetailScreen(
             Text(
                 text = "ABOUT",
                 fontFamily = JetBrainsMono,
-                fontSize = 12.sp,
+                fontSize = TextSizeCaption,
                 fontWeight = FontWeight.SemiBold,
-                color = TextMutedColor
+                color = StatsTextMuted
             )
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CardBg)
-                    .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(StatsCardCornerRadius))
+                    .background(StatsCardBg)
+                    .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
                     .padding(16.dp)
             ) {
                 Row(
@@ -183,14 +194,14 @@ fun SettingsDetailScreen(
                     Text(
                         text = "App Version",
                         fontFamily = JetBrainsMono,
-                        fontSize = 14.sp,
-                        color = TextWhiteColor
+                        fontSize = TextSizeBody,
+                        color = StatsTextWhite
                     )
                     Text(
                         text = "1.0.0 (Build 1)",
                         fontFamily = JetBrainsMono,
-                        fontSize = 13.sp,
-                        color = CyanColor
+                        fontSize = TextSizeBadge,
+                        color = StatsCyan
                     )
                 }
             }
@@ -217,15 +228,15 @@ private fun PreferenceToggleRow(
                 text = title,
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Medium,
-                fontSize = 14.sp,
-                color = TextWhiteColor
+                fontSize = TextSizeBody,
+                color = StatsTextWhite
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
                 fontFamily = JetBrainsMono,
-                fontSize = 11.sp,
-                color = TextMutedColor,
+                fontSize = TextSizeTiny,
+                color = StatsTextMuted,
                 lineHeight = 16.sp
             )
         }
@@ -237,9 +248,9 @@ private fun PreferenceToggleRow(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = CyanColor,
-                uncheckedThumbColor = Color(0xFF94A4B8),
-                uncheckedTrackColor = Color(0xFF1B2838)
+                checkedTrackColor = StatsCyan,
+                uncheckedThumbColor = ThemeSlateAccent,
+                uncheckedTrackColor = StatsCardBorder
             )
         )
     }

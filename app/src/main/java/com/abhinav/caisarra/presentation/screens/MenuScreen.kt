@@ -26,10 +26,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AutoGraph
-import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -55,18 +55,40 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.ui.components.MainTabTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
-
-private val ScreenBackground = Color(0xFF080D13)
-private val CardBackground = Color(0xFF0F1722)
-private val CardBorder = Color(0xFF1B2838)
-private val DividerColor = Color(0xFF162230)
-private val TextWhite = Color(0xFFF1F5F9)
-private val TextMuted = Color(0xFF82909E)
-private val CyanAccent = Color(0xFF23CDE8)
-private val ChevronColor = Color(0xFF5A6B7E)
-private val CoralRed = Color(0xFFF87171)
-private val CoralRedBg = Color(0xFF2E171A)
+import com.caisaara.ui.theme.AmberNormal
+import com.caisaara.ui.theme.BotLockedName
+import com.caisaara.ui.theme.DeleteWarningBg
+import com.caisaara.ui.theme.GoldColor
+import com.caisaara.ui.theme.MenuBadgeBg
+import com.caisaara.ui.theme.MenuBadgeBorder
+import com.caisaara.ui.theme.MenuDialogBg
+import com.caisaara.ui.theme.MenuFriendsGreen
+import com.caisaara.ui.theme.MenuFriendsIconBg
+import com.caisaara.ui.theme.MenuStatsIconBg
+import com.caisaara.ui.theme.MenuThemeIconBg
+import com.caisaara.ui.theme.SettingsDivider
+import com.caisaara.ui.theme.StatsBg
+import com.caisaara.ui.theme.StatsCardBg
+import com.caisaara.ui.theme.StatsCardBorder
+import com.caisaara.ui.theme.StatsCyan
+import com.caisaara.ui.theme.StatsDivider
+import com.caisaara.ui.theme.StatsGreen
+import com.caisaara.ui.theme.StatsRed
+import com.caisaara.ui.theme.StatsTabBg
+import com.caisaara.ui.theme.StatsTabBorder
+import com.caisaara.ui.theme.StatsTextMuted
+import com.caisaara.ui.theme.StatsTextWhite
+import com.caisaara.ui.theme.TextSizeBody
+import com.caisaara.ui.theme.TextSizeCaption
+import com.caisaara.ui.theme.TextSizeHeading
+import com.caisaara.ui.theme.TextSizeSubhead
+import com.caisaara.ui.theme.TextSizeTiny
+import com.caisaara.ui.theme.ThemeInactiveBadge
+import com.caisaara.ui.theme.ThemeNeonDeep
+import com.caisaara.ui.theme.ThemeNeonSky
+import com.caisaara.ui.theme.ThemeSlateAccent
 
 @Composable
 fun MenuScreen(
@@ -77,7 +99,6 @@ fun MenuScreen(
     onGameHistoryClick: () -> Unit = {},
     onThemeClick: () -> Unit = {},
     onFriendsClick: () -> Unit = {},
-    onMessagesClick: () -> Unit = {},
     onClubsClick: () -> Unit = {},
     onLeaderboardClick: () -> Unit = {},
     onDeleteAccountClick: () -> Unit = {},
@@ -88,7 +109,7 @@ fun MenuScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            containerColor = Color(0xFF111A24),
+            containerColor = MenuDialogBg,
             title = {
                 Text(
                     text = "Log Out",
@@ -101,8 +122,8 @@ fun MenuScreen(
                 Text(
                     text = "Are you sure you want to log out of your account?",
                     fontFamily = JetBrainsMono,
-                    fontSize = 14.sp,
-                    color = Color(0xFFCBD5E1)
+                    fontSize = TextSizeBody,
+                    color = StatsDivider
                 )
             },
             confirmButton = {
@@ -116,7 +137,7 @@ fun MenuScreen(
                         text = "LOG OUT",
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
-                        color = CoralRed
+                        color = StatsRed
                     )
                 }
             },
@@ -125,7 +146,7 @@ fun MenuScreen(
                     Text(
                         text = "CANCEL",
                         fontFamily = JetBrainsMono,
-                        color = Color(0xFF94A4B8)
+                        color = ThemeSlateAccent
                     )
                 }
             }
@@ -135,57 +156,67 @@ fun MenuScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(ScreenBackground)
+            .background(StatsBg)
             .statusBarsPadding()
     ) {
-        // Top App Bar
-        MenuTopBar(
-            onBack = onBack,
-            onSettingsClick = onSettingsClick
+        MainTabTopBar(
+            title = "MENU",
+            icon = Icons.Filled.Menu,
+            trailingContent = {
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Preferences",
+                        tint = StatsCyan,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         )
 
-        // Scrollable Menu Content
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // Section 1: Accounts & Profile
             SectionHeader(
                 title = "Accounts & Profile",
-                badge = "6 ITEMS"
+                badge = "5 ITEMS"
             )
             Spacer(modifier = Modifier.height(8.dp))
             MenuCard {
                 MenuItem(
                     icon = Icons.Default.Person,
-                    iconTint = CyanAccent,
-                    iconBg = Color(0xFF132B3A),
+                    iconTint = StatsCyan,
+                    iconBg = ThemeNeonDeep,
                     title = "Profile",
                     onClick = onProfileClick
                 )
                 ItemDivider()
                 MenuItem(
                     icon = Icons.Default.AutoGraph,
-                    iconTint = Color(0xFF2DD4BF),
-                    iconBg = Color(0xFF122E2E),
+                    iconTint = StatsGreen,
+                    iconBg = MenuStatsIconBg,
                     title = "Stats",
                     onClick = onStatsClick
                 )
                 ItemDivider()
                 MenuItem(
                     icon = Icons.Default.History,
-                    iconTint = CyanAccent,
-                    iconBg = Color(0xFF132B3A),
+                    iconTint = StatsCyan,
+                    iconBg = ThemeNeonDeep,
                     title = "Game History",
                     onClick = onGameHistoryClick
                 )
                 ItemDivider()
                 MenuItem(
                     icon = Icons.Default.Palette,
-                    iconTint = Color(0xFFF59E0B),
-                    iconBg = Color(0xFF2D2417),
+                    iconTint = AmberNormal,
+                    iconBg = MenuThemeIconBg,
                     title = "Theme",
                     trailingBadge = "Midnight Cyan",
                     onClick = onThemeClick
@@ -193,40 +224,30 @@ fun MenuScreen(
                 ItemDivider()
                 MenuItem(
                     icon = Icons.Default.People,
-                    iconTint = Color(0xFF34D399),
-                    iconBg = Color(0xFF0F2E23),
+                    iconTint = MenuFriendsGreen,
+                    iconBg = MenuFriendsIconBg,
                     title = "Friends",
                     onClick = onFriendsClick
-                )
-                ItemDivider()
-                MenuItem(
-                    icon = Icons.Default.ChatBubble,
-                    iconTint = Color(0xFF38BDF8),
-                    iconBg = Color(0xFF132B3A),
-                    title = "Messages",
-                    hasUnreadDot = true,
-                    onClick = onMessagesClick
                 )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Section 2: Connect
             SectionHeader(title = "Connect")
             Spacer(modifier = Modifier.height(8.dp))
             MenuCard {
                 MenuItem(
                     icon = Icons.Default.Shield,
-                    iconTint = Color(0xFF38BDF8),
-                    iconBg = Color(0xFF132B3A),
+                    iconTint = ThemeNeonSky,
+                    iconBg = ThemeNeonDeep,
                     title = "Clubs",
                     onClick = onClubsClick
                 )
                 ItemDivider()
                 MenuItem(
                     icon = Icons.Default.EmojiEvents,
-                    iconTint = Color(0xFFFBBF24),
-                    iconBg = Color(0xFF2D2417),
+                    iconTint = GoldColor,
+                    iconBg = MenuThemeIconBg,
                     title = "Leaderboard",
                     onClick = onLeaderboardClick
                 )
@@ -234,104 +255,29 @@ fun MenuScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Section 3: Account
             SectionHeader(title = "Account")
             Spacer(modifier = Modifier.height(8.dp))
             MenuCard {
                 MenuItem(
                     icon = Icons.Default.DeleteOutline,
-                    iconTint = CoralRed,
-                    iconBg = CoralRedBg,
+                    iconTint = StatsRed,
+                    iconBg = DeleteWarningBg,
                     title = "Delete Account",
-                    titleColor = CoralRed,
-                    chevronColor = CoralRed.copy(alpha = 0.7f),
+                    titleColor = StatsRed,
+                    chevronColor = StatsRed.copy(alpha = 0.7f),
                     onClick = onDeleteAccountClick
                 )
                 ItemDivider()
                 MenuItem(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
-                    iconTint = Color(0xFF94A4B8),
-                    iconBg = Color(0xFF182330),
+                    iconTint = ThemeSlateAccent,
+                    iconBg = ThemeInactiveBadge,
                     title = "Log Out",
                     onClick = { showLogoutDialog = true }
                 )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-        }
-    }
-}
-
-@Composable
-private fun MenuTopBar(
-    onBack: () -> Unit,
-    onSettingsClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF101924))
-                .border(
-                    width = 1.dp,
-                    color = Color(0xFF202E3E),
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = TextWhite,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(14.dp))
-
-        Text(
-            text = "Settings",
-            fontFamily = JetBrainsMono,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            color = TextWhite,
-            modifier = Modifier.weight(1f)
-        )
-
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF101924))
-                .border(
-                    width = 1.dp,
-                    color = Color(0xFF202E3E),
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            IconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Preferences",
-                    tint = Color(0xFF94A4B8),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
         }
     }
 }
@@ -352,18 +298,18 @@ private fun SectionHeader(
             text = title,
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 12.sp,
+            fontSize = TextSizeCaption,
             letterSpacing = 0.4.sp,
-            color = TextMuted
+            color = StatsTextMuted
         )
         if (badge != null) {
             Text(
                 text = badge,
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
-                fontSize = 11.sp,
+                fontSize = TextSizeTiny,
                 letterSpacing = 0.5.sp,
-                color = CyanAccent
+                color = StatsCyan
             )
         }
     }
@@ -377,9 +323,9 @@ private fun MenuCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
+            .background(StatsCardBg)
             .border(
-                border = BorderStroke(1.dp, CardBorder),
+                border = BorderStroke(1.dp, StatsCardBorder),
                 shape = RoundedCornerShape(16.dp)
             )
     ) {
@@ -393,10 +339,10 @@ private fun MenuItem(
     iconTint: Color,
     iconBg: Color,
     title: String,
-    titleColor: Color = TextWhite,
+    titleColor: Color = StatsTextWhite,
     trailingBadge: String? = null,
     hasUnreadDot: Boolean = false,
-    chevronColor: Color = ChevronColor,
+    chevronColor: Color = BotLockedName,
     onClick: () -> Unit
 ) {
     Row(
@@ -404,7 +350,7 @@ private fun MenuItem(
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = CyanAccent.copy(alpha = 0.12f)),
+                indication = ripple(color = StatsCyan.copy(alpha = 0.12f)),
                 onClick = onClick
             )
             .padding(horizontal = 14.dp, vertical = 13.dp),
@@ -431,7 +377,7 @@ private fun MenuItem(
             text = title,
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Medium,
-            fontSize = 15.sp,
+            fontSize = TextSizeSubhead,
             color = titleColor,
             modifier = Modifier.weight(1f)
         )
@@ -440,10 +386,10 @@ private fun MenuItem(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF182A3A))
+                    .background(MenuBadgeBg)
                     .border(
                         width = 1.dp,
-                        color = Color(0xFF23445C),
+                        color = MenuBadgeBorder,
                         shape = RoundedCornerShape(10.dp)
                     )
                     .padding(horizontal = 10.dp, vertical = 4.dp)
@@ -452,8 +398,8 @@ private fun MenuItem(
                     text = trailingBadge,
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Medium,
-                    fontSize = 11.sp,
-                    color = Color(0xFF38BDF8)
+                    fontSize = TextSizeTiny,
+                    color = ThemeNeonSky
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -464,7 +410,7 @@ private fun MenuItem(
                 modifier = Modifier
                     .size(8.dp)
                     .clip(CircleShape)
-                    .background(CyanAccent)
+                    .background(StatsCyan)
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -481,7 +427,7 @@ private fun MenuItem(
 @Composable
 private fun ItemDivider() {
     HorizontalDivider(
-        color = DividerColor,
+        color = SettingsDivider,
         thickness = 1.dp,
         modifier = Modifier.padding(start = 66.dp, end = 14.dp)
     )

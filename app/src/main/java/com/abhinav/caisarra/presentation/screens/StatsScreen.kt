@@ -1,8 +1,5 @@
 package com.abhinav.caisarra.presentation.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,6 +42,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
+import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
+import com.abhinav.caisarra.core.ui.theme.StatsCardItemSpacing
+import com.abhinav.caisarra.core.ui.theme.StatsCardPadding
+import com.abhinav.caisarra.core.ui.theme.StatsIconSizeLarge
+import com.abhinav.caisarra.core.ui.theme.StatsIconSizeMedium
+import com.abhinav.caisarra.core.ui.theme.StatsIconSizeSmall
+import com.abhinav.caisarra.core.ui.theme.StatsModeBarHeight
+import com.abhinav.caisarra.core.ui.theme.StatsProgressBarHeight
+import com.abhinav.caisarra.core.ui.theme.StatsRangeChipHeight
+import com.abhinav.caisarra.core.ui.theme.StatsScreenPadding
+import com.abhinav.caisarra.core.ui.theme.StatsSectionSpacing
 import com.abhinav.caisarra.data.remote.dto.ColorStatsDto
 import com.abhinav.caisarra.data.remote.dto.ModeStatsData
 import com.abhinav.caisarra.data.remote.dto.RatingRecentGame
@@ -53,23 +61,46 @@ import com.abhinav.caisarra.presentation.screens.components.RatingGraphView
 import com.abhinav.caisarra.presentation.screens.components.StatsSkeletonScreen
 import com.abhinav.caisarra.presentation.viewmodel.StatsRange
 import com.abhinav.caisarra.presentation.viewmodel.StatsViewModel
+import com.caisaara.ui.theme.StatsBarSlate
+import com.caisaara.ui.theme.StatsBg
+import com.caisaara.ui.theme.StatsCardBg
+import com.caisaara.ui.theme.StatsCardBorder
+import com.caisaara.ui.theme.StatsChipBorder
+import com.caisaara.ui.theme.StatsChipSelectedBg
+import com.caisaara.ui.theme.StatsCyan
+import com.caisaara.ui.theme.StatsDivider
+import com.caisaara.ui.theme.StatsErrorBadgeBg
+import com.caisaara.ui.theme.StatsGreen
+import com.caisaara.ui.theme.StatsLossDeltaBg
+import com.caisaara.ui.theme.StatsPeakBadgeBg
+import com.caisaara.ui.theme.StatsPeakBadgeBorder
+import com.caisaara.ui.theme.StatsPeakBadgeText
+import com.caisaara.ui.theme.StatsPieceCircleDark
+import com.caisaara.ui.theme.StatsPieceCircleDarkBorder
+import com.caisaara.ui.theme.StatsPillSelectedBg
+import com.caisaara.ui.theme.StatsPillSelectedBorder
+import com.caisaara.ui.theme.StatsRed
+import com.caisaara.ui.theme.StatsSlate
+import com.caisaara.ui.theme.StatsTabBg
+import com.caisaara.ui.theme.StatsTabBorder
+import com.caisaara.ui.theme.StatsTextMuted
+import com.caisaara.ui.theme.StatsTextWhite
+import com.caisaara.ui.theme.StatsWinDeltaBg
+import com.caisaara.ui.theme.TextSizeBadge
+import com.caisaara.ui.theme.TextSizeBody
+import com.caisaara.ui.theme.TextSizeCaption
+import com.caisaara.ui.theme.TextSizeHeading
+import com.caisaara.ui.theme.TextSizeHuge
+import com.caisaara.ui.theme.TextSizeLarge
+import com.caisaara.ui.theme.TextSizeMedium
+import com.caisaara.ui.theme.TextSizeStat
+import com.caisaara.ui.theme.TextSizeSubhead
+import com.caisaara.ui.theme.TextSizeTiny
+import com.caisaara.ui.theme.TextSizeTitle
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.abs
-
-private val BackgroundColor = Color(0xFF080D13)
-private val CardBg = Color(0xFF0F1722)
-private val CardBorderColor = Color(0xFF1B2838)
-private val TextWhiteColor = Color(0xFFF1F5F9)
-private val TextMutedColor = Color(0xFF82909E)
-private val CyanColor = Color(0xFF22D3EE)
-private val GreenColor = Color(0xFF2DD4BF)
-private val RedColor = Color(0xFFF87171)
-private val SlateColor = Color(0xFF475569)
-private val PillSelectedBg = Color(0xFF123347)
-private val PillSelectedBorder = Color(0xFF1D5473)
 
 private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.US)
 
@@ -86,24 +117,21 @@ fun StatsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundColor)
+            .background(StatsBg)
             .statusBarsPadding()
     ) {
-        // Top App Bar
         TopStatsBar(
             onBack = onBack,
             onRefresh = { viewModel.refresh() },
             isRefreshing = state.isRefreshing
         )
 
-        // Mode Selector Tabs (Bullet | Blitz | Rapid | Daily)
         ModeSelectorBar(
             selectedMode = state.selectedMode,
             onSelectMode = viewModel::selectMode,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = StatsScreenPadding, vertical = 8.dp)
         )
 
-        // Main Content Area
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -138,24 +166,23 @@ fun StatsScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(StatsScreenPadding),
+                        verticalArrangement = Arrangement.spacedBy(StatsSectionSpacing)
                     ) {
                         if (state.error != null) {
                             Text(
                                 text = state.error.orEmpty(),
                                 fontFamily = JetBrainsMono,
-                                fontSize = 12.sp,
-                                color = RedColor,
+                                fontSize = TextSizeCaption,
+                                color = StatsRed,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color(0xFF281116), RoundedCornerShape(8.dp))
-                                    .border(1.dp, RedColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                    .background(StatsErrorBadgeBg, RoundedCornerShape(8.dp))
+                                    .border(1.dp, StatsRed.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                                     .padding(10.dp)
                             )
                         }
 
-                        // 1. Rating Progression Card (Figma Top Card)
                         RatingProgressionCard(
                             stats = stats,
                             selectedMode = state.selectedMode,
@@ -163,22 +190,18 @@ fun StatsScreen(
                             onSelectRange = viewModel::selectRange
                         )
 
-                        // 2. Results Card (Figma Middle Card)
                         ResultsCard(
                             stats = stats,
                             modeName = state.selectedMode.label
                         )
 
-                        // 3. Improvised Key Metric Cards (Figma Bottom Cards + Extra)
                         KeyMetricsGrid(stats = stats)
 
-                        // 4. White vs Black Record Card
                         ColorPerformanceCard(
                             asWhite = stats.asWhite,
                             asBlack = stats.asBlack
                         )
 
-                        // 5. Recent Games List (if any)
                         if (stats.recentGames.isNotEmpty()) {
                             RecentGamesSection(
                                 games = stats.recentGames,
@@ -203,17 +226,17 @@ private fun TopStatsBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = StatsScreenPadding, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF101924))
+                .background(StatsTabBg)
                 .border(
                     width = 1.dp,
-                    color = Color(0xFF202E3E),
+                    color = StatsTabBorder,
                     shape = RoundedCornerShape(12.dp)
                 ),
             contentAlignment = Alignment.Center
@@ -225,7 +248,7 @@ private fun TopStatsBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = TextWhiteColor,
+                    tint = StatsTextWhite,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -237,9 +260,9 @@ private fun TopStatsBar(
             text = "STATS",
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
+            fontSize = TextSizeTitle,
             letterSpacing = 2.sp,
-            color = TextWhiteColor
+            color = StatsTextWhite
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -248,10 +271,10 @@ private fun TopStatsBar(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF101924))
+                .background(StatsTabBg)
                 .border(
                     width = 1.dp,
-                    color = Color(0xFF202E3E),
+                    color = StatsTabBorder,
                     shape = RoundedCornerShape(12.dp)
                 ),
             contentAlignment = Alignment.Center
@@ -263,15 +286,15 @@ private fun TopStatsBar(
             ) {
                 if (isRefreshing) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = CyanColor,
+                        modifier = Modifier.size(StatsIconSizeMedium),
+                        color = StatsCyan,
                         strokeWidth = 2.dp
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Refresh",
-                        tint = TextMutedColor,
+                        tint = StatsTextMuted,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -290,8 +313,8 @@ private fun ModeSelectorBar(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF0F1722))
-            .border(1.dp, CardBorderColor, RoundedCornerShape(24.dp))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(24.dp))
             .padding(4.dp)
     ) {
         Row(
@@ -304,10 +327,10 @@ private fun ModeSelectorBar(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(20.dp))
-                        .background(if (isSelected) PillSelectedBg else Color.Transparent)
+                        .background(if (isSelected) StatsPillSelectedBg else Color.Transparent)
                         .border(
                             width = if (isSelected) 1.dp else 0.dp,
-                            color = if (isSelected) PillSelectedBorder else Color.Transparent,
+                            color = if (isSelected) StatsPillSelectedBorder else Color.Transparent,
                             shape = RoundedCornerShape(20.dp)
                         )
                         .clickable { onSelectMode(mode) }
@@ -317,9 +340,9 @@ private fun ModeSelectorBar(
                     Text(
                         text = mode.label,
                         fontFamily = JetBrainsMono,
-                        fontSize = 13.sp,
+                        fontSize = TextSizeBadge,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) CyanColor else TextMutedColor
+                        color = if (isSelected) StatsCyan else StatsTextMuted
                     )
                 }
             }
@@ -342,29 +365,28 @@ private fun RatingProgressionCard(
     }
 
     val deltaBgColor = when {
-        delta > 0 -> Color(0xFF0D3836)
-        delta < 0 -> Color(0xFF38151D)
-        else -> Color(0xFF1B2838)
+        delta > 0 -> StatsWinDeltaBg
+        delta < 0 -> StatsLossDeltaBg
+        else -> StatsCardBorder
     }
 
     val deltaTextColor = when {
-        delta > 0 -> GreenColor
-        delta < 0 -> RedColor
-        else -> TextMutedColor
+        delta > 0 -> StatsGreen
+        delta < 0 -> StatsRed
+        else -> StatsTextMuted
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(StatsCardCornerRadius))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
             .padding(18.dp)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
-            // Header Row: MODE RATING + Delta Badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -373,10 +395,10 @@ private fun RatingProgressionCard(
                 Text(
                     text = "${selectedMode.label.uppercase()} RATING",
                     fontFamily = JetBrainsMono,
-                    fontSize = 12.sp,
+                    fontSize = TextSizeCaption,
                     fontWeight = FontWeight.Medium,
                     letterSpacing = 1.sp,
-                    color = TextMutedColor
+                    color = StatsTextMuted
                 )
 
                 Row(
@@ -392,7 +414,7 @@ private fun RatingProgressionCard(
                         Text(
                             text = deltaText,
                             fontFamily = JetBrainsMono,
-                            fontSize = 12.sp,
+                            fontSize = TextSizeCaption,
                             fontWeight = FontWeight.Bold,
                             color = deltaTextColor
                         )
@@ -401,13 +423,12 @@ private fun RatingProgressionCard(
                     Text(
                         text = "this period",
                         fontFamily = JetBrainsMono,
-                        fontSize = 11.sp,
-                        color = TextMutedColor
+                        fontSize = TextSizeTiny,
+                        color = StatsTextMuted
                     )
                 }
             }
 
-            // Big Rating + ELO Row
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -415,18 +436,18 @@ private fun RatingProgressionCard(
                 Text(
                     text = "${stats.rating}${if (stats.provisional) "?" else ""}",
                     fontFamily = JetBrainsMono,
-                    fontSize = 44.sp,
+                    fontSize = TextSizeHuge,
                     fontWeight = FontWeight.Bold,
-                    color = TextWhiteColor,
+                    color = StatsTextWhite,
                     lineHeight = 46.sp
                 )
 
                 Text(
                     text = "ELO",
                     fontFamily = JetBrainsMono,
-                    fontSize = 14.sp,
+                    fontSize = TextSizeBody,
                     fontWeight = FontWeight.Medium,
-                    color = TextMutedColor,
+                    color = StatsTextMuted,
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
 
@@ -436,8 +457,8 @@ private fun RatingProgressionCard(
                         modifier = Modifier
                             .padding(bottom = 8.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFF2E2612))
-                            .border(1.dp, Color(0xFF6B551C), RoundedCornerShape(4.dp))
+                            .background(StatsPeakBadgeBg)
+                            .border(1.dp, StatsPeakBadgeBorder, RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
@@ -445,19 +466,17 @@ private fun RatingProgressionCard(
                             fontFamily = JetBrainsMono,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFBBF24)
+                            color = StatsPeakBadgeText
                         )
                     }
                 }
             }
 
-            // Range Filter Chips (7D | 30D | 90D | 1Y | ALL)
             RangeFilterChips(
                 selectedRange = selectedRange,
                 onSelectRange = onSelectRange
             )
 
-            // Time-wise Rating Graph
             RatingGraphView(
                 ratingHistory = stats.ratingHistory,
                 startRating = stats.startRating,
@@ -465,7 +484,6 @@ private fun RatingProgressionCard(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Card Footer: Started at XXXX | Peak XXXX
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -474,17 +492,17 @@ private fun RatingProgressionCard(
                 Text(
                     text = "Started at ${stats.startRating}",
                     fontFamily = JetBrainsMono,
-                    fontSize = 12.sp,
-                    color = TextMutedColor
+                    fontSize = TextSizeCaption,
+                    color = StatsTextMuted
                 )
 
                 val peakText = stats.bestRating?.toString() ?: if (stats.gamesPlayed > 0) stats.rating.toString() else "—"
                 Text(
                     text = "Peak $peakText",
                     fontFamily = JetBrainsMono,
-                    fontSize = 12.sp,
+                    fontSize = TextSizeCaption,
                     fontWeight = FontWeight.Medium,
-                    color = TextWhiteColor
+                    color = StatsTextWhite
                 )
             }
         }
@@ -505,10 +523,10 @@ private fun RangeFilterChips(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(if (isSelected) Color(0xFF133246) else Color(0xFF101924))
+                    .background(if (isSelected) StatsChipSelectedBg else StatsTabBg)
                     .border(
                         width = 1.dp,
-                        color = if (isSelected) CyanColor.copy(alpha = 0.8f) else Color(0xFF1E2C3D),
+                        color = if (isSelected) StatsCyan.copy(alpha = 0.8f) else StatsChipBorder,
                         shape = RoundedCornerShape(8.dp)
                     )
                     .clickable { onSelectRange(range) }
@@ -518,9 +536,9 @@ private fun RangeFilterChips(
                 Text(
                     text = range.label,
                     fontFamily = JetBrainsMono,
-                    fontSize = 11.sp,
+                    fontSize = TextSizeTiny,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) CyanColor else TextMutedColor
+                    color = if (isSelected) StatsCyan else StatsTextMuted
                 )
             }
         }
@@ -540,15 +558,14 @@ private fun ResultsCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(StatsCardCornerRadius))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
             .padding(18.dp)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
-            // Header Row: Results | XX rated games
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -559,75 +576,70 @@ private fun ResultsCard(
                     fontFamily = JetBrainsMono,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextWhiteColor
+                    color = StatsTextWhite
                 )
 
                 Text(
                     text = "$totalGames rated games",
                     fontFamily = JetBrainsMono,
-                    fontSize = 12.sp,
-                    color = TextMutedColor
+                    fontSize = TextSizeCaption,
+                    color = StatsTextMuted
                 )
             }
 
-            // 3-Column Metrics: Wins, Draws, Losses
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Wins
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "${stats.wins}",
                         fontFamily = JetBrainsMono,
-                        fontSize = 28.sp,
+                        fontSize = TextSizeStat,
                         fontWeight = FontWeight.Bold,
-                        color = CyanColor
+                        color = StatsCyan
                     )
                     Text(
                         text = "Wins · $winPercent%",
                         fontFamily = JetBrainsMono,
-                        fontSize = 12.sp,
-                        color = TextMutedColor
+                        fontSize = TextSizeCaption,
+                        color = StatsTextMuted
                     )
                 }
 
-                // Draws
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "${stats.draws}",
                         fontFamily = JetBrainsMono,
-                        fontSize = 28.sp,
+                        fontSize = TextSizeStat,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFCBD5E1)
+                        color = StatsDivider
                     )
                     Text(
                         text = "Draws · $drawPercent%",
                         fontFamily = JetBrainsMono,
-                        fontSize = 12.sp,
-                        color = TextMutedColor
+                        fontSize = TextSizeCaption,
+                        color = StatsTextMuted
                     )
                 }
 
-                // Losses
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "${stats.losses}",
                         fontFamily = JetBrainsMono,
-                        fontSize = 28.sp,
+                        fontSize = TextSizeStat,
                         fontWeight = FontWeight.Bold,
-                        color = RedColor
+                        color = StatsRed
                     )
                     Text(
                         text = "Losses · $lossPercent%",
                         fontFamily = JetBrainsMono,
-                        fontSize = 12.sp,
-                        color = TextMutedColor
+                        fontSize = TextSizeCaption,
+                        color = StatsTextMuted
                     )
                 }
             }
 
-            // Stacked Segmented Progress Bar
             StackedProgressBar(
                 wins = stats.wins,
                 draws = stats.draws,
@@ -635,7 +647,6 @@ private fun ResultsCard(
                 totalGames = totalGames
             )
 
-            // Subtitle
             Text(
                 text = if (totalGames > 0) {
                     "${stats.winPercent}% win rate across your rated $modeName games."
@@ -643,9 +654,9 @@ private fun ResultsCard(
                     "No rated $modeName games played yet."
                 },
                 fontFamily = JetBrainsMono,
-                fontSize = 12.sp,
-                color = TextMutedColor,
-                lineHeight = 18.sp
+                fontSize = TextSizeCaption,
+                color = StatsTextMuted,
+                lineHeight = TextSizeTitle
             )
         }
     }
@@ -664,7 +675,7 @@ private fun StackedProgressBar(
                 .fillMaxWidth()
                 .height(8.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(Color(0xFF1E293B))
+                .background(StatsBarSlate)
         )
         return
     }
@@ -682,7 +693,7 @@ private fun StackedProgressBar(
                     .weight((wins.toFloat() / totalGames).coerceAtLeast(0.01f))
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(CyanColor)
+                    .background(StatsCyan)
             )
         }
         if (draws > 0) {
@@ -691,7 +702,7 @@ private fun StackedProgressBar(
                     .weight((draws.toFloat() / totalGames).coerceAtLeast(0.01f))
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(SlateColor)
+                    .background(StatsSlate)
             )
         }
         if (losses > 0) {
@@ -700,7 +711,7 @@ private fun StackedProgressBar(
                     .weight((losses.toFloat() / totalGames).coerceAtLeast(0.01f))
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(RedColor)
+                    .background(StatsRed)
             )
         }
     }
@@ -756,24 +767,24 @@ private fun MetricCard(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(14.dp))
-            .padding(16.dp)
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(14.dp))
+            .padding(StatsCardPadding)
     ) {
         Column {
             Text(
                 text = value,
                 fontFamily = JetBrainsMono,
-                fontSize = 24.sp,
+                fontSize = TextSizeLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextWhiteColor
+                color = StatsTextWhite
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = label,
                 fontFamily = JetBrainsMono,
-                fontSize = 12.sp,
-                color = TextMutedColor
+                fontSize = TextSizeCaption,
+                color = StatsTextMuted
             )
         }
     }
@@ -799,23 +810,22 @@ private fun ColorPerformanceCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(StatsCardCornerRadius))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
             .padding(18.dp)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
             Text(
                 text = "Performance by Color",
                 fontFamily = JetBrainsMono,
-                fontSize = 15.sp,
+                fontSize = TextSizeSubhead,
                 fontWeight = FontWeight.Bold,
-                color = TextWhiteColor
+                color = StatsTextWhite
             )
 
-            // As White
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -831,29 +841,28 @@ private fun ColorPerformanceCard(
                                 .size(12.dp)
                                 .clip(CircleShape)
                                 .background(Color.White)
-                                .border(1.dp, Color(0xFFCBD5E1), CircleShape)
+                                .border(1.dp, StatsDivider, CircleShape)
                         )
                         Text(
                             text = "As White",
                             fontFamily = JetBrainsMono,
-                            fontSize = 13.sp,
+                            fontSize = TextSizeBadge,
                             fontWeight = FontWeight.Medium,
-                            color = TextWhiteColor
+                            color = StatsTextWhite
                         )
                     }
 
                     Text(
                         text = "$whiteWins W • $whiteDraws D • $whiteLosses L ($whitePct%)",
                         fontFamily = JetBrainsMono,
-                        fontSize = 12.sp,
-                        color = TextMutedColor
+                        fontSize = TextSizeCaption,
+                        color = StatsTextMuted
                     )
                 }
 
                 StackedProgressBar(whiteWins, whiteDraws, whiteLosses, whiteTotal)
             }
 
-            // As Black
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -868,23 +877,23 @@ private fun ColorPerformanceCard(
                             modifier = Modifier
                                 .size(12.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF1E293B))
-                                .border(1.dp, Color(0xFF475569), CircleShape)
+                                .background(StatsBarSlate)
+                                .border(1.dp, StatsSlate, CircleShape)
                         )
                         Text(
                             text = "As Black",
                             fontFamily = JetBrainsMono,
-                            fontSize = 13.sp,
+                            fontSize = TextSizeBadge,
                             fontWeight = FontWeight.Medium,
-                            color = TextWhiteColor
+                            color = StatsTextWhite
                         )
                     }
 
                     Text(
                         text = "$blackWins W • $blackDraws D • $blackLosses L ($blackPct%)",
                         fontFamily = JetBrainsMono,
-                        fontSize = 12.sp,
-                        color = TextMutedColor
+                        fontSize = TextSizeCaption,
+                        color = StatsTextMuted
                     )
                 }
 
@@ -905,9 +914,9 @@ private fun RecentGamesSection(
         Text(
             text = "Recent Rated Games",
             fontFamily = JetBrainsMono,
-            fontSize = 15.sp,
+            fontSize = TextSizeSubhead,
             fontWeight = FontWeight.Bold,
-            color = TextWhiteColor
+            color = StatsTextWhite
         )
 
         games.forEach { game ->
@@ -935,15 +944,15 @@ private fun RecentGameItem(
     }
 
     val outcomeColor = when {
-        isWin -> GreenColor
-        isLoss -> RedColor
-        else -> TextMutedColor
+        isWin -> StatsGreen
+        isLoss -> StatsRed
+        else -> StatsTextMuted
     }
 
     val outcomeBg = when {
-        isWin -> Color(0xFF0D3836)
-        isLoss -> Color(0xFF38151D)
-        else -> Color(0xFF1E293B)
+        isWin -> StatsWinDeltaBg
+        isLoss -> StatsLossDeltaBg
+        else -> StatsBarSlate
     }
 
     val formattedDate = game.endedAt?.let {
@@ -959,10 +968,10 @@ private fun RecentGameItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(12.dp))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(14.dp)
+            .padding(StatsIconSizeSmall)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -974,22 +983,21 @@ private fun RecentGameItem(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                // Color circle indicator
                 Box(
                     modifier = Modifier
                         .size(10.dp)
                         .clip(CircleShape)
-                        .background(if (isWhite) Color.White else Color(0xFF334155))
-                        .border(1.dp, Color(0xFF64748B), CircleShape)
+                        .background(if (isWhite) Color.White else StatsPieceCircleDark)
+                        .border(1.dp, StatsPieceCircleDarkBorder, CircleShape)
                 )
 
                 Column {
                     Text(
                         text = "vs ${game.opponentUsername}",
                         fontFamily = JetBrainsMono,
-                        fontSize = 14.sp,
+                        fontSize = TextSizeBody,
                         fontWeight = FontWeight.Bold,
-                        color = TextWhiteColor,
+                        color = StatsTextWhite,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1004,8 +1012,8 @@ private fun RecentGameItem(
                         Text(
                             text = detail,
                             fontFamily = JetBrainsMono,
-                            fontSize = 11.sp,
-                            color = TextMutedColor,
+                            fontSize = TextSizeTiny,
+                            color = StatsTextMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -1026,7 +1034,7 @@ private fun RecentGameItem(
                     Text(
                         text = outcomeText,
                         fontFamily = JetBrainsMono,
-                        fontSize = 11.sp,
+                        fontSize = TextSizeTiny,
                         fontWeight = FontWeight.Bold,
                         color = outcomeColor
                     )
@@ -1035,8 +1043,8 @@ private fun RecentGameItem(
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
-                    tint = TextMutedColor,
-                    modifier = Modifier.size(18.dp)
+                    tint = StatsTextMuted,
+                    modifier = Modifier.size(StatsIconSizeMedium)
                 )
             }
         }
@@ -1051,33 +1059,33 @@ private fun GuestStatsCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(StatsCardCornerRadius))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
             .padding(24.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
-                tint = CyanColor,
+                tint = StatsCyan,
                 modifier = Modifier.size(40.dp)
             )
             Text(
                 text = "Player Statistics",
                 fontFamily = JetBrainsMono,
-                fontSize = 18.sp,
+                fontSize = TextSizeTitle,
                 fontWeight = FontWeight.Bold,
-                color = TextWhiteColor
+                color = StatsTextWhite
             )
             Text(
                 text = "Detailed rating progression charts, win rates, and game histories are available for registered accounts.",
                 fontFamily = JetBrainsMono,
-                fontSize = 13.sp,
-                color = TextMutedColor,
+                fontSize = TextSizeBadge,
+                color = StatsTextMuted,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp
             )
@@ -1099,27 +1107,27 @@ private fun ErrorStateCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBg)
-            .border(1.dp, CardBorderColor, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(StatsCardCornerRadius))
+            .background(StatsCardBg)
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
             .padding(24.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
             Text(
                 text = "Unable to Load Stats",
                 fontFamily = JetBrainsMono,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
-                color = RedColor
+                color = StatsRed
             )
             Text(
                 text = errorMessage,
                 fontFamily = JetBrainsMono,
-                fontSize = 13.sp,
-                color = TextMutedColor,
+                fontSize = TextSizeBadge,
+                color = StatsTextMuted,
                 textAlign = TextAlign.Center,
                 lineHeight = 19.sp
             )

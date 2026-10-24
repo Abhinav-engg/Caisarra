@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.components.clearFocusOnTap
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.BotGame
@@ -35,12 +34,21 @@ import com.abhinav.caisarra.presentation.common.ClickGuard
 import com.abhinav.caisarra.presentation.common.singleClick
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
 import com.abhinav.caisarra.presentation.game.viewmodel.BotHistoryViewModel
-
-private val BgColor = Color(0xFF080D13)
-private val CardBg = Color(0xFF131D27)
-private val CardBorder = Color(0xFF1E2D3D)
-private val ActiveGreen = Color(0xFF10B981)
-private val TextMuted = Color(0xFF71839B)
+import com.caisaara.ui.theme.BotActiveBg
+import com.caisaara.ui.theme.BotCardBg
+import com.caisaara.ui.theme.BotCardBorder
+import com.caisaara.ui.theme.BotDrawBlue
+import com.caisaara.ui.theme.BotFinishedBg
+import com.caisaara.ui.theme.BotLossRed
+import com.caisaara.ui.theme.BotSelectedBorder
+import com.caisaara.ui.theme.BotTextMuted
+import com.caisaara.ui.theme.StatsBg
+import com.caisaara.ui.theme.TextSizeBadge
+import com.caisaara.ui.theme.TextSizeBody
+import com.caisaara.ui.theme.TextSizeCaption
+import com.caisaara.ui.theme.TextSizeHeading
+import com.caisaara.ui.theme.TextSizeSubhead
+import com.caisaara.ui.theme.TextSizeTiny
 
 @Composable
 fun BotHistoryScreen(
@@ -54,7 +62,7 @@ fun BotHistoryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BgColor)
+            .background(StatsBg)
             .clearFocusOnTap()
             .padding(horizontal = 16.dp, vertical = 20.dp)
     ) {
@@ -88,7 +96,7 @@ fun BotHistoryScreen(
             color = Color.White,
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Bold,
-            fontSize = 20.sp
+            fontSize = TextSizeHeading
         )
 
         Spacer(Modifier.height(16.dp))
@@ -101,7 +109,7 @@ fun BotHistoryScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = ActiveGreen)
+                    CircularProgressIndicator(color = BotSelectedBorder)
                 }
             }
 
@@ -115,13 +123,13 @@ fun BotHistoryScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = state.errorMessage.orEmpty(),
-                            color = Color(0xFFFF626B),
+                            color = BotLossRed,
                             fontFamily = JetBrainsMono,
-                            fontSize = 14.sp
+                            fontSize = TextSizeBody
                         )
                         Spacer(Modifier.height(12.dp))
                         TextButton(onClick = singleClick(viewModel::loadGames)) {
-                            Text("RETRY", color = ActiveGreen, fontFamily = JetBrainsMono)
+                            Text("RETRY", color = BotSelectedBorder, fontFamily = JetBrainsMono)
                         }
                     }
                 }
@@ -136,9 +144,9 @@ fun BotHistoryScreen(
                 ) {
                     Text(
                         text = "No bot games played yet.",
-                        color = TextMuted,
+                        color = BotTextMuted,
                         fontFamily = JetBrainsMono,
-                        fontSize = 14.sp
+                        fontSize = TextSizeBody
                     )
                 }
             }
@@ -175,8 +183,8 @@ private fun BotGameHistoryItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(CardBg)
-            .border(1.dp, if (isActive) ActiveGreen else CardBorder, RoundedCornerShape(12.dp))
+            .background(BotCardBg)
+            .border(1.dp, if (isActive) BotSelectedBorder else BotCardBorder, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(14.dp)
     ) {
@@ -190,19 +198,19 @@ private fun BotGameHistoryItem(
                     text = if (game.botId != null) "Bot (${game.botRating})" else "Custom Bot (${game.botRating})",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
+                    fontSize = TextSizeSubhead,
                     fontFamily = JetBrainsMono
                 )
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .background(if (isActive) Color(0xFF1B3B2B) else Color(0xFF202A36))
+                        .background(if (isActive) BotActiveBg else BotFinishedBg)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = if (isActive) "ACTIVE" else "FINISHED",
-                        color = if (isActive) ActiveGreen else TextMuted,
-                        fontSize = 11.sp,
+                        color = if (isActive) BotSelectedBorder else BotTextMuted,
+                        fontSize = TextSizeTiny,
                         fontWeight = FontWeight.Bold,
                         fontFamily = JetBrainsMono
                     )
@@ -216,8 +224,8 @@ private fun BotGameHistoryItem(
             ) {
                 Text(
                     text = "Playing as ${game.playerColor.replaceFirstChar { it.uppercase() }} · ${game.moves.size} moves",
-                    color = TextMuted,
-                    fontSize = 12.sp
+                    color = BotTextMuted,
+                    fontSize = TextSizeCaption
                 )
 
                 if (!isActive) {
@@ -228,15 +236,15 @@ private fun BotGameHistoryItem(
                         else -> "Ended"
                     }
                     val resultColor = when (resultText) {
-                        "Won" -> ActiveGreen
-                        "Lost" -> Color(0xFFFF626B)
-                        else -> Color(0xFF57CDEA)
+                        "Won" -> BotSelectedBorder
+                        "Lost" -> BotLossRed
+                        else -> BotDrawBlue
                     }
                     Text(
                         text = resultText,
                         color = resultColor,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
+                        fontSize = TextSizeBadge,
                         fontFamily = JetBrainsMono
                     )
                 }

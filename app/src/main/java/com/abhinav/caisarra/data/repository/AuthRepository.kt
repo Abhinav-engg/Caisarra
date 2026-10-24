@@ -11,6 +11,7 @@ import com.abhinav.caisarra.data.remote.api.GamesService
 import com.abhinav.caisarra.data.remote.api.MatchmakingService
 import com.abhinav.caisarra.data.remote.api.NearbyService
 import com.abhinav.caisarra.data.remote.api.ProfileService
+import com.abhinav.caisarra.data.remote.api.PuzzleApiService
 import com.abhinav.caisarra.data.remote.api.RatingService
 import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
@@ -22,6 +23,9 @@ import com.abhinav.caisarra.data.remote.dto.VerifyRegistrationRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 import okhttp3.Headers
 import retrofit2.HttpException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
 class AuthRepository private constructor(context: Context) {
 
@@ -73,6 +77,7 @@ class AuthRepository private constructor(context: Context) {
             if (!saveTokensFromCookies(response.headers())) {
                 return AuthResult.Error("Verification failed. Please try again.")
             }
+            tokenManager.clearGuestId()
 
             val username = pendingRegistration?.username
             if (!username.isNullOrBlank()) {
@@ -94,8 +99,11 @@ class AuthRepository private constructor(context: Context) {
             if (!saveTokensFromCookies(response.headers())) {
                 return AuthResult.Error("Login failed. Please try again.")
             }
-            if (!username.contains("@")) {
-                tokenManager.saveUsername(username.trim())
+            tokenManager.clearGuestId()
+            val userToSave = response.body()?.data?.username?.takeIf { it.isNotBlank() }
+                ?: username.takeUnless { it.contains("@") }
+            if (!userToSave.isNullOrBlank()) {
+                tokenManager.saveUsername(userToSave.trim())
             }
 
             AuthResult.Success(response.body()?.message.orEmpty())
@@ -177,11 +185,23 @@ class AuthRepository private constructor(context: Context) {
         }
     }
 
+    val isGuestFlow: Flow<Boolean> =
+        tokenManager.refreshTokenFlow.combine(tokenManager.guestIdFlow) { refresh, guestId ->
+            refresh == null && !guestId.isNullOrBlank()
+        }
+
+    val isLoggedInFlow: Flow<Boolean> =
+        tokenManager.refreshTokenFlow.map { it != null }
+
     suspend fun isLoggedIn(): Boolean = tokenManager.getRefreshToken() != null
 
-    suspend fun isGuest(): Boolean = tokenManager.getGuestId() != null
+    suspend fun isGuest(): Boolean = !isLoggedIn() && !tokenManager.getGuestId().isNullOrBlank()
 
-    suspend fun getGuestId(): String? = tokenManager.getGuestId()
+    suspend fun getGuestId(): String? = if (isLoggedIn()) null else tokenManager.getGuestId()
+
+    suspend fun clearGuestId() {
+        tokenManager.clearGuestId()
+    }
 
     suspend fun getUsername(): String? {
         return tokenManager.getUsername()
@@ -221,4 +241,7 @@ class AuthRepository private constructor(context: Context) {
 
     fun createBotGameService(): BotGameApiService =
         RetrofitInstance.createBotGameService(tokenManager)
+
+    fun createPuzzleService(): PuzzleApiService =
+        RetrofitInstance.createPuzzleService(tokenManager)
 }

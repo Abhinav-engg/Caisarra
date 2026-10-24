@@ -15,14 +15,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,7 +43,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -129,20 +137,55 @@ fun NearbyScreen(
         }
 
         NearbyTopBar(
-            visible = state.visible,
-            switchEnabled = !state.loading && !state.guest,
-            onBack = onBack,
-            onVisibleChange = { checked -> if (checked) turnOn() else viewModel.disable() },
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
         )
 
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(top = 70.dp, start = 16.dp)
+                .clip(CircleShape)
+                .background(NearbyColors.SurfaceHigh)
+                .border(1.dp, NearbyColors.Border, CircleShape)
+                .padding(start = 12.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Visibility,
+                contentDescription = null,
+                tint = NearbyColors.Accent,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                text = "Appear on Map",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = NearbyColors.TextPrimary
+            )
+            Switch(
+                checked = state.visible,
+                enabled = !state.loading && !state.guest,
+                onCheckedChange = { checked -> if (checked) turnOn() else viewModel.disable() },
+                modifier = Modifier.scale(0.75f),
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = NearbyColors.Background,
+                    checkedTrackColor = NearbyColors.Accent,
+                    uncheckedThumbColor = NearbyColors.TextSecondary,
+                    uncheckedTrackColor = NearbyColors.Surface,
+                    uncheckedBorderColor = NearbyColors.Border
+                )
+            )
+        }
+
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
-                .padding(top = 80.dp, end = 16.dp),
+                .padding(top = 70.dp, end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SquareIconButton(
@@ -167,7 +210,7 @@ fun NearbyScreen(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .statusBarsPadding()
-                    .padding(top = 80.dp, start = 16.dp, end = 84.dp)
+                    .padding(top = 125.dp, start = 16.dp, end = 84.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(NearbyColors.Surface)
                     .border(1.dp, NearbyColors.Border, RoundedCornerShape(16.dp))
