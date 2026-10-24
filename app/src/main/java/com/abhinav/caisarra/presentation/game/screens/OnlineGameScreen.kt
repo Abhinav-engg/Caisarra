@@ -617,6 +617,7 @@ private fun Banner(text: String, background: Color, modifier: Modifier = Modifie
     )
 }
 
+
 @Composable
 private fun OnlineTopBar(
     isRated: Boolean,
@@ -626,47 +627,75 @@ private fun OnlineTopBar(
     onFlip: () -> Unit,
     onChat: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
     ) {
-        TextButton(onClick = onHome) {
-            Text(text = "Home", color = Color.White)
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        val compact = maxWidth < 380.dp
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
                 text = "MOSAIC",
                 color = Color.White,
-                fontSize = 16.sp,
+                fontSize = if (compact) 15.sp else 17.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+                letterSpacing = if (compact) 1.sp else 1.5.sp,
+                maxLines = 1
             )
+
             Text(
                 text = if (isRated) "RATED" else "UNRATED",
                 color = if (isRated) Accent else Color(0xFFA6C1D4),
-                fontSize = 9.sp,
+                fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+                letterSpacing = 1.sp,
+                maxLines = 1
             )
         }
-        Row {
+        TextButton(
+            onClick = onHome,
+            modifier = Modifier.align(Alignment.CenterStart)
+        ) {
+            Text(
+                text = "Home",
+                color = Color.White,
+                fontSize = if (compact) 12.sp else 14.sp,
+                maxLines = 1
+            )
+        }
+        Row(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TextButton(onClick = onFlip) {
-                Text(text = "Flip", color = Color.White)
+                Text(
+                    text = "Flip",
+                    color = Color.White,
+                    fontSize = if (compact) 12.sp else 14.sp,
+                    maxLines = 1
+                )
             }
+
             TextButton(onClick = onChat) {
                 Text(
                     text = when {
-                        muted -> "Chat (muted)"
+                        muted -> if (compact) "Muted" else "Chat (muted)"
                         unread > 0 -> "Chat ($unread)"
                         else -> "Chat"
                     },
-                    color = if (unread > 0) Accent else Color.White
+                    color = if (unread > 0) Accent else Color.White,
+                    fontSize = if (compact) 12.sp else 14.sp,
+                    maxLines = 1
                 )
             }
         }
     }
 }
+
 
 
 @Composable

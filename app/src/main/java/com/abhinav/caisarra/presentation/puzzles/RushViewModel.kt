@@ -33,6 +33,7 @@ class RushViewModel(
     private val engine = ChesslibEngine()
     private var animationId = 0L
     private var timerJob: Job? = null
+    private var startJob: Job? = null
     private var timeRemainingSeconds = 0
 
     init {
@@ -40,22 +41,36 @@ class RushViewModel(
     }
 
     fun startRush() {
+        // Ignore repeated taps while a session is being created.
+        if (startJob?.isActive == true) return
+
         timerJob?.cancel()
         _state.value = RushUiState.Loading
 
-        viewModelScope.launch {
-            puzzleRepository.startRush(mode)
-                .onSuccess { response ->
-                    setupFirstPuzzle(response.sessionId, response.mode, response.timeLimitSec, response.puzzle)
-                    if (mode != "survival") {
-                        startTimer(response.timeLimitSec)
+        startJob = viewModelScope.launch {
+            try {
+                puzzleRepository.startRush(mode)
+                    .onSuccess { response ->
+                        setupFirstPuzzle(
+                            response.sessionId,
+                            response.mode,
+                            response.timeLimitSec,
+                            response.puzzle
+                        )
+
+                        if (mode != "survival") {
+                            startTimer(response.timeLimitSec)
+                        }
                     }
-                }
-                .onFailure { error ->
-                    _state.value = RushUiState.Error(
-                        message = error.message ?: "Failed to start Puzzle Rush"
-                    )
-                }
+                    .onFailure { error ->
+                        _state.value = RushUiState.Error(
+                            message = error.message
+                                ?: "Failed to start Puzzle Rush"
+                        )
+                    }
+            } finally {
+                startJob = null
+            }
         }
     }
 
