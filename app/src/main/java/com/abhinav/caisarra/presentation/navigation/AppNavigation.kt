@@ -132,6 +132,7 @@ import com.abhinav.caisarra.data.repository.ClubRepository
 import com.abhinav.caisarra.presentation.club.ClubScreen
 import com.abhinav.caisarra.presentation.club.ClubViewModel
 import com.abhinav.caisarra.presentation.club.ClubDetailScreen
+import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -1783,14 +1784,42 @@ fun AppNavigation(authRepository: AuthRepository) {
             }
 
 
-
             composable(route = AppRoutes.LEADERBOARD) {
-            LeaderboardScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
+                val tokenManager = remember(context) {
+                    TokenManager.get(context)
+                }
 
-        composable(route = AppRoutes.SETTINGS_DETAIL) {
+                val leaderboardService = remember(tokenManager) {
+                    RetrofitInstance.createLeaderboardService(tokenManager)
+                }
+
+                val clubService = remember(tokenManager) {
+                    RetrofitInstance.createClubService(tokenManager)
+                }
+
+                val clubRepository = remember(clubService) {
+                    ClubRepository(clubService)
+                }
+
+                val leaderboardViewModel = screenViewModel {
+                    LeaderboardViewModel(
+                        service = leaderboardService,
+                        clubService = clubService,
+                        clubRepository = clubRepository
+                    )
+                }
+
+                LeaderboardScreen(
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    viewModel = leaderboardViewModel
+                )
+            }
+
+
+
+            composable(route = AppRoutes.SETTINGS_DETAIL) {
             SettingsDetailScreen(
                 onBack = { navController.popBackStack() }
             )
