@@ -108,8 +108,6 @@ class ClubRepository(
         require(code.isNotBlank()) { "Enter a club share code." }
         return decodeJoinedClub(service.joinClubByCode(code.trim()))
     }
-
-    /** Accept direct club JSON and common success/data or club/result envelopes. */
     private fun decodeJoinedClub(response: JsonElement): ClubDto {
         var current = response
         repeat(6) {
@@ -299,9 +297,6 @@ class ClubRepository(
             SendClubMessageRequest(message.trim())
         )
 
-        // The current backend returns the message object directly:
-        // {"id":"UUID", "user_id":1, "username":"...", "message":"..."}.
-        // Also tolerate an optional {"success":true,"data":{...}} envelope.
         var payload = response
         if (response is JsonObject) {
             val success = (response["success"] as? JsonPrimitive)?.booleanOrNull

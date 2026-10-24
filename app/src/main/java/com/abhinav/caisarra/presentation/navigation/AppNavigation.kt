@@ -250,20 +250,35 @@ private fun NavController.navigateOnce(
     if (isResumed()) navigate(route, builder)
 }
 
+
 private fun NavController.safeBack(fallbackRoute: String) {
+    // Ignore repeated clicks while navigation is in progress.
     if (!isResumed()) return
+
+    // Never pop the fallback screen itself.
     if (currentDestination?.route == fallbackRoute) return
 
-    val popped = runCatching { popBackStack() }.getOrDefault(false)
-    if (!popped) {
-        runCatching {
-            navigate(fallbackRoute) {
-                popUpTo(graph.id) { inclusive = true }
-                launchSingleTop = true
+    // Prefer returning directly to the intended fallback screen.
+    val fallbackExists = runCatching {
+        getBackStackEntry(fallbackRoute)
+    }.isSuccess
+
+    if (fallbackExists) {
+        popBackStack(
+            route = fallbackRoute,
+            inclusive = false
+        )
+    } else {
+        // Recover safely if the fallback screen is not on the stack.
+        navigate(fallbackRoute) {
+            popUpTo(graph.id) {
+                inclusive = true
             }
+            launchSingleTop = true
         }
     }
 }
+
 
 private suspend fun homeRoute(authRepository: AuthRepository): String =
     if (authRepository.isGuest()) AppRoutes.GUEST_HOME else AppRoutes.HOME
@@ -335,6 +350,12 @@ fun AppNavigation(authRepository: AuthRepository) {
 
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
+    var friendsBackRoute by remember {
+        mutableStateOf(AppRoutes.GAME_SETUP)
+    }
+    var inviteBackRoute by remember {
+        mutableStateOf(AppRoutes.PLAY_WITH_FRIEND_HOME)
+    }
 
     LaunchedEffect(Unit) {
         SessionExpiredEvent.events.collect {
@@ -827,9 +848,13 @@ fun AppNavigation(authRepository: AuthRepository) {
                 },
 
 
+
                 onPlayWithFriend = {
                     scope.launch {
-                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                        if (
+                            authRepository.isGuest() ||
+                            !authRepository.isLoggedIn()
+                        ) {
                             Toast.makeText(
                                 context,
                                 "Friends require a registered account. Please sign in.",
@@ -840,11 +865,16 @@ fun AppNavigation(authRepository: AuthRepository) {
                             return@launch
                         }
 
-                        navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND_HOME) {
+                        friendsBackRoute = AppRoutes.GAME_SETUP
+
+                        navController.navigateOnce(
+                            AppRoutes.PLAY_WITH_FRIEND_HOME
+                        ) {
                             launchSingleTop = true
                         }
                     }
                 },
+
 
                 onTournaments = {
                     scope.launch {
@@ -1116,52 +1146,80 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-        composable(route = AppRoutes.PLAY_WITH_FRIEND) {
-            val friendsViewModel = screenViewModel {
-                FriendsViewModel(context as Application)
-            }
 
-            PlayWithFriendScreen(
-                viewModel = friendsViewModel,
-                onCreateMatchLink = {
-                    navController.navigate(AppRoutes.CREATE_INVITE)
-                },
-                onBack = {
-                    navController.safeBack(AppRoutes.GAME_SETUP)
+            composable(route = AppRoutes.PLAY_WITH_FRIEND) {
+                val friendsViewModel = screenViewModel {
+                    FriendsViewModel(context as Application)
                 }
-            )
-        }
-        composable(route = AppRoutes.PLAY_WITH_FRIEND_HOME) {
-            PlayWithFriendHomeScreen(
-                onInviteFriends = {
-                    navController.navigate(AppRoutes.PLAY_WITH_FRIEND)
-                },
-                onCreateChallengeLink = {
-                    navController.navigate(AppRoutes.CREATE_INVITE)
-                },
-                onBack = {
-                    navController.safeBack(AppRoutes.GAME_SETUP)
+
+                androidx.activity.compose.BackHandler {
+                    navController.safeBack(friendsBackRoute)
                 }
-            )
-        }
 
-        composable(route = AppRoutes.CREATE_INVITE) {
-            val createViewModel = screenViewModel {
-                CreateInviteViewModel(context as Application)
-            }
-
-            CreateInviteScreen(
-                viewModel = createViewModel,
-                onEnterWaitingBoard = { gameId ->
-                    navController.navigate(AppRoutes.onlineGame(gameId)) {
-                        popUpTo(AppRoutes.CREATE_INVITE) { inclusive = true }
+                PlayWithFriendScreen(
+                    viewModel = friendsViewModel,
+                    onCreateMatchLink = {
+                        inviteBackRoute = AppRoutes.PLAY_WITH_FRIEND
+                        navController.navigateOnce(AppRoutes.CREATE_INVITE)
+                    },
+                    onBack = {
+                        navController.safeBack(friendsBackRoute)
                     }
-                },
-                onBack = { navController.popBackStack() }
-            )
-        }
+                )
+            }
 
-        composable(
+            composable(route = AppRoutes.PLAY_WITH_FRIEND_HOME) {
+                androidx.activity.compose.BackHandler {
+                    navController.safeBack(friendsBackRoute)
+                }
+
+                PlayWithFriendHomeScreen(
+                    onInviteFriends = {
+                        navController.navigateOnce(
+                            AppRoutes.PLAY_WITH_FRIEND
+                        )
+                    },
+                    onCreateChallengeLink = {
+                        inviteBackRoute = AppRoutes.PLAY_WITH_FRIEND_HOME
+                        navController.navigateOnce(AppRoutes.CREATE_INVITE)
+                    },
+                    onBack = {
+                        navController.safeBack(friendsBackRoute)
+                    }
+                )
+            }
+
+
+
+            composable(route = AppRoutes.CREATE_INVITE) {
+                val createViewModel = screenViewModel {
+                    CreateInviteViewModel(context as Application)
+                }
+
+                androidx.activity.compose.BackHandler {
+                    navController.safeBack(inviteBackRoute)
+                }
+
+                CreateInviteScreen(
+                    viewModel = createViewModel,
+
+                    onEnterWaitingBoard = { gameId ->
+                        navController.navigate(AppRoutes.onlineGame(gameId)) {
+                            popUpTo(AppRoutes.CREATE_INVITE) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+
+                    onBack = {
+                        navController.safeBack(inviteBackRoute)
+                    }
+                )
+            }
+
+
+            composable(
             route = AppRoutes.JOIN_INVITE,
             arguments = listOf(
                 navArgument("code") { type = NavType.StringType }
@@ -1406,6 +1464,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 Toast.LENGTH_SHORT
                             ).show()
                         } else {
+                            inviteBackRoute = AppRoutes.NEARBY
                             navController.navigate(AppRoutes.CREATE_INVITE)
                         }
                     }
@@ -1611,20 +1670,32 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onThemeClick = {
                     navController.navigateOnce(AppRoutes.THEME)
                 },
+
                 onFriendsClick = {
                     scope.launch {
-                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                        if (
+                            authRepository.isGuest() ||
+                            !authRepository.isLoggedIn()
+                        ) {
                             Toast.makeText(
                                 context,
                                 "Friends require a registered account. Please sign in.",
                                 Toast.LENGTH_SHORT
                             ).show()
+
                             navController.navigateOnce(AppRoutes.LOGIN)
                         } else {
-                            navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
+                            friendsBackRoute = AppRoutes.MENU
+
+                            navController.navigateOnce(
+                                AppRoutes.PLAY_WITH_FRIEND
+                            ) {
+                                launchSingleTop = true
+                            }
                         }
                     }
                 },
+
                 onClubsClick = {
                     navController.navigateOnce(AppRoutes.CLUBS)
                 },
@@ -1648,61 +1719,75 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-        composable(
-            route = AppRoutes.STATS,
-            arguments = listOf(
-                navArgument("username") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument("mode") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
+
+            composable(
+                route = AppRoutes.STATS,
+                arguments = listOf(
+                    navArgument("username") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("mode") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+
+                val usernameArg = backStackEntry.arguments?.getString("username")
+                val modeArg = backStackEntry.arguments?.getString("mode")
+
+                val statsViewModel = screenViewModel {
+                    StatsViewModel(
+                        authRepository = authRepository,
+                        ratingRepository = RatingRepository(
+                            authRepository.createRatingService()
+                        ),
+                        profileRepository = ProfileRepository(
+                            authRepository.createProfileService()
+                        ),
+                        initialUsername = usernameArg,
+                        initialMode = modeArg
+                    )
                 }
-            )
-        ) { backStackEntry ->
-            val usernameArg = backStackEntry.arguments?.getString("username")
-            val modeArg = backStackEntry.arguments?.getString("mode")
-            val statsViewModel = screenViewModel {
-                StatsViewModel(
-                    authRepository = authRepository,
-                    ratingRepository = RatingRepository(authRepository.createRatingService()),
-                    profileRepository = ProfileRepository(authRepository.createProfileService()),
-                    initialUsername = usernameArg,
-                    initialMode = modeArg
+
+                StatsScreen(
+                    viewModel = statsViewModel,
+                    onBack = {
+                        navController.safeBack(AppRoutes.MENU)
+                    },
+                    onGameClick = { gameId ->
+                        navController.navigateOnce(
+                            AppRoutes.gameHistory(gameId)
+                        )
+                    },
+                    onSignIn = {
+                        navController.navigateOnce(AppRoutes.LOGIN)
+                    }
                 )
             }
-            StatsScreen(
-                viewModel = statsViewModel,
-                onBack = { navController.popBackStack() },
-                onGameClick = { gameId ->
-                    navController.navigateOnce(AppRoutes.gameHistory(gameId))
-                },
-                onSignIn = {
-                    navController.navigateOnce(AppRoutes.LOGIN)
+
+            composable(route = AppRoutes.THEME) {
+                androidx.activity.compose.BackHandler {
+                    navController.safeBack(AppRoutes.MENU)
                 }
-            )
-        }
 
-        composable(route = AppRoutes.THEME) {
-            ThemeScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
+                ThemeScreen(
+                    onBack = {
+                        navController.safeBack(AppRoutes.MENU)
+                    }
+                )
+            }
 
-        composable(route = AppRoutes.MESSAGES) {
+
+            composable(route = AppRoutes.MESSAGES) {
             MessagesScreen(
                 onBack = { navController.popBackStack() }
             )
         }
 
-//        composable(route = AppRoutes.CLUBS) {
-//            ClubsScreen(
-//                onBack = { navController.popBackStack() }
-//            )
-//        }
 
             composable(route = AppRoutes.CLUBS) {
                 val tokenManager = remember(context) {
@@ -1826,13 +1911,21 @@ fun AppNavigation(authRepository: AuthRepository) {
 
 
 
-            composable(route = AppRoutes.SETTINGS_DETAIL) {
-            SettingsDetailScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
 
-        composable(route = AppRoutes.DELETE_ACCOUNT) {
+            composable(route = AppRoutes.SETTINGS_DETAIL) {
+                androidx.activity.compose.BackHandler {
+                    navController.safeBack(AppRoutes.MENU)
+                }
+
+                SettingsDetailScreen(
+                    onBack = {
+                        navController.safeBack(AppRoutes.MENU)
+                    }
+                )
+            }
+
+
+            composable(route = AppRoutes.DELETE_ACCOUNT) {
             DeleteAccountScreen(
                 onBack = { navController.popBackStack() },
                 onConfirmDelete = {
