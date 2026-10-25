@@ -32,8 +32,6 @@ interface ClubService {
         @Path("clubID") clubId: String
     ): Response<ResponseBody>
 
-    // Join responses can be either a direct club object or a wrapped JSON response.
-    // ClubRepository decodes both formats safely.
     @POST("api/clubs/code/{code}/join")
     suspend fun joinClubByCode(
         @Path("code") code: String

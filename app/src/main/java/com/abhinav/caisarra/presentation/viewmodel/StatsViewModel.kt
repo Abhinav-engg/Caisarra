@@ -75,7 +75,6 @@ class StatsViewModel(
 
             _state.value = _state.value.copy(isLoading = true, error = null)
 
-            // 1. If a clean username was passed explicitly in navigation, use it
             val candidateUsername = _state.value.username.takeIf { it.isNotBlank() && !it.contains("@") }
             if (candidateUsername != null) {
                 loadStats(
@@ -86,7 +85,6 @@ class StatsViewModel(
                 return@launch
             }
 
-            // 2. Fetch canonical user profile via authenticated endpoint /api/profile
             var resolvedUsername: String? = null
             try {
                 val profile = profileRepository.getMyProfile()
@@ -97,7 +95,6 @@ class StatsViewModel(
                     authRepository.saveUsername(realUsername)
                 }
             } catch (_: Exception) {
-                // If profile call fails, check stored username if not an email
                 val stored = authRepository.getUsername()?.trim()
                 if (!stored.isNullOrBlank() && !stored.contains("@")) {
                     resolvedUsername = stored
@@ -178,7 +175,6 @@ class StatsViewModel(
             )
 
             try {
-                // Ensure username does not contain an email
                 val targetUsername = if (username.contains("@")) {
                     val profile = profileRepository.getMyProfile()
                     cachedProfile = profile
@@ -202,7 +198,6 @@ class StatsViewModel(
                     error = null
                 )
             } catch (e: Exception) {
-                // If 404 occurs, verify if username was mismatched and resolve via profile
                 val is404 = e.message?.contains("404") == true || e.message?.contains("not found", ignoreCase = true) == true
                 if (is404) {
                     try {
@@ -228,7 +223,6 @@ class StatsViewModel(
                     } catch (_: Exception) {}
                 }
 
-                // If stats endpoint fails, check profile fallback
                 val profile = fallbackProfile ?: cachedProfile ?: runCatching { profileRepository.getMyProfile() }.getOrNull()
                 val modeRating = profile?.ratings?.entries?.firstOrNull {
                     it.key.equals(mode.ratingKey, ignoreCase = true)

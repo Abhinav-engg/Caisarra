@@ -101,7 +101,6 @@ fun GameHistorySection(
                                 ),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Player names and chess pieces
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -134,7 +133,6 @@ fun GameHistorySection(
                                 )
                             }
 
-                            // Date and time
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -154,7 +152,6 @@ fun GameHistorySection(
                                 )
                             }
 
-                            // Result and review button
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,

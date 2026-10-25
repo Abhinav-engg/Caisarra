@@ -91,7 +91,6 @@ data class ClubLeaderboardData(
 
 @Serializable
 data class ClubMessageDto(
-    // Backend message IDs are UUID strings, not numeric IDs.
     val id: String = "",
     @SerialName("user_id")
     val userId: Long = 0L,

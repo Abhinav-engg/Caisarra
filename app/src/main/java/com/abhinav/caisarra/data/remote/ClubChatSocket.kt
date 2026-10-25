@@ -159,8 +159,6 @@ class ClubChatSocket(context: Context) {
                                 return
                             }
 
-                            // Some server events wrap the message in "data" or in
-                            // an object-valued "message" field. Handle both shapes.
                             val payload = (root["data"] as? JsonObject)
                                 ?: (root["message"] as? JsonObject)
                                 ?: root

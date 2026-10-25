@@ -74,7 +74,6 @@ fun TournamentListScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Two main action cards: Join a Tournament? & Create a Tournament?
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -103,7 +102,6 @@ fun TournamentListScreen(
                 )
             }
 
-            // Expandable Invite Code card
             AnimatedVisibility(
                 visible = showInviteCode,
                 enter = fadeIn() + expandVertically(),

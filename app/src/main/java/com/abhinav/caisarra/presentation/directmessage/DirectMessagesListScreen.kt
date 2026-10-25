@@ -142,7 +142,6 @@ fun DirectMessagesListScreen(
             .background(StatsBg)
             .statusBarsPadding()
     ) {
-        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -196,7 +195,6 @@ fun DirectMessagesListScreen(
             color = StatsCardBorder
         )
 
-        // Fixed-height, single-line search field
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -260,7 +258,6 @@ fun DirectMessagesListScreen(
                 )
             )
 
-            // Separate search button
             Box(
                 modifier = Modifier
                     .size(54.dp)
@@ -289,7 +286,6 @@ fun DirectMessagesListScreen(
             }
         }
 
-        // Error message
         error?.let { message ->
             Text(
                 text = message,
@@ -302,7 +298,6 @@ fun DirectMessagesListScreen(
             )
         }
 
-        // Conversation and search results
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()

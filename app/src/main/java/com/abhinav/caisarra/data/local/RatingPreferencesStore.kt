@@ -27,7 +27,6 @@ class RatingPreferencesStore private constructor(context: Context) {
         return if (prefs.contains(key)) {
             prefs.getInt(key, 0)
         } else {
-            // Default initial seed of 18 for Rapid if not yet saved from game, to match UI specification
             if (mode == GameMode.RAPID) 18 else null
         }
     }

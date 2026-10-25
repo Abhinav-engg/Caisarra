@@ -69,7 +69,6 @@ fun TournamentBackground(
             .fillMaxSize()
             .background(TournamentColors.Background)
     ) {
-        // Chess King piece watermark in the background
         Image(
             painter = painterResource(id = R.drawable.dark_chess_piece),
             contentDescription = null,
