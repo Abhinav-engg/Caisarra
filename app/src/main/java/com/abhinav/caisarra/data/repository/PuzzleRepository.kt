@@ -1,6 +1,6 @@
 package com.abhinav.caisarra.data.repository
 
-import com.abhinav.caisarra.data.local.SessionExpiredEvent
+
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.api.PuzzleApiService
 import com.abhinav.caisarra.data.remote.dto.DailyPuzzleAttemptRequest
@@ -113,9 +113,6 @@ class PuzzleRepository(
         } catch (e: CancellationException) {
             throw e
         } catch (e: HttpException) {
-            if (e.code() == 401) {
-                SessionExpiredEvent.emit()
-            }
             Result.failure(Exception(ApiErrorInterpreter.toUserMessage(e), e))
         } catch (e: Exception) {
             Result.failure(Exception(ApiErrorInterpreter.toUserMessage(e), e))

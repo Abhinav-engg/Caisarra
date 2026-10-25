@@ -235,10 +235,8 @@ class ClubDetailViewModel(
             )
 
             try {
-                // Use the backend-supported REST endpoint to persist the message.
                 val sentMessage = repository.sendMessage(clubId, text)
 
-                // Show the returned message immediately.
                 state = state.copy(
                     chatInput = "",
                     messages = (
@@ -1150,7 +1148,6 @@ private fun ClubChatContent(
             .imePadding()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // Chat header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1188,7 +1185,6 @@ private fun ClubChatContent(
             thickness = 1.dp
         )
 
-        // Scrollable messages area
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -1260,7 +1256,6 @@ private fun ClubChatContent(
                                 vertical = 10.dp
                             )
                     ) {
-                        // Sender
                         Text(
                             text = if (isMine) "You" else message.username,
                             color = if (isMine) {
@@ -1274,7 +1269,6 @@ private fun ClubChatContent(
 
                         Spacer(Modifier.height(4.dp))
 
-                        // Message text
                         Text(
                             text = message.message,
                             color = DetailText,
@@ -1283,7 +1277,6 @@ private fun ClubChatContent(
 
                         Spacer(Modifier.height(5.dp))
 
-                        // Local time
                         Text(
                             text = formatClubMessageTime(message.createdAt),
                             color = Color(0xFFB8C2CC),
@@ -1295,7 +1288,6 @@ private fun ClubChatContent(
             }
         }
 
-        // Error/status feedback
         state.error?.let { error ->
             Text(
                 text = clubUiError(error),
@@ -1314,7 +1306,6 @@ private fun ClubChatContent(
             )
         }
 
-        // Fixed bottom message composer
         Row(
             modifier = Modifier
                 .fillMaxWidth()

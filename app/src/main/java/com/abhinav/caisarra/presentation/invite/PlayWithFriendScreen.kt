@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -37,12 +38,14 @@ import com.abhinav.caisarra.data.remote.dto.FriendDto
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
 import com.abhinav.caisarra.presentation.game.components.setup.SetupHeader
 import com.abhinav.caisarra.presentation.game.components.setup.SetupPage
-
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material3.OutlinedButton
 @Composable
 fun PlayWithFriendScreen(
     viewModel: FriendsViewModel,
     onCreateMatchLink: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onDirectMessage: (Long, String) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -89,8 +92,17 @@ fun PlayWithFriendScreen(
             FriendCard(
                 friend = friend,
                 onInvite = onCreateMatchLink,
-                onRemove = { viewModel.removeFriend(friend.userId) }
+                onRemove = {
+                    viewModel.removeFriend(friend.userId)
+                },
+                onDirectMessage = {
+                    onDirectMessage(
+                        friend.userId,
+                        friend.username
+                    )
+                }
             )
+
             Spacer(Modifier.height(10.dp))
         }
 
@@ -379,7 +391,8 @@ private fun ActionButton(
 private fun FriendCard(
     friend: FriendDto,
     onInvite: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onDirectMessage: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -413,6 +426,24 @@ private fun FriendCard(
         ) {
             Icon(Icons.Default.SportsEsports, contentDescription = null)
             Text("  Invite to Game")
+        }
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedButton(
+            onClick = onDirectMessage,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = SetupColors.Accent
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.ChatBubbleOutline,
+                contentDescription = null
+            )
+
+            Spacer(Modifier.width(8.dp))
+
+            Text("Direct Message")
         }
 
         Button(

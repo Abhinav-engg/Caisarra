@@ -35,12 +35,12 @@ interface ClubService {
     @POST("api/clubs/code/{code}/join")
     suspend fun joinClubByCode(
         @Path("code") code: String
-    ): ApiResponse<ClubDto>
+    ): JsonElement
 
     @POST("api/clubs/{clubID}/join")
     suspend fun joinClub(
         @Path("clubID") clubId: String
-    ): ApiResponse<ClubDto>
+    ): JsonElement
 
     @POST("api/clubs/{clubID}/leave")
     suspend fun leaveClub(

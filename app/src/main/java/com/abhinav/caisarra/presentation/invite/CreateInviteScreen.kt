@@ -17,11 +17,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -122,14 +122,6 @@ fun CreateInviteScreen(
                     checked = state.allowTakebacks,
                     onCheckedChange = viewModel::onTakebacksChanged
                 )
-                Box(Modifier.fillMaxWidth().height(1.dp).background(InviteBorder))
-                InviteSwitchRow(
-                    "Public Spectators",
-                    "Friends can watch match live",
-                    Icons.Default.RemoveRedEye,
-                    true,
-                    onCheckedChange = {}
-                )
             }
             state.error?.let {
                 Spacer(Modifier.height(14.dp))
@@ -174,6 +166,11 @@ private fun SideOption(
     modifier: Modifier = Modifier
 ) {
     val active = value == selected
+    val circleColor = when (value) {
+        "white" -> Color.White
+        "black" -> Color.Black
+        else -> if (active) SetupColors.Accent else SetupColors.Secondary
+    }
     Column(
         modifier = modifier
             .height(100.dp)
@@ -183,7 +180,12 @@ private fun SideOption(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(Icons.Default.Circle, null, tint = if (active) SetupColors.Accent else SetupColors.Secondary)
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .background(circleColor, CircleShape)
+                .border(1.dp, if (value == "black") SetupColors.Secondary else Color.Transparent, CircleShape)
+        )
         Spacer(Modifier.height(8.dp))
         Text(label, color = SetupColors.Text, fontSize = 14.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
     }

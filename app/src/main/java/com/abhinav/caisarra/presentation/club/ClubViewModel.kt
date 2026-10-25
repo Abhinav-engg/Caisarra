@@ -223,7 +223,6 @@ class ClubViewModel(
                 )
             }
 
-            // Reconcile with the server after deleting.
             try {
                 val mine = repository.getMyClubs()
                 val clubs = repository.getClubs(
