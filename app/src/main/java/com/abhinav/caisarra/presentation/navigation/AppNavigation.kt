@@ -17,6 +17,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.activity.ComponentActivity
+import com.abhinav.caisarra.presentation.common.ClickGuard
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -256,24 +258,24 @@ private fun NavController.navigateOnce(
 
 
 private fun NavController.safeBack(fallbackRoute: String) {
-    if (!isResumed()) return
-
+    if (!ClickGuard.canClick() || !isResumed()) return
     if (currentDestination?.route == fallbackRoute) return
-
-    val fallbackExists = runCatching {
-        getBackStackEntry(fallbackRoute)
-    }.isSuccess
-
+    val fallbackExists = runCatching { getBackStackEntry(fallbackRoute) }.isSuccess
     if (fallbackExists) {
-        popBackStack(
-            route = fallbackRoute,
-            inclusive = false
-        )
-    } else {
+        popBackStack(fallbackRoute, inclusive = false)
+    } else if (!popBackStack()) {
         navigate(fallbackRoute) {
-            popUpTo(graph.id) {
-                inclusive = true
-            }
+            popUpTo(graph.id) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+}
+
+private fun NavController.safePop(fallbackRoute: String = AppRoutes.HOME) {
+    if (!ClickGuard.canClick() || !isResumed()) return
+    if (!popBackStack() && currentDestination?.route != fallbackRoute) {
+        navigate(fallbackRoute) {
+            popUpTo(graph.id) { inclusive = true }
             launchSingleTop = true
         }
     }
@@ -513,6 +515,8 @@ fun AppNavigation(authRepository: AuthRepository) {
 
 
             val guestHomeState by guestHomeViewModel.state.collectAsState()
+            val activity = LocalContext.current as? ComponentActivity
+            androidx.activity.compose.BackHandler { activity?.finish() }
             LaunchedEffect(Unit) {
                 if (authRepository.isLoggedIn()) {
                     navController.navigate(AppRoutes.HOME) {
@@ -742,6 +746,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     )
                 )
             }
+
+            val activity = LocalContext.current as? ComponentActivity
+            androidx.activity.compose.BackHandler { activity?.finish() }
 
             HomeScreen(
                 viewModel = homeViewModel,
@@ -1477,7 +1484,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             }
             GameAnalysisScreen(
                 viewModel = analysisViewModel,
-                onBack = { navController.safeBack(AppRoutes.ONLINE_GAME) }
+                onBack = { navController.safePop() }
             )
         }
 
@@ -1732,7 +1739,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             DailyPuzzleScreen(
                 viewModel = dailyViewModel,
                 onBack = {
-                    navController.popBackStack()
+                    navController.safePop()
                 }
             )
         }
@@ -1759,7 +1766,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             RushScreen(
                 viewModel = rushViewModel,
                 onBack = {
-                    navController.popBackStack()
+                    navController.safePop()
                 }
             )
         }
@@ -1929,7 +1936,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             composable(route = AppRoutes.MESSAGES) {
             MessagesScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.safePop() }
             )
         }
 
@@ -2072,7 +2079,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             composable(route = AppRoutes.DELETE_ACCOUNT) {
             DeleteAccountScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { navController.safePop() },
                 onConfirmDelete = {
                     scope.launch {
                         authRepository.logout()

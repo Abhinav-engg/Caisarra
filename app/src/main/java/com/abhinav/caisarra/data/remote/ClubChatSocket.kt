@@ -147,7 +147,7 @@ class ClubChatSocket(context: Context) {
                             ) {
                                 Log.w(
                                     "ClubChatSocket",
-                                    "Server rejected chat event: $text"
+                                    "Server rejected chat event"
                                 )
                                 _errors.tryEmit(
                                     (root["message"] as? kotlinx.serialization.json.JsonPrimitive)
@@ -180,7 +180,7 @@ class ClubChatSocket(context: Context) {
                             if (messageText.isNullOrBlank()) {
                                 Log.d(
                                     "ClubChatSocket",
-                                    "Ignoring non-message event: $text"
+                                    "Ignoring non-message event"
                                 )
                                 return
                             }
