@@ -62,7 +62,6 @@ class GameSocketClient(context: Context) {
 
     fun send(message: SocketOutgoing): Boolean {
         val text = json.encodeToString(SocketOutgoing.serializer(), message)
-        Log.d("GameSocketClient", "send=$text")
         return socket?.send(text) ?: false
     }
 
@@ -84,7 +83,6 @@ class GameSocketClient(context: Context) {
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             if (id != generation) return
-            Log.d("GameSocketClient", "message=$text")
             try {
                 val element = json.parseToJsonElement(text)
                 val objectMessage = element.jsonObject

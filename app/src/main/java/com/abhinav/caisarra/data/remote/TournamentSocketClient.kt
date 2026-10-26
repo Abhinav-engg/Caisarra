@@ -72,7 +72,6 @@ class TournamentSocketClient(context: Context) {
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             if (id != generation) return
-            Log.d(TAG, "message=$text")
             try {
                 val event = json.decodeFromString(TournamentSocketEvent.serializer(), text)
                 _incoming.tryEmit(event)
