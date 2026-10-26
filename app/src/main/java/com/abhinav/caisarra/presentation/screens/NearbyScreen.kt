@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -9,21 +10,24 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,11 +47,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -58,9 +63,11 @@ import com.abhinav.caisarra.presentation.nearby.NearbyColors
 import com.abhinav.caisarra.presentation.nearby.NearbyMapState
 import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
 import com.abhinav.caisarra.presentation.nearby.components.NearbyMap
-import com.abhinav.caisarra.presentation.nearby.components.NearbyTopBar
 import com.abhinav.caisarra.presentation.nearby.components.PlayerCard
 import com.abhinav.caisarra.presentation.nearby.components.SquareIconButton
+import com.caisaara.ui.theme.CyanLight
+import com.caisaara.ui.theme.StatsBarSlate
+import com.caisaara.ui.theme.White
 
 @Composable
 fun NearbyScreen(
@@ -70,8 +77,10 @@ fun NearbyScreen(
     onAddFriend: (NearbyPlayer) -> Unit = {},
     onChat: (NearbyPlayer) -> Unit = {},
     onFilter: () -> Unit = {},
-    onRefresh: () -> Unit = { viewModel.loadPlayers(silent = false) }
+    onRefresh: () -> Unit = { viewModel.refresh(silent = false) }
 ) {
+    BackHandler(onBack = onBack)
+
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -83,7 +92,7 @@ fun NearbyScreen(
                 if (isFirstResume) {
                     isFirstResume = false
                 } else {
-                    viewModel.refresh()
+                    viewModel.refresh(silent = true)
                 }
             }
         }
@@ -136,96 +145,126 @@ fun NearbyScreen(
             )
         }
 
-        NearbyTopBar(
+        Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
-        )
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .statusBarsPadding()
-                .padding(top = 70.dp, start = 16.dp)
-                .clip(CircleShape)
-                .background(NearbyColors.SurfaceHigh)
-                .border(1.dp, NearbyColors.Border, CircleShape)
-                .padding(start = 12.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(top = 16.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = Icons.Filled.Visibility,
-                contentDescription = null,
-                tint = NearbyColors.Accent,
-                modifier = Modifier.size(18.dp)
-            )
             Text(
-                text = "Appear on Map",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = NearbyColors.TextPrimary
+                text = "NEARBY",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 2.sp,
+                color = White
             )
-            Switch(
-                checked = state.visible,
-                enabled = !state.loading && !state.guest,
-                onCheckedChange = { checked -> if (checked) turnOn() else viewModel.disable() },
-                modifier = Modifier.scale(0.75f),
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = NearbyColors.Background,
-                    checkedTrackColor = NearbyColors.Accent,
-                    uncheckedThumbColor = NearbyColors.TextSecondary,
-                    uncheckedTrackColor = NearbyColors.Surface,
-                    uncheckedBorderColor = NearbyColors.Border
-                )
-            )
-        }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(top = 70.dp, end = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            SquareIconButton(
-                icon = Icons.Filled.MyLocation,
-                contentDescription = "Recenter",
-                onClick = {
-                    mapState.userMoved = false
-                    if (myLat != null && myLng != null) {
-                        mapState.fitAround(myLat, myLng, farthestKm, animated = true)
-                    }
-                }
-            )
-            SquareIconButton(
-                icon = Icons.Filled.Refresh,
-                contentDescription = "Refresh",
-                onClick = onRefresh
-            )
-        }
+            Spacer(Modifier.height(18.dp))
 
-        state.error?.let { message ->
             Row(
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .statusBarsPadding()
-                    .padding(top = 125.dp, start = 16.dp, end = 84.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(20.dp))
                     .background(NearbyColors.Surface)
-                    .border(1.dp, NearbyColors.Border, RoundedCornerShape(16.dp))
-                    .padding(start = 14.dp, end = 4.dp),
+                    .border(1.dp, NearbyColors.Border, RoundedCornerShape(20.dp))
+                    .clickable(
+                        enabled = !state.loading && !state.guest,
+                        onClick = singleClick {
+                            if (state.visible) viewModel.disable() else turnOn()
+                        }
+                    )
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = message,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
+                Icon(
+                    imageVector = Icons.Outlined.Visibility,
+                    contentDescription = null,
+                    tint = if (state.visible) CyanLight else NearbyColors.TextSecondary,
+                    modifier = Modifier.size(24.dp)
                 )
-                TextButton(onClick = singleClick(viewModel::loadPlayers)) {
-                    Text("Retry", color = NearbyColors.Accent)
+                Spacer(Modifier.width(14.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = "Appear on Map",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = White
+                    )
+                    Text(
+                        text = if (state.visible) "On · Your approximate location is visible" else "Off · Your approximate location is hidden",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = NearbyColors.TextSecondary
+                    )
                 }
+                Spacer(Modifier.width(10.dp))
+                Switch(
+                    checked = state.visible,
+                    enabled = !state.loading && !state.guest,
+                    onCheckedChange = { checked -> if (checked) turnOn() else viewModel.disable() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = NearbyColors.Background,
+                        checkedTrackColor = CyanLight,
+                        checkedBorderColor = Color.Transparent,
+                        uncheckedThumbColor = NearbyColors.TextSecondary,
+                        uncheckedTrackColor = StatsBarSlate,
+                        uncheckedBorderColor = NearbyColors.Border
+                    )
+                )
+            }
+
+            state.error?.let { message ->
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(NearbyColors.Surface)
+                        .border(1.dp, NearbyColors.Border, RoundedCornerShape(16.dp))
+                        .padding(start = 14.dp, end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = message,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    TextButton(onClick = singleClick(onRefresh)) {
+                        Text("Retry", color = NearbyColors.Accent)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(end = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SquareIconButton(
+                    icon = Icons.Filled.MyLocation,
+                    contentDescription = "Recenter",
+                    onClick = {
+                        mapState.userMoved = false
+                        if (myLat != null && myLng != null) {
+                            mapState.fitAround(myLat, myLng, farthestKm, animated = true)
+                        }
+                    }
+                )
+                SquareIconButton(
+                    icon = Icons.Filled.Refresh,
+                    contentDescription = "Refresh",
+                    onClick = singleClick(onRefresh)
+                )
             }
         }
 

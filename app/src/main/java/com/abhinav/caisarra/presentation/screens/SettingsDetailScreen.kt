@@ -1,5 +1,13 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.datastore.preferences.core.edit
+import com.abhinav.caisarra.data.local.HAPTICS_KEY
+import com.abhinav.caisarra.data.local.settingsDataStore
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -61,8 +69,12 @@ import com.caisaara.ui.theme.ThemeSlateAccent
 fun SettingsDetailScreen(
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val hapticsEnabled by remember(context) {
+        context.settingsDataStore.data.map { it[HAPTICS_KEY] ?: true }
+    }.collectAsState(initial = true)
     var soundEnabled by remember { mutableStateOf(true) }
-    var hapticsEnabled by remember { mutableStateOf(true) }
     var coordinatesEnabled by remember { mutableStateOf(true) }
     var autoQueenEnabled by remember { mutableStateOf(true) }
 
@@ -149,7 +161,11 @@ fun SettingsDetailScreen(
                         title = "Haptic Feedback",
                         subtitle = "Vibrate device on piece drop",
                         checked = hapticsEnabled,
-                        onCheckedChange = { hapticsEnabled = it }
+                        onCheckedChange = {
+                            scope.launch {
+                                context.settingsDataStore.edit { prefs -> prefs[HAPTICS_KEY] = it }
+                            }
+                        }
                     )
                     HorizontalDivider(color = SettingsDivider, thickness = 1.dp)
                     PreferenceToggleRow(

@@ -35,3 +35,11 @@ val StatsProgressBarHeight = 10.dp
 val StatsIconSizeSmall = 14.dp
 val StatsIconSizeMedium = 18.dp
 val StatsIconSizeLarge = 24.dp
+
+val ResignDialogWidth = 336.dp
+val ResignDialogRadius = 20.dp
+val ResignDialogPadding = 24.dp
+val ResignDialogSpacing = 20.dp
+val ResignButtonHeight = 48.dp
+val ResignButtonRadius = 12.dp
+val ResignIconSize = 28.dp

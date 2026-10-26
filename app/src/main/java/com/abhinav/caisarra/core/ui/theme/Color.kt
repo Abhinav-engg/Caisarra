@@ -144,4 +144,8 @@ val MenuFriendsIconBg = Color(0xFF0F2E23)
 val MenuBadgeBg = Color(0xFF182A3A)
 val MenuBadgeBorder = Color(0xFF23445C)
 val PuzzleDarkCard = Color(0xFF0F172A)
+val ResignDialogBg = Color(0x1F004F5C)
+val ResignSecondaryBg = Color(0x99121B28)
+val ResignTextWhite = Color(0xFFF6F6F6)
+val ResignRed = Color(0xFFFF4B4B)
 
