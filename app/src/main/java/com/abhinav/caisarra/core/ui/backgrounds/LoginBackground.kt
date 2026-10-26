@@ -45,15 +45,12 @@ fun LoginBackground(
 
         ChessNotation(modifier = Modifier.fillMaxSize())
 
-        val knightWidth = cardWidth * 0.38f
-        val knightHeight = knightWidth * 1.75f
+        val knightWidth = cardWidth * 0.46f
+        val knightHeight = knightWidth * (207f / 110f)
         val minimumKnightY = statusBarHeight + 10.dp
-        val calculatedKnightY = cardTop - knightHeight * 0.55f
-        val knightY =
-            maxOf(calculatedKnightY,
-                minimumKnightY
-            )
-        val knightX = cardRight - knightWidth * 0.65f
+        val calculatedKnightY = cardTop - knightHeight * 0.70f
+        val knightY = maxOf(calculatedKnightY, minimumKnightY)
+        val knightX = cardRight - knightWidth * 0.45f
 
         Image(
             painter = painterResource(
@@ -70,16 +67,16 @@ fun LoginBackground(
                     y = knightY
                 ),
             contentScale = ContentScale.FillBounds,
-            alpha = 0.80f
+            alpha = 0.85f
         )
 
-        val pieceWidth = cardWidth * 0.34f
-        val pieceHeight = pieceWidth * 2.35f
-        val pieceY = screenHeight - pieceHeight - 30.dp
+        val pieceWidth = cardWidth * 0.44f
+        val pieceHeight = pieceWidth * (296f / 126f)
+        val pieceY = screenHeight - pieceHeight
+        val pieceX = -pieceWidth * 0.18f
 
-        val pieceX = -pieceWidth * 0.15f
-
-        Image(painter = painterResource(
+        Image(
+            painter = painterResource(
                 id = R.drawable.dark_chess_piece
             ),
             contentDescription = null,
@@ -88,19 +85,21 @@ fun LoginBackground(
                     width = pieceWidth,
                     height = pieceHeight
                 )
-                .offset(x = pieceX,
+                .offset(
+                    x = pieceX,
                     y = pieceY
                 ),
             contentScale = ContentScale.FillBounds,
-            alpha = 0.45f
+            alpha = 0.50f
         )
         val gridWidth = cardWidth * 1.15f
-        val gridHeight = gridWidth / 1.55f
-        val gridX = cardRight - gridWidth * 0.75f
-        val gridY = cardBottom - gridHeight * 0.50f
+        val gridHeight = gridWidth * (189f / 328f)
+        val gridX = (maxWidth - gridWidth) / 2f
+        val gridY = cardBottom - gridHeight * 0.30f
 
-        Image(painter = painterResource(
-                id = R.drawable.login_grid
+        Image(
+            painter = painterResource(
+                id = R.drawable.decorative_grid
             ),
             contentDescription = null,
             modifier = Modifier
@@ -108,11 +107,12 @@ fun LoginBackground(
                     width = gridWidth,
                     height = gridHeight
                 )
-                .offset(x = gridX,
+                .offset(
+                    x = gridX,
                     y = gridY
                 ),
             contentScale = ContentScale.FillBounds,
-            alpha = 0.32f
+            alpha = 0.60f
         )
     }
 }
