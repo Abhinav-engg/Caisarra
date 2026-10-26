@@ -53,9 +53,39 @@ class NearbyViewModel(
         }
     }
 
-    fun refresh() {
-        if (_state.value.guest || _state.value.loading || !_state.value.visible) return
-        loadPlayers(silent = true)
+    fun refresh(silent: Boolean = false) {
+        if (_state.value.guest) return
+        viewModelScope.launch {
+            if (!silent) {
+                _state.update { it.copy(loading = true, error = null) }
+            }
+            if (locationProvider.hasPermission()) {
+                val location = locationProvider.current()
+                if (location != null) {
+                    _state.update { it.copy(myLatitude = location.first, myLongitude = location.second) }
+                    repository.saveLocation(location.first, location.second)
+                }
+            }
+            when (val result = repository.getPlayers()) {
+                is NearbyResult.Success -> {
+                    _state.update { current ->
+                        current.copy(
+                            loading = false,
+                            visible = true,
+                            players = result.data.players,
+                            radiusKm = result.data.radiusKm,
+                            selectedId = current.selectedId?.takeIf { id ->
+                                result.data.players.any { it.userId == id }
+                            }
+                        )
+                    }
+                    if (_state.value.myLatitude == null) {
+                        loadMyLocation()
+                    }
+                }
+                is NearbyResult.Failure -> handle(result.failure)
+            }
+        }
     }
 
     fun enable() {
