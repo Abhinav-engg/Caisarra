@@ -44,7 +44,7 @@ class StatsViewModel(
     private val ratingRepository: RatingRepository,
     private val profileRepository: ProfileRepository,
     initialUsername: String? = null,
-    initialMode: String? = null
+    private val initialMode: String? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -77,10 +77,19 @@ class StatsViewModel(
 
             val candidateUsername = _state.value.username.takeIf { it.isNotBlank() && !it.contains("@") }
             if (candidateUsername != null) {
+                if (initialMode == null) {
+                    try {
+                        val profile = cachedProfile ?: profileRepository.getMyProfile()
+                        cachedProfile = profile
+                        val bestMode = pickBestInitialMode(profile)
+                        _state.value = _state.value.copy(selectedMode = bestMode)
+                    } catch (_: Exception) {}
+                }
                 loadStats(
                     username = candidateUsername,
                     mode = _state.value.selectedMode,
-                    range = _state.value.selectedRange
+                    range = _state.value.selectedRange,
+                    fallbackProfile = cachedProfile
                 )
                 return@launch
             }
@@ -102,10 +111,18 @@ class StatsViewModel(
             }
 
             if (!resolvedUsername.isNullOrBlank()) {
-                _state.value = _state.value.copy(username = resolvedUsername)
+                val bestMode = if (initialMode != null) {
+                    _state.value.selectedMode
+                } else {
+                    pickBestInitialMode(cachedProfile)
+                }
+                _state.value = _state.value.copy(
+                    username = resolvedUsername,
+                    selectedMode = bestMode
+                )
                 loadStats(
                     username = resolvedUsername,
-                    mode = _state.value.selectedMode,
+                    mode = bestMode,
                     range = _state.value.selectedRange,
                     fallbackProfile = cachedProfile
                 )
@@ -276,6 +293,14 @@ class StatsViewModel(
             msg.isNotBlank() -> msg
             else -> "Failed to load player statistics"
         }
+    }
+
+    private fun pickBestInitialMode(profile: ProfileData?): GameMode {
+        val ratings = profile?.ratings ?: return GameMode.RAPID
+        val mostPlayed = ratings.entries.maxByOrNull {
+            it.value.wins + it.value.losses + it.value.draws
+        }
+        return mostPlayed?.key?.let { parseGameMode(it) } ?: GameMode.RAPID
     }
 
     companion object {

@@ -20,14 +20,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
@@ -72,9 +75,6 @@ import com.caisaara.ui.theme.StatsDivider
 import com.caisaara.ui.theme.StatsErrorBadgeBg
 import com.caisaara.ui.theme.StatsGreen
 import com.caisaara.ui.theme.StatsLossDeltaBg
-import com.caisaara.ui.theme.StatsPeakBadgeBg
-import com.caisaara.ui.theme.StatsPeakBadgeBorder
-import com.caisaara.ui.theme.StatsPeakBadgeText
 import com.caisaara.ui.theme.StatsPieceCircleDark
 import com.caisaara.ui.theme.StatsPieceCircleDarkBorder
 import com.caisaara.ui.theme.StatsPillSelectedBg
@@ -104,6 +104,7 @@ import java.util.Locale
 
 private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.US)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(
     viewModel: StatsViewModel,
@@ -113,6 +114,7 @@ fun StatsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val stats = state.stats
+    val pullToRefreshState = rememberPullToRefreshState()
 
     Column(
         modifier = Modifier
@@ -120,10 +122,9 @@ fun StatsScreen(
             .background(StatsBg)
             .statusBarsPadding()
     ) {
-        TopStatsBar(
-            onBack = onBack,
-            onRefresh = { viewModel.refresh() },
-            isRefreshing = state.isRefreshing
+        CaisaaraTopBar(
+            title = "STATS",
+            onBack = onBack
         )
 
         ModeSelectorBar(
@@ -132,10 +133,22 @@ fun StatsScreen(
             modifier = Modifier.padding(horizontal = StatsScreenPadding, vertical = 8.dp)
         )
 
-        Box(
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = { viewModel.refresh() },
+            state = pullToRefreshState,
             modifier = Modifier
                 .fillMaxSize()
-                .weight(1f)
+                .weight(1f),
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullToRefreshState,
+                    isRefreshing = state.isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    containerColor = StatsCardBg,
+                    color = StatsCyan
+                )
+            }
         ) {
             when {
                 state.isGuest -> {
@@ -218,92 +231,6 @@ fun StatsScreen(
 }
 
 @Composable
-private fun TopStatsBar(
-    onBack: () -> Unit,
-    onRefresh: () -> Unit,
-    isRefreshing: Boolean
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = StatsScreenPadding, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(StatsTabBg)
-                .border(
-                    width = 1.dp,
-                    color = StatsTabBorder,
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = StatsTextWhite,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text(
-            text = "STATS",
-            fontFamily = JetBrainsMono,
-            fontWeight = FontWeight.Bold,
-            fontSize = TextSizeTitle,
-            letterSpacing = 2.sp,
-            color = StatsTextWhite
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(StatsTabBg)
-                .border(
-                    width = 1.dp,
-                    color = StatsTabBorder,
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            IconButton(
-                onClick = onRefresh,
-                enabled = !isRefreshing,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                if (isRefreshing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(StatsIconSizeMedium),
-                        color = StatsCyan,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh",
-                        tint = StatsTextMuted,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun ModeSelectorBar(
     selectedMode: GameMode,
     onSelectMode: (GameMode) -> Unit,
@@ -312,9 +239,9 @@ private fun ModeSelectorBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(StatsCardBg)
-            .border(1.dp, StatsCardBorder, RoundedCornerShape(24.dp))
+            .border(1.dp, StatsCardBorder, RoundedCornerShape(8.dp))
             .padding(4.dp)
     ) {
         Row(
@@ -326,12 +253,12 @@ private fun ModeSelectorBar(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(6.dp))
                         .background(if (isSelected) StatsPillSelectedBg else Color.Transparent)
                         .border(
                             width = if (isSelected) 1.dp else 0.dp,
                             color = if (isSelected) StatsPillSelectedBorder else Color.Transparent,
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(6.dp)
                         )
                         .clickable { onSelectMode(mode) }
                         .padding(vertical = 10.dp),
@@ -434,7 +361,7 @@ private fun RatingProgressionCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "${stats.rating}${if (stats.provisional) "?" else ""}",
+                    text = "${stats.rating}",
                     fontFamily = JetBrainsMono,
                     fontSize = TextSizeHuge,
                     fontWeight = FontWeight.Bold,
@@ -450,26 +377,6 @@ private fun RatingProgressionCard(
                     color = StatsTextMuted,
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
-
-                if (stats.provisional) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Box(
-                        modifier = Modifier
-                            .padding(bottom = 8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(StatsPeakBadgeBg)
-                            .border(1.dp, StatsPeakBadgeBorder, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = "PROVISIONAL",
-                            fontFamily = JetBrainsMono,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = StatsPeakBadgeText
-                        )
-                    }
-                }
             }
 
             RangeFilterChips(
@@ -481,6 +388,10 @@ private fun RatingProgressionCard(
                 ratingHistory = stats.ratingHistory,
                 startRating = stats.startRating,
                 currentRating = stats.rating,
+                bestRating = stats.bestRating,
+                bestRatingAt = stats.bestRatingAt,
+                lowestRating = stats.lowestRating,
+                lowestRatingAt = stats.lowestRatingAt,
                 modifier = Modifier.fillMaxWidth()
             )
 
