@@ -43,3 +43,11 @@ val ResignDialogSpacing = 20.dp
 val ResignButtonHeight = 48.dp
 val ResignButtonRadius = 12.dp
 val ResignIconSize = 28.dp
+
+val FriendsScreenPadding = 16.dp
+val FriendsCardRadius = 14.dp
+val FriendsAvatarSize = 46.dp
+val FriendsAvatarRadius = 12.dp
+val FriendsActionSize = 38.dp
+val FriendsActionRadius = 10.dp
+val FriendsButtonHeight = 42.dp
