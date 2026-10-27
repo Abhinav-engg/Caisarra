@@ -269,7 +269,7 @@ private fun HistoryTopBar(
             onClick = onBack
         ) {
             Text(
-                "Home",
+                "Back",
                 color = White
             )
         }
