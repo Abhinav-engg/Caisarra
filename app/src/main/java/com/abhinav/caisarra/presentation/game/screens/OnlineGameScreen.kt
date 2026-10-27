@@ -13,6 +13,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -129,6 +131,7 @@ fun OnlineGameScreen(
 
     var showChat by remember { mutableStateOf(false) }
     var showHomeResignDialog by remember { mutableStateOf(false) }
+    var showWatchShareDialog by remember { mutableStateOf(false) }
     val requestHome = {
         if (state.gameResult == null && !waiting) {
             showHomeResignDialog = true
@@ -222,6 +225,9 @@ fun OnlineGameScreen(
                             isRated = state.isRated,
                             unread = unread,
                             muted = chatMuted,
+                            spectatorCount = state.spectatorCount,
+                            hasWatchLink = !state.watchCode.isNullOrBlank() || !state.watchLink.isNullOrBlank(),
+                            onWatchClick = { showWatchShareDialog = true },
                             onHome = requestHome,
                             onFlip = viewModel::flipBoard,
                             onChat = { showChat = true }
@@ -281,6 +287,9 @@ fun OnlineGameScreen(
                     isRated = state.isRated,
                     unread = unread,
                     muted = chatMuted,
+                    spectatorCount = state.spectatorCount,
+                    hasWatchLink = !state.watchCode.isNullOrBlank() || !state.watchLink.isNullOrBlank(),
+                    onWatchClick = { showWatchShareDialog = true },
                     onHome = requestHome,
                     onFlip = viewModel::flipBoard,
                     onChat = { showChat = true }
@@ -368,6 +377,106 @@ fun OnlineGameScreen(
             )
         }
     }
+    if (showWatchShareDialog) {
+        val watchUrl = state.watchLink ?: state.watchCode?.let { "https://caisaara.duckdns.org/watch/$it" } ?: ""
+        AlertDialog(
+            onDismissRequest = { showWatchShareDialog = false },
+            containerColor = Color(0xFF111A24),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Visibility,
+                        contentDescription = null,
+                        tint = Color(0xFF22D3EE),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "Spectators (${state.spectatorCount})",
+                        fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Matchmade games allow public spectators by default. You can also share your watch link directly:",
+                        fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
+                        fontSize = 12.sp,
+                        color = Color(0xFF82909E)
+                    )
+                    if (watchUrl.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF16212D), RoundedCornerShape(8.dp))
+                                .border(1.dp, Color(0xFF243345), RoundedCornerShape(8.dp))
+                                .padding(10.dp)
+                        ) {
+                            Text(
+                                text = watchUrl,
+                                fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
+                                fontSize = 12.sp,
+                                color = Color(0xFF22D3EE),
+                                maxLines = 2
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (watchUrl.isNotBlank()) {
+                    TextButton(onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Caisaara Watch Link", watchUrl))
+                        Toast.makeText(context, "Watch link copied!", Toast.LENGTH_SHORT).show()
+                    }) {
+                        Text(
+                            text = "COPY LINK",
+                            fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            color = Color(0xFF22D3EE)
+                        )
+                    }
+                }
+            },
+            dismissButton = {
+                Row {
+                    if (watchUrl.isNotBlank()) {
+                        TextButton(onClick = {
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(
+                                    Intent.EXTRA_TEXT,
+                                    "Watch my live chess game on Caisaara: $watchUrl"
+                                )
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Share Watch Link"))
+                        }) {
+                            Text(
+                                text = "SHARE",
+                                fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    TextButton(onClick = { showWatchShareDialog = false }) {
+                        Text(
+                            text = "CLOSE",
+                            fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
+                            color = Color(0xFF82909E)
+                        )
+                    }
+                }
+            }
+        )
+    }
+
     if (showHomeResignDialog) {
         GameDecisionDialog(
             decision = GameDecision.Resign,
@@ -623,6 +732,9 @@ private fun OnlineTopBar(
     isRated: Boolean,
     unread: Int,
     muted: Boolean,
+    spectatorCount: Int = 0,
+    hasWatchLink: Boolean = false,
+    onWatchClick: () -> Unit = {},
     onHome: () -> Unit,
     onFlip: () -> Unit,
     onChat: () -> Unit
@@ -671,6 +783,30 @@ private fun OnlineTopBar(
             modifier = Modifier.align(Alignment.CenterEnd),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (hasWatchLink || spectatorCount > 0) {
+                TextButton(onClick = onWatchClick) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Visibility,
+                            contentDescription = "Spectators",
+                            tint = if (spectatorCount > 0) Color(0xFF22D3EE) else Color.White,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        if (spectatorCount > 0) {
+                            Text(
+                                text = "$spectatorCount",
+                                color = Color(0xFF22D3EE),
+                                fontSize = if (compact) 11.sp else 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
             TextButton(onClick = onFlip) {
                 Text(
                     text = "Flip",

@@ -38,7 +38,8 @@ sealed interface SocketIncoming {
         val result: String? = null,
         @SerialName("end_reason") val endReason: String? = null,
         @SerialName("draw_offered_by") val drawOfferedBy: Long? = null,
-        @SerialName("time_control_minutes") val timeControlMinutes: Int = 10
+        @SerialName("time_control_minutes") val timeControlMinutes: Int = 10,
+        val rated: Boolean? = true
     ) : SocketIncoming
 
     @Serializable
@@ -63,6 +64,19 @@ sealed interface SocketIncoming {
     @SerialName("error")
     data class Error(
         val message: String = ""
+    ) : SocketIncoming
+
+    @Serializable
+    @SerialName("spectator_count")
+    data class SpectatorCount(
+        @SerialName("game_id") val gameId: String = "",
+        val count: Int = 0
+    ) : SocketIncoming
+
+    @Serializable
+    @SerialName("watch_ended")
+    data class WatchEnded(
+        @SerialName("game_id") val gameId: String = ""
     ) : SocketIncoming
 
     @OptIn(ExperimentalSerializationApi::class)

@@ -86,3 +86,41 @@ fun GameResult.toNotation() = when (this) {
     GameResult.BLACK_WINS -> "0-1"
     GameResult.DRAW -> "1/2-1/2"
 }
+
+fun uciToSquare(notation: String): Square =
+    Square(row = 7 - (notation[1] - '1'), column = notation[0] - 'a')
+
+fun calculateCapturedPieces(
+    uciMoves: List<String>
+): Pair<List<Piece>, List<Piece>> {
+    val replayEngine = com.abhinav.caisarra.domain.chess.engine.ChesslibEngine()
+    val capturedPieces = mutableListOf<BoardPiece>()
+
+    uciMoves.forEach { uci ->
+        if (uci.length < 4) return@forEach
+        val fromFile = uci[0] - 'a'
+        val fromRank = uci[1] - '1'
+        val toFile = uci[2] - 'a'
+        val toRank = uci[3] - '1'
+        val promoChar = if (uci.length >= 5) uci[4] else null
+        val promotion = when (promoChar?.lowercaseChar()) {
+            'q' -> DomainType.Queen
+            'r' -> DomainType.Rook
+            'b' -> DomainType.Bishop
+            'n' -> DomainType.Knight
+            else -> null
+        }
+        val move = com.abhinav.caisarra.domain.chess.model.Move(
+            from = DomainSquare(fromFile, fromRank),
+            to = DomainSquare(toFile, toRank),
+            promotion = promotion
+        )
+        val captured = replayEngine.capturedBy(move)
+        if (replayEngine.play(move) && captured != null) {
+            capturedPieces.add(captured)
+        }
+    }
+
+    return capturedPieces.filter { it.color == DomainColor.White }.map { it.toUiPiece() } to
+            capturedPieces.filter { it.color == DomainColor.Black }.map { it.toUiPiece() }
+}

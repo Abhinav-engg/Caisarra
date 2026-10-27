@@ -138,7 +138,18 @@ import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
 import com.abhinav.caisarra.presentation.directmessage.DirectMessageScreen
 import com.abhinav.caisarra.presentation.directmessage.DirectMessagesListScreen
 import androidx.activity.compose.LocalActivity
+import androidx.lifecycle.ViewModelProvider
+import com.abhinav.caisarra.presentation.watch.WatchScreen
+import com.abhinav.caisarra.presentation.watch.WatchViewModel
+import com.abhinav.caisarra.presentation.watch.SpectatorGameScreen
+import com.abhinav.caisarra.presentation.watch.SpectatorGameViewModel
+
 object AppRoutes {
+    const val WATCH = "watch"
+    const val SPECTATE_GAME = "spectate/{watchCode}"
+    fun spectateGame(watchCode: String): String =
+        "spectate/${Uri.encode(watchCode.trim())}"
+
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val RESET_PASSWORD = "reset_password"
@@ -1468,6 +1479,10 @@ fun AppNavigation(authRepository: AuthRepository) {
             route = AppRoutes.ONLINE_GAME,
             arguments = listOf(
                 navArgument("gameId") { type = NavType.StringType }
+            ),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "caisarra://game/online/{gameId}" },
+                navDeepLink { uriPattern = "https://caisaara.duckdns.org/game/{gameId}" }
             )
         ) { entry ->
             val gameId = entry.arguments?.getString("gameId").orEmpty()
@@ -1886,6 +1901,20 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onLeaderboardClick = {
                     navController.navigateOnce(AppRoutes.LEADERBOARD)
                 },
+                onWatchClick = {
+                    scope.launch {
+                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                            Toast.makeText(
+                                context,
+                                "Spectating requires a registered account. Please sign in.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            navController.navigateOnce(AppRoutes.LOGIN)
+                        } else {
+                            navController.navigateOnce(AppRoutes.WATCH)
+                        }
+                    }
+                },
                 onDeleteAccountClick = {
                     navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)
                 },
@@ -2128,6 +2157,47 @@ fun AppNavigation(authRepository: AuthRepository) {
                         }
                     }
                 }
+            )
+        }
+
+        composable(route = AppRoutes.WATCH) {
+            val watchViewModel: WatchViewModel = viewModel()
+            WatchScreen(
+                viewModel = watchViewModel,
+                onBack = { navController.safeBack(AppRoutes.MENU) },
+                onNavigateToSpectate = { code ->
+                    navController.navigateOnce(AppRoutes.spectateGame(code))
+                }
+            )
+        }
+
+        composable(
+            route = AppRoutes.SPECTATE_GAME,
+            arguments = listOf(
+                navArgument("watchCode") {
+                    type = NavType.StringType
+                }
+            ),
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "https://caisaara.duckdns.org/watch/{watchCode}"
+                }
+            )
+        ) { backStackEntry ->
+            val watchCode = backStackEntry.arguments?.getString("watchCode").orEmpty()
+            val application = LocalContext.current.applicationContext as Application
+            val spectatorViewModel = viewModel<SpectatorGameViewModel>(
+                key = "spectate_$watchCode",
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return SpectatorGameViewModel(application, watchCode) as T
+                    }
+                }
+            )
+            SpectatorGameScreen(
+                viewModel = spectatorViewModel,
+                onBack = { navController.safePop() }
             )
         }
 

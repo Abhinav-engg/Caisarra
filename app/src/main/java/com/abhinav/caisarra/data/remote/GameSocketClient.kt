@@ -39,22 +39,35 @@ class GameSocketClient(context: Context) {
     private val _connected = MutableStateFlow(false)
     val connected: StateFlow<Boolean> = _connected
 
-    suspend fun connect(gameId: String): Boolean {
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    suspend fun connect(gameId: String): Boolean =
+        connectPath("ws", gameId.trim())
+
+    suspend fun connectWatch(watchCode: String): Boolean =
+        connectPath("ws", "watch", watchCode.trim())
+
+    private suspend fun connectPath(vararg segments: String): Boolean {
         close()
+        _errorMessage.value = null
         if (!AuthRepository.get(appContext).isLoggedIn()) {
+            _errorMessage.value = "Login required."
             return false
         }
-        val token = AuthRepository.get(appContext).getValidAccessToken() ?: return false
+        val token = AuthRepository.get(appContext).getValidAccessToken()
+        if (token.isNullOrBlank()) {
+            _errorMessage.value = "Token missing or expired."
+            return false
+        }
 
-        val url = RetrofitInstance.BASE_URL.toHttpUrl().newBuilder()
-            .addPathSegment("ws")
-            .addPathSegment(gameId)
-            .addQueryParameter("token", token)
-            .build()
+        val urlBuilder = RetrofitInstance.BASE_URL.toHttpUrl().newBuilder()
+        segments.forEach { urlBuilder.addPathSegment(it) }
+        urlBuilder.addQueryParameter("token", token)
 
         val id = ++generation
         socket = RetrofitInstance.socketClient.newWebSocket(
-            Request.Builder().url(url).build(),
+            Request.Builder().url(urlBuilder.build()).build(),
             listenerFor(id)
         )
         return true
@@ -64,6 +77,8 @@ class GameSocketClient(context: Context) {
         val text = json.encodeToString(SocketOutgoing.serializer(), message)
         return socket?.send(text) ?: false
     }
+
+    fun sendRaw(text: String): Boolean = socket?.send(text) ?: false
 
     fun close() {
         generation++
@@ -139,6 +154,16 @@ class GameSocketClient(context: Context) {
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             if (id == generation) {
                 _connected.value = false
+                val code = response?.code
+                _errorMessage.value = when (code) {
+                    401 -> "Session expired or invalid token."
+                    403 -> "Cannot watch: room full or guest account."
+                    404 -> "Watch link not found or expired."
+                    400 -> "You are playing this game; please open your active game."
+                    410 -> "Game is already over."
+                    503 -> "Watch service unavailable."
+                    else -> response?.message ?: t.localizedMessage ?: "Connection failed"
+                }
                 Log.e("GameSocketClient", "connection failed code=${response?.code}", t)
             }
         }
