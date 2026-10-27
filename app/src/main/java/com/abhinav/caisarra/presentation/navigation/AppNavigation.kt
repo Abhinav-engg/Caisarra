@@ -611,9 +611,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             AllGameHistoryScreen(
                 viewModel = allHistoryViewModel,
                 onBack = {
-                    scope.launch {
-                        navController.safeBack(homeRoute(authRepository))
-                    }
+                    navController.safeBack(AppRoutes.MENU)
                 },
                 onReviewGame = { gameId ->
                     navController.navigateOnce(
@@ -1185,9 +1183,7 @@ fun AppNavigation(authRepository: AuthRepository) {
             GameHistoryScreen(
                 viewModel = historyViewModel,
                 onBack = {
-                    scope.launch {
-                        navController.safeBack(homeRoute(authRepository))
-                    }
+                    navController.safeBack(AppRoutes.ALL_GAME_HISTORY)
                 }
             )
         }
@@ -1572,9 +1568,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = profileViewModel,
                 isGuest = isGuestUser,
                 onBack = {
-                    scope.launch {
-                        navController.safeBack(homeRoute(authRepository))
-                    }
+                    navController.safeBack(AppRoutes.MENU)
                 },
                 onEditProfile = {
                     navController.navigate(AppRoutes.EDIT_PROFILE){
@@ -1828,7 +1822,55 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable(route = AppRoutes.MENU) {
+            val tokenManager = remember {
+                TokenManager.get(context)
+            }
+
+            val accessToken by tokenManager.accessTokenFlow
+                .collectAsState(initial = null)
+
+            var profileName by remember {
+                mutableStateOf<String?>(null)
+            }
+
+            var username by remember {
+                mutableStateOf<String?>(null)
+            }
+
+            var avatarUrl by remember {
+                mutableStateOf<String?>(null)
+            }
+
+            LaunchedEffect(accessToken, currentRoute) {
+                if (currentRoute != AppRoutes.MENU) {
+                    return@LaunchedEffect
+                }
+
+                if (accessToken.isNullOrBlank()) {
+                    profileName = null
+                    username = null
+                    avatarUrl = null
+                    return@LaunchedEffect
+                }
+
+                runCatching {
+                    val profileRepository = ProfileRepository(
+                        service = RetrofitInstance.createProfileService(
+                            tokenManager
+                        )
+                    )
+
+                    profileRepository.getMyProfile()
+                }.onSuccess { profile ->
+                    username = profile.username
+                    profileName = profile.displayName
+                    avatarUrl = profile.avatarUrl
+                }
+            }
             MenuScreen(
+                profileName = profileName,
+                username = username,
+                avatarUrl = avatarUrl,
                 onBack = {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))

@@ -22,23 +22,22 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AutoGraph
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,45 +47,38 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.core.ui.components.MainTabTopBar
+import androidx.compose.ui.window.Dialog
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.caisaara.ui.theme.BotLockedName
 import com.caisaara.ui.theme.GoldColor
-import com.caisaara.ui.theme.MenuBadgeBg
-import com.caisaara.ui.theme.MenuBadgeBorder
-import com.caisaara.ui.theme.MenuDialogBg
 import com.caisaara.ui.theme.MenuFriendsGreen
 import com.caisaara.ui.theme.MenuFriendsIconBg
 import com.caisaara.ui.theme.MenuStatsIconBg
 import com.caisaara.ui.theme.MenuThemeIconBg
 import com.caisaara.ui.theme.SettingsDivider
 import com.caisaara.ui.theme.StatsBg
-import com.caisaara.ui.theme.StatsCardBg
 import com.caisaara.ui.theme.StatsCardBorder
 import com.caisaara.ui.theme.StatsCyan
-import com.caisaara.ui.theme.StatsDivider
-import com.caisaara.ui.theme.StatsGreen
-import com.caisaara.ui.theme.StatsRed
-import com.caisaara.ui.theme.StatsTabBg
-import com.caisaara.ui.theme.StatsTabBorder
-import com.caisaara.ui.theme.StatsTextMuted
 import com.caisaara.ui.theme.StatsTextWhite
-import com.caisaara.ui.theme.TextSizeBody
 import com.caisaara.ui.theme.TextSizeCaption
-import com.caisaara.ui.theme.TextSizeHeading
 import com.caisaara.ui.theme.TextSizeSubhead
-import com.caisaara.ui.theme.TextSizeTiny
-import com.caisaara.ui.theme.ThemeInactiveBadge
 import com.caisaara.ui.theme.ThemeNeonDeep
-import com.caisaara.ui.theme.ThemeNeonSky
 import com.caisaara.ui.theme.ThemeSlateAccent
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Visibility
+
+private val MenuSurface = Color(0xFF101923)
+private val MenuSurfaceDeep = Color(0xFF0A0F15)
+private val MenuOutline = Color(0xFF20313E)
+private val MenuMuted = Color(0xFF8D9BAC)
+private val MenuCyan = Color(0xFF00D5E8)
 
 @Composable
 fun MenuScreen(
@@ -102,53 +94,21 @@ fun MenuScreen(
     onDeleteAccountClick: () -> Unit = {},
     onDirectMessagesClick: () -> Unit = {},
     onWatchClick: () -> Unit = {},
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    profileName: String?,
+    username: String?,
+    avatarUrl: String? = null,
+    blitzRating: Int? = null,
+    activeThemeName: String = "Midnight Cyan"
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            containerColor = MenuDialogBg,
-            title = {
-                Text(
-                    text = "Log Out",
-                    fontFamily = JetBrainsMono,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            },
-            text = {
-                Text(
-                    text = "Are you sure you want to log out of your account?",
-                    fontFamily = JetBrainsMono,
-                    fontSize = TextSizeBody,
-                    color = StatsDivider
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showLogoutDialog = false
-                        onLogoutClick()
-                    }
-                ) {
-                    Text(
-                        text = "LOG OUT",
-                        fontFamily = JetBrainsMono,
-                        fontWeight = FontWeight.Bold,
-                        color = StatsRed
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text(
-                        text = "CANCEL",
-                        fontFamily = JetBrainsMono,
-                        color = ThemeSlateAccent
-                    )
-                }
+        LogoutConfirmationDialog(
+            onDismiss = { showLogoutDialog = false },
+            onConfirm = {
+                showLogoutDialog = false
+                onLogoutClick()
             }
         )
     }
@@ -159,175 +119,253 @@ fun MenuScreen(
             .background(StatsBg)
             .statusBarsPadding()
     ) {
-        MainTabTopBar(
-            title = "MENU",
-            icon = Icons.Filled.Menu,
-            trailingContent = {
-                IconButton(
-                    onClick = onSettingsClick,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Preferences",
-                        tint = StatsCyan,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 18.dp)
         ) {
-            SectionHeader(
-                title = "Accounts & Profile",
-                badge = "5 ITEMS"
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            MenuCard {
-                MenuItem(
-                    icon = Icons.Default.Person,
-                    iconTint = StatsCyan,
-                    iconBg = ThemeNeonDeep,
-                    title = "Profile",
-                    onClick = onProfileClick
-                )
-                ItemDivider()
-                MenuItem(
-                    icon = Icons.Default.AutoGraph,
-                    iconTint = StatsGreen,
-                    iconBg = MenuStatsIconBg,
-                    title = "Stats",
-                    onClick = onStatsClick
-                )
-                ItemDivider()
-                MenuItem(
-                    icon = Icons.Default.History,
-                    iconTint = StatsCyan,
-                    iconBg = ThemeNeonDeep,
-                    title = "Game History",
-                    onClick = onGameHistoryClick
-                )
-                ItemDivider()
-                MenuItem(
-                    icon = Icons.Default.People,
-                    iconTint = MenuFriendsGreen,
-                    iconBg = MenuFriendsIconBg,
-                    title = "Friends",
-                    onClick = onFriendsClick
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "MENU",
+                    fontFamily = JetBrainsMono,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    letterSpacing = 1.5.sp,
+                    color = StatsTextWhite
                 )
             }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(StatsBg)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(color = MenuCyan.copy(alpha = 0.12f)),
+                        onClick = onProfileClick
+                    )
+                    .padding(vertical = 12.dp, horizontal = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(MenuSurface)
+                        .border(1.dp, MenuOutline, RoundedCornerShape(15.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!avatarUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = "$profileName profile picture",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(15.dp))
+                        )
+                    } else {
+                        Text(
+                            text = profileName.orEmpty().trim().split(Regex("\\s+")).take(2)
+                                .mapNotNull { it.firstOrNull()?.toString() }
+                                .joinToString("").ifBlank { "MP" }.uppercase(),
+                            fontFamily = JetBrainsMono,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color(0xFFE2EAF2)
+                        )
+                    }
+                }
+                Spacer(Modifier.width(13.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = profileName
+                            ?.takeIf { it.isNotBlank() }
+                            ?: username
+                             ?.removePrefix("@")
+                                ?.takeIf { it.isNotBlank() }
+                            ?: "Mosaic Player",
+                        fontFamily = JetBrainsMono,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        color = StatsTextWhite,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = username
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { if (it.startsWith("@")) it else "@$it" }
+                            ?: "@username",
+                        fontFamily = JetBrainsMono,
+                        fontSize = 12.sp,
+                        color = MenuMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.size(42.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = StatsCyan,
+                        modifier = Modifier.size(27.dp)
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            SectionHeader(title = "Connect")
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(20.dp))
+            SectionHeader(title = "Accounts & Profile")
+            Spacer(Modifier.height(8.dp))
             MenuCard {
-                MenuItem(
-                    icon = Icons.Default.Shield,
-                    iconTint = ThemeNeonSky,
-                    iconBg = ThemeNeonDeep,
-                    title = "Clubs",
-                    onClick = onClubsClick
-                )
+                MenuItem(Icons.Default.PersonOutline, StatsCyan, ThemeNeonDeep, "Profile", onClick = onProfileClick)
+                ItemDivider()
+                MenuItem(Icons.Default.History, StatsCyan, ThemeNeonDeep, "Game History", onClick = onGameHistoryClick)
+                ItemDivider()
+                MenuItem(Icons.Default.AutoGraph, StatsCyan, MenuStatsIconBg, "Stats", onClick = onStatsClick)
                 ItemDivider()
                 MenuItem(
-                    icon = Icons.Default.Chat,
-                    iconTint = StatsCyan,
+                    icon = Icons.Default.Palette,
+                    iconTint = MenuCyan,
                     iconBg = ThemeNeonDeep,
-                    title = "Direct Messages",
+                    title = "Theme",
+                    trailingLabel = activeThemeName,
+                    onClick = onThemeClick
+                )
+                ItemDivider()
+                MenuItem(Icons.Default.People, MenuFriendsGreen, MenuFriendsIconBg, "Friends", onClick = onFriendsClick)
+                ItemDivider()
+                MenuItem(
+                    icon = Icons.Default.ChatBubbleOutline,
+                    iconTint = MenuCyan,
+                    iconBg = ThemeNeonDeep,
+                    title = "Messages",
+                    hasUnreadDot = true,
                     onClick = onDirectMessagesClick
                 )
-                ItemDivider()
-                MenuItem(
-                    icon = Icons.Default.EmojiEvents,
-                    iconTint = GoldColor,
-                    iconBg = MenuThemeIconBg,
-                    title = "Leaderboard",
-                    onClick = onLeaderboardClick
-                )
-                ItemDivider()
-                MenuItem(
-                    icon = Icons.Default.Visibility,
-                    iconTint = StatsCyan,
-                    iconBg = ThemeNeonDeep,
-                    title = "Watch",
-                    onClick = onWatchClick
-                )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(22.dp))
+            SectionHeader(title = "Connect")
+            Spacer(Modifier.height(8.dp))
+            MenuCard {
+                MenuItem(Icons.Default.Shield, MenuCyan, ThemeNeonDeep, "Clubs", onClick = onClubsClick)
+                ItemDivider()
+                MenuItem(Icons.Default.EmojiEvents, GoldColor, MenuThemeIconBg, "Leaderboard", onClick = onLeaderboardClick)
+                ItemDivider()
+                MenuItem(Icons.Default.Visibility, StatsCyan, ThemeNeonDeep, "Watch", onClick = onWatchClick)
+            }
 
+            Spacer(Modifier.height(22.dp))
             SectionHeader(title = "Account")
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
             MenuCard {
                 MenuItem(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     iconTint = ThemeSlateAccent,
-                    iconBg = ThemeInactiveBadge,
-                    title = "Log Out",
+                    iconBg = MenuSurface,
+                    title = "Log out",
                     onClick = { showLogoutDialog = true }
                 )
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(28.dp))
         }
     }
 }
 
 @Composable
-private fun SectionHeader(
-    title: String,
-    badge: String? = null
+private fun LogoutConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title,
-            fontFamily = JetBrainsMono,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = TextSizeCaption,
-            letterSpacing = 0.4.sp,
-            color = StatsTextMuted
-        )
-        if (badge != null) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(MenuSurface)
+                .border(1.dp, Color(0xFF263B49), RoundedCornerShape(20.dp))
+                .padding(horizontal = 22.dp, vertical = 21.dp)
+        ) {
             Text(
-                text = badge,
+                text = "Log out of Mosaic?",
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
-                fontSize = TextSizeTiny,
-                letterSpacing = 0.5.sp,
-                color = StatsCyan
+                fontSize = 18.sp,
+                color = Color(0xFFE8EDF4)
             )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = "You can sign back in to continue your chess journey. Your account and progress will be kept.",
+                fontFamily = JetBrainsMono,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+                color = MenuMuted
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MenuSurface)
+                        .border(1.dp, MenuOutline, RoundedCornerShape(12.dp))
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Cancel", fontFamily = JetBrainsMono, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Color(0xFFD4DCE5))
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Brush.horizontalGradient(listOf(Color(0xFF00B8C8), Color(0xFF05D5DF))))
+                        .clickable(onClick = onConfirm),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Log out", fontFamily = JetBrainsMono, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF04151B))
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun MenuCard(
-    content: @Composable () -> Unit
-) {
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+        fontFamily = JetBrainsMono,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = TextSizeCaption,
+        letterSpacing = 0.2.sp,
+        color = StatsTextWhite
+    )
+}
+
+@Composable
+private fun MenuCard(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(StatsCardBg)
-            .border(
-                border = BorderStroke(1.dp, StatsCardBorder),
-                shape = RoundedCornerShape(16.dp)
-            )
-    ) {
-        content()
-    }
+            .clip(RoundedCornerShape(18.dp))
+            .background(MenuSurface)
+            .border(BorderStroke(1.dp, StatsCardBorder), RoundedCornerShape(18.dp))
+    ) { content() }
 }
 
 @Composable
@@ -336,10 +374,8 @@ private fun MenuItem(
     iconTint: Color,
     iconBg: Color,
     title: String,
-    titleColor: Color = StatsTextWhite,
-    trailingBadge: String? = null,
+    trailingLabel: String? = null,
     hasUnreadDot: Boolean = false,
-    chevronColor: Color = BotLockedName,
     onClick: () -> Unit
 ) {
     Row(
@@ -350,82 +386,51 @@ private fun MenuItem(
                 indication = ripple(color = StatsCyan.copy(alpha = 0.12f)),
                 onClick = onClick
             )
-            .padding(horizontal = 14.dp, vertical = 13.dp),
+            .padding(horizontal = 13.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(iconBg),
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(11.dp)).background(iconBg),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconTint,
-                modifier = Modifier.size(20.dp)
-            )
+            Icon(icon, contentDescription = title, tint = iconTint, modifier = Modifier.size(21.dp))
         }
-
-        Spacer(modifier = Modifier.width(14.dp))
-
+        Spacer(Modifier.width(14.dp))
         Text(
             text = title,
+            modifier = Modifier.weight(1f),
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Medium,
             fontSize = TextSizeSubhead,
-            color = titleColor,
-            modifier = Modifier.weight(1f)
+            color = StatsTextWhite,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
-
-        if (trailingBadge != null) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MenuBadgeBg)
-                    .border(
-                        width = 1.dp,
-                        color = MenuBadgeBorder,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = trailingBadge,
-                    fontFamily = JetBrainsMono,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = TextSizeTiny,
-                    color = ThemeNeonSky
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-
-        if (hasUnreadDot) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(StatsCyan)
+        if (trailingLabel != null) {
+            Text(
+                text = trailingLabel,
+                fontFamily = JetBrainsMono,
+                fontSize = 11.sp,
+                color = MenuMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(Modifier.width(7.dp))
         }
-
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
-            tint = chevronColor,
-            modifier = Modifier.size(18.dp)
+            tint = BotLockedName,
+            modifier = Modifier.size(20.dp)
         )
+        if (hasUnreadDot) {
+            Spacer(Modifier.width(8.dp))
+            Box(Modifier.size(7.dp).clip(CircleShape).background(MenuCyan))
+        }
     }
 }
 
 @Composable
 private fun ItemDivider() {
-    HorizontalDivider(
-        color = SettingsDivider,
-        thickness = 1.dp,
-        modifier = Modifier.padding(start = 66.dp, end = 14.dp)
-    )
+    HorizontalDivider(color = SettingsDivider, thickness = 1.dp, modifier = Modifier.padding(start = 67.dp, end = 14.dp))
 }
