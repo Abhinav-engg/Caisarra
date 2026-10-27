@@ -1,4 +1,3 @@
-
 package com.abhinav.caisarra.presentation.club
 
 import androidx.lifecycle.ViewModel
@@ -43,7 +42,10 @@ class ClubViewModel(
 
         viewModelScope.launch {
             _state.update {
-                it.copy(isLoading = true, error = null)
+                it.copy(
+                    isLoading = true,
+                    error = null
+                )
             }
 
             try {
@@ -88,7 +90,10 @@ class ClubViewModel(
 
         viewModelScope.launch {
             _state.update {
-                it.copy(isLoading = true, error = null)
+                it.copy(
+                    isLoading = true,
+                    error = null
+                )
             }
 
             try {
@@ -113,6 +118,7 @@ class ClubViewModel(
             }
         }
     }
+
     fun createClub(name: String, description: String) {
         submit {
             val created = repository.createClub(name, description)
@@ -132,6 +138,7 @@ class ClubViewModel(
                     info = "Club created successfully."
                 )
             }
+
             try {
                 val mine = repository.getMyClubs()
                 val discovered = repository.getClubs(
@@ -165,6 +172,7 @@ class ClubViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
+
             }
         }
     }
@@ -172,6 +180,7 @@ class ClubViewModel(
     fun joinById(id: String) {
         submit {
             repository.joinClub(id)
+
             reloadAfterMembershipChange(
                 message = "Successfully joined club."
             )
@@ -181,6 +190,7 @@ class ClubViewModel(
     fun joinByCode(code: String) {
         submit {
             repository.joinByCode(code)
+
             reloadAfterMembershipChange(
                 message = "Successfully joined club."
             )
@@ -242,10 +252,10 @@ class ClubViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
+
             }
         }
     }
-
 
     private suspend fun reloadAfterMembershipChange(
         message: String,
@@ -270,6 +280,7 @@ class ClubViewModel(
             )
         }
     }
+
     private fun submit(action: suspend () -> Unit) {
         if (_state.value.isSubmitting) return
 
@@ -300,6 +311,19 @@ class ClubViewModel(
             }
         }
     }
+
+    fun clearError() {
+        _state.update {
+            it.copy(error = null)
+        }
+    }
+
+    fun clearInfo() {
+        _state.update {
+            it.copy(info = null)
+        }
+    }
+
     fun clearMessage() {
         _state.update {
             it.copy(

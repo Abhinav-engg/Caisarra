@@ -86,6 +86,7 @@ import com.caisaara.ui.theme.ThemeNeonDeep
 import com.caisaara.ui.theme.ThemeNeonSky
 import com.caisaara.ui.theme.ThemeSlateAccent
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Visibility
 
 @Composable
 fun MenuScreen(
@@ -100,6 +101,7 @@ fun MenuScreen(
     onLeaderboardClick: () -> Unit = {},
     onDeleteAccountClick: () -> Unit = {},
     onDirectMessagesClick: () -> Unit = {},
+    onWatchClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -247,6 +249,14 @@ fun MenuScreen(
                     iconBg = MenuThemeIconBg,
                     title = "Leaderboard",
                     onClick = onLeaderboardClick
+                )
+                ItemDivider()
+                MenuItem(
+                    icon = Icons.Default.Visibility,
+                    iconTint = StatsCyan,
+                    iconBg = ThemeNeonDeep,
+                    title = "Watch",
+                    onClick = onWatchClick
                 )
             }
 
