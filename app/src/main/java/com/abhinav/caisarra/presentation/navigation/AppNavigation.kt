@@ -137,6 +137,7 @@ import com.abhinav.caisarra.presentation.club.ClubDetailScreen
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
 import com.abhinav.caisarra.presentation.directmessage.DirectMessageScreen
 import com.abhinav.caisarra.presentation.directmessage.DirectMessagesListScreen
+import androidx.activity.compose.LocalActivity
 object AppRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -617,7 +618,33 @@ fun AppNavigation(authRepository: AuthRepository) {
 
             val accessToken by tokenManager.accessTokenFlow
                 .collectAsState(initial = null)
+            var profileUsername by remember(accessToken) {
+                mutableStateOf<String?>(null)
+            }
 
+            var profileDisplayName by remember(accessToken) {
+                mutableStateOf<String?>(null)
+            }
+
+            var profileAvatarUrl by remember(accessToken) {
+                mutableStateOf<String?>(null)
+            }
+
+            LaunchedEffect(accessToken) {
+                if (accessToken.isNullOrBlank()) {
+                    profileUsername = null
+                    profileDisplayName = null
+                    profileAvatarUrl = null
+                } else {
+                    runCatching {
+                        val profile = ProfileRepository(
+                            service = RetrofitInstance.createProfileService(tokenManager)
+                        ).getMyProfile()
+
+                        profileUsername = profile.username
+                    }
+                }
+            }
             val communityViewModel = screenViewModel {
                 CommunityViewModel(
                     repository = CommunityRepository(
@@ -637,6 +664,11 @@ fun AppNavigation(authRepository: AuthRepository) {
             CommunityScreen(
                 viewModel = communityViewModel,
                 isRegisteredUser = !accessToken.isNullOrBlank(),
+                currentUsername = profileUsername,
+                accessToken = accessToken,
+                currentAvatarUrl = profileAvatarUrl,
+                currentDisplayName = profileDisplayName,
+
                 onBack = {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
