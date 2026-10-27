@@ -17,6 +17,20 @@ class TokenManager private constructor(private val context: Context) {
         val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
         val GUEST_ID = stringPreferencesKey("guest_id")
         val USERNAME = stringPreferencesKey("username")
+        val FCM_TOKEN = stringPreferencesKey("fcm_token")
+    }
+
+    val fcmTokenFlow: Flow<String?> =
+        context.tokenDataStore.data.map { it[Keys.FCM_TOKEN] }
+
+    suspend fun getFcmToken(): String? = fcmTokenFlow.first()
+
+    suspend fun saveFcmToken(token: String) {
+        context.tokenDataStore.edit { it[Keys.FCM_TOKEN] = token }
+    }
+
+    suspend fun clearFcmToken() {
+        context.tokenDataStore.edit { it.remove(Keys.FCM_TOKEN) }
     }
 
     val guestIdFlow: Flow<String?> =

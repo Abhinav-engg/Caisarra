@@ -211,6 +211,18 @@ class AuthRepository private constructor(context: Context) {
         tokenManager.saveUsername(username.trim())
     }
 
+    suspend fun updateFcmToken(token: String) {
+        tokenManager.saveFcmToken(token)
+        if (isLoggedIn()) {
+            syncFcmToken(token)
+        }
+    }
+
+    suspend fun syncFcmToken(token: String? = null) {
+        val fcmToken = token ?: tokenManager.getFcmToken() ?: return
+        if (!isLoggedIn()) return
+    }
+
     companion object {
         @Volatile
         private var instance: AuthRepository? = null

@@ -1,8 +1,11 @@
 package com.abhinav.caisarra.data.remote.api
 
+import com.abhinav.caisarra.data.remote.dto.ActiveGameDto
 import com.abhinav.caisarra.data.remote.dto.GameHistoryDto
 import com.abhinav.caisarra.data.remote.dto.GameMoveDto
+import com.abhinav.caisarra.data.remote.dto.WatchInviteResponse
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface GamesService {
@@ -19,4 +22,12 @@ interface GamesService {
     suspend fun getGameMoves(
         @Path("gameID") gameId: String
     ): List<GameMoveDto>
+
+    @POST("api/games/{gameID}/watch-invite")
+    suspend fun createWatchInvite(
+        @Path("gameID") gameId: String
+    ): WatchInviteResponse
+
+    @GET("api/games/active")
+    suspend fun getActiveGames(): List<ActiveGameDto>
 }

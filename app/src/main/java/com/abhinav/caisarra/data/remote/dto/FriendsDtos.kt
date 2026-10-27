@@ -15,7 +15,11 @@ data class FriendDto(
     val username: String,
     val rating: Int? = null,
     @SerialName("friends_since")
-    val friendsSince: String? = null
+    val friendsSince: String? = null,
+    @SerialName("avatar_url")
+    val avatarUrl: String? = null,
+    @SerialName("display_name")
+    val displayName: String? = null
 )
 
 @Serializable
@@ -32,6 +36,10 @@ data class FriendRequestDto(
     val senderUsername: String? = null,
     @SerialName("sender_rating")
     val senderRating: Int? = null,
+    @SerialName("sender_avatar_url")
+    val senderAvatarUrl: String? = null,
+    @SerialName("sender_display_name")
+    val senderDisplayName: String? = null,
     @SerialName("receiver_id")
     val receiverId: Long? = null,
     @SerialName("receiver_username")

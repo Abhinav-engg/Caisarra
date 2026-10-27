@@ -20,10 +20,12 @@ import com.abhinav.caisarra.domain.chess.engine.ChesslibEngine
 import com.abhinav.caisarra.domain.chess.game.GameClock
 import com.abhinav.caisarra.domain.chess.model.Move
 import com.abhinav.caisarra.domain.chess.model.PieceColor as DomainColor
+import com.abhinav.caisarra.domain.chess.game.mapper.calculateCapturedPieces
 import com.abhinav.caisarra.domain.chess.game.mapper.toDomain
 import com.abhinav.caisarra.domain.chess.game.mapper.toMoveUi
 import com.abhinav.caisarra.domain.chess.game.mapper.toUi
 import com.abhinav.caisarra.domain.chess.game.mapper.toUiBoard
+import com.abhinav.caisarra.domain.chess.game.mapper.uciToSquare
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
@@ -166,6 +168,16 @@ class OnlineGameViewModel(
             }
         }
         viewModelScope.launch { loadGameDetailsAndRating() }
+        viewModelScope.launch {
+            gameRepository.createWatchInvite(gameId).onSuccess { watchResp ->
+                _uiState.update {
+                    it.copy(
+                        watchCode = watchResp.watchCode,
+                        watchLink = watchResp.link
+                    )
+                }
+            }
+        }
     }
 
     private fun resolveMode(timeControlMinutes: Int, explicitMode: String? = null): String {
@@ -352,8 +364,8 @@ class OnlineGameViewModel(
                     selectedSquare = null,
                     legalMoves = emptyList(),
                     promotionPending = null,
-                    lastMoveFrom = lastMove?.let { m -> squareFrom(m.take(2)) },
-                    lastMoveTo = lastMove?.let { m -> squareFrom(m.drop(2).take(2)) },
+                    lastMoveFrom = lastMove?.let { m -> uciToSquare(m.take(2)) },
+                    lastMoveTo = lastMove?.let { m -> uciToSquare(m.drop(2).take(2)) },
                     isWhiteInCheck = inCheck && whiteTurn,
                     isBlackInCheck = inCheck && !whiteTurn,
                     isWhiteTurn = whiteTurn,
@@ -399,8 +411,8 @@ class OnlineGameViewModel(
 
         val lastMove = historyMoves.lastOrNull()
         if (lastMove != null && lastMove.length >= 4) {
-            lastFrom = squareFrom(lastMove.take(2))
-            lastTo = squareFrom(lastMove.drop(2).take(2))
+            lastFrom = uciToSquare(lastMove.take(2))
+            lastTo = uciToSquare(lastMove.drop(2).take(2))
         }
 
         val inCheck = replayEngine.checkSquare() != null
@@ -616,6 +628,10 @@ class OnlineGameViewModel(
                 awaitingServer = false
                 _uiState.update { it.copy(errorMessage = message.message) }
             }
+            is SocketIncoming.SpectatorCount -> {
+                _uiState.update { it.copy(spectatorCount = message.count) }
+            }
+            is SocketIncoming.WatchEnded -> Unit
         }
     }
 
@@ -770,8 +786,8 @@ class OnlineGameViewModel(
             moveKey != lastAnimatedMoveKey &&
             state.lastMove.length >= 4
         ) {
-            val from = squareFrom(state.lastMove.take(2))
-            val to = squareFrom(state.lastMove.drop(2).take(2))
+            val from = uciToSquare(state.lastMove.take(2))
+            val to = uciToSquare(state.lastMove.drop(2).take(2))
             val movingPiece = previousBoard[from]
 
             if (movingPiece != null) {
@@ -876,11 +892,11 @@ class OnlineGameViewModel(
                     promotionPending = null,
 
                     lastMoveFrom = state.lastMove?.let {
-                        squareFrom(it.take(2))
+                        uciToSquare(it.take(2))
                     } ?: previous.lastMoveFrom,
 
                     lastMoveTo = state.lastMove?.let {
-                        squareFrom(it.drop(2).take(2))
+                        uciToSquare(it.drop(2).take(2))
                     } ?: previous.lastMoveTo,
 
                     isWhiteInCheck = inCheck && whiteTurn,
@@ -957,65 +973,6 @@ class OnlineGameViewModel(
             }
         }
     }
-    private fun calculateCapturedPieces(
-        uciMoves: List<String>
-    ): Pair<List<com.abhinav.caisarra.presentation.game.model.Piece>,
-            List<com.abhinav.caisarra.presentation.game.model.Piece>> {
-
-        val replayEngine = ChesslibEngine()
-
-        val capturedPieces = mutableListOf<
-                com.abhinav.caisarra.domain.chess.model.BoardPiece
-                >()
-
-        uciMoves.forEach { uci ->
-            if (uci.length < 4) return@forEach
-
-            val fromFile = uci[0] - 'a'
-            val fromRank = uci[1].digitToIntOrNull()?.minus(1)
-                ?: return@forEach
-            val toFile = uci[2] - 'a'
-            val toRank = uci[3].digitToIntOrNull()?.minus(1)
-                ?: return@forEach
-
-            if (fromFile !in 0..7 || toFile !in 0..7 ||
-                fromRank !in 0..7 || toRank !in 0..7
-            ) {
-                return@forEach
-            }
-
-            val promotion = when (uci.getOrNull(4)?.lowercaseChar()) {
-                'q' -> DomainPieceType.Queen
-                'r' -> DomainPieceType.Rook
-                'b' -> DomainPieceType.Bishop
-                'n' -> DomainPieceType.Knight
-                else -> null
-            }
-
-            val move = DomainMove(
-                from = DomainSquare(fromFile, fromRank),
-                to = DomainSquare(toFile, toRank),
-                promotion = promotion
-            )
-
-            val captured = replayEngine.capturedBy(move)
-
-            if (replayEngine.play(move) && captured != null) {
-                capturedPieces.add(captured)
-            }
-        }
-
-        val whitePiecesCaptured = capturedPieces
-            .filter { it.color == DomainPieceColor.White }
-            .map { it.toUiPiece() }
-
-        val blackPiecesCaptured = capturedPieces
-            .filter { it.color == DomainPieceColor.Black }
-            .map { it.toUiPiece() }
-
-        return whitePiecesCaptured to blackPiecesCaptured
-    }
-
 
     private suspend fun loadOpponentProfile(username: String) {
         if (username.isBlank() || username.equals("You", true) || username.equals("Opponent", true) || username.equals("Your opponent", true)) return
@@ -1080,9 +1037,6 @@ class OnlineGameViewModel(
         "draw" -> GameResult.DRAW
         else -> null
     }
-
-    private fun squareFrom(name: String) =
-        Square(row = 8 - name[1].digitToInt(), column = name[0] - 'a')
 
     override fun onCleared() {
         socket.close()

@@ -1,4 +1,3 @@
-
 package com.abhinav.caisarra.presentation.directmessage
 
 import androidx.activity.compose.BackHandler
@@ -14,7 +13,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,7 +35,6 @@ import com.caisaara.ui.theme.StatsTextWhite
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.foundation.layout.navigationBarsPadding
 
 @Composable
 fun DirectMessageScreen(
@@ -62,9 +59,7 @@ fun DirectMessageScreen(
 
     LaunchedEffect(state.messages.size) {
         if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(
-                state.messages.lastIndex
-            )
+            listState.animateScrollToItem(state.messages.lastIndex)
         }
     }
 
@@ -76,29 +71,23 @@ fun DirectMessageScreen(
             .navigationBarsPadding()
             .imePadding()
     ) {
-
+        // Header: back button, username and WebSocket status.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(
-                    horizontal = 12.dp,
-                    vertical = 10.dp
-                ),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             IconButton(onClick = onBack) {
                 Icon(
-                    imageVector =
-                        Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = StatsTextWhite
                 )
             }
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = username,
                     color = StatsTextWhite,
@@ -116,13 +105,24 @@ fun DirectMessageScreen(
                 )
             }
 
-            IconButton(
-                onClick = viewModel::refresh
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh messages",
-                    tint = StatsCyan
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (state.connected) StatsCyan
+                            else StatsTextMuted
+                        )
+                )
+
+                Text(
+                    text = if (state.connected) "Live" else "Connecting",
+                    color = if (state.connected) StatsCyan else StatsTextMuted,
+                    fontSize = 11.sp
                 )
             }
         }
@@ -131,7 +131,6 @@ fun DirectMessageScreen(
             color = StatsCardBorder,
             thickness = 1.dp
         )
-
 
         LazyColumn(
             modifier = Modifier
@@ -144,31 +143,23 @@ fun DirectMessageScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (
-                state.loading &&
-                state.messages.isEmpty()
-            ) {
+            if (state.loading && state.messages.isEmpty()) {
                 item {
                     Box(
-                        modifier = Modifier
-                            .fillParentMaxSize(),
+                        modifier = Modifier.fillParentMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(
-                            color = StatsCyan
-                        )
+                        CircularProgressIndicator(color = StatsCyan)
                     }
                 }
             } else if (state.messages.isEmpty()) {
                 item {
                     Box(
-                        modifier = Modifier
-                            .fillParentMaxSize(),
+                        modifier = Modifier.fillParentMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
-                            horizontalAlignment =
-                                Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
                                 text = "Start the conversation",
@@ -178,9 +169,7 @@ fun DirectMessageScreen(
                                 fontSize = 16.sp
                             )
 
-                            Spacer(
-                                modifier = Modifier.height(8.dp)
-                            )
+                            Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
                                 text = "Send a message to $username.",
@@ -195,7 +184,6 @@ fun DirectMessageScreen(
                     items = state.messages,
                     key = { it.id }
                 ) { message ->
-
                     val mine = message.senderId != userId
 
                     Row(
@@ -210,24 +198,12 @@ fun DirectMessageScreen(
                             modifier = Modifier
                                 .widthIn(max = 300.dp)
                                 .background(
-                                    color = if (mine) {
-                                        StatsCyan
-                                    } else {
-                                        StatsCardBg
-                                    },
+                                    color = if (mine) StatsCyan else StatsCardBg,
                                     shape = RoundedCornerShape(
                                         topStart = 18.dp,
                                         topEnd = 18.dp,
-                                        bottomStart = if (mine) {
-                                            18.dp
-                                        } else {
-                                            4.dp
-                                        },
-                                        bottomEnd = if (mine) {
-                                            4.dp
-                                        } else {
-                                            18.dp
-                                        }
+                                        bottomStart = if (mine) 18.dp else 4.dp,
+                                        bottomEnd = if (mine) 4.dp else 18.dp
                                     )
                                 )
                                 .padding(
@@ -236,38 +212,22 @@ fun DirectMessageScreen(
                                 )
                         ) {
                             Text(
-                                text = if (mine) {
-                                    "You"
-                                } else {
-                                    username
-                                },
-                                color = if (mine) {
-                                    StatsBg
-                                } else {
-                                    StatsCyan
-                                },
+                                text = if (mine) "You" else username,
+                                color = if (mine) StatsBg else StatsCyan,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
 
-                            Spacer(
-                                modifier = Modifier.height(4.dp)
-                            )
+                            Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
                                 text = message.message,
-                                color = if (mine) {
-                                    StatsBg
-                                } else {
-                                    StatsTextWhite
-                                },
+                                color = if (mine) StatsBg else StatsTextWhite,
                                 fontSize = 15.sp
                             )
 
                             message.createdAt?.let { timestamp ->
-                                Spacer(
-                                    modifier = Modifier.height(5.dp)
-                                )
+                                Spacer(modifier = Modifier.height(5.dp))
 
                                 Text(
                                     text = timestamp.toChatTime(),
@@ -277,9 +237,7 @@ fun DirectMessageScreen(
                                         StatsTextMuted
                                     },
                                     fontSize = 10.sp,
-                                    modifier = Modifier.align(
-                                        Alignment.End
-                                    )
+                                    modifier = Modifier.align(Alignment.End)
                                 )
                             }
                         }
@@ -288,7 +246,6 @@ fun DirectMessageScreen(
             }
         }
 
-
         state.error?.let { error ->
             Text(
                 text = error,
@@ -296,10 +253,7 @@ fun DirectMessageScreen(
                 fontSize = 12.sp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(
-                        horizontal = 16.dp,
-                        vertical = 5.dp
-                    )
+                    .padding(horizontal = 16.dp, vertical = 5.dp)
             )
         }
 
@@ -307,10 +261,7 @@ fun DirectMessageScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(StatsBg)
-                .padding(
-                    horizontal = 12.dp,
-                    vertical = 10.dp
-                ),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -333,10 +284,7 @@ fun DirectMessageScreen(
                 ),
                 keyboardActions = KeyboardActions(
                     onSend = {
-                        if (
-                            state.draft.isNotBlank() &&
-                            !state.sending
-                        ) {
+                        if (state.draft.isNotBlank() && !state.sending) {
                             viewModel.send()
                         }
                     }
@@ -359,16 +307,12 @@ fun DirectMessageScreen(
 
             IconButton(
                 onClick = viewModel::send,
-                enabled = state.draft.isNotBlank() &&
-                        !state.sending,
+                enabled = state.draft.isNotBlank() && !state.sending,
                 modifier = Modifier
                     .size(52.dp)
                     .clip(CircleShape)
                     .background(
-                        if (
-                            state.draft.isNotBlank() &&
-                            !state.sending
-                        ) {
+                        if (state.draft.isNotBlank() && !state.sending) {
                             StatsCyan
                         } else {
                             StatsCardBg
@@ -383,8 +327,7 @@ fun DirectMessageScreen(
                     )
                 } else {
                     Icon(
-                        imageVector =
-                            Icons.AutoMirrored.Filled.Send,
+                        imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send message",
                         tint = if (state.draft.isNotBlank()) {
                             StatsBg
@@ -405,9 +348,7 @@ private fun String.toChatTime(): String {
         SimpleDateFormat(
             "HH:mm",
             Locale.getDefault()
-        ).format(
-            Date.from(instant)
-        )
+        ).format(Date.from(instant))
     } catch (_: Exception) {
         this
     }

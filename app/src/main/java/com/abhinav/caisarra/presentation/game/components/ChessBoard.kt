@@ -20,17 +20,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.abhinav.caisarra.data.local.HAPTICS_KEY
+import com.abhinav.caisarra.data.local.settingsDataStore
+import kotlinx.coroutines.flow.map
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.presentation.game.model.Piece
@@ -78,6 +85,12 @@ fun ChessBoard(
     onMoveAnimationStarted: (Long) -> Unit = {},
     onSquareClick: (Square) -> Unit
 ) {
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val hapticsEnabled by remember(context) {
+        context.settingsDataStore.data.map { it[HAPTICS_KEY] ?: true }
+    }.collectAsState(initial = true)
+
     var movingPiece by remember {
         mutableStateOf<PieceMoveAnimationEvent?>(null)
     }
@@ -137,6 +150,9 @@ fun ChessBoard(
         if (movingPiece?.id == event.id) {
             movingPiece = null
             completedMoveId = event.id
+            if (hapticsEnabled) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
         }
     }
     val activeMove = movingPiece ?: moveAnimationEvent?.takeIf { event ->

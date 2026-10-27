@@ -3,13 +3,25 @@ package com.abhinav.caisarra.data.repository
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.data.local.entity.RecordStatus
 import com.abhinav.caisarra.data.remote.api.GamesService
+import com.abhinav.caisarra.data.remote.dto.ActiveGameDto
 import com.abhinav.caisarra.data.remote.dto.GameHistoryDto
 import com.abhinav.caisarra.data.remote.dto.GameMoveDto
+import com.abhinav.caisarra.data.remote.dto.WatchInviteResponse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.Instant
 
 class RemoteGameRepository(
     private val gamesService: GamesService
 ) {
+
+    suspend fun getActiveGames(): Result<List<ActiveGameDto>> = withContext(Dispatchers.IO) {
+        runCatching { gamesService.getActiveGames() }
+    }
+
+    suspend fun createWatchInvite(gameId: String): Result<WatchInviteResponse> = withContext(Dispatchers.IO) {
+        runCatching { gamesService.createWatchInvite(gameId) }
+    }
 
     suspend fun getGameHistory(
         username: String

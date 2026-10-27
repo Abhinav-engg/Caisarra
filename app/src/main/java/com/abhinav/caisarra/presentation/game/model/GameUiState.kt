@@ -47,7 +47,10 @@ data class GameUiState(
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
     val moveAnimationEvent: PieceMoveAnimationEvent? = null,
-    val moveAnimationConsumedId: Long? = null
+    val moveAnimationConsumedId: Long? = null,
+    val spectatorCount: Int = 0,
+    val watchCode: String? = null,
+    val watchLink: String? = null
 ) {
     val whiteAdvantage: Int
         get() {
