@@ -14,6 +14,11 @@ interface RatingService {
     suspend fun getPublicProfile(
         @Path("username") username: String
     ): ApiResponse<PlayerRatingProfile>
+    @GET("players/{username}/stats")
+    suspend fun getPlayerStats(
+        @Path("username") username: String,
+        @Query("range") range: String? = null
+    ): ApiResponse<ModeStatsData>
     @GET("players/{username}/stats/{mode}")
     suspend fun getModeStats(
         @Path("username") username: String,

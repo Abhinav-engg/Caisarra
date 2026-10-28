@@ -77,7 +77,7 @@ fun NearbyScreen(
     onAddFriend: (NearbyPlayer) -> Unit = {},
     onChat: (NearbyPlayer) -> Unit = {},
     onFilter: () -> Unit = {},
-    onRefresh: () -> Unit = { viewModel.refresh(silent = false) }
+    onRefresh: (() -> Unit)? = null
 ) {
     BackHandler(onBack = onBack)
 
@@ -128,6 +128,8 @@ fun NearbyScreen(
         if (granted) viewModel.enable()
         else permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
     }
+
+    val refreshAction = onRefresh ?: turnOn
 
     Box(
         modifier = Modifier
@@ -236,7 +238,7 @@ fun NearbyScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
-                    TextButton(onClick = singleClick(onRefresh)) {
+                    TextButton(onClick = singleClick(refreshAction)) {
                         Text("Retry", color = NearbyColors.Accent)
                     }
                 }
@@ -263,7 +265,7 @@ fun NearbyScreen(
                 SquareIconButton(
                     icon = Icons.Filled.Refresh,
                     contentDescription = "Refresh",
-                    onClick = singleClick(onRefresh)
+                    onClick = singleClick(refreshAction)
                 )
             }
         }

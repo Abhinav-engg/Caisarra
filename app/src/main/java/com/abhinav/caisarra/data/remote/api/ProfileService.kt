@@ -43,6 +43,11 @@ interface ProfileService {
     suspend fun getPublicProfile(
         @Path("username") username: String
     ): ApiResponse<ProfileData>
+
+    @GET("players/search")
+    suspend fun searchPlayers(
+        @retrofit2.http.Query("q") query: String
+    ): ApiResponse<com.abhinav.caisarra.data.remote.dto.PlayerSearchData>
 }
 
 

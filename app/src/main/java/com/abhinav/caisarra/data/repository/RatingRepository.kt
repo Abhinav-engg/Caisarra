@@ -24,6 +24,34 @@ class RatingRepository(
         return response.data ?: error("Player profile response was empty")
     }
 
+    suspend fun getPlayerStats(
+        username: String,
+        range: String? = null
+    ): ModeStatsData {
+        val normalizedUsername = username.trim()
+        require(normalizedUsername.isNotBlank()) {
+            "Username cannot be empty"
+        }
+
+        val normalizedRange = range?.trim()?.lowercase()?.ifEmpty { null }
+        if (normalizedRange != null) {
+            require(normalizedRange in setOf("7d", "30d", "90d", "1y", "all")) {
+                "Range must be one of 7d, 30d, 90d, 1y, all"
+            }
+        }
+
+        val response = service.getPlayerStats(
+            username = normalizedUsername,
+            range = normalizedRange
+        )
+
+        if (!response.success) {
+            error(response.error ?: response.message ?: "Unable to load player statistics")
+        }
+
+        return response.data ?: error("Player statistics response was empty")
+    }
+
     suspend fun getModeStats(
         username: String,
         mode: String,

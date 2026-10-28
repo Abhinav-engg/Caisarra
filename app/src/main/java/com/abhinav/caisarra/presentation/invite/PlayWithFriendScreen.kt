@@ -63,7 +63,8 @@ fun PlayWithFriendScreen(
     viewModel: FriendsViewModel,
     onCreateMatchLink: () -> Unit,
     onBack: () -> Unit,
-    onDirectMessage: (Long, String) -> Unit
+    onDirectMessage: (Long, String) -> Unit,
+    onViewProfile: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -72,7 +73,11 @@ fun PlayWithFriendScreen(
 
     if (state.showLeaderboard) {
         BackHandler { viewModel.setShowLeaderboard(false) }
-        FriendsLeaderboardView(entries = state.leaderboardEntries, onClose = { viewModel.setShowLeaderboard(false) })
+        FriendsLeaderboardView(
+            entries = state.leaderboardEntries,
+            onClose = { viewModel.setShowLeaderboard(false) },
+            onPlayerClick = onViewProfile
+        )
         return
     }
 
@@ -133,6 +138,7 @@ fun PlayWithFriendScreen(
                                 player = player,
                                 status = if (isFriend) "friends" else status?.status,
                                 isBusy = state.activeUsername == player.username,
+                                onPlayerClick = { onViewProfile(player.username) },
                                 onDirectMessage = { onDirectMessage(player.userId, player.username) },
                                 onChallenge = onChallenge,
                                 onAdd = { viewModel.addFriend(player.username) },
@@ -158,7 +164,12 @@ fun PlayWithFriendScreen(
                                     val cardShape = RoundedCornerShape(FriendsCardRadius)
                                     Column(modifier = Modifier.fillMaxWidth().clip(cardShape).background(FriendsCardBg).border(1.dp, FriendsCardBorder, cardShape)) {
                                         state.friends.forEachIndexed { index, friend ->
-                                            FriendCardItem(friend = friend, onDirectMessage = { onDirectMessage(friend.userId, friend.username) }, onChallenge = onChallenge)
+                                            FriendCardItem(
+                                                friend = friend,
+                                                onProfileClick = { onViewProfile(friend.username) },
+                                                onDirectMessage = { onDirectMessage(friend.userId, friend.username) },
+                                                onChallenge = onChallenge
+                                            )
                                             if (index < state.friends.lastIndex) HorizontalDivider(color = FriendsDivider, thickness = 1.dp)
                                         }
                                     }
@@ -174,6 +185,7 @@ fun PlayWithFriendScreen(
                                 items(state.incomingRequests) { request ->
                                     FriendRequestCardItem(
                                         request = request,
+                                        onProfileClick = { request.senderUsername?.let(onViewProfile) },
                                         onAccept = { request.senderUsername?.let { viewModel.acceptRequest(request.id, it) } },
                                         onDecline = { request.senderUsername?.let { viewModel.rejectRequest(request.id, it) } }
                                     )
@@ -185,7 +197,11 @@ fun PlayWithFriendScreen(
                                     Text("SENT REQUESTS", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
                                 }
                                 items(state.sentRequests) { request ->
-                                    SentRequestItem(name = request.receiverUsername ?: "Player ${request.receiverId ?: ""}", onCancel = { request.receiverUsername?.let { viewModel.cancelRequest(request.id, it) } })
+                                    SentRequestItem(
+                                        name = request.receiverUsername ?: "Player ${request.receiverId ?: ""}",
+                                        onProfileClick = { request.receiverUsername?.let(onViewProfile) },
+                                        onCancel = { request.receiverUsername?.let { viewModel.cancelRequest(request.id, it) } }
+                                    )
                                 }
                             }
                         }
@@ -198,13 +214,17 @@ fun PlayWithFriendScreen(
 }
 
 @Composable
-private fun SentRequestItem(name: String, onCancel: () -> Unit) {
+private fun SentRequestItem(name: String, onProfileClick: (() -> Unit)? = null, onCancel: () -> Unit) {
     val cardShape = RoundedCornerShape(FriendsCardRadius)
     Row(
         modifier = Modifier.fillMaxWidth().clip(cardShape).background(FriendsCardBg).border(1.dp, FriendsCardBorder, cardShape).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .then(if (onProfileClick != null) Modifier.clickable(onClick = onProfileClick) else Modifier)
+        ) {
             Text(name, color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             Text("Waiting for response", color = FriendsTextMuted, fontSize = 12.sp)
         }
