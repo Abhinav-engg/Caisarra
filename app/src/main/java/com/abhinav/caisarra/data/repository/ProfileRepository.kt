@@ -23,6 +23,15 @@ class ProfileRepository(
         }
         return response.data ?: error("Profile response was empty")
     }
+
+    suspend fun searchPlayers(query: String): List<com.abhinav.caisarra.data.remote.dto.PlayerSearchDto> {
+        val response = service.searchPlayers(query.trim())
+
+        if (!response.success) {
+            error(response.error ?: response.message ?: "Could not search players")
+        }
+        return response.data?.players.orEmpty()
+    }
     suspend fun uploadAvatar(context: Context, uri: Uri): ProfileData {
         val bytes = when (uri.scheme) {
             "file" -> FileInputStream(File(uri.path!!)).use { it.readBytes() }

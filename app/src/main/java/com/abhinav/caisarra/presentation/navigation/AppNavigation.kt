@@ -114,6 +114,9 @@ import com.abhinav.caisarra.presentation.screens.MessagesScreen
 import com.abhinav.caisarra.presentation.screens.LeaderboardScreen
 import com.abhinav.caisarra.presentation.screens.DeleteAccountScreen
 import com.abhinav.caisarra.presentation.screens.SettingsDetailScreen
+import com.abhinav.caisarra.presentation.screens.PrivacySettingsScreen
+import com.abhinav.caisarra.presentation.viewmodel.PrivacySettingsViewModel
+import com.abhinav.caisarra.data.repository.PrivacyRepository
 import com.abhinav.caisarra.presentation.screens.NearbyScreen
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.RetrofitInstance
@@ -173,7 +176,9 @@ object AppRoutes {
     const val JOIN_INVITE = "play/{code}"
     const val ONLINE_GAME = "online_game/{gameId}"
     const val ALL_GAME_HISTORY = "all_game_history"
-    const val PROFILE = "profile"
+    const val PROFILE = "profile?username={username}"
+    fun profile(username: String? = null): String =
+        if (username.isNullOrBlank()) "profile" else "profile?username=${Uri.encode(username.trim())}"
     const val EDIT_PROFILE = "edit_profile"
     const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
     const val GAME_ANALYSIS = "game_analysis/{gameId}"
@@ -213,6 +218,7 @@ object AppRoutes {
     const val LEADERBOARD = "leaderboard"
     const val DELETE_ACCOUNT = "delete_account"
     const val SETTINGS_DETAIL = "settings_detail"
+    const val PRIVACY_SETTINGS = "privacy_settings"
 
     fun tournamentDetail(id: String, inviteCode: String? = null): String =
         "tournament/${Uri.encode(id)}" +
@@ -255,8 +261,11 @@ object AppRoutes {
 }
 
 @Composable
-private inline fun <reified VM : ViewModel> screenViewModel(crossinline create: () -> VM): VM =
-    viewModel(factory = viewModelFactory { initializer { create() } })
+private inline fun <reified VM : ViewModel> screenViewModel(
+    key: String? = null,
+    crossinline create: () -> VM
+): VM =
+    viewModel(key = key, factory = viewModelFactory { initializer { create() } })
 
 private fun NavController.isResumed(): Boolean =
     currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED
@@ -318,6 +327,29 @@ private fun NavController.goHomeThenPendingInvite(store: PendingInviteStore) {
 }
 
 @Composable
+private fun rememberCurrentUserProfile(
+    tokenManager: TokenManager,
+    isGuest: Boolean,
+    refreshKey: Any? = null
+): androidx.compose.runtime.State<com.abhinav.caisarra.data.remote.dto.ProfileData?> {
+    val accessToken by tokenManager.accessTokenFlow.collectAsState(initial = null)
+    val profileState = remember { mutableStateOf<com.abhinav.caisarra.data.remote.dto.ProfileData?>(null) }
+
+    LaunchedEffect(accessToken, isGuest, refreshKey) {
+        if (accessToken.isNullOrBlank() || isGuest) {
+            profileState.value = null
+            return@LaunchedEffect
+        }
+        runCatching {
+            ProfileRepository(
+                service = RetrofitInstance.createProfileService(tokenManager)
+            ).getMyProfile()
+        }.onSuccess { profileState.value = it }
+    }
+    return profileState
+}
+
+@Composable
 fun AppNavigation(authRepository: AuthRepository) {
     val context = LocalContext.current.applicationContext
     val pendingOtpStore = remember {
@@ -369,6 +401,21 @@ fun AppNavigation(authRepository: AuthRepository) {
     }
     var inviteBackRoute by remember {
         mutableStateOf(AppRoutes.PLAY_WITH_FRIEND_HOME)
+    }
+
+    fun requireAuth(featureName: String, onAuthorized: suspend () -> Unit) {
+        scope.launch {
+            if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
+                Toast.makeText(
+                    context,
+                    "$featureName requires a registered account. Please sign in.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                navController.navigateOnce(AppRoutes.LOGIN)
+            } else {
+                onAuthorized()
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -611,7 +658,13 @@ fun AppNavigation(authRepository: AuthRepository) {
             AllGameHistoryScreen(
                 viewModel = allHistoryViewModel,
                 onBack = {
-                    navController.safeBack(AppRoutes.MENU)
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        scope.launch {
+                            navController.safeBack(homeRoute(authRepository))
+                        }
+                    }
                 },
                 onReviewGame = { gameId ->
                     navController.navigateOnce(
@@ -621,63 +674,27 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
         composable(route = AppRoutes.COMMUNITY) {
-            val tokenManager = remember {
-                TokenManager.get(context)
-            }
-
-            val accessToken by tokenManager.accessTokenFlow
-                .collectAsState(initial = null)
-            var profileUsername by remember(accessToken) {
-                mutableStateOf<String?>(null)
-            }
-
-            var profileDisplayName by remember(accessToken) {
-                mutableStateOf<String?>(null)
-            }
-
-            var profileAvatarUrl by remember(accessToken) {
-                mutableStateOf<String?>(null)
-            }
-
-            LaunchedEffect(accessToken) {
-                if (accessToken.isNullOrBlank()) {
-                    profileUsername = null
-                    profileDisplayName = null
-                    profileAvatarUrl = null
-                } else {
-                    runCatching {
-                        val profile = ProfileRepository(
-                            service = RetrofitInstance.createProfileService(tokenManager)
-                        ).getMyProfile()
-
-                        profileUsername = profile.username
-                    }
-                }
-            }
+            val tokenManager = remember { TokenManager.get(context) }
+            val accessToken by tokenManager.accessTokenFlow.collectAsState(initial = null)
+            val profile by rememberCurrentUserProfile(tokenManager, isGuestUser)
             val communityViewModel = screenViewModel {
                 CommunityViewModel(
                     repository = CommunityRepository(
-                        RetrofitInstance.createCommunityService(
-                            tokenManager
-                        )
+                        RetrofitInstance.createCommunityService(tokenManager)
                     ),
                     remoteGameRepository = RemoteGameRepository(
-                        RetrofitInstance.createGamesService(
-                            tokenManager
-                        )
+                        RetrofitInstance.createGamesService(tokenManager)
                     )
                 )
             }
 
-
             CommunityScreen(
                 viewModel = communityViewModel,
                 isRegisteredUser = !accessToken.isNullOrBlank(),
-                currentUsername = profileUsername,
+                currentUsername = profile?.username,
                 accessToken = accessToken,
-                currentAvatarUrl = profileAvatarUrl,
-                currentDisplayName = profileDisplayName,
-
+                currentAvatarUrl = profile?.avatarUrl,
+                currentDisplayName = profile?.displayName,
                 onBack = {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
@@ -795,19 +812,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = homeViewModel,
                 onStartChallenge = { openPlayGame() },
                 onStartQuickPlay = {
-                    scope.launch {
-                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
-                            Toast.makeText(
-                                context,
-                                "Online matchmaking requires a registered account.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            navController.navigateOnce(AppRoutes.LOGIN)
-                            return@launch
-                        }
-                        navController.navigateOnce(
-                            AppRoutes.matchmaking(10, 0)
-                        )
+                    requireAuth("Online matchmaking") {
+                        navController.navigateOnce(AppRoutes.matchmaking(10, 0))
                     }
                 },
                 onOpenActiveGame = { gameId ->
@@ -836,7 +842,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.navigateOnce(AppRoutes.BOT_SETUP)
                 },
                 onOpenProfile = {
-                    navController.navigateOnce(AppRoutes.PROFILE)
+                    navController.navigateOnce(AppRoutes.profile())
                 },
                 onStreakClick = {
                     navController.navigateOnce(AppRoutes.DAILY_PUZZLE)
@@ -898,43 +904,15 @@ fun AppNavigation(authRepository: AuthRepository) {
 
 
                 onPlayWithFriend = {
-                    scope.launch {
-                        if (
-                            authRepository.isGuest() ||
-                            !authRepository.isLoggedIn()
-                        ) {
-                            Toast.makeText(
-                                context,
-                                "Friends require a registered account. Please sign in.",
-                                Toast.LENGTH_LONG
-                            ).show()
-
-                            navController.navigateOnce(AppRoutes.LOGIN)
-                            return@launch
-                        }
-
+                    requireAuth("Friends") {
                         friendsBackRoute = AppRoutes.GAME_SETUP
-
-                        navController.navigateOnce(
-                            AppRoutes.PLAY_WITH_FRIEND_HOME
-                        ) {
+                        navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND_HOME) {
                             launchSingleTop = true
                         }
                     }
                 },
-
-
                 onTournaments = {
-                    scope.launch {
-                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
-                            Toast.makeText(
-                                context,
-                                "Tournaments require a registered account.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            navController.navigateOnce(AppRoutes.LOGIN)
-                            return@launch
-                        }
+                    requireAuth("Tournaments") {
                         navController.navigateOnce(AppRoutes.TOURNAMENTS)
                     }
                 },
@@ -1183,7 +1161,13 @@ fun AppNavigation(authRepository: AuthRepository) {
             GameHistoryScreen(
                 viewModel = historyViewModel,
                 onBack = {
-                    navController.safeBack(AppRoutes.ALL_GAME_HISTORY)
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        scope.launch {
+                            navController.safeBack(homeRoute(authRepository))
+                        }
+                    }
                 }
             )
         }
@@ -1326,8 +1310,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 )
                             }
                         }
+                    },
+                    onViewProfile = { username ->
+                        navController.navigateOnce(AppRoutes.profile(username))
                     }
-
                 )
             }
 
@@ -1531,22 +1517,36 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-        composable(route = AppRoutes.PROFILE) {
-            val profileViewModel = screenViewModel {
+        composable(
+            route = AppRoutes.PROFILE,
+            arguments = listOf(
+                navArgument("username") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val usernameArg = backStackEntry.arguments?.getString("username")
+            val profileViewModel = screenViewModel(key = usernameArg ?: "me") {
                 ProfileViewModel(
                     repository = ProfileRepository(
                         authRepository.createProfileService()
                     ),
                     ratingRepository = RatingRepository(
                         authRepository.createRatingService()
-                    )
+                    ),
+                    remoteGameRepository = RemoteGameRepository(
+                        authRepository.createGamesService()
+                    ),
+                    initialUsername = usernameArg
                 )
             }
 
             val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
             val profileEntry = currentBackStackEntry
-                ?.takeIf { it.destination.route == AppRoutes.PROFILE }
+                ?.takeIf { it.destination.route?.startsWith("profile") == true }
 
             val refreshRequested by (
                     profileEntry?.savedStateHandle
@@ -1568,15 +1568,42 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = profileViewModel,
                 isGuest = isGuestUser,
                 onBack = {
-                    navController.safeBack(AppRoutes.MENU)
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        scope.launch {
+                            navController.safeBack(homeRoute(authRepository))
+                        }
+                    }
                 },
                 onEditProfile = {
                     navController.navigate(AppRoutes.EDIT_PROFILE){
                         launchSingleTop = true
                     }
                 },
-                onStatsClick = { mode ->
-                    navController.navigateOnce(AppRoutes.stats(mode = mode.ratingKey))
+                onStatsClick = { mode, username ->
+                    navController.navigateOnce(AppRoutes.stats(username = username, mode = mode.ratingKey))
+                },
+                onReviewGame = { gameId ->
+                    navController.navigateOnce(AppRoutes.gameHistory(gameId))
+                },
+                onDirectMessage = { userId, username ->
+                    scope.launch {
+                        val isGuest = authRepository.isGuest()
+                        val isLoggedIn = authRepository.isLoggedIn()
+
+                        if (isGuest || !isLoggedIn) {
+                            Toast.makeText(
+                                context,
+                                "Direct messages require a registered account.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            navController.navigate(
+                                "direct_message/$userId/${Uri.encode(username)}"
+                            )
+                        }
+                    }
                 }
             )
         }
@@ -1598,13 +1625,13 @@ fun AppNavigation(authRepository: AuthRepository) {
             EditProfileScreen(
                 viewModel = editProfileViewModel,
                 onBack = {
-                    navController.safeBack(AppRoutes.PROFILE)
+                    navController.safeBack(AppRoutes.profile())
                 },
                 onSaved = {
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set("profile_refresh_requested", true)
-                    navController.safeBack(AppRoutes.PROFILE)
+                    navController.safeBack(AppRoutes.profile())
                 }
             )
         }
@@ -1621,29 +1648,13 @@ fun AppNavigation(authRepository: AuthRepository) {
                 viewModel = nearbyViewModel,
                 onBack = { navController.safeBack(AppRoutes.HOME) },
                 onChallenge = { player ->
-                    scope.launch {
-                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
-                            Toast.makeText(
-                                context,
-                                "Challenging players requires a registered account.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            inviteBackRoute = AppRoutes.NEARBY
-                            navController.navigate(AppRoutes.CREATE_INVITE)
-                        }
+                    requireAuth("Challenging players") {
+                        inviteBackRoute = AppRoutes.NEARBY
+                        navController.navigate(AppRoutes.CREATE_INVITE)
                     }
                 },
                 onAddFriend = { player ->
-                    scope.launch {
-                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
-                            Toast.makeText(
-                                context,
-                                "Adding friends requires a registered account.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@launch
-                        }
+                    requireAuth("Adding friends") {
                         val friendsRepo = FriendsRepository(context)
                         friendsRepo.sendFriendRequest(player.username)
                             .onSuccess {
@@ -1663,18 +1674,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 },
                 onChat = { player ->
-                    scope.launch {
-                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
-                            Toast.makeText(
-                                context,
-                                "Direct messages require a registered account.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            navController.navigate(
-                                "direct_message/${player.userId}/${Uri.encode(player.username)}"
-                            )
-                        }
+                    requireAuth("Direct messages") {
+                        navController.navigate(
+                            "direct_message/${player.userId}/${Uri.encode(player.username)}"
+                        )
                     }
                 }
             )
@@ -1822,55 +1825,14 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable(route = AppRoutes.MENU) {
-            val tokenManager = remember {
-                TokenManager.get(context)
-            }
+            val tokenManager = remember { TokenManager.get(context) }
+            val profile by rememberCurrentUserProfile(tokenManager, isGuestUser, refreshKey = currentRoute)
 
-            val accessToken by tokenManager.accessTokenFlow
-                .collectAsState(initial = null)
-
-            var profileName by remember {
-                mutableStateOf<String?>(null)
-            }
-
-            var username by remember {
-                mutableStateOf<String?>(null)
-            }
-
-            var avatarUrl by remember {
-                mutableStateOf<String?>(null)
-            }
-
-            LaunchedEffect(accessToken, currentRoute) {
-                if (currentRoute != AppRoutes.MENU) {
-                    return@LaunchedEffect
-                }
-
-                if (accessToken.isNullOrBlank()) {
-                    profileName = null
-                    username = null
-                    avatarUrl = null
-                    return@LaunchedEffect
-                }
-
-                runCatching {
-                    val profileRepository = ProfileRepository(
-                        service = RetrofitInstance.createProfileService(
-                            tokenManager
-                        )
-                    )
-
-                    profileRepository.getMyProfile()
-                }.onSuccess { profile ->
-                    username = profile.username
-                    profileName = profile.displayName
-                    avatarUrl = profile.avatarUrl
-                }
-            }
             MenuScreen(
-                profileName = profileName,
-                username = username,
-                avatarUrl = avatarUrl,
+                profileName = profile?.displayName,
+                username = profile?.username,
+                avatarUrl = profile?.avatarUrl,
+                isGuest = isGuestUser,
                 onBack = {
                     scope.launch {
                         navController.safeBack(homeRoute(authRepository))
@@ -1880,7 +1842,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.navigateOnce(AppRoutes.SETTINGS_DETAIL)
                 },
                 onProfileClick = {
-                    navController.navigateOnce(AppRoutes.PROFILE)
+                    navController.navigateOnce(AppRoutes.profile())
                 },
                 onStatsClick = {
                     navController.navigateOnce(AppRoutes.stats())
@@ -1891,52 +1853,21 @@ fun AppNavigation(authRepository: AuthRepository) {
                 onThemeClick = {
                     navController.navigateOnce(AppRoutes.THEME)
                 },
-
                 onFriendsClick = {
-                    scope.launch {
-                        if (
-                            authRepository.isGuest() ||
-                            !authRepository.isLoggedIn()
-                        ) {
-                            Toast.makeText(
-                                context,
-                                "Friends require a registered account. Please sign in.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-
-                            navController.navigateOnce(AppRoutes.LOGIN)
-                        } else {
-                            friendsBackRoute = AppRoutes.MENU
-
-                            navController.navigateOnce(
-                                AppRoutes.PLAY_WITH_FRIEND
-                            ) {
-                                launchSingleTop = true
-                            }
+                    requireAuth("Friends") {
+                        friendsBackRoute = AppRoutes.MENU
+                        navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND) {
+                            launchSingleTop = true
                         }
                     }
                 },
                 onDirectMessagesClick = {
-                    scope.launch {
-                        val isGuest = authRepository.isGuest()
-                        val isLoggedIn = authRepository.isLoggedIn()
-
-                        if (isGuest || !isLoggedIn) {
-                            Toast.makeText(
-                                context,
-                                "Direct Messages require a registered account.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            navController.navigateOnce(
-                                AppRoutes.DIRECT_MESSAGES_LIST
-                            ) {
-                                launchSingleTop = true
-                            }
+                    requireAuth("Direct Messages") {
+                        navController.navigateOnce(AppRoutes.DIRECT_MESSAGES_LIST) {
+                            launchSingleTop = true
                         }
                     }
                 },
-
                 onClubsClick = {
                     navController.navigateOnce(AppRoutes.CLUBS)
                 },
@@ -1944,21 +1875,17 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.navigateOnce(AppRoutes.LEADERBOARD)
                 },
                 onWatchClick = {
-                    scope.launch {
-                        if (authRepository.isGuest() || !authRepository.isLoggedIn()) {
-                            Toast.makeText(
-                                context,
-                                "Spectating requires a registered account. Please sign in.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.navigateOnce(AppRoutes.LOGIN)
-                        } else {
-                            navController.navigateOnce(AppRoutes.WATCH)
-                        }
+                    requireAuth("Spectating") {
+                        navController.navigateOnce(AppRoutes.WATCH)
                     }
                 },
                 onDeleteAccountClick = {
                     navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)
+                },
+                onPrivacyClick = {
+                    requireAuth("Privacy settings") {
+                        navController.navigateOnce(AppRoutes.PRIVACY_SETTINGS)
+                    }
                 },
                 onLogoutClick = {
                     scope.launch {
@@ -2011,12 +1938,19 @@ fun AppNavigation(authRepository: AuthRepository) {
                 StatsScreen(
                     viewModel = statsViewModel,
                     onBack = {
-                        navController.safeBack(AppRoutes.MENU)
+                        if (navController.previousBackStackEntry != null) {
+                            navController.popBackStack()
+                        } else {
+                            navController.safeBack(AppRoutes.MENU)
+                        }
                     },
                     onGameClick = { gameId ->
                         navController.navigateOnce(
                             AppRoutes.gameHistory(gameId)
                         )
+                    },
+                    onOpponentClick = { username ->
+                        navController.navigateOnce(AppRoutes.profile(username))
                     },
                     onSignIn = {
                         navController.navigateOnce(AppRoutes.LOGIN)
@@ -2160,7 +2094,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                     onBack = {
                         navController.safeBack(AppRoutes.MENU)
                     },
-                    viewModel = leaderboardViewModel
+                    viewModel = leaderboardViewModel,
+                    onPlayerClick = { username ->
+                        navController.navigateOnce(AppRoutes.profile(username))
+                    }
                 )
             }
 
@@ -2175,7 +2112,30 @@ fun AppNavigation(authRepository: AuthRepository) {
                 SettingsDetailScreen(
                     onBack = {
                         navController.safeBack(AppRoutes.MENU)
+                    },
+                    onPrivacyClick = {
+                        requireAuth("Privacy settings") {
+                            navController.navigateOnce(AppRoutes.PRIVACY_SETTINGS)
+                        }
                     }
+                )
+            }
+
+            composable(route = AppRoutes.PRIVACY_SETTINGS) {
+                androidx.activity.compose.BackHandler {
+                    navController.safePop()
+                }
+
+                val tokenManager = remember { TokenManager.get(context) }
+                val privacyService = remember { RetrofitInstance.createPrivacyService(tokenManager) }
+                val privacyRepository = remember { PrivacyRepository(privacyService) }
+                val privacyViewModel: PrivacySettingsViewModel = screenViewModel {
+                    PrivacySettingsViewModel(privacyRepository)
+                }
+
+                PrivacySettingsScreen(
+                    viewModel = privacyViewModel,
+                    onBack = { navController.safePop() }
                 )
             }
 

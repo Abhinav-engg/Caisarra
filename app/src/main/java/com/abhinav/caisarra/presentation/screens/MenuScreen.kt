@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PersonOutline
@@ -50,13 +52,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.caisaara.ui.theme.BotLockedName
 import com.caisaara.ui.theme.GoldColor
@@ -75,7 +77,6 @@ import com.caisaara.ui.theme.ThemeNeonDeep
 import com.caisaara.ui.theme.ThemeSlateAccent
 
 private val MenuSurface = Color(0xFF101923)
-private val MenuSurfaceDeep = Color(0xFF0A0F15)
 private val MenuOutline = Color(0xFF20313E)
 private val MenuMuted = Color(0xFF8D9BAC)
 private val MenuCyan = Color(0xFF00D5E8)
@@ -92,15 +93,20 @@ fun MenuScreen(
     onClubsClick: () -> Unit = {},
     onLeaderboardClick: () -> Unit = {},
     onDeleteAccountClick: () -> Unit = {},
+    onPrivacyClick: () -> Unit = {},
     onDirectMessagesClick: () -> Unit = {},
     onWatchClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
-    profileName: String?,
-    username: String?,
+    profileName: String? = null,
+    username: String? = null,
     avatarUrl: String? = null,
     blitzRating: Int? = null,
-    activeThemeName: String = "Midnight Cyan"
+    activeThemeName: String = "Midnight Cyan",
+    isGuest: Boolean = false,
+    hasUnreadMessages: Boolean = false
 ) {
+    BackHandler { onBack() }
+
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     if (showLogoutDialog) {
@@ -169,10 +175,17 @@ fun MenuScreen(
                             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(15.dp))
                         )
                     } else {
+                        val initials = (profileName ?: username ?: if (isGuest) "GP" else "MP")
+                            .trim()
+                            .split(Regex("\\s+"))
+                            .take(2)
+                            .mapNotNull { it.firstOrNull()?.toString() }
+                            .joinToString("")
+                            .ifBlank { if (isGuest) "GP" else "MP" }
+                            .uppercase()
+
                         Text(
-                            text = profileName.orEmpty().trim().split(Regex("\\s+")).take(2)
-                                .mapNotNull { it.firstOrNull()?.toString() }
-                                .joinToString("").ifBlank { "MP" }.uppercase(),
+                            text = initials,
                             fontFamily = JetBrainsMono,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
@@ -182,13 +195,19 @@ fun MenuScreen(
                 }
                 Spacer(Modifier.width(13.dp))
                 Column(modifier = Modifier.weight(1f)) {
+                    val displayName = profileName
+                        ?.takeIf { it.isNotBlank() }
+                        ?: username?.removePrefix("@")?.takeIf { it.isNotBlank() }
+                        ?: if (isGuest) "Guest Player" else "Mosaic Player"
+
+                    val displayUsername = if (isGuest) {
+                        "Guest"
+                    } else {
+                        username?.takeIf { it.isNotBlank() }?.let { if (it.startsWith("@")) it else "@$it" } ?: ""
+                    }
+
                     Text(
-                        text = profileName
-                            ?.takeIf { it.isNotBlank() }
-                            ?: username
-                             ?.removePrefix("@")
-                                ?.takeIf { it.isNotBlank() }
-                            ?: "Mosaic Player",
+                        text = displayName,
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
@@ -196,18 +215,17 @@ fun MenuScreen(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        text = username
-                            ?.takeIf { it.isNotBlank() }
-                            ?.let { if (it.startsWith("@")) it else "@$it" }
-                            ?: "@username",
-                        fontFamily = JetBrainsMono,
-                        fontSize = 12.sp,
-                        color = MenuMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    if (displayUsername.isNotBlank()) {
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            text = displayUsername,
+                            fontFamily = JetBrainsMono,
+                            fontSize = 12.sp,
+                            color = MenuMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 Spacer(Modifier.width(8.dp))
                 IconButton(
@@ -231,7 +249,7 @@ fun MenuScreen(
                 ItemDivider()
                 MenuItem(Icons.Default.History, StatsCyan, ThemeNeonDeep, "Game History", onClick = onGameHistoryClick)
                 ItemDivider()
-                MenuItem(Icons.Default.AutoGraph, StatsCyan, ThemeNeonDeep, "Stats", onClick = onStatsClick)
+                MenuItem(Icons.Default.AutoGraph, StatsCyan, MenuStatsIconBg, "Stats", onClick = onStatsClick)
                 ItemDivider()
                 MenuItem(
                     icon = Icons.Default.Palette,
@@ -242,14 +260,14 @@ fun MenuScreen(
                     onClick = onThemeClick
                 )
                 ItemDivider()
-                MenuItem(Icons.Default.People, StatsCyan, ThemeNeonDeep, "Friends", onClick = onFriendsClick)
+                MenuItem(Icons.Default.People, MenuFriendsGreen, MenuFriendsIconBg, "Friends", onClick = onFriendsClick)
                 ItemDivider()
                 MenuItem(
                     icon = Icons.Default.ChatBubbleOutline,
                     iconTint = MenuCyan,
                     iconBg = ThemeNeonDeep,
                     title = "Messages",
-                    hasUnreadDot = true,
+                    hasUnreadDot = hasUnreadMessages,
                     onClick = onDirectMessagesClick
                 )
             }
@@ -260,7 +278,7 @@ fun MenuScreen(
             MenuCard {
                 MenuItem(Icons.Default.Shield, MenuCyan, ThemeNeonDeep, "Clubs", onClick = onClubsClick)
                 ItemDivider()
-                MenuItem(Icons.Default.EmojiEvents, MenuCyan, ThemeNeonDeep, "Leaderboard", onClick = onLeaderboardClick)
+                MenuItem(Icons.Default.EmojiEvents, GoldColor, MenuThemeIconBg, "Leaderboard", onClick = onLeaderboardClick)
                 ItemDivider()
                 MenuItem(Icons.Default.Visibility, StatsCyan, ThemeNeonDeep, "Watch", onClick = onWatchClick)
             }
@@ -269,6 +287,14 @@ fun MenuScreen(
             SectionHeader(title = "Account")
             Spacer(Modifier.height(8.dp))
             MenuCard {
+                MenuItem(
+                    icon = Icons.Default.Lock,
+                    iconTint = StatsCyan,
+                    iconBg = ThemeNeonDeep,
+                    title = "Privacy Settings",
+                    onClick = onPrivacyClick
+                )
+                ItemDivider()
                 MenuItem(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     iconTint = ThemeSlateAccent,

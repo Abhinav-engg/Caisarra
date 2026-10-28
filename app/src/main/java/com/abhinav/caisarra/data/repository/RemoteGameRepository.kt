@@ -2,6 +2,7 @@ package com.abhinav.caisarra.data.repository
 
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.data.local.entity.RecordStatus
+import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.api.GamesService
 import com.abhinav.caisarra.data.remote.dto.ActiveGameDto
 import com.abhinav.caisarra.data.remote.dto.GameHistoryDto
@@ -9,6 +10,9 @@ import com.abhinav.caisarra.data.remote.dto.GameMoveDto
 import com.abhinav.caisarra.data.remote.dto.WatchInviteResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import java.time.Instant
 
 class RemoteGameRepository(
@@ -46,6 +50,47 @@ class RemoteGameRepository(
 
     suspend fun getRawGameHistory(): List<GameHistoryDto> {
         return gamesService.getGameHistory()
+    }
+
+    suspend fun getPlayerGames(
+        username: String,
+        mode: String? = null,
+        limit: Int? = null
+    ): List<GameEntity> = withContext(Dispatchers.IO) {
+        val dtos = runCatching {
+            val responseBody = gamesService.getPlayerGames(
+                username = username.trim(),
+                mode = mode?.trim()?.ifEmpty { null },
+                limit = limit
+            )
+            val bodyString = responseBody.string()
+            val element = RetrofitInstance.json.parseToJsonElement(bodyString)
+            when (element) {
+                is JsonArray -> {
+                    RetrofitInstance.json.decodeFromJsonElement<List<GameHistoryDto>>(element)
+                }
+                is JsonObject -> {
+                    val dataElement = element["data"]
+                    when {
+                        dataElement is JsonArray -> {
+                            RetrofitInstance.json.decodeFromJsonElement<List<GameHistoryDto>>(dataElement)
+                        }
+                        dataElement is JsonObject && dataElement["games"] is JsonArray -> {
+                            RetrofitInstance.json.decodeFromJsonElement<List<GameHistoryDto>>(dataElement["games"]!!)
+                        }
+                        element["games"] is JsonArray -> {
+                            RetrofitInstance.json.decodeFromJsonElement<List<GameHistoryDto>>(element["games"]!!)
+                        }
+                        else -> emptyList()
+                    }
+                }
+                else -> emptyList()
+            }
+        }.getOrElse {
+            emptyList()
+        }
+
+        dtos.map { it.toGameEntity(username) }
     }
 
     fun GameHistoryDto.toGameEntity(

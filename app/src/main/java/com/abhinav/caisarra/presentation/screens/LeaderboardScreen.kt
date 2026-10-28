@@ -39,7 +39,8 @@ private val BoardCyan = Color(0xFF54D6E8)
 @Composable
 fun LeaderboardScreen(
     onBack: () -> Unit,
-    viewModel: LeaderboardViewModel
+    viewModel: LeaderboardViewModel,
+    onPlayerClick: (String) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -288,7 +289,8 @@ fun LeaderboardScreen(
                                     rank = entry.rank,
                                     username = entry.username,
                                     score = entry.rating,
-                                    label = "RATING"
+                                    label = "RATING",
+                                    onClick = { onPlayerClick(entry.username) }
                                 )
                             }
 
@@ -332,7 +334,8 @@ fun LeaderboardScreen(
                                     rank = entry.rank,
                                     username = entry.username,
                                     score = entry.rating,
-                                    label = state.clubMode.uppercase()
+                                    label = state.clubMode.uppercase(),
+                                    onClick = { onPlayerClick(entry.username) }
                                 )
                             }
                         }
@@ -358,7 +361,8 @@ fun LeaderboardScreen(
                                     rank = index + 1,
                                     username = entry.username,
                                     score = entry.score,
-                                    label = "SCORE"
+                                    label = "SCORE",
+                                    onClick = { onPlayerClick(entry.username) }
                                 )
                             }
                         }
@@ -393,7 +397,8 @@ private fun RankingRow(
     rank: Int,
     username: String,
     score: Int,
-    label: String
+    label: String,
+    onClick: (() -> Unit)? = null
 ) {
     val rankColor = when (rank) {
         1 -> Color(0xFFFFD166)
@@ -408,6 +413,7 @@ private fun RankingRow(
             .clip(RoundedCornerShape(12.dp))
             .background(BoardCard)
             .border(1.dp, BoardBorder, RoundedCornerShape(12.dp))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

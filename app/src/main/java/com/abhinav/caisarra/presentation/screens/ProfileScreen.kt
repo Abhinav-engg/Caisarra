@@ -60,10 +60,13 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import com.abhinav.caisarra.presentation.components.CountryUtils
+import com.abhinav.caisarra.presentation.game.components.GameHistorySection
+
 
 
 private val ProfileBackground = Color(0xFF080D13)
@@ -82,7 +85,9 @@ fun ProfileScreen(
     isGuest: Boolean,
     onBack: () -> Unit,
     onEditProfile: () -> Unit,
-    onStatsClick: (GameMode) -> Unit = {}
+    onStatsClick: (GameMode, String?) -> Unit = { _, _ -> },
+    onReviewGame: (String) -> Unit = {},
+    onDirectMessage: ((Long, String) -> Unit)? = null
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -178,14 +183,65 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(3.dp))
 
                 Text(
-                    text = "Your chess identity",
+                    text = if (state.isOwnProfile) "Your chess identity" else state.profile?.let { "@${it.username}" } ?: "Player overview",
                     color = ProfileMuted,
                     fontSize = 12.sp
                 )
             }
 
-            var settingsExpanded by remember { mutableStateOf(false) }
-            Box {
+            if (state.isOwnProfile) {
+                var settingsExpanded by remember { mutableStateOf(false) }
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(ProfileCard)
+                            .border(1.dp, ProfileBorder, RoundedCornerShape(14.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        IconButton(
+                            onClick = { settingsExpanded = true },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Profile settings",
+                                tint = ProfileWhite,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = settingsExpanded,
+                        onDismissRequest = { settingsExpanded = false },
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(ProfileCard)
+                            .border(1.dp, ProfileBorder, RoundedCornerShape(18.dp)),
+                        containerColor = ProfileCard,
+                        shape = RoundedCornerShape(18.dp),
+                        shadowElevation = 10.dp,
+                        tonalElevation = 0.dp
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "Edit Profile",
+                                    color = ProfileWhite,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            },
+                            onClick = {
+                                settingsExpanded = false
+                                onEditProfile()
+                            },
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+                }
+            } else if (onDirectMessage != null && state.profile?.userId != null) {
                 Box(
                     modifier = Modifier
                         .size(46.dp)
@@ -195,44 +251,22 @@ fun ProfileScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(
-                        onClick = { settingsExpanded = true },
+                        onClick = {
+                            val uid = state.profile?.userId
+                            val uname = state.profile?.username
+                            if (uid != null && !uname.isNullOrBlank()) {
+                                onDirectMessage(uid, uname)
+                            }
+                        },
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Profile settings",
-                            tint = ProfileWhite,
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                            contentDescription = "Message player",
+                            tint = ProfileCyan,
                             modifier = Modifier.size(22.dp)
                         )
                     }
-                }
-
-                DropdownMenu(
-                    expanded = settingsExpanded,
-                    onDismissRequest = { settingsExpanded = false },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(ProfileCard)
-                        .border(1.dp, ProfileBorder, RoundedCornerShape(18.dp)),
-                    containerColor = ProfileCard,
-                    shape = RoundedCornerShape(18.dp),
-                    shadowElevation = 10.dp,
-                    tonalElevation = 0.dp
-                ) {
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = "Edit Profile",
-                                color = ProfileWhite,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        },
-                        onClick = {
-                            settingsExpanded = false
-                            onEditProfile()
-                        },
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
                 }
             }
         }
@@ -385,7 +419,7 @@ fun ProfileScreen(
                         .background(ProfileBorder)
                 )
 
-                if (profile.email.isNotBlank()) {
+                if (state.isOwnProfile && profile.email.isNotBlank()) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
@@ -440,7 +474,7 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        SectionLabel("YOUR CURRENT STRENGTH")
+                        SectionLabel(if (state.isOwnProfile) "YOUR CURRENT STRENGTH" else "PLAYER STRENGTH")
                         Spacer(Modifier.height(7.dp))
                         Text(
                             text = profile.rating?.toString() ?: "—",
@@ -485,9 +519,17 @@ fun ProfileScreen(
 
                 Text(
                     text = if (profile.provisional) {
-                        "Your rating is still being established through games. Play rated matches to unlock your competitive tier."
+                        if (state.isOwnProfile) {
+                            "Your rating is still being established through games. Play rated matches to unlock your competitive tier."
+                        } else {
+                            "This player's rating is still being established through games."
+                        }
                     } else {
-                        "Your rating reflects your current playing strength. Keep playing rated games to improve."
+                        if (state.isOwnProfile) {
+                            "Your rating reflects your current playing strength. Keep playing rated games to improve."
+                        } else {
+                            "This rating reflects the player's current playing strength."
+                        }
                     },
                     color = ProfileMuted,
                     fontSize = 13.sp,
@@ -540,7 +582,7 @@ fun ProfileScreen(
             ) {
                 SectionHeading(
                     title = "RATING BREAKDOWN",
-                    subtitle = "Your strength across game modes"
+                    subtitle = if (state.isOwnProfile) "Your strength across game modes" else "Strength across game modes"
                 )
 
                 val modes = GameMode.entries
@@ -565,7 +607,7 @@ fun ProfileScreen(
                                 rating = rating?.rating,
                                 provisional = rating?.provisional ?: false,
                                 modifier = Modifier.weight(1f),
-                                onClick = { onStatsClick(mode) }
+                                onClick = { onStatsClick(mode, profile.username) }
                             )
                         }
 
@@ -579,7 +621,7 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 SectionHeading(
-                    title = "ABOUT YOU",
+                    title = if (state.isOwnProfile) "ABOUT YOU" else "ABOUT PLAYER",
                     subtitle = "A little about the player"
                 )
 
@@ -593,7 +635,7 @@ fun ProfileScreen(
                             ProfileBorder,
                             RoundedCornerShape(22.dp)
                         )
-                        .clickable(enabled = !isGuest) { onEditProfile() }
+                        .clickable(enabled = state.isOwnProfile && !isGuest) { onEditProfile() }
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -603,7 +645,7 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         SectionLabel("PLAYER BIO")
-                        if (!isGuest) {
+                        if (state.isOwnProfile && !isGuest) {
                             Text(
                                 text = if (profile.bio.isNullOrBlank()) "+ Add bio" else "Edit bio",
                                 color = ProfileCyan,
@@ -616,7 +658,7 @@ fun ProfileScreen(
                     Text(
                         text = profile.bio
                             ?.takeIf { it.isNotBlank() }
-                            ?: "No bio added yet.",
+                            ?: if (state.isOwnProfile) "No bio added yet." else "This player hasn't added a bio yet.",
                         color = if (profile.bio.isNullOrBlank()) {
                             ProfileMuted
                         } else {
@@ -626,6 +668,15 @@ fun ProfileScreen(
                         lineHeight = 22.sp
                     )
                 }
+            }
+
+            if (state.recentGames.isNotEmpty() || state.loadingGames) {
+                GameHistorySection(
+                    games = state.recentGames,
+                    onReviewGame = onReviewGame,
+                    isLoading = state.loadingGames,
+                    showViewAll = false
+                )
             }
 
             Spacer(Modifier.height(12.dp))

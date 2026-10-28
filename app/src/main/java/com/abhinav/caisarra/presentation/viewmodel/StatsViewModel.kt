@@ -43,7 +43,7 @@ class StatsViewModel(
     private val authRepository: AuthRepository,
     private val ratingRepository: RatingRepository,
     private val profileRepository: ProfileRepository,
-    initialUsername: String? = null,
+    private val initialUsername: String? = null,
     private val initialMode: String? = null
 ) : ViewModel() {
 
@@ -79,7 +79,11 @@ class StatsViewModel(
             if (candidateUsername != null) {
                 if (initialMode == null) {
                     try {
-                        val profile = cachedProfile ?: profileRepository.getMyProfile()
+                        val profile = cachedProfile ?: runCatching {
+                            profileRepository.getPublicProfile(candidateUsername)
+                        }.getOrNull() ?: runCatching {
+                            profileRepository.getMyProfile()
+                        }.getOrNull()
                         cachedProfile = profile
                         val bestMode = pickBestInitialMode(profile)
                         _state.value = _state.value.copy(selectedMode = bestMode)
@@ -216,7 +220,7 @@ class StatsViewModel(
                 )
             } catch (e: Exception) {
                 val is404 = e.message?.contains("404") == true || e.message?.contains("not found", ignoreCase = true) == true
-                if (is404) {
+                if (is404 && initialUsername.isNullOrBlank()) {
                     try {
                         val profile = profileRepository.getMyProfile()
                         cachedProfile = profile
