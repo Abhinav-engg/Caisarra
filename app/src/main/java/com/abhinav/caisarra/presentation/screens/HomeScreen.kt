@@ -109,19 +109,19 @@ fun HomeScreen(
 ) {
 
     val state by viewModel.state.collectAsState()
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refresh()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
+//    val lifecycleOwner = LocalLifecycleOwner.current
+//
+//    DisposableEffect(lifecycleOwner) {
+//        val observer = LifecycleEventObserver { _, event ->
+//            if (event == Lifecycle.Event.ON_RESUME) {
+//                viewModel.refresh()
+//            }
+//        }
+//        lifecycleOwner.lifecycle.addObserver(observer)
+//        onDispose {
+//            lifecycleOwner.lifecycle.removeObserver(observer)
+//        }
+//    }
 
     Box(
         modifier = Modifier
