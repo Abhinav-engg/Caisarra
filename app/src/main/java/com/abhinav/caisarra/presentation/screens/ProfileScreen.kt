@@ -63,7 +63,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-
+import com.abhinav.caisarra.presentation.components.CountryUtils
 
 
 private val ProfileBackground = Color(0xFF080D13)
@@ -402,10 +402,14 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    InfoChip(label = "COUNTRY",
-                        value = profile.country
-                            ?.takeIf { it.isNotBlank() }
-                            ?: "Not set",
+                    InfoChip(
+                        label = "COUNTRY",
+                        value = if (CountryUtils.find(profile.country) != null) {
+                            "${CountryUtils.flag(profile.country)} " +
+                                    CountryUtils.countryName(profile.country)
+                        } else {
+                            "Not set"
+                        },
                         modifier = Modifier.weight(1f)
                     )
 

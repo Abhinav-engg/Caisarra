@@ -78,5 +78,23 @@ class ProfileRepository(
         }
         return response.data ?: error("Updated profile response was empty")
     }
+    suspend fun getPublicProfile(username: String): ProfileData {
+        require(username.isNotBlank()) {
+            "Username cannot be empty."
+        }
+
+        val response = service.getPublicProfile(username.trim())
+
+        if (!response.success) {
+            error(
+                response.error
+                    ?: response.message
+                    ?: "Could not load player profile"
+            )
+        }
+
+        return response.data
+            ?: error("Player profile response was empty")
+    }
 }
 

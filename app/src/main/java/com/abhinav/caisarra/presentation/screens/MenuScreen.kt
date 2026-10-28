@@ -231,7 +231,7 @@ fun MenuScreen(
                 ItemDivider()
                 MenuItem(Icons.Default.History, StatsCyan, ThemeNeonDeep, "Game History", onClick = onGameHistoryClick)
                 ItemDivider()
-                MenuItem(Icons.Default.AutoGraph, StatsCyan, MenuStatsIconBg, "Stats", onClick = onStatsClick)
+                MenuItem(Icons.Default.AutoGraph, StatsCyan, ThemeNeonDeep, "Stats", onClick = onStatsClick)
                 ItemDivider()
                 MenuItem(
                     icon = Icons.Default.Palette,
@@ -242,7 +242,7 @@ fun MenuScreen(
                     onClick = onThemeClick
                 )
                 ItemDivider()
-                MenuItem(Icons.Default.People, MenuFriendsGreen, MenuFriendsIconBg, "Friends", onClick = onFriendsClick)
+                MenuItem(Icons.Default.People, StatsCyan, ThemeNeonDeep, "Friends", onClick = onFriendsClick)
                 ItemDivider()
                 MenuItem(
                     icon = Icons.Default.ChatBubbleOutline,
@@ -260,7 +260,7 @@ fun MenuScreen(
             MenuCard {
                 MenuItem(Icons.Default.Shield, MenuCyan, ThemeNeonDeep, "Clubs", onClick = onClubsClick)
                 ItemDivider()
-                MenuItem(Icons.Default.EmojiEvents, GoldColor, MenuThemeIconBg, "Leaderboard", onClick = onLeaderboardClick)
+                MenuItem(Icons.Default.EmojiEvents, MenuCyan, ThemeNeonDeep, "Leaderboard", onClick = onLeaderboardClick)
                 ItemDivider()
                 MenuItem(Icons.Default.Visibility, StatsCyan, ThemeNeonDeep, "Watch", onClick = onWatchClick)
             }
