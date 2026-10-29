@@ -3,4 +3,12 @@
     <style name="Theme.Caisarra" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#071017</item>
     </style>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#090F11</item>
+        <item name="android:windowSplashScreenBackground">#090F11</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/transparent_icon</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/transparent_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.Caisarra</item>
+    </style>
 </resources>

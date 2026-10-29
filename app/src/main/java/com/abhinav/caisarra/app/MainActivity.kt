@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.app
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.presentation.navigation.AppNavigation
@@ -23,6 +25,10 @@ class MainActivity : ComponentActivity() {
     ) {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
+            splashScreenViewProvider.remove()
+        }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -37,6 +43,11 @@ class MainActivity : ComponentActivity() {
             val repo = remember { authRepository }
             AppNavigation(repo)
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 
     private fun requestNotificationPermission() {
