@@ -19,7 +19,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -44,9 +46,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
 import com.abhinav.caisarra.core.ui.theme.FriendsCardRadius
 import com.abhinav.caisarra.core.ui.theme.FriendsScreenPadding
 import com.abhinav.caisarra.data.repository.ChallengeManager
@@ -85,7 +84,8 @@ fun PlayWithFriendScreen(
     onBack: () -> Unit,
     onDirectMessage: (Long, String) -> Unit,
     onViewProfile: (String) -> Unit = {},
-    onEnterGame: (String) -> Unit = {}
+    onEnterGame: (String) -> Unit = {},
+    onJoinByCode: ((String) -> Unit)? = null
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -97,6 +97,7 @@ fun PlayWithFriendScreen(
     val sentChallenges by challengeManager.sentChallenges.collectAsState()
 
     var challengeTarget by remember { mutableStateOf<ChallengeTarget?>(null) }
+    var showQrScanner by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         challengeManager.refreshChallenges()
@@ -126,17 +127,16 @@ fun PlayWithFriendScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(FriendsBg)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(top = 12.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxSize().background(FriendsBg).padding(top = 12.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = FriendsTextWhite) }
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 Text("FRIENDS", color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 17.sp, letterSpacing = 1.sp)
+            }
+            if (onJoinByCode != null) {
+                IconButton(onClick = { showQrScanner = true }) {
+                    Icon(Icons.Default.QrCodeScanner, "Scan QR to join", tint = FriendsCyan)
+                }
             }
             IconButton(onClick = { viewModel.setShowLeaderboard(true) }) {
                 Icon(Icons.Default.EmojiEvents, "Leaderboard", tint = GoldColor)
@@ -219,6 +219,17 @@ fun PlayWithFriendScreen(
                             item {
                                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Text("MY FRIENDS", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+                                    if (onJoinByCode != null) {
+                                        Text(
+                                            "SCAN QR",
+                                            color = FriendsCyan,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            letterSpacing = 1.sp,
+                                            modifier = Modifier.clickable { showQrScanner = true }
+                                        )
+                                        Spacer(Modifier.width(16.dp))
+                                    }
                                     Text("INVITE LINK", color = FriendsCyan, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp, modifier = Modifier.clickable(onClick = onCreateMatchLink))
                                 }
                             }
@@ -329,6 +340,19 @@ fun PlayWithFriendScreen(
                 item { Spacer(Modifier.height(24.dp)) }
             }
         }
+    }
+
+    if (showQrScanner && onJoinByCode != null) {
+        QrCodeScannerDialog(
+            onDismiss = { showQrScanner = false },
+            onQrScanned = { rawCode ->
+                showQrScanner = false
+                val code = InviteCodeParser.extractCode(rawCode)
+                if (code.isNotBlank()) {
+                    onJoinByCode(code)
+                }
+            }
+        )
     }
 }
 
