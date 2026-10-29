@@ -7,15 +7,10 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clip
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -38,8 +33,19 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,38 +58,37 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
+import com.abhinav.caisarra.presentation.game.components.CapturedPieces
 import com.abhinav.caisarra.presentation.game.components.ChatPanel
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
+import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 import com.abhinav.caisarra.presentation.game.components.ClockBar
 import com.abhinav.caisarra.presentation.game.components.GameBottomBar
 import com.abhinav.caisarra.presentation.game.components.GameDecision
 import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.GameResultDialog
 import com.abhinav.caisarra.presentation.game.components.MoveList
+import com.abhinav.caisarra.presentation.game.components.MoveTicker
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
+import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
+import com.abhinav.caisarra.presentation.game.model.GameIntent
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 import kotlinx.coroutines.launch
-import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
-import com.abhinav.caisarra.presentation.game.components.MoveTicker
-import com.abhinav.caisarra.presentation.game.components.CapturedPieces
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
-import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
-import com.abhinav.caisarra.presentation.game.model.GameIntent
 
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
@@ -121,6 +126,7 @@ fun OnlineGameScreen(
     val scope = rememberCoroutineScope()
     var rematchBusy by remember { mutableStateOf(false) }
     val waiting by viewModel.waitingForOpponent.collectAsState()
+    val rematchDeclined by viewModel.rematchDeclined.collectAsState()
     val chat by viewModel.chat.collectAsState()
     val chatMuted by viewModel.chatMuted.collectAsState()
     val myUserId by viewModel.myUserId.collectAsState()
@@ -171,14 +177,90 @@ fun OnlineGameScreen(
         }
         return
     }
+    if (rematchDeclined != null) {
+        CenteredColumn {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(Color(0xFFEF5350).copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = null,
+                    tint = Color(0xFFEF5350),
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = rematchDeclined.orEmpty(),
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Your opponent declined the rematch challenge.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF9E9E9E),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = onHome,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0x33FFFFFF))
+                ) {
+                    Text("HOME")
+                }
+                Button(
+                    onClick = {
+                        onNewOpponent(state.timeControlMinutes, state.incrementSeconds)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)
+                ) {
+                    Text("NEW OPPONENT", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        return
+    }
+
     if (waiting) {
         CenteredColumn {
             CircularProgressIndicator(color = Accent)
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(text = "Waiting for opponent to join...", color = Color.White)
             Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = onHome) {
-                Text(text = "HOME", color = Accent)
+            Text(
+                text = "Waiting for opponent to join...",
+                style = MaterialTheme.typography.titleSmall,
+                color = Color.White,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        viewModel.cancelWaitingChallenge(onDone = onHome)
+                    },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0x33FFFFFF))
+                ) {
+                    Text("CANCEL")
+                }
+                TextButton(onClick = onHome) {
+                    Text(text = "HOME", color = Accent)
+                }
             }
         }
         return
@@ -268,100 +350,100 @@ fun OnlineGameScreen(
                     }
                 }
             }
-         else {
-        val portraitBoardSize = maxWidth - 24.dp
+            else {
+                val portraitBoardSize = maxWidth - 24.dp
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                OnlineTopBar(
-                    isRated = state.isRated,
-                    unread = unread,
-                    muted = chatMuted,
-                    spectatorCount = state.spectatorCount,
-                    hasWatchLink = !state.watchCode.isNullOrBlank() || !state.watchLink.isNullOrBlank(),
-                    onWatchClick = { showWatchShareDialog = true },
-                    onHome = requestHome,
-                    onFlip = viewModel::flipBoard,
-                    onChat = { showChat = true }
-                )
-
-                if (state.gameResult != null && !showResultDialog) {
-                    GameOverPill(onClick = { showResultDialog = true })
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-                MoveTicker(
-                    moves = state.moves,
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(36.dp)
-                )
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
-                state.errorMessage?.let { message ->
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Banner(
-                        text = message,
-                        background = BannerBg,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        OnlineTopBar(
+                            isRated = state.isRated,
+                            unread = unread,
+                            muted = chatMuted,
+                            spectatorCount = state.spectatorCount,
+                            hasWatchLink = !state.watchCode.isNullOrBlank() || !state.watchLink.isNullOrBlank(),
+                            onWatchClick = { showWatchShareDialog = true },
+                            onHome = requestHome,
+                            onFlip = viewModel::flipBoard,
+                            onChat = { showChat = true }
+                        )
 
-                if (drawOfferSent) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Banner(
-                        text = "Draw offer sent. Waiting for your opponent...",
-                        background = InfoBannerBg,
-                        modifier = Modifier.fillMaxWidth()
+                        if (state.gameResult != null && !showResultDialog) {
+                            GameOverPill(onClick = { showResultDialog = true })
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+                        MoveTicker(
+                            moves = state.moves,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(36.dp)
+                        )
+
+                        state.errorMessage?.let { message ->
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Banner(
+                                text = message,
+                                background = BannerBg,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        if (drawOfferSent) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Banner(
+                                text = "Draw offer sent. Waiting for your opponent...",
+                                background = InfoBannerBg,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                    TopClock(state = state, modifier = Modifier.width(portraitBoardSize))
+
+                    Box(modifier = Modifier.size(portraitBoardSize)) {
+                        OnlineBoard(state, viewModel::onSquareClick, moveAnimationConsumedId = state.moveAnimationConsumedId,onMoveAnimationStarted = viewModel::onMoveAnimationStarted)
+                    }
+
+                    BottomClock(state = state, modifier = Modifier.width(portraitBoardSize))
+                    if (state.isDailyMode) {
+                        state.lastMoveAccepted?.let { accepted ->
+                            Text(
+                                text = if (accepted) {
+                                    "✓ Move accepted"
+                                } else {
+                                    "✕ Move not accepted"
+                                },
+                                color = if (accepted) {
+                                    Color(0xFF10B981)
+                                } else {
+                                    Color(0xFFEF4444)
+                                },
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    OnlineActions(
+                        canUndo = state.canUndo,
+                        canRedo = state.canRedo,
+                        onUndo = viewModel::undo,
+                        onRedo = viewModel::redo,
+                        gameOngoing = gameOngoing,
+                        onOfferDraw = viewModel::offerDraw,
+                        onResign = viewModel::resign
                     )
                 }
             }
-            TopClock(state = state, modifier = Modifier.width(portraitBoardSize))
-
-            Box(modifier = Modifier.size(portraitBoardSize)) {
-                OnlineBoard(state, viewModel::onSquareClick, moveAnimationConsumedId = state.moveAnimationConsumedId,onMoveAnimationStarted = viewModel::onMoveAnimationStarted)
-            }
-
-            BottomClock(state = state, modifier = Modifier.width(portraitBoardSize))
-            if (state.isDailyMode) {
-                state.lastMoveAccepted?.let { accepted ->
-                    Text(
-                        text = if (accepted) {
-                            "✓ Move accepted"
-                        } else {
-                            "✕ Move not accepted"
-                        },
-                        color = if (accepted) {
-                            Color(0xFF10B981)
-                        } else {
-                            Color(0xFFEF4444)
-                        },
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            OnlineActions(
-                canUndo = state.canUndo,
-                canRedo = state.canRedo,
-                onUndo = viewModel::undo,
-                onRedo = viewModel::redo,
-                gameOngoing = gameOngoing,
-                onOfferDraw = viewModel::offerDraw,
-                onResign = viewModel::resign
-            )
-        }
-    }
         }
         if (showChat) {
             ChatOverlay(
@@ -521,12 +603,17 @@ fun OnlineGameScreen(
                         scope.launch {
                             viewModel.createRematch()
                                 .onSuccess { invite ->
-                                    copyText(context, invite.link, "Rematch link copied — share it with $opponentName")
-                                    shareGame(
-                                        context,
-                                        invite.link,
-                                        "Rematch on Caisaara with $opponentName: ${invite.link}"
-                                    )
+                                    val oppId = viewModel.getOpponentId()
+                                    if (oppId != null && oppId > 0) {
+                                        Toast.makeText(context, "Rematch challenge sent to $opponentName!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        copyText(context, invite.link, "Rematch link copied — share it with $opponentName")
+                                        shareGame(
+                                            context,
+                                            invite.link,
+                                            "Rematch on Caisaara with $opponentName: ${invite.link}"
+                                        )
+                                    }
                                     onRematchStarted(invite.gameId, invite.link, opponentName)
                                 }
                                 .onFailure { error ->

@@ -44,8 +44,23 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
 
         val type = data["type"].orEmpty()
         val targetId = data["target_id"].orEmpty()
+        val code = data["code"]
+        val gameId = data["game_id"] ?: data["gameId"]
         val deepLink = data["deep_link"]
+            ?: when {
+                !gameId.isNullOrBlank() && type.contains("accepted", ignoreCase = true) ->
+                    "https://caisaara.duckdns.org/game/$gameId"
+                !code.isNullOrBlank() ->
+                    "https://caisaara.duckdns.org/play/$code"
+                !gameId.isNullOrBlank() ->
+                    "https://caisaara.duckdns.org/game/$gameId"
+                else -> null
+            }
         val channelId = data["channel_id"]?.takeIf { it.isNotBlank() } ?: resolveChannel(type)
+
+        if (type.contains("challenge", ignoreCase = true)) {
+            com.abhinav.caisarra.data.repository.ChallengeManager.get(applicationContext).refreshChallenges()
+        }
 
         showNotification(
             title = title,
@@ -60,7 +75,7 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
 
     private fun resolveChannel(type: String): String = when (type.uppercase()) {
         "GAME_MOVE", "TURN", "GAME_TURN" -> CaisarraApplication.CHANNEL_GAME_TURNS
-        "GAME_INVITE", "CHALLENGE" -> CaisarraApplication.CHANNEL_GAME_INVITES
+        "GAME_INVITE", "CHALLENGE", "GAME_CHALLENGE" -> CaisarraApplication.CHANNEL_GAME_INVITES
         "CHAT", "DIRECT_MESSAGE", "CLUB_CHAT", "MESSAGE" -> CaisarraApplication.CHANNEL_MESSAGES
         "TOURNAMENT", "TOURNAMENT_ROUND", "TOURNAMENT_START" -> CaisarraApplication.CHANNEL_TOURNAMENTS
         "DAILY_PUZZLE", "PUZZLE", "STREAK" -> CaisarraApplication.CHANNEL_DAILY_PUZZLES

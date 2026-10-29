@@ -9,26 +9,33 @@ import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.GameSocketClient
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
+import com.abhinav.caisarra.data.remote.dto.CreateInviteResponse
 import com.abhinav.caisarra.data.remote.dto.SocketIncoming
 import com.abhinav.caisarra.data.remote.dto.SocketOutgoing
+import com.abhinav.caisarra.data.repository.ChallengeManager
 import com.abhinav.caisarra.data.repository.ChatRepository
 import com.abhinav.caisarra.data.repository.InviteRepository
 import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
-import com.abhinav.caisarra.data.remote.dto.CreateInviteResponse
 import com.abhinav.caisarra.domain.chess.engine.ChesslibEngine
 import com.abhinav.caisarra.domain.chess.game.GameClock
-import com.abhinav.caisarra.domain.chess.model.Move
-import com.abhinav.caisarra.domain.chess.model.PieceColor as DomainColor
 import com.abhinav.caisarra.domain.chess.game.mapper.calculateCapturedPieces
 import com.abhinav.caisarra.domain.chess.game.mapper.toDomain
 import com.abhinav.caisarra.domain.chess.game.mapper.toMoveUi
 import com.abhinav.caisarra.domain.chess.game.mapper.toUi
 import com.abhinav.caisarra.domain.chess.game.mapper.toUiBoard
+import com.abhinav.caisarra.domain.chess.game.mapper.toUiPiece
 import com.abhinav.caisarra.domain.chess.game.mapper.uciToSquare
+import com.abhinav.caisarra.domain.chess.model.Move
+import com.abhinav.caisarra.domain.chess.model.Move as DomainMove
+import com.abhinav.caisarra.domain.chess.model.PieceColor as DomainColor
+import com.abhinav.caisarra.domain.chess.model.PieceColor as DomainPieceColor
+import com.abhinav.caisarra.domain.chess.model.PieceType as DomainPieceType
+import com.abhinav.caisarra.domain.chess.model.Square as DomainSquare
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
+import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 import com.abhinav.caisarra.presentation.game.model.PieceType
 import com.abhinav.caisarra.presentation.game.model.Square
 import kotlinx.coroutines.delay
@@ -39,12 +46,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
-import com.abhinav.caisarra.domain.chess.model.Move as DomainMove
-import com.abhinav.caisarra.domain.chess.model.Square as DomainSquare
-import com.abhinav.caisarra.domain.chess.model.PieceType as DomainPieceType
-import com.abhinav.caisarra.domain.chess.model.PieceColor as DomainPieceColor
-import com.abhinav.caisarra.domain.chess.game.mapper.toUiPiece
 
 class OnlineGameViewModel(
     application: Application,
@@ -67,7 +68,7 @@ class OnlineGameViewModel(
     private val clock = GameClock(viewModelScope, 0L, 0L) { }
 
     private val _uiState = MutableStateFlow(GameUiState(isRated = true))
-    
+
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
     fun onMoveAnimationStarted(eventId: Long) {
         _uiState.update { current ->
@@ -80,6 +81,8 @@ class OnlineGameViewModel(
     }
     private val _waitingForOpponent = MutableStateFlow(true)
     val waitingForOpponent: StateFlow<Boolean> = _waitingForOpponent.asStateFlow()
+    private val _rematchDeclined = MutableStateFlow<String?>(null)
+    val rematchDeclined: StateFlow<String?> = _rematchDeclined.asStateFlow()
     private val _chat = MutableStateFlow<List<ChatMessageDto>>(emptyList())
     val chat: StateFlow<List<ChatMessageDto>> = _chat.asStateFlow()
 
@@ -178,6 +181,70 @@ class OnlineGameViewModel(
                 }
             }
         }
+        val challengeManager = ChallengeManager.get(getApplication())
+        viewModelScope.launch {
+            val outgoing = challengeManager.outgoingChallenge.value
+            if (outgoing != null && (outgoing.gameId == gameId || outgoing.code == gameId)) {
+                if (outgoing.status == "declined") {
+                    val name = outgoing.opponentUsername.ifBlank {
+                        _opponentName.value.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) } ?: "Opponent"
+                    }
+                    _rematchDeclined.value = "$name declined the rematch"
+                    _waitingForOpponent.value = false
+                }
+            }
+
+            challengeManager.declinedEvent.collect { event ->
+                val currentOutgoing = challengeManager.outgoingChallenge.value
+                val matchesGameId = (event.gameId != null && event.gameId == gameId) ||
+                        (currentOutgoing != null && currentOutgoing.gameId == gameId && (
+                                (event.code != null && event.code == currentOutgoing.code) ||
+                                        (event.opponentId != null && event.opponentId == currentOutgoing.opponentId) ||
+                                        (!event.opponentUsername.isNullOrBlank() && event.opponentUsername.equals(currentOutgoing.opponentUsername, true))
+                                ))
+                val matchesOpponent = _waitingForOpponent.value && (
+                        matchesGameId ||
+                                (!event.opponentUsername.isNullOrBlank() &&
+                                        !_opponentName.value.equals("Opponent", true) &&
+                                        !_opponentName.value.equals("Your opponent", true) &&
+                                        event.opponentUsername.equals(_opponentName.value, true))
+                        )
+
+                if (matchesOpponent) {
+                    val name = event.opponentUsername?.takeIf { it.isNotBlank() }
+                        ?: currentOutgoing?.opponentUsername?.takeIf { it.isNotBlank() }
+                        ?: _opponentName.value.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) }
+                        ?: "Opponent"
+                    _rematchDeclined.value = "$name declined the rematch"
+                    _waitingForOpponent.value = false
+                }
+            }
+        }
+        viewModelScope.launch {
+            challengeManager.cancelledEvent.collect { event ->
+                val currentOutgoing = challengeManager.outgoingChallenge.value
+                if (_waitingForOpponent.value && currentOutgoing?.gameId == gameId) {
+                    _rematchDeclined.value = "Rematch challenge was cancelled"
+                    _waitingForOpponent.value = false
+                }
+            }
+        }
+        viewModelScope.launch {
+            while (_waitingForOpponent.value && _rematchDeclined.value == null) {
+                delay(2500L)
+                if (!_waitingForOpponent.value || _rematchDeclined.value != null) break
+                val game = runCatching { gameRepository.getGame(gameId) }.getOrNull()
+                if (game != null) {
+                    val status = game.status.lowercase()
+                    if (status in setOf("declined", "cancelled", "aborted")) {
+                        val name = _opponentName.value.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) } ?: "Opponent"
+                        _rematchDeclined.value = if (status == "declined") "$name declined the rematch" else "Rematch was cancelled"
+                        _waitingForOpponent.value = false
+                        break
+                    }
+                }
+            }
+        }
     }
 
     private fun resolveMode(timeControlMinutes: Int, explicitMode: String? = null): String {
@@ -196,6 +263,14 @@ class OnlineGameViewModel(
     private suspend fun loadGameDetailsAndRating() {
         val game = runCatching { gameRepository.getGame(gameId) }.getOrNull()
         if (game != null) {
+            val status = game.status.lowercase()
+            if (status in setOf("declined", "cancelled", "aborted")) {
+                if (_waitingForOpponent.value) {
+                    val name = _opponentName.value.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) } ?: "Opponent"
+                    _rematchDeclined.value = if (status == "declined") "$name declined the rematch" else "Rematch was cancelled"
+                    _waitingForOpponent.value = false
+                }
+            }
             if (game.whitePlayerId != 0L) whitePlayerId = game.whitePlayerId
             if (game.blackPlayerId != 0L) blackPlayerId = game.blackPlayerId
             if (!game.whiteUsername.isNullOrBlank()) whitePlayerUsername = game.whiteUsername
@@ -296,6 +371,20 @@ class OnlineGameViewModel(
         }
     }
 
+    fun getOpponentId(): Long? {
+        val myId = _myUserId.value
+        return when {
+            myId != null && myId == whitePlayerId && blackPlayerId != 0L -> blackPlayerId
+            myId != null && myId == blackPlayerId && whitePlayerId != 0L -> whitePlayerId
+            myColor == PieceColor.WHITE && blackPlayerId != 0L -> blackPlayerId
+            myColor == PieceColor.BLACK && whitePlayerId != 0L -> whitePlayerId
+            whitePlayerId != 0L && blackPlayerId != 0L -> {
+                if (myColor == PieceColor.WHITE) blackPlayerId else whitePlayerId
+            }
+            else -> null
+        }
+    }
+
     suspend fun createRematch(): Result<CreateInviteResponse> {
         if (rematchInFlight) return Result.failure(IllegalStateException("Rematch already started"))
         rematchInFlight = true
@@ -305,12 +394,54 @@ class OnlineGameViewModel(
             PieceColor.BLACK -> "white"
             null -> "random"
         }
-        return inviteRepository.createInvite(
-            timeControlMinutes = state.timeControlMinutes.coerceAtLeast(1),
-            incrementSeconds = state.incrementSeconds.coerceAtLeast(0),
-            color = myColorChoice,
-            rated = true
-        ).also { rematchInFlight = false }
+        val opponentId = getOpponentId()
+        val opponentName = _opponentName.value.takeIf { !it.equals("Opponent", true) && !it.equals("Your opponent", true) } ?: "Opponent"
+        val challengeManager = ChallengeManager.get(getApplication())
+        val res = if (opponentId != null && opponentId > 0) {
+            challengeManager.sendChallenge(
+                timeControlMinutes = state.timeControlMinutes.coerceAtLeast(1),
+                incrementSeconds = state.incrementSeconds.coerceAtLeast(0),
+                color = myColorChoice,
+                rated = state.isRated,
+                opponentId = opponentId,
+                opponentUsername = opponentName
+            )
+        } else {
+            inviteRepository.createInvite(
+                timeControlMinutes = state.timeControlMinutes.coerceAtLeast(1),
+                incrementSeconds = state.incrementSeconds.coerceAtLeast(0),
+                color = myColorChoice,
+                rated = state.isRated,
+                opponentId = null
+            )
+        }
+        res.onSuccess { invite ->
+            if (opponentId != null && opponentId > 0) {
+                challengeManager.registerOutgoingChallenge(
+                    code = invite.inviteCode,
+                    gameId = invite.gameId,
+                    opponentId = opponentId,
+                    opponentUsername = opponentName
+                )
+            }
+        }
+        rematchInFlight = false
+        return res
+    }
+
+    fun cancelWaitingChallenge(onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            val challengeManager = ChallengeManager.get(getApplication())
+            val outgoing = challengeManager.outgoingChallenge.value
+            val code = if (outgoing?.gameId == gameId) outgoing.code else null
+            if (!code.isNullOrBlank()) {
+                challengeManager.cancelChallenge(code)
+            }
+            challengeManager.clearOutgoingChallenge()
+            _waitingForOpponent.value = false
+            _rematchDeclined.value = "Rematch challenge cancelled"
+            onDone()
+        }
     }
 
     private fun reconnect() {
