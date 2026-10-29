@@ -80,6 +80,8 @@ import java.io.FileOutputStream
 import java.util.Locale
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import android.os.SystemClock
+import androidx.compose.runtime.mutableLongStateOf
 
 private val EditBackground = Color(0xFF080D13)
 private val EditCard = Color(0xFF151F2E)
@@ -111,6 +113,27 @@ fun EditProfileScreen(
     var showPhotoOptions by remember { mutableStateOf(false) }
     var showCountryScreen by remember { mutableStateOf(false) }
     var showDefaultAvatarsScreen by remember { mutableStateOf(false) }
+    // Prevent rapid back taps from closing Edit Profile after
+// returning from Country or Default Chess Avatars.
+    var blockParentBackUntil by remember {
+        mutableLongStateOf(0L)
+    }
+
+    fun returnToEditProfile() {
+        blockParentBackUntil = SystemClock.uptimeMillis() + 700L
+        showCountryScreen = false
+        showDefaultAvatarsScreen = false
+    }
+
+    fun handleEditProfileBack() {
+        val now = SystemClock.uptimeMillis()
+
+        if (now < blockParentBackUntil) {
+            return
+        }
+
+        onBack()
+    }
     var selectedSource by remember {
         mutableStateOf(AvatarSource.URL)
     }
@@ -163,11 +186,13 @@ fun EditProfileScreen(
     if (showCountryScreen) {
         SelectCountryScreen(
             selectedCountryCode = country,
-            onBack = { showCountryScreen = false },
+            onBack = {
+                returnToEditProfile()
+            },
             onCountrySelected = { code ->
                 country = code
                 validationError = null
-                showCountryScreen = false
+                returnToEditProfile()
             }
         )
         return
@@ -176,8 +201,12 @@ fun EditProfileScreen(
     if (showDefaultAvatarsScreen) {
         DefaultChessAvatarsScreen(
             viewModel = viewModel,
-            onBack = { showDefaultAvatarsScreen = false },
-            onAvatarSelected = { showDefaultAvatarsScreen = false }
+            onBack = {
+                returnToEditProfile()
+            },
+            onAvatarSelected = {
+                returnToEditProfile()
+            }
         )
         return
     }
@@ -209,7 +238,12 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
+                IconButton(
+                    onClick = {
+                        handleEditProfileBack()
+                    },
+                    modifier = Modifier.size(44.dp)
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Close edit profile",

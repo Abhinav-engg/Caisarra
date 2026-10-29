@@ -76,12 +76,19 @@ class HomeViewModel(
     private var remoteHistory: List<GameEntity> = emptyList()
     private var signedInUser = false
     private var cachedProfile: ProfileData? = null
+    private var hasStartedInitialLoad = false
 
     init {
-        loadHomeData()
+        if (!hasStartedInitialLoad) {
+            hasStartedInitialLoad = true
+            loadHomeData()
+        }
     }
 
     fun refresh() {
+        if (hasStartedInitialLoad) return
+
+        hasStartedInitialLoad = true
         loadHomeData()
     }
 

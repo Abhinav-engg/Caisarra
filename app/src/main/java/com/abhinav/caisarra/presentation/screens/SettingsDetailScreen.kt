@@ -67,6 +67,10 @@ import com.caisaara.ui.theme.TextSizeCaption
 import com.caisaara.ui.theme.TextSizeHeading
 import com.caisaara.ui.theme.TextSizeTiny
 import com.caisaara.ui.theme.ThemeSlateAccent
+import com.abhinav.caisarra.data.local.SOUND_EFFECTS_KEY
+import com.abhinav.caisarra.data.local.BOARD_COORDINATES_KEY
+import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
+import com.abhinav.caisarra.presentation.game.components.setAutoQueenEnabled
 
 @Composable
 fun SettingsDetailScreen(
@@ -78,9 +82,20 @@ fun SettingsDetailScreen(
     val hapticsEnabled by remember(context) {
         context.settingsDataStore.data.map { it[HAPTICS_KEY] ?: true }
     }.collectAsState(initial = true)
-    var soundEnabled by remember { mutableStateOf(true) }
-    var coordinatesEnabled by remember { mutableStateOf(true) }
-    var autoQueenEnabled by remember { mutableStateOf(true) }
+    val soundEnabled by remember(context) {
+        context.settingsDataStore.data.map {
+            it[SOUND_EFFECTS_KEY] ?: true
+        }
+    }.collectAsState(initial = true)
+    val coordinatesEnabled by remember(context) {
+        context.settingsDataStore.data.map {
+            it[BOARD_COORDINATES_KEY] ?: true
+        }
+    }.collectAsState(initial = true)
+
+    var autoQueenEnabled by remember(context) {
+        mutableStateOf(isAutoQueenEnabled(context))
+    }
 
     Column(
         modifier = Modifier
@@ -156,9 +171,15 @@ fun SettingsDetailScreen(
                 Column {
                     PreferenceToggleRow(
                         title = "Sound Effects",
-                        subtitle = "Play audio on piece moves, captures, and checks",
+                        subtitle = "Play audio on piece moves and captures,and checks",
                         checked = soundEnabled,
-                        onCheckedChange = { soundEnabled = it }
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                context.settingsDataStore.edit { prefs ->
+                                    prefs[SOUND_EFFECTS_KEY] = enabled
+                                }
+                            }
+                        }
                     )
                     HorizontalDivider(color = SettingsDivider, thickness = 1.dp)
                     PreferenceToggleRow(
@@ -176,14 +197,23 @@ fun SettingsDetailScreen(
                         title = "Board Coordinates",
                         subtitle = "Show rank and file letters on board edges",
                         checked = coordinatesEnabled,
-                        onCheckedChange = { coordinatesEnabled = it }
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                context.settingsDataStore.edit { prefs ->
+                                    prefs[BOARD_COORDINATES_KEY] = enabled
+                                }
+                            }
+                        }
                     )
                     HorizontalDivider(color = SettingsDivider, thickness = 1.dp)
                     PreferenceToggleRow(
                         title = "Auto-Queen Promotion",
                         subtitle = "Always promote pawn to Queen automatically",
                         checked = autoQueenEnabled,
-                        onCheckedChange = { autoQueenEnabled = it }
+                        onCheckedChange = { enabled ->
+                            setAutoQueenEnabled(context, enabled)
+                            autoQueenEnabled = enabled
+                        }
                     )
                 }
             }
