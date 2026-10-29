@@ -28,7 +28,12 @@ interface FriendsService {
     ): ApiResponse<FriendshipStatusData>
 
     @GET("api/friends")
-    suspend fun getFriends(): ApiResponse<FriendsListData>
+    suspend fun getFriends(
+        @Query("status") status: String? = null
+    ): ApiResponse<FriendsListData>
+
+    @GET("api/friends/online")
+    suspend fun getOnlineFriends(): ApiResponse<FriendsListData>
 
     @GET("api/friends/requests")
     suspend fun getIncomingRequests(): ApiResponse<FriendRequestsData>

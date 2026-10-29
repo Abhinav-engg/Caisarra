@@ -8,7 +8,7 @@ import kotlinx.serialization.json.JsonNames
 @Serializable
 data class WsNotificationEnvelope(
     val type: String = "notification",
-    val notification: WsNotificationPayload? = null
+    val notification: NotificationItemDto? = null
 )
 
 @OptIn(ExperimentalSerializationApi::class)

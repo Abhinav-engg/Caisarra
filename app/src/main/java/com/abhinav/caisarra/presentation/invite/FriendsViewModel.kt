@@ -26,6 +26,11 @@ enum class FriendsTab {
     REQUESTS
 }
 
+enum class FriendsPresenceFilter {
+    ALL,
+    ONLINE_ONLY
+}
+
 data class FriendsLeaderboardItem(
     val username: String,
     val displayName: String?,
@@ -42,6 +47,7 @@ data class FriendsUiState(
     val searchResults: List<PlayerSearchDto> = emptyList(),
     val friendshipStatuses: Map<String, FriendshipStatusData> = emptyMap(),
     val selectedTab: FriendsTab = FriendsTab.ALL_FRIENDS,
+    val presenceFilter: FriendsPresenceFilter = FriendsPresenceFilter.ALL,
     val showLeaderboard: Boolean = false,
     val myProfile: ProfileData? = null,
     val isLoading: Boolean = false,
@@ -50,6 +56,15 @@ data class FriendsUiState(
     val message: String? = null,
     val error: String? = null
 ) {
+    val onlineFriendsCount: Int
+        get() = friends.count { it.isOnline }
+
+    val visibleFriends: List<FriendDto>
+        get() = when (presenceFilter) {
+            FriendsPresenceFilter.ALL -> friends
+            FriendsPresenceFilter.ONLINE_ONLY -> friends.filter { it.isOnline }
+        }
+
     val leaderboardEntries: List<FriendsLeaderboardItem>
         get() {
             val list = mutableListOf<FriendsLeaderboardItem>()
@@ -105,6 +120,42 @@ class FriendsViewModel(
 
     fun selectTab(tab: FriendsTab) {
         _uiState.update { it.copy(selectedTab = tab) }
+    }
+
+    fun selectPresenceFilter(filter: FriendsPresenceFilter) {
+        _uiState.update { it.copy(presenceFilter = filter) }
+        if (filter == FriendsPresenceFilter.ONLINE_ONLY) {
+            refreshOnlineFriends()
+        }
+    }
+
+    fun refreshOnlineFriends() {
+        viewModelScope.launch {
+            repository.getOnlineFriends()
+                .onSuccess { onlineFriendsList ->
+                    val onlineUserIds = onlineFriendsList.map { it.userId }.toSet()
+                    _uiState.update { current ->
+                        val updatedFriends = current.friends.map { friend ->
+                            val isOnline = onlineUserIds.contains(friend.userId)
+                            friend.copy(isOnline = isOnline)
+                        }
+                        current.copy(friends = updatedFriends)
+                    }
+                }
+                .onFailure {
+                    repository.getFriends(status = "online")
+                        .onSuccess { onlineFriendsList ->
+                            val onlineUserIds = onlineFriendsList.map { it.userId }.toSet()
+                            _uiState.update { current ->
+                                val updatedFriends = current.friends.map { friend ->
+                                    val isOnline = onlineUserIds.contains(friend.userId)
+                                    friend.copy(isOnline = isOnline)
+                                }
+                                current.copy(friends = updatedFriends)
+                            }
+                        }
+                }
+        }
     }
 
     fun setShowLeaderboard(show: Boolean) {

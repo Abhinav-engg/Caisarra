@@ -16,9 +16,14 @@ import androidx.lifecycle.lifecycleScope
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.presentation.navigation.AppNavigation
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        val pendingIntentFlow = MutableStateFlow<Intent?>(null)
+    }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -32,6 +37,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        pendingIntentFlow.value = intent
         requestNotificationPermission()
 
         val authRepository = AuthRepository.get(applicationContext)
@@ -48,6 +54,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        pendingIntentFlow.value = intent
     }
 
     private fun requestNotificationPermission() {
