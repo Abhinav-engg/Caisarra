@@ -5,6 +5,7 @@ import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.TournamentService
 import com.abhinav.caisarra.data.remote.dto.CreateTournamentRequest
+import com.abhinav.caisarra.data.remote.dto.EndTournamentResponse
 import com.abhinav.caisarra.data.remote.dto.JoinTournamentRequest
 import com.abhinav.caisarra.data.remote.dto.JoinTournamentResponse
 import com.abhinav.caisarra.data.remote.dto.LeaveTournamentResponse
@@ -81,6 +82,9 @@ class TournamentRepository private constructor(
 
     suspend fun startTournament(id: String): Result<StartTournamentResponse> =
         call { service.startTournament(id) }
+
+    suspend fun endTournament(id: String): Result<EndTournamentResponse> =
+        call { service.endTournament(id) }
 
     suspend fun getStandings(id: String): Result<StandingsResponse> =
         call { service.getStandings(id) }

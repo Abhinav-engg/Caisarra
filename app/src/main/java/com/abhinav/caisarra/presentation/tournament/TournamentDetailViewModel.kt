@@ -35,7 +35,8 @@ data class TournamentDetailUiState(
     val actionInProgress: Boolean = false,
     val winnerId: Long? = null,
     val message: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val isTournamentCancelled: Boolean = false
 )
 
 class TournamentDetailViewModel(
@@ -81,6 +82,10 @@ class TournamentDetailViewModel(
 
     fun start() = perform("Tournament started") {
         repository.startTournament(tournamentId)
+    }
+
+    fun end() = perform("Tournament cancelled") {
+        repository.endTournament(tournamentId)
     }
 
     private fun perform(
@@ -156,6 +161,16 @@ class TournamentDetailViewModel(
                     is TournamentSocketEvent.Completed -> {
                         _state.update { it.copy(winnerId = event.winnerId) }
                         refreshAll(showLoading = false)
+                    }
+
+                    is TournamentSocketEvent.Cancelled -> {
+                        _state.update {
+                            it.copy(
+                                winnerId = event.winnerId,
+                                isTournamentCancelled = true,
+                                message = "Tournament cancelled"
+                            )
+                        }
                     }
                 }
             }

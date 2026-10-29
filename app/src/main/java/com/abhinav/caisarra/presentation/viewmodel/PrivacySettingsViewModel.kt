@@ -19,6 +19,7 @@ enum class PrivacySection(val key: String, val title: String) {
 
 data class PrivacySettingsUiState(
     val isLoading: Boolean = true,
+    val hasLoaded: Boolean = false,
     val updatingSection: PrivacySection? = null,
     val settings: PrivacySettingsDto = PrivacySettingsDto(),
     val errorMessage: String? = null,
@@ -46,6 +47,7 @@ class PrivacySettingsViewModel(
                 val data = repository.getPrivacySettings()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    hasLoaded = true,
                     settings = data,
                     errorMessage = null
                 )
@@ -75,15 +77,22 @@ class PrivacySettingsViewModel(
             )
 
             try {
-                val updated = when (section) {
-                    PrivacySection.DIRECT_MESSAGE -> repository.updatePrivacySettings(directMessage = option.value)
-                    PrivacySection.CLUB -> repository.updatePrivacySettings(club = option.value)
-                    PrivacySection.TOURNAMENT -> repository.updatePrivacySettings(tournament = option.value)
-                    PrivacySection.INVITE_FRIEND -> repository.updatePrivacySettings(inviteFriend = option.value)
-                }
+                val current = _uiState.value.settings
+                val dm = if (section == PrivacySection.DIRECT_MESSAGE) option.value else current.directMessage
+                val club = if (section == PrivacySection.CLUB) option.value else current.club
+                val tourn = if (section == PrivacySection.TOURNAMENT) option.value else current.tournament
+                val invite = if (section == PrivacySection.INVITE_FRIEND) option.value else current.inviteFriend
+
+                val updated = repository.updatePrivacySettings(
+                    directMessage = dm,
+                    club = club,
+                    tournament = tourn,
+                    inviteFriend = invite
+                )
                 _uiState.value = _uiState.value.copy(
                     updatingSection = null,
                     settings = updated,
+                    hasLoaded = true,
                     successMessage = "${section.title} privacy updated"
                 )
             } catch (e: Exception) {
@@ -116,6 +125,7 @@ class PrivacySettingsViewModel(
                 )
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    hasLoaded = true,
                     settings = updated,
                     successMessage = "Privacy settings updated successfully"
                 )

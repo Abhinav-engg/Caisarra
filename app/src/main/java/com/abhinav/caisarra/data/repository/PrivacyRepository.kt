@@ -3,12 +3,21 @@ package com.abhinav.caisarra.data.repository
 import com.abhinav.caisarra.data.remote.api.PrivacyService
 import com.abhinav.caisarra.data.remote.dto.PrivacySettingsDto
 import com.abhinav.caisarra.data.remote.dto.UpdatePrivacySettingsRequest
+import retrofit2.HttpException
 
 class PrivacyRepository(
     private val service: PrivacyService
 ) {
     suspend fun getPrivacySettings(): PrivacySettingsDto {
-        val response = service.getPrivacySettings()
+        val response = try {
+            service.getPrivacySettings()
+        } catch (e: HttpException) {
+            if (e.code() == 404) {
+                service.getPrivacySettingsLegacy()
+            } else {
+                throw e
+            }
+        }
         if (!response.success) {
             error(response.error ?: response.message ?: "Failed to fetch privacy settings")
         }
@@ -27,10 +36,41 @@ class PrivacyRepository(
             tournament = tournament,
             inviteFriend = inviteFriend
         )
-        val response = service.updatePrivacySettings(request)
+
+        val response = try {
+            service.updatePrivacySettings(request)
+        } catch (e: HttpException) {
+            when (e.code()) {
+                404 -> {
+                    try {
+                        service.patchPrivacySettings(request)
+                    } catch (e2: HttpException) {
+                        if (e2.code() == 404) {
+                            try {
+                                service.updatePrivacySettingsLegacy(request)
+                            } catch (e3: HttpException) {
+                                if (e3.code() == 404) {
+                                    service.patchPrivacySettingsLegacy(request)
+                                } else throw e3
+                            }
+                        } else throw e2
+                    }
+                }
+                405 -> {
+                    service.patchPrivacySettings(request)
+                }
+                else -> throw e
+            }
+        }
+
         if (!response.success) {
             error(response.error ?: response.message ?: "Failed to update privacy settings")
         }
-        return response.data ?: error("Privacy settings update failed")
+        return response.data ?: PrivacySettingsDto(
+            directMessage = directMessage ?: "everyone",
+            club = club ?: "everyone",
+            tournament = tournament ?: "everyone",
+            inviteFriend = inviteFriend ?: "everyone"
+        )
     }
 }

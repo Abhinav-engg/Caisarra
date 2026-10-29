@@ -172,14 +172,14 @@ fun PrivacySettingsScreen(
                 }
             }
 
-            if (uiState.isLoading && uiState.errorMessage == null && uiState.settings.directMessage.isEmpty()) {
+            if (uiState.isLoading && !uiState.hasLoaded) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = StatsCyan)
                 }
-            } else if (uiState.errorMessage != null && uiState.settings.directMessage.isEmpty()) {
+            } else if (uiState.errorMessage != null && !uiState.hasLoaded) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

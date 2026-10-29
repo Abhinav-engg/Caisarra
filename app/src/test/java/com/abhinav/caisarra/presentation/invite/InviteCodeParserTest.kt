@@ -13,6 +13,9 @@ class InviteCodeParserTest {
 
     @Test
     fun `extractCode handles play web link`() {
+        assertEquals("7F89AB12", InviteCodeParser.extractCode("https://caisaara.app/play/7F89AB12"))
+        assertEquals("7F89AB12", InviteCodeParser.extractCode("https://caisaara.app/play/7F89AB12/"))
+        assertEquals("7F89AB12", InviteCodeParser.extractCode("https://caisaara.app/play/7F89AB12?source=qr"))
         assertEquals("7F89AB12", InviteCodeParser.extractCode("https://caisaara.duckdns.org/play/7F89AB12"))
         assertEquals("7F89AB12", InviteCodeParser.extractCode("https://caisaara.duckdns.org/play/7F89AB12/"))
         assertEquals("7F89AB12", InviteCodeParser.extractCode("https://caisaara.duckdns.org/play/7F89AB12?source=qr"))

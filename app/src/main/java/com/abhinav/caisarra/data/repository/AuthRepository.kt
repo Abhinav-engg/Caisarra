@@ -13,6 +13,9 @@ import com.abhinav.caisarra.data.remote.api.NearbyService
 import com.abhinav.caisarra.data.remote.api.ProfileService
 import com.abhinav.caisarra.data.remote.api.PuzzleApiService
 import com.abhinav.caisarra.data.remote.api.RatingService
+import com.abhinav.caisarra.data.local.ChessDatabase
+import com.abhinav.caisarra.data.remote.dto.ApiError
+import com.abhinav.caisarra.data.remote.dto.DeleteAccountRequest
 import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.LoginRequest
 import com.abhinav.caisarra.data.remote.dto.RatingRequest
@@ -27,7 +30,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
-class AuthRepository private constructor(context: Context) {
+class AuthRepository private constructor(private val context: Context) {
 
     private val tokenManager = TokenManager.get(context)
     private val refresher = RetrofitInstance.getTokenRefresher(tokenManager)
@@ -126,6 +129,82 @@ class AuthRepository private constructor(context: Context) {
         }
 
         return AuthResult.Success("Logged out")
+    }
+
+    /**
+     * Permanently deletes the logged-in user's account using:
+     * DELETE /api/account
+     *
+     * Specification & Rules:
+     * - Only registered accounts are permitted (guest accounts are blocked from deleting).
+     * - Requires re-entering current password (maximum 72 characters).
+     * - On 200 OK: Clears all local tokens, user sessions, and cached Room databases.
+     * - On 403 (wrong password): Returns an error message while keeping the user on screen.
+     * - On 429 (rate limited): Informs the user to try again later.
+     */
+    suspend fun deleteAccount(password: String): AuthResult {
+        if (isGuest()) {
+            return AuthResult.Error("Feature requires a registered account. Guests cannot delete accounts.")
+        }
+
+        val trimmedPassword = password.trim()
+        if (trimmedPassword.isEmpty()) {
+            return AuthResult.Error("Please enter your current password to confirm account deletion.")
+        }
+        if (trimmedPassword.length > 72) {
+            return AuthResult.Error("Password cannot exceed 72 characters.")
+        }
+
+        return try {
+            val request = DeleteAccountRequest(password = password)
+            val response = service.deleteAccount(request)
+
+            if (response.isSuccessful) {
+                // Clear session tokens and preferences
+                tokenManager.clearTokens()
+
+                // Clear cached local Room database tables
+                try {
+                    ChessDatabase.get(context).clearAllTables()
+                } catch (_: Exception) {
+                    // Safe cleanup ignore
+                }
+
+                val successMessage = response.body()?.message ?: "Account deleted successfully."
+                AuthResult.Success(successMessage)
+            } else {
+                val statusCode = response.code()
+                val rawBody = response.errorBody()?.string()
+
+                var parsedError: String? = null
+                if (!rawBody.isNullOrBlank()) {
+                    try {
+                        val decoded = RetrofitInstance.json.decodeFromString(
+                            ApiError.serializer(),
+                            rawBody
+                        )
+                        parsedError = decoded.error
+                    } catch (_: Exception) {
+                        // Could not parse as ApiError
+                    }
+                }
+
+                val errorMessage = when {
+                    !parsedError.isNullOrBlank() -> parsedError
+                    statusCode == 400 -> "Invalid request body. Password must be valid and at most 72 characters."
+                    statusCode == 401 -> "Session expired or invalid authorization token. Please log in again."
+                    statusCode == 403 -> "Password is incorrect. Please check your password and try again."
+                    statusCode == 404 -> "Account not found or already deleted."
+                    statusCode == 429 -> "Too many attempts. Please try again later."
+                    statusCode in 500..599 -> "Internal server error. Safe to retry in a moment."
+                    else -> "Failed to delete account (Error $statusCode)."
+                }
+
+                AuthResult.Error(errorMessage)
+            }
+        } catch (e: Exception) {
+            AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
+        }
     }
 
     suspend fun sendResetCode(email: String): AuthResult {

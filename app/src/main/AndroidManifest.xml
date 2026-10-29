@@ -46,6 +46,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
+                    android:host="caisaara.app"
+                    android:pathPrefix="/play/" />
+                <data
+                    android:scheme="https"
+                    android:host="caisaara.app"
+                    android:pathPrefix="/watch/" />
+                <data
+                    android:scheme="https"
                     android:host="caisaara.duckdns.org"
                     android:pathPrefix="/play/" />
                 <data

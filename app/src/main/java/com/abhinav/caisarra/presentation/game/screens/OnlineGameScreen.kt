@@ -460,7 +460,7 @@ fun OnlineGameScreen(
         }
     }
     if (showWatchShareDialog) {
-        val watchUrl = state.watchLink ?: state.watchCode?.let { "https://caisaara.duckdns.org/watch/$it" } ?: ""
+        val watchUrl = state.watchLink ?: state.watchCode?.let { "https://caisaara.app/watch/$it" } ?: ""
         AlertDialog(
             onDismissRequest = { showWatchShareDialog = false },
             containerColor = Color(0xFF111A24),

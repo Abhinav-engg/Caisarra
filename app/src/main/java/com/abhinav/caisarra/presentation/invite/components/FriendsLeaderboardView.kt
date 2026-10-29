@@ -44,6 +44,9 @@ import com.caisaara.ui.theme.FriendsTextMuted
 import com.caisaara.ui.theme.FriendsTextWhite
 import com.caisaara.ui.theme.GoldColor
 import com.caisaara.ui.theme.SilverColor
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 
 @Composable
 fun FriendsLeaderboardView(
@@ -55,7 +58,9 @@ fun FriendsLeaderboardView(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .background(FriendsBg)
+
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
