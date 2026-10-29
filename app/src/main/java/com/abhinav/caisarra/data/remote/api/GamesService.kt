@@ -30,4 +30,11 @@ interface GamesService {
 
     @GET("api/games/active")
     suspend fun getActiveGames(): List<ActiveGameDto>
+
+    @GET("players/{username}/games")
+    suspend fun getPlayerGames(
+        @Path("username") username: String,
+        @retrofit2.http.Query("mode") mode: String? = null,
+        @retrofit2.http.Query("limit") limit: Int? = null
+    ): okhttp3.ResponseBody
 }

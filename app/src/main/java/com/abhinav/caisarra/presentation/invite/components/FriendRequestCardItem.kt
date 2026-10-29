@@ -38,6 +38,7 @@ import com.caisaara.ui.theme.FriendsTextWhite
 @Composable
 fun FriendRequestCardItem(
     request: FriendRequestDto,
+    onProfileClick: () -> Unit = {},
     onAccept: () -> Unit,
     onDecline: () -> Unit,
     modifier: Modifier = Modifier
@@ -61,7 +62,12 @@ fun FriendRequestCardItem(
             Text("NEW", color = FriendsCyan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
         Spacer(Modifier.height(14.dp))
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onProfileClick),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             FriendAvatar(name = name, avatarUrl = request.senderAvatarUrl, size = FriendsAvatarSize)
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {

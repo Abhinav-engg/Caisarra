@@ -53,6 +53,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.padding
+import com.abhinav.caisarra.data.local.BOARD_COORDINATES_KEY
 
 private val LightSquare = Color(0xFFE8EDF3)
 private val DarkSquare = Color(0xFF253449)
@@ -89,6 +90,11 @@ fun ChessBoard(
     val haptic = LocalHapticFeedback.current
     val hapticsEnabled by remember(context) {
         context.settingsDataStore.data.map { it[HAPTICS_KEY] ?: true }
+    }.collectAsState(initial = true)
+    val coordinatesEnabled by remember(context) {
+        context.settingsDataStore.data.map {
+            it[BOARD_COORDINATES_KEY] ?: true
+        }
     }.collectAsState(initial = true)
 
     var movingPiece by remember {
@@ -240,7 +246,7 @@ fun ChessBoard(
                             if (piece != null && !isMovingDestination) {
                                 PieceView(piece = piece)
                             }
-                            if (displayColumn == 0) {
+                            if (coordinatesEnabled &&displayColumn == 0) {
                                 Text(
                                     text = (8 - actualRow).toString(),
                                     modifier = Modifier
@@ -256,7 +262,7 @@ fun ChessBoard(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            if (displayRow == 7) {
+                            if (coordinatesEnabled &&displayRow == 7) {
                                 Text(
                                     text = ('a' + actualColumn).toString(),
                                     modifier = Modifier

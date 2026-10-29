@@ -11,12 +11,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -28,6 +31,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,11 +73,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
+import com.abhinav.caisarra.presentation.components.CountryUtils
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import android.os.SystemClock
+import androidx.compose.runtime.mutableLongStateOf
 
 private val EditBackground = Color(0xFF080D13)
 private val EditCard = Color(0xFF151F2E)
@@ -101,6 +110,30 @@ fun EditProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var showPhotoOptions by remember { mutableStateOf(false) }
+    var showCountryScreen by remember { mutableStateOf(false) }
+    var showDefaultAvatarsScreen by remember { mutableStateOf(false) }
+    // Prevent rapid back taps from closing Edit Profile after
+// returning from Country or Default Chess Avatars.
+    var blockParentBackUntil by remember {
+        mutableLongStateOf(0L)
+    }
+
+    fun returnToEditProfile() {
+        blockParentBackUntil = SystemClock.uptimeMillis() + 700L
+        showCountryScreen = false
+        showDefaultAvatarsScreen = false
+    }
+
+    fun handleEditProfileBack() {
+        val now = SystemClock.uptimeMillis()
+
+        if (now < blockParentBackUntil) {
+            return
+        }
+
+        onBack()
+    }
     var selectedSource by remember {
         mutableStateOf(AvatarSource.URL)
     }
@@ -150,6 +183,34 @@ fun EditProfileScreen(
         if (state.message == "Profile updated successfully") onSaved()
     }
 
+    if (showCountryScreen) {
+        SelectCountryScreen(
+            selectedCountryCode = country,
+            onBack = {
+                returnToEditProfile()
+            },
+            onCountrySelected = { code ->
+                country = code
+                validationError = null
+                returnToEditProfile()
+            }
+        )
+        return
+    }
+
+    if (showDefaultAvatarsScreen) {
+        DefaultChessAvatarsScreen(
+            viewModel = viewModel,
+            onBack = {
+                returnToEditProfile()
+            },
+            onAvatarSelected = {
+                returnToEditProfile()
+            }
+        )
+        return
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -174,38 +235,68 @@ fun EditProfileScreen(
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(
+                    onClick = {
+                        handleEditProfileBack()
+                    },
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Close edit profile",
+                        tint = EditWhite
+                    )
+                }
+
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(EditCard)
-                        .border(1.dp, EditBorder, RoundedCornerShape(16.dp)),
+                    modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        text = "EDIT PROFILE",
+                        color = EditWhite,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        focusManager.clearFocus()
+                        validationError = validateEditProfile(
+                            displayName = displayName,
+                            bio = bio,
+                            country = country,
+                            avatarUrl = avatarUrl
+                        )
+                        if (validationError == null && !state.saving) {
+                            viewModel.updateProfile(
+                                displayName = displayName,
+                                country = country,
+                                bio = bio,
+                                avatarUrl = avatarUrl
+                            )
+                        }
+                    },
+                    enabled = !state.saving,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    if (state.saving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = EditCyan,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Save profile",
                             tint = EditWhite
                         )
                     }
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Edit Profile",
-                        color = EditWhite,
-                        fontSize = 25.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "Update your player information",
-                        color = EditMuted,
-                        fontSize = 13.sp
-                    )
                 }
             }
 
@@ -275,40 +366,35 @@ fun EditProfileScreen(
                     )
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(EditCardSecondary)
+                            .clickable(enabled = !state.saving) {
+                                showPhotoOptions = true
+                            }
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        AvatarSourceButton(
-                            modifier = Modifier.weight(1f),
-                            title = "Gallery",
-                            subtitle = "Choose photo",
-                            icon = { Icon(Icons.Default.Image, null) },
-                            selected = selectedSource == AvatarSource.GALLERY,
-                            onClick = { galleryLauncher.launch("image/*") }
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = EditCyan,
+                            modifier = Modifier.size(24.dp)
                         )
-                        AvatarSourceButton(
-                            modifier = Modifier.weight(1f),
-                            title = "Camera",
-                            subtitle = "Take photo",
-                            icon = { Icon(Icons.Default.CameraAlt, null) },
-                            selected = selectedSource == AvatarSource.CAMERA,
-                            onClick = { cameraLauncher.launch(null) }
-                        )
-                        AvatarSourceButton(
-                            modifier = Modifier.weight(1f),
-                            title = "Avatar URL",
-                            subtitle = "HTTPS link",
-                            icon = { Icon(Icons.Default.Link, null) },
-                            selected = selectedSource == AvatarSource.URL,
-                            onClick = { selectedSource = AvatarSource.URL }
-                        )
+                        Column(
+                            modifier = Modifier.weight(1f).padding(start = 10.dp)
+                        ) {
+                            Text(
+                                text = "Profile Picture",
+                                color = EditWhite,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+//
+                        }
+                        Text("›", color = EditMuted, fontSize = 26.sp)
                     }
-                    Text(
-                        text = "Choose a photo from your gallery, take a new photo, or keep using an HTTPS Avatar URL. Photo uploads require a registered account.",
-                        color = EditMuted,
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp
-                    )
                 }
 
                 Column(
@@ -359,16 +445,42 @@ fun EditProfileScreen(
                         capitalization = KeyboardCapitalization.Words
                     )
 
-                    EditProfileField(
-                        value = country,
-                        onValueChange = {
-                            country = it.filter(Char::isLetter).take(2).uppercase()
-                            validationError = null
-                        },
-                        label = "Country code (e.g. IN)",
-                        singleLine = true,
-                        capitalization = KeyboardCapitalization.Characters
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "COUNTRY",
+                            color = EditMuted,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(EditCardSecondary)
+                                .clickable(enabled = !state.saving) {
+                                    showCountryScreen = true
+                                }
+                                .padding(horizontal = 14.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = CountryUtils.countryName(country)
+                                    .takeUnless { it == "Not set" } ?: "Select country",
+                                color = EditWhite,
+                                fontSize = 14.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (CountryUtils.find(country) != null) {
+                                Text(CountryUtils.flag(country), fontSize = 22.sp)
+                                Spacer(Modifier.size(12.dp))
+                            }
+                            Text("›", color = EditMuted, fontSize = 24.sp)
+                        }
+                    }
 
                     EditProfileField(
                         value = bio,
@@ -400,12 +512,6 @@ fun EditProfileScreen(
                         }
                     )
 
-                    Text(
-                        text = "Enter a new HTTPS URL to replace your current profile photo. " +
-                                "You can also continue using Gallery or Camera.",
-                        color = EditMuted,
-                        fontSize = 12.sp
-                    )
 
                     validationError?.let {
                         Text(it, color = EditError, fontSize = 12.sp)
@@ -413,75 +519,50 @@ fun EditProfileScreen(
                     state.error?.let {
                         Text(it, color = EditError, fontSize = 12.sp)
                     }
-                    Text(
-                        text = "DEFAULT CHESS AVATARS",
-                        color = EditCyan,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    state.defaultAvatars.chunked(3).forEach { avatarRow ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(EditCardSecondary)
+                            .clickable(enabled = !state.saving) {
+                                showDefaultAvatarsScreen = true
+                            }
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = EditCyan
+                        )
+                        Column(
+                            modifier = Modifier.weight(1f).padding(start = 12.dp)
                         ) {
-                            avatarRow.forEach { avatar ->
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(EditCardSecondary)
-                                        .clickable(enabled = !state.saving) {
-                                            viewModel.selectDefaultAvatar(avatar.id)
-                                        }
-                                        .padding(10.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    AsyncImage(
-                                        model = avatar.url,
-                                        contentDescription = "${avatar.id} avatar",
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .clip(CircleShape)
-                                    )
-
-                                    Spacer(Modifier.height(6.dp))
-
-                                    Text(
-                                        text = avatar.id,
-                                        color = EditWhite,
-                                        fontSize = 10.sp
-                                    )
-                                }
-                            }
-
-                            repeat(3 - avatarRow.size) {
-                                Spacer(Modifier.weight(1f))
-                            }
+                            Text(
+                                text = "Default Chess Avatars",
+                                color = EditWhite,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Choose from the available chess avatars",
+                                color = EditMuted,
+                                fontSize = 11.sp
+                            )
                         }
+                        Text("›", color = EditMuted, fontSize = 24.sp)
                     }
                 }
 
                 Button(
                     onClick = {
                         focusManager.clearFocus()
-                        validationError = when {
-                            displayName.length > 30 ->
-                                "Display name must be at most 30 characters."
-                            displayName.any { it == '\n' || it == '\r' || it == '\t' } ->
-                                "Display name must be a single line."
-                            bio.length > 160 ->
-                                "Bio must be at most 160 characters."
-                            country.isNotBlank() && !country.matches(Regex("[A-Z]{2}")) ->
-                                "Enter a valid two-letter country code."
-                            avatarUrl.isNotBlank() &&
-                                    !avatarUrl.trim().startsWith("https://", ignoreCase = true) ->
-                                "Avatar URL must start with https://."
-                            avatarUrl.length > 500 ->
-                                "Avatar URL must be at most 500 characters."
-                            else -> null
-                        }
+                        validationError = validateEditProfile(
+                            displayName = displayName,
+                            bio = bio,
+                            country = country,
+                            avatarUrl = avatarUrl
+                        )
                         if (validationError == null) {
                             viewModel.updateProfile(
                                 displayName = displayName,
@@ -546,6 +627,85 @@ fun EditProfileScreen(
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
         )
     }
+
+    if (showPhotoOptions) {
+        AlertDialog(
+            onDismissRequest = { showPhotoOptions = false },
+            containerColor = Color(0xFF25231F),
+            title = {
+                Text("Profile Picture", color = EditWhite, fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    PhotoOptionRow(
+                        title = "Take photo",
+                        icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) }
+                    ) {
+                        showPhotoOptions = false
+                        cameraLauncher.launch(null)
+                    }
+                    PhotoOptionRow(
+                        title = "Choose photo",
+                        icon = { Icon(Icons.Default.Image, contentDescription = null) }
+                    ) {
+                        showPhotoOptions = false
+                        galleryLauncher.launch("image/*")
+                    }
+                    PhotoOptionRow(
+                        title = "Default chess avatars",
+                        icon = { Icon(Icons.Default.Person, contentDescription = null, tint = EditCyan) }
+                    ) {
+                        showPhotoOptions = false
+                        showDefaultAvatarsScreen = true
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showPhotoOptions = false }) {
+                    Text("Cancel", color = EditCyan)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun PhotoOptionRow(
+    title: String,
+    icon: @Composable () -> Unit,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 16.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        icon()
+        Spacer(Modifier.size(14.dp))
+        Text(title, color = EditWhite, fontSize = 16.sp)
+    }
+}
+
+private fun validateEditProfile(
+    displayName: String,
+    bio: String,
+    country: String,
+    avatarUrl: String
+): String? = when {
+    displayName.length > 30 -> "Display name must be at most 30 characters."
+    displayName.any { it == '\n' || it == '\r' || it == '\t' } ->
+        "Display name must be a single line."
+    bio.length > 160 -> "Bio must be at most 160 characters."
+    country.isNotBlank() && !CountryUtils.isValidCode(country) ->
+        "Please select a valid country."
+    avatarUrl.isNotBlank() && !avatarUrl.trim().startsWith("https://", ignoreCase = true) ->
+        "Avatar URL must start with https://."
+    avatarUrl.length > 500 -> "Avatar URL must be at most 500 characters."
+    else -> null
 }
 
 @Composable
@@ -651,3 +811,4 @@ private fun EditProfileField(
         )
     )
 }
+

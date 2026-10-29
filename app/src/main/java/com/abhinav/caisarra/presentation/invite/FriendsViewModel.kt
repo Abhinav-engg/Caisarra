@@ -123,12 +123,12 @@ class FriendsViewModel(
                 searchQuery = value,
                 error = null,
                 message = null,
-                searchResults = if (query.trim().length < 2) {
+                searchResults = if (query.trim().isEmpty()) {
                     emptyList()
                 } else {
                     it.searchResults
                 },
-                friendshipStatuses = if (query.trim().length < 2) {
+                friendshipStatuses = if (query.trim().isEmpty()) {
                     emptyMap()
                 } else {
                     it.friendshipStatuses
@@ -139,7 +139,7 @@ class FriendsViewModel(
         searchJob?.cancel()
         val version = ++searchVersion
 
-        if (query.trim().length < 2) {
+        if (query.trim().isEmpty()) {
             _uiState.update { it.copy(isSearching = false) }
             return
         }

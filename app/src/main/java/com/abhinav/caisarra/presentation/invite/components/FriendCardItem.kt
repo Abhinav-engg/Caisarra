@@ -39,6 +39,7 @@ import com.caisaara.ui.theme.FriendsTextWhite
 @Composable
 fun FriendCardItem(
     friend: FriendDto,
+    onProfileClick: () -> Unit = {},
     onDirectMessage: () -> Unit,
     onChallenge: () -> Unit,
     modifier: Modifier = Modifier
@@ -49,11 +50,18 @@ fun FriendCardItem(
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FriendAvatar(name = friend.displayName ?: friend.username, avatarUrl = friend.avatarUrl, size = FriendsAvatarSize)
-        Spacer(Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(friend.displayName ?: friend.username, color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Text("${friend.rating ?: 1200} Rapid", color = FriendsTextMuted, fontSize = 13.sp)
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onProfileClick),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FriendAvatar(name = friend.displayName ?: friend.username, avatarUrl = friend.avatarUrl, size = FriendsAvatarSize)
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(friend.displayName ?: friend.username, color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text("${friend.rating ?: 1200} Rapid", color = FriendsTextMuted, fontSize = 13.sp)
+            }
         }
         Spacer(Modifier.width(10.dp))
         val actionShape = RoundedCornerShape(FriendsActionRadius)

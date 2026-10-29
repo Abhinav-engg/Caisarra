@@ -46,6 +46,7 @@ fun PlayerSearchResultItem(
     player: PlayerSearchDto,
     status: String?,
     isBusy: Boolean,
+    onPlayerClick: () -> Unit = {},
     onDirectMessage: () -> Unit,
     onChallenge: () -> Unit,
     onAdd: () -> Unit,
@@ -69,11 +70,18 @@ fun PlayerSearchResultItem(
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FriendAvatar(name = name, avatarUrl = player.avatarUrl, size = 44.dp)
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(name, color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Text("@${player.username} · $rating Rapid", color = FriendsTextMuted, fontSize = 12.sp)
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onPlayerClick),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FriendAvatar(name = name, avatarUrl = player.avatarUrl, size = 44.dp)
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text("@${player.username} · $rating Rapid", color = FriendsTextMuted, fontSize = 12.sp)
+            }
         }
         Spacer(Modifier.width(8.dp))
 

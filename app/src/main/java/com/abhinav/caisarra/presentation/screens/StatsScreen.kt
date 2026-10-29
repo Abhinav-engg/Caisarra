@@ -110,6 +110,7 @@ fun StatsScreen(
     viewModel: StatsViewModel,
     onBack: () -> Unit,
     onGameClick: (String) -> Unit = {},
+    onOpponentClick: (String) -> Unit = {},
     onSignIn: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -218,7 +219,8 @@ fun StatsScreen(
                         if (stats.recentGames.isNotEmpty()) {
                             RecentGamesSection(
                                 games = stats.recentGames,
-                                onGameClick = onGameClick
+                                onGameClick = onGameClick,
+                                onOpponentClick = onOpponentClick
                             )
                         }
 
@@ -817,7 +819,8 @@ private fun ColorPerformanceCard(
 @Composable
 private fun RecentGamesSection(
     games: List<RatingRecentGame>,
-    onGameClick: (String) -> Unit
+    onGameClick: (String) -> Unit,
+    onOpponentClick: (String) -> Unit = {}
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -833,7 +836,8 @@ private fun RecentGamesSection(
         games.forEach { game ->
             RecentGameItem(
                 game = game,
-                onClick = { onGameClick(game.gameId) }
+                onClick = { onGameClick(game.gameId) },
+                onOpponentClick = { onOpponentClick(game.opponentUsername) }
             )
         }
     }
@@ -842,7 +846,8 @@ private fun RecentGamesSection(
 @Composable
 private fun RecentGameItem(
     game: RatingRecentGame,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onOpponentClick: () -> Unit = {}
 ) {
     val isWin = game.outcome.equals("win", ignoreCase = true)
     val isLoss = game.outcome.equals("loss", ignoreCase = true)
@@ -908,9 +913,10 @@ private fun RecentGameItem(
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeBody,
                         fontWeight = FontWeight.Bold,
-                        color = StatsTextWhite,
+                        color = StatsCyan,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable { onOpponentClick() }
                     )
                     val detail = buildString {
                         if (!game.endReason.isNullOrBlank()) append(game.endReason)

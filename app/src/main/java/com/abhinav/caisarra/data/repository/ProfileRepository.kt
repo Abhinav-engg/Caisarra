@@ -23,6 +23,15 @@ class ProfileRepository(
         }
         return response.data ?: error("Profile response was empty")
     }
+
+    suspend fun searchPlayers(query: String): List<com.abhinav.caisarra.data.remote.dto.PlayerSearchDto> {
+        val response = service.searchPlayers(query.trim())
+
+        if (!response.success) {
+            error(response.error ?: response.message ?: "Could not search players")
+        }
+        return response.data?.players.orEmpty()
+    }
     suspend fun uploadAvatar(context: Context, uri: Uri): ProfileData {
         val bytes = when (uri.scheme) {
             "file" -> FileInputStream(File(uri.path!!)).use { it.readBytes() }
@@ -77,6 +86,24 @@ class ProfileRepository(
             error(response.error ?: response.message ?: "Could not update profile")
         }
         return response.data ?: error("Updated profile response was empty")
+    }
+    suspend fun getPublicProfile(username: String): ProfileData {
+        require(username.isNotBlank()) {
+            "Username cannot be empty."
+        }
+
+        val response = service.getPublicProfile(username.trim())
+
+        if (!response.success) {
+            error(
+                response.error
+                    ?: response.message
+                    ?: "Could not load player profile"
+            )
+        }
+
+        return response.data
+            ?: error("Player profile response was empty")
     }
 }
 

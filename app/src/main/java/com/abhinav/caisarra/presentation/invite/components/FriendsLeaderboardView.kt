@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.invite.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +49,7 @@ import com.caisaara.ui.theme.SilverColor
 fun FriendsLeaderboardView(
     entries: List<FriendsLeaderboardItem>,
     onClose: () -> Unit,
+    onPlayerClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -78,7 +80,7 @@ fun FriendsLeaderboardView(
             ) {
                 item { Spacer(Modifier.height(4.dp)) }
                 itemsIndexed(entries) { index, entry ->
-                    LeaderboardRow(rank = index + 1, entry = entry)
+                    LeaderboardRow(rank = index + 1, entry = entry, onClick = onPlayerClick)
                 }
                 item { Spacer(Modifier.height(24.dp)) }
             }
@@ -87,7 +89,11 @@ fun FriendsLeaderboardView(
 }
 
 @Composable
-private fun LeaderboardRow(rank: Int, entry: FriendsLeaderboardItem) {
+private fun LeaderboardRow(
+    rank: Int,
+    entry: FriendsLeaderboardItem,
+    onClick: (String) -> Unit = {}
+) {
     val rankColor = when (rank) {
         1 -> GoldColor
         2 -> SilverColor
@@ -103,6 +109,7 @@ private fun LeaderboardRow(rank: Int, entry: FriendsLeaderboardItem) {
             .clip(cardShape)
             .background(if (entry.isMe) FriendsLeaderboardMeBg else FriendsCardBg)
             .border(1.dp, if (entry.isMe) FriendsCyan else FriendsCardBorder, cardShape)
+            .clickable { onClick(entry.username) }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

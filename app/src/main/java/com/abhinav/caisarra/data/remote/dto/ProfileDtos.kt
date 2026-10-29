@@ -22,7 +22,9 @@ data class ProfileData(
     @SerialName("needs_rating")
     val needsRating: Boolean = false,
     @SerialName("joined_at")
-    val joinedAt: String? = null
+    val joinedAt: String? = null,
+    @SerialName("user_id")
+    val userId: Long? = null
 )
 
 @Serializable
