@@ -66,6 +66,13 @@ fun TournamentDetailScreen(
         }
     }
 
+    LaunchedEffect(state.isTournamentCancelled) {
+        if (state.isTournamentCancelled) {
+            Toast.makeText(context, "Tournament cancelled", Toast.LENGTH_SHORT).show()
+            onBack()
+        }
+    }
+
     TournamentBackground {
         Column(
             modifier = Modifier

@@ -25,7 +25,7 @@ import com.abhinav.caisarra.data.remote.api.LeaderboardService
 import com.abhinav.caisarra.data.remote.api.DirectMessageService
 import com.abhinav.caisarra.data.remote.api.PrivacyService
 object RetrofitInstance {
-    const val BASE_URL = "https://caisaara.duckdns.org"
+    const val BASE_URL = "https://caisaara.app"
     val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false

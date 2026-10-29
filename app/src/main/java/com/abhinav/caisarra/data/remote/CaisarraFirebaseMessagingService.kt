@@ -49,11 +49,11 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
         val deepLink = data["deep_link"]
             ?: when {
                 !gameId.isNullOrBlank() && type.contains("accepted", ignoreCase = true) ->
-                    "https://caisaara.duckdns.org/game/$gameId"
+                    "https://caisaara.app/game/$gameId"
                 !code.isNullOrBlank() ->
-                    "https://caisaara.duckdns.org/play/$code"
+                    "https://caisaara.app/play/$code"
                 !gameId.isNullOrBlank() ->
-                    "https://caisaara.duckdns.org/game/$gameId"
+                    "https://caisaara.app/game/$gameId"
                 else -> null
             }
         val channelId = data["channel_id"]?.takeIf { it.isNotBlank() } ?: resolveChannel(type)

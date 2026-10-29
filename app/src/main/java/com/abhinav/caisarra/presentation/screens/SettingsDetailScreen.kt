@@ -29,6 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -52,6 +53,7 @@ import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
 import com.abhinav.caisarra.core.ui.theme.StatsScreenPadding
 import com.abhinav.caisarra.core.ui.theme.StatsSectionSpacing
+import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.SettingsDivider
 import com.caisaara.ui.theme.StatsBg
 import com.caisaara.ui.theme.StatsCardBg
@@ -75,7 +77,9 @@ import com.abhinav.caisarra.presentation.game.components.setAutoQueenEnabled
 @Composable
 fun SettingsDetailScreen(
     onBack: () -> Unit,
-    onPrivacyClick: () -> Unit = {}
+    onPrivacyClick: () -> Unit = {},
+    isGuest: Boolean = false,
+    onDeleteAccountClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -277,6 +281,70 @@ fun SettingsDetailScreen(
                         tint = StatsTextMuted,
                         modifier = Modifier.size(20.dp)
                     )
+                }
+            }
+
+            if (!isGuest) {
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "DANGER ZONE",
+                    fontFamily = JetBrainsMono,
+                    fontSize = TextSizeCaption,
+                    fontWeight = FontWeight.SemiBold,
+                    color = RedNormal
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(StatsCardCornerRadius))
+                        .background(StatsCardBg)
+                        .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
+                        .clickable { onDeleteAccountClick() }
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteForever,
+                                contentDescription = null,
+                                tint = RedNormal,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "Delete Account",
+                                    fontFamily = JetBrainsMono,
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = TextSizeBody,
+                                    color = RedNormal
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Permanently remove your account and all data",
+                                    fontFamily = JetBrainsMono,
+                                    fontSize = TextSizeTiny,
+                                    color = StatsTextMuted
+                                )
+                            }
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Open",
+                            tint = StatsTextMuted,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 

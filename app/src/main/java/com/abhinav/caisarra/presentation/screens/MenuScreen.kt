@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
@@ -66,6 +67,7 @@ import com.caisaara.ui.theme.MenuFriendsGreen
 import com.caisaara.ui.theme.MenuFriendsIconBg
 import com.caisaara.ui.theme.MenuStatsIconBg
 import com.caisaara.ui.theme.MenuThemeIconBg
+import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.SettingsDivider
 import com.caisaara.ui.theme.StatsBg
 import com.caisaara.ui.theme.StatsCardBorder
@@ -294,6 +296,16 @@ fun MenuScreen(
                     title = "Privacy Settings",
                     onClick = onPrivacyClick
                 )
+                if (!isGuest) {
+                    ItemDivider()
+                    MenuItem(
+                        icon = Icons.Default.DeleteForever,
+                        iconTint = RedNormal,
+                        iconBg = ThemeNeonDeep,
+                        title = "Delete Account",
+                        onClick = onDeleteAccountClick
+                    )
+                }
                 ItemDivider()
                 MenuItem(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,

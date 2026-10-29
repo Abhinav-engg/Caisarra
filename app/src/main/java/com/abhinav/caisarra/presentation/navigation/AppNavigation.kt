@@ -133,6 +133,7 @@ import com.abhinav.caisarra.presentation.tournament.TournamentDetailScreen
 import com.abhinav.caisarra.presentation.tournament.TournamentDetailViewModel
 import com.abhinav.caisarra.presentation.tournament.TournamentListScreen
 import com.abhinav.caisarra.presentation.tournament.TournamentListViewModel
+import com.abhinav.caisarra.presentation.viewmodel.DeleteAccountViewModel
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
@@ -1359,9 +1360,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                         navController.navigate(AppRoutes.onlineGame(gameId)) {
                             launchSingleTop = true
                         }
-                    },
-                    onJoinByCode = { code ->
-                        navController.navigate(AppRoutes.joinInvite(code))
                     }
                 )
             }
@@ -1426,6 +1424,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navArgument("code") { type = NavType.StringType }
                 ),
                 deepLinks = listOf(
+                    navDeepLink { uriPattern = "https://caisaara.app/play/{code}" },
                     navDeepLink { uriPattern = "https://caisaara.duckdns.org/play/{code}" }
                 )
             ) { entry ->
@@ -1516,6 +1515,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 ),
                 deepLinks = listOf(
                     navDeepLink { uriPattern = "caisarra://game/online/{gameId}" },
+                    navDeepLink { uriPattern = "https://caisaara.app/game/{gameId}" },
                     navDeepLink { uriPattern = "https://caisaara.duckdns.org/game/{gameId}" }
                 )
             ) { entry ->
@@ -1661,9 +1661,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                         navController.navigate(AppRoutes.onlineGame(gameId)) {
                             launchSingleTop = true
                         }
-                    },
-                    onJoinByCode = { code ->
-                        navController.navigate(AppRoutes.joinInvite(code))
                     }
                 )
             }
@@ -2176,6 +2173,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                         requireAuth("Privacy settings") {
                             navController.navigateOnce(AppRoutes.PRIVACY_SETTINGS)
                         }
+                    },
+                    isGuest = isGuestUser,
+                    onDeleteAccountClick = {
+                        navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)
                     }
                 )
             }
@@ -2200,14 +2201,31 @@ fun AppNavigation(authRepository: AuthRepository) {
 
 
             composable(route = AppRoutes.DELETE_ACCOUNT) {
-                DeleteAccountScreen(
-                    onBack = { navController.safePop() },
-                    onConfirmDelete = {
-                        scope.launch {
-                            authRepository.logout()
+                androidx.activity.compose.BackHandler {
+                    navController.safePop()
+                }
+
+                if (isGuestUser) {
+                    LaunchedEffect(Unit) {
+                        Toast.makeText(
+                            context,
+                            "Guest accounts cannot be deleted.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        navController.safePop()
+                    }
+                } else {
+                    val deleteAccountViewModel: DeleteAccountViewModel = screenViewModel {
+                        DeleteAccountViewModel(authRepository)
+                    }
+
+                    DeleteAccountScreen(
+                        viewModel = deleteAccountViewModel,
+                        onBack = { navController.safePop() },
+                        onConfirmDelete = {
                             Toast.makeText(
                                 context,
-                                "Account deletion request submitted.",
+                                "Account deleted successfully.",
                                 Toast.LENGTH_LONG
                             ).show()
                             navController.navigate(AppRoutes.LOGIN) {
@@ -2217,8 +2235,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 launchSingleTop = true
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
 
             composable(route = AppRoutes.WATCH) {
@@ -2240,6 +2258,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 ),
                 deepLinks = listOf(
+                    navDeepLink {
+                        uriPattern = "https://caisaara.app/watch/{watchCode}"
+                    },
                     navDeepLink {
                         uriPattern = "https://caisaara.duckdns.org/watch/{watchCode}"
                     }
