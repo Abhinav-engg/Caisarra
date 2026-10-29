@@ -48,19 +48,32 @@ class JoinInviteViewModel(
     fun load() {
         viewModelScope.launch {
             _state.value = JoinInviteState.Loading
+
             inviteRepository.previewInvite(code)
                 .onSuccess { preview ->
+
                     val accessToken = authRepository.getValidAccessToken()
                     val loggedIn = accessToken != null
-                    val myId = accessToken?.let { TokenExpiryChecker.getUserId(it) }
+                    val myId = accessToken?.let {
+                        TokenExpiryChecker.getUserId(it)
+                    }
 
-                    if (myId != null && myId == preview.inviter.id) {
+                    val inviter = preview.inviter
+
+                    if (inviter == null) {
+                        _state.value = JoinInviteState.Error(
+                            "Unable to load inviter details."
+                        )
+                        return@onSuccess
+                    }
+
+                    if (myId != null && myId == inviter.id) {
                         _gameReady.send(preview.gameId)
                         return@onSuccess
                     }
 
                     _state.value = JoinInviteState.Preview(
-                        inviterName = preview.inviter.username,
+                        inviterName = inviter.username,
                         timeControlMinutes = preview.timeControlMinutes,
                         incrementSeconds = preview.incrementSeconds,
                         yourColor = when (preview.color) {
@@ -71,9 +84,14 @@ class JoinInviteViewModel(
                         needsLogin = !loggedIn
                     )
                 }
-                .onFailure { _state.value = JoinInviteState.Error(it.message.orEmpty()) }
+                .onFailure { error ->
+                    _state.value = JoinInviteState.Error(
+                        error.message ?: "Failed to load invitation."
+                    )
+                }
         }
     }
+
 
     fun join() {
         val current = _state.value as? JoinInviteState.Preview ?: return

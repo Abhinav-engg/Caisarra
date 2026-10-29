@@ -109,19 +109,6 @@ fun HomeScreen(
 ) {
 
     val state by viewModel.state.collectAsState()
-//    val lifecycleOwner = LocalLifecycleOwner.current
-//
-//    DisposableEffect(lifecycleOwner) {
-//        val observer = LifecycleEventObserver { _, event ->
-//            if (event == Lifecycle.Event.ON_RESUME) {
-//                viewModel.refresh()
-//            }
-//        }
-//        lifecycleOwner.lifecycle.addObserver(observer)
-//        onDispose {
-//            lifecycleOwner.lifecycle.removeObserver(observer)
-//        }
-//    }
 
     Box(
         modifier = Modifier
@@ -486,7 +473,7 @@ private fun RatingCard(
         val boardWidth = maxWidth * 0.60f
         Image(
             painter = painterResource(
-                id = R.drawable.chess_board
+                id = R.drawable.chess_board1
             ),
 
             contentDescription = "Chess board",
