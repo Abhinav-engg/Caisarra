@@ -90,7 +90,10 @@ fun CreateInviteScreen(
         )
     } else {
         SetupPage {
-            SetupHeader("Create Invite", onBack)
+            SetupHeader(
+                title = if (state.opponentUsername != null) "Challenge ${state.opponentUsername}" else "Create Invite",
+                onBack = onBack
+            )
             Spacer(Modifier.height(24.dp))
             TimeControlRow("${state.mode.label} · ${state.selectedControl}") {
                 showTimeControls = true
@@ -128,8 +131,13 @@ fun CreateInviteScreen(
                 Text(it, color = Color(0xFFEF4444), fontSize = 13.sp)
             }
             Spacer(Modifier.height(28.dp))
+            val btnLabel = when {
+                state.isLoading -> "CREATING..."
+                state.opponentUsername != null -> "CHALLENGE ${state.opponentUsername!!.uppercase()}"
+                else -> "CREATE INVITE"
+            }
             GeneralButton(
-                text = if (state.isLoading) "CREATING..." else "CREATE INVITE",
+                text = btnLabel,
                 onClick = viewModel::createInvite,
                 enabled = !state.isLoading
             )
