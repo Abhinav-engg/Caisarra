@@ -174,6 +174,7 @@ fun TournamentDetailScreen(
                                 onJoin = viewModel::join,
                                 onLeave = viewModel::leave,
                                 onStart = viewModel::start,
+                                onEnd = viewModel::end,
                                 onOpenGame = onOpenGame
                             )
 
@@ -194,6 +195,7 @@ private fun OverviewTab(
     onJoin: () -> Unit,
     onLeave: () -> Unit,
     onStart: () -> Unit,
+    onEnd: () -> Unit,
     onOpenGame: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -338,6 +340,23 @@ private fun OverviewTab(
                     fontSize = 12.5.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        if (isCreator && tournament.status.equals("ongoing", ignoreCase = true)) {
+            Spacer(Modifier.height(14.dp))
+            OutlinedButton(
+                onClick = onEnd,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(
+                    "Cancel Tournament",
+                    color = TournamentColors.Danger,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }

@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.data.remote
 
 import com.abhinav.caisarra.data.remote.dto.CreateTournamentRequest
+import com.abhinav.caisarra.data.remote.dto.EndTournamentResponse
 import com.abhinav.caisarra.data.remote.dto.JoinTournamentRequest
 import com.abhinav.caisarra.data.remote.dto.JoinTournamentResponse
 import com.abhinav.caisarra.data.remote.dto.LeaveTournamentResponse
@@ -42,6 +43,9 @@ interface TournamentService {
 
     @POST("api/tournaments/{id}/start")
     suspend fun startTournament(@Path("id") id: String): StartTournamentResponse
+
+    @POST("api/tournaments/{id}/end")
+    suspend fun endTournament(@Path("id") id: String): EndTournamentResponse
 
     @GET("api/tournaments/{id}/standings")
     suspend fun getStandings(@Path("id") id: String): StandingsResponse

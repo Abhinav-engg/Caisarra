@@ -1359,6 +1359,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                         navController.navigate(AppRoutes.onlineGame(gameId)) {
                             launchSingleTop = true
                         }
+                    },
+                    onJoinByCode = { code ->
+                        navController.navigate(AppRoutes.joinInvite(code))
                     }
                 )
             }
@@ -1658,6 +1661,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                         navController.navigate(AppRoutes.onlineGame(gameId)) {
                             launchSingleTop = true
                         }
+                    },
+                    onJoinByCode = { code ->
+                        navController.navigate(AppRoutes.joinInvite(code))
                     }
                 )
             }
