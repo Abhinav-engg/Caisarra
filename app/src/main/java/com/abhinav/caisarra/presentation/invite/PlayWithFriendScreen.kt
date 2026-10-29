@@ -44,6 +44,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import com.abhinav.caisarra.core.ui.theme.FriendsCardRadius
 import com.abhinav.caisarra.core.ui.theme.FriendsScreenPadding
 import com.abhinav.caisarra.data.repository.ChallengeManager
@@ -123,7 +126,13 @@ fun PlayWithFriendScreen(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(FriendsBg).padding(top = 12.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(FriendsBg)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(top = 12.dp)
+    ) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = FriendsTextWhite) }
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {

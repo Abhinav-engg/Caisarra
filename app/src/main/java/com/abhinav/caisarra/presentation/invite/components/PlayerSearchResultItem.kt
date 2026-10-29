@@ -134,14 +134,28 @@ fun PlayerSearchResultItem(
             }
             "self" -> Text("You", color = FriendsTextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             else -> {
-                Box(
-                    modifier = Modifier.clip(btnShape).background(FriendsCyan).clickable(enabled = !isBusy, onClick = onAdd).padding(horizontal = 12.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.PersonAdd, "Add", tint = Black, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Add", color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(actionShape)
+                            .background(FriendsActionBg)
+                            .border(1.dp, FriendsActionBorder, actionShape)
+                            .clickable(onClick = onChallenge),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.SportsEsports, "Challenge", tint = FriendsCyan, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier.clip(btnShape).background(FriendsCyan).clickable(enabled = !isBusy, onClick = onAdd).padding(horizontal = 12.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.PersonAdd, "Add", tint = Black, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Add", color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
