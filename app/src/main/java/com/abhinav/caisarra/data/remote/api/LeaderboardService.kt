@@ -1,6 +1,7 @@
 
 package com.abhinav.caisarra.data.remote.api
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -10,6 +11,7 @@ interface LeaderboardService {
 
     @GET("api/leaderboard")
     suspend fun getGlobalLeaderboard(
+        @Query("mode") mode: String = "rapid",
         @Query("limit") limit: Int = 50,
         @Query("offset") offset: Int = 0
     ): GlobalLeaderboardResponse
@@ -17,7 +19,7 @@ interface LeaderboardService {
     @GET("api/clubs/{clubID}/leaderboard")
     suspend fun getClubLeaderboard(
         @Path("clubID") clubId: String,
-        @Query("mode") mode: String = "blitz"
+        @Query("mode") mode: String = "rapid"
     ): List<LeaderboardEntry>
 
     @GET("puzzles/rush/leaderboard")
@@ -30,17 +32,21 @@ interface LeaderboardService {
 @Serializable
 data class GlobalLeaderboardResponse(
     val success: Boolean = false,
-    val message: String = "",
+    val message: String? = null,
+    val error: String? = null,
     val data: List<LeaderboardEntry> = emptyList()
 )
 
 @Serializable
 data class LeaderboardEntry(
     val rank: Int = 0,
-    val user_id: Long = 0L,
+    @SerialName("user_id")
+    val userId: Long = 0L,
     val username: String = "",
     val rating: Int = 0
-)
+) {
+    val user_id: Long get() = userId
+}
 
 @Serializable
 data class PuzzleRushLeaderboardResponse(
@@ -50,9 +56,14 @@ data class PuzzleRushLeaderboardResponse(
 
 @Serializable
 data class PuzzleRushLeaderboardEntry(
-    val user_id: Long = 0L,
+    @SerialName("user_id")
+    val userId: Long = 0L,
     val username: String = "",
     val score: Int = 0,
     val mode: String = "3min",
-    val played_at: String = ""
-)
+    @SerialName("played_at")
+    val playedAt: String = ""
+) {
+    val user_id: Long get() = userId
+    val played_at: String get() = playedAt
+}
