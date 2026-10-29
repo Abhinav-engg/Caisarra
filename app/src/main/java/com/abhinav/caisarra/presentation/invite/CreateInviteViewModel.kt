@@ -21,6 +21,8 @@ data class CreateInviteUiState(
     val inviteCode: String? = null,
     val gameId: String? = null,
     val link: String? = null,
+    val opponentId: Long? = null,
+    val opponentUsername: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -122,6 +124,10 @@ class CreateInviteViewModel(application: Application) : AndroidViewModel(applica
         _uiState.update { it.copy(allowTakebacks = allowed) }
     }
 
+    fun setOpponent(id: Long?, username: String?) {
+        _uiState.update { it.copy(opponentId = id, opponentUsername = username) }
+    }
+
     fun createInvite() {
         val state = _uiState.value
         if (state.isLoading) return
@@ -143,7 +149,8 @@ class CreateInviteViewModel(application: Application) : AndroidViewModel(applica
                 timeControlMinutes = state.timeControlMinutes,
                 incrementSeconds = state.incrementSeconds,
                 color = state.color,
-                rated = !state.allowTakebacks
+                rated = !state.allowTakebacks,
+                opponentId = state.opponentId
             )
                 .onSuccess { response ->
                     _uiState.update {
