@@ -25,6 +25,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.theme.FriendsActionRadius
 import com.abhinav.caisarra.core.ui.theme.FriendsActionSize
@@ -44,43 +47,137 @@ fun FriendCardItem(
     onChallenge: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val displayName = friend.displayName ?: friend.username
+    val isOnline = friend.isOnline
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(
+                horizontal = 14.dp,
+                vertical = 12.dp
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             modifier = Modifier
                 .weight(1f)
-                .clickable(onClick = onProfileClick),
+                .clickable(
+                    onClick = onProfileClick
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FriendAvatar(name = friend.displayName ?: friend.username, avatarUrl = friend.avatarUrl, size = FriendsAvatarSize)
-            Spacer(Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(friend.displayName ?: friend.username, color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text("${friend.rating ?: 1200} Rapid", color = FriendsTextMuted, fontSize = 13.sp)
+            FriendAvatar(
+                name = displayName,
+                avatarUrl = friend.avatarUrl,
+                size = FriendsAvatarSize,
+                isOnline = isOnline
+            )
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = displayName,
+                    color = FriendsTextWhite,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${friend.rating ?: 1200} Rapid",
+                        color = FriendsTextMuted,
+                        fontSize = 13.sp
+                    )
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Text(
+                        text = "•",
+                        color = FriendsTextMuted.copy(alpha = 0.5f),
+                        fontSize = 12.sp
+                    )
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isOnline) {
+                                    Color(0xFF22C55E)
+                                } else {
+                                    Color(0xFF64748B)
+                                }
+                            )
+                    )
+
+                    Spacer(modifier = Modifier.width(5.dp))
+
+                    Text(
+                        text = if (isOnline) "Online" else "Offline",
+                        color = if (isOnline) {
+                            Color(0xFF34D399)
+                        } else {
+                            FriendsTextMuted
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = if (isOnline) {
+                            FontWeight.SemiBold
+                        } else {
+                            FontWeight.Normal
+                        }
+                    )
+                }
             }
         }
-        Spacer(Modifier.width(10.dp))
+
+        Spacer(modifier = Modifier.width(10.dp))
+
         val actionShape = RoundedCornerShape(FriendsActionRadius)
+
         Box(
             modifier = Modifier
                 .size(FriendsActionSize)
                 .clip(actionShape)
                 .background(FriendsActionBg)
-                .border(1.dp, FriendsActionBorder, actionShape)
-                .clickable(onClick = onChallenge),
+                .border(
+                    width = 1.dp,
+                    color = FriendsActionBorder,
+                    shape = actionShape
+                )
+                .clickable(
+                    onClick = onChallenge
+                ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.SportsEsports, "Challenge", tint = FriendsCyan, modifier = Modifier.size(19.dp))
+            Icon(
+                imageVector = Icons.Default.SportsEsports,
+                contentDescription = "Challenge",
+                tint = FriendsCyan,
+                modifier = Modifier.size(19.dp)
+            )
         }
-        Spacer(Modifier.width(8.dp))
+
+        Spacer(modifier = Modifier.width(8.dp))
+
         Image(
             painter = painterResource(R.drawable.icon),
             contentDescription = "Message",
-            modifier = Modifier.size(FriendsActionSize).clip(actionShape).clickable(onClick = onDirectMessage)
+            modifier = Modifier
+                .size(FriendsActionSize)
+                .clip(actionShape)
+                .clickable(
+                    onClick = onDirectMessage
+                )
         )
     }
 }

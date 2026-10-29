@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -42,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -68,9 +71,7 @@ import com.caisaara.ui.theme.FriendsTextMuted
 import com.caisaara.ui.theme.FriendsTextWhite
 import com.caisaara.ui.theme.GoldColor
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
+
 data class ChallengeTarget(
     val userId: Long,
     val username: String,
@@ -129,7 +130,7 @@ fun PlayWithFriendScreen(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(FriendsBg).windowInsetsPadding(WindowInsets.safeDrawing).padding(top = 12.dp)) {
+    Column(modifier = Modifier.fillMaxSize().background(FriendsBg).padding(top = 12.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = FriendsTextWhite) }
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -219,33 +220,183 @@ fun PlayWithFriendScreen(
                     when (state.selectedTab) {
                         FriendsTab.ALL_FRIENDS -> {
                             item {
-                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Text("MY FRIENDS", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "MY FRIENDS",
+                                        color = FriendsTextMuted,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        letterSpacing = 1.sp,
+                                        modifier = Modifier.weight(1f)
+                                    )
+
                                     if (onJoinByCode != null) {
                                         Text(
-                                            "SCAN QR",
+                                            text = "SCAN QR",
                                             color = FriendsCyan,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp,
                                             letterSpacing = 1.sp,
                                             modifier = Modifier.clickable { showQrScanner = true }
                                         )
-                                        Spacer(Modifier.width(16.dp))
+                                        Spacer(modifier = Modifier.width(16.dp))
                                     }
-                                    Text("INVITE LINK", color = FriendsCyan, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp, modifier = Modifier.clickable(onClick = onCreateMatchLink))
+
+                                    Text(
+                                        text = "INVITE LINK",
+                                        color = FriendsCyan,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        letterSpacing = 1.sp,
+                                        modifier = Modifier.clickable(onClick = onCreateMatchLink)
+                                    )
                                 }
                             }
+
+                            if (state.friends.isNotEmpty()) {
+                                item {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val filterAllSelected = state.presenceFilter == FriendsPresenceFilter.ALL
+                                        val filterOnlineSelected = state.presenceFilter == FriendsPresenceFilter.ONLINE_ONLY
+                                        val chipShape = RoundedCornerShape(20.dp)
+
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(chipShape)
+                                                .background(
+                                                    if (filterAllSelected) {
+                                                        Color(0xFF007A87)
+                                                    } else {
+                                                        FriendsCardBg
+                                                    }
+                                                )
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = if (filterAllSelected) {
+                                                        Color(0xFF00CED1)
+                                                    } else {
+                                                        FriendsCardBorder
+                                                    },
+                                                    shape = chipShape
+                                                )
+                                                .clickable {
+                                                    viewModel.selectPresenceFilter(FriendsPresenceFilter.ALL)
+                                                }
+                                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "All (${state.friends.size})",
+                                                color = if (filterAllSelected) {
+                                                    FriendsTextWhite
+                                                } else {
+                                                    FriendsTextMuted
+                                                },
+                                                fontSize = 12.sp,
+                                                fontWeight = if (filterAllSelected) {
+                                                    FontWeight.Bold
+                                                } else {
+                                                    FontWeight.Medium
+                                                }
+                                            )
+                                        }
+
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(chipShape)
+                                                .background(
+                                                    if (filterOnlineSelected) {
+                                                        Color(0xFF007A87)
+                                                    } else {
+                                                        FriendsCardBg
+                                                    }
+                                                )
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = if (filterOnlineSelected) {
+                                                        Color(0xFF00CED1)
+                                                    } else {
+                                                        FriendsCardBorder
+                                                    },
+                                                    shape = chipShape
+                                                )
+                                                .clickable {
+                                                    viewModel.selectPresenceFilter(FriendsPresenceFilter.ONLINE_ONLY)
+                                                }
+                                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(7.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(0xFF22C55E))
+                                                )
+
+                                                Text(
+                                                    text = "Online (${state.onlineFriendsCount})",
+                                                    color = if (filterOnlineSelected) {
+                                                        FriendsTextWhite
+                                                    } else {
+                                                        FriendsTextMuted
+                                                    },
+                                                    fontSize = 12.sp,
+                                                    fontWeight = if (filterOnlineSelected) {
+                                                        FontWeight.Bold
+                                                    } else {
+                                                        FontWeight.Medium
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             if (state.friends.isEmpty() && !state.isLoading) {
-                                item { EmptyNotice("No friends yet", "Search for a player by username above to add friends.") }
-                            } else if (state.friends.isNotEmpty()) {
+                                item {
+                                    EmptyNotice(
+                                        title = "No friends yet",
+                                        subtitle = "Search for a player by username above to add friends."
+                                    )
+                                }
+                            } else if (state.visibleFriends.isEmpty() && state.presenceFilter == FriendsPresenceFilter.ONLINE_ONLY && !state.isLoading) {
+                                item {
+                                    EmptyNotice(
+                                        title = "No friends online",
+                                        subtitle = "None of your friends are currently online. Check back later or invite them to play!"
+                                    )
+                                }
+                            } else if (state.visibleFriends.isNotEmpty()) {
                                 item {
                                     val cardShape = RoundedCornerShape(FriendsCardRadius)
-                                    Column(modifier = Modifier.fillMaxWidth().clip(cardShape).background(FriendsCardBg).border(1.dp, FriendsCardBorder, cardShape)) {
-                                        state.friends.forEachIndexed { index, friend ->
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(cardShape)
+                                            .background(FriendsCardBg)
+                                            .border(1.dp, FriendsCardBorder, cardShape)
+                                    ) {
+                                        state.visibleFriends.forEachIndexed { index, friend ->
                                             FriendCardItem(
                                                 friend = friend,
-                                                onProfileClick = { onViewProfile(friend.username) },
-                                                onDirectMessage = { onDirectMessage(friend.userId, friend.username) },
+                                                onProfileClick = {
+                                                    onViewProfile(friend.username)
+                                                },
+                                                onDirectMessage = {
+                                                    onDirectMessage(friend.userId, friend.username)
+                                                },
                                                 onChallenge = {
                                                     challengeTarget = ChallengeTarget(
                                                         userId = friend.userId,
@@ -255,7 +406,12 @@ fun PlayWithFriendScreen(
                                                     )
                                                 }
                                             )
-                                            if (index < state.friends.lastIndex) HorizontalDivider(color = FriendsDivider, thickness = 1.dp)
+                                            if (index < state.visibleFriends.lastIndex) {
+                                                HorizontalDivider(
+                                                    color = FriendsDivider,
+                                                    thickness = 1.dp
+                                                )
+                                            }
                                         }
                                     }
                                 }
