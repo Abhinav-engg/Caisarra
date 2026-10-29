@@ -2,6 +2,7 @@
 package com.abhinav.caisarra.data.remote.api
 
 import com.abhinav.caisarra.data.remote.dto.ApiResponse
+import com.abhinav.caisarra.data.remote.dto.CommunityBookmarkData
 import com.abhinav.caisarra.data.remote.dto.CommunityCommentDto
 import com.abhinav.caisarra.data.remote.dto.CommunityCommentsData
 import com.abhinav.caisarra.data.remote.dto.CommunityFeedData
@@ -69,4 +70,20 @@ interface CommunityService {
     suspend fun deleteComment(
         @Path("id") commentId: Long
     ): ApiResponse<Unit>
+
+    @PUT("api/posts/{id}/bookmark")
+    suspend fun bookmarkPost(
+        @Path("id") postId: Long
+    ): ApiResponse<CommunityBookmarkData>
+
+    @DELETE("api/posts/{id}/bookmark")
+    suspend fun removeBookmark(
+        @Path("id") postId: Long
+    ): ApiResponse<CommunityBookmarkData>
+
+    @GET("api/bookmarks")
+    suspend fun getBookmarks(
+        @Query("before_id") beforeId: Long? = null,
+        @Query("limit") limit: Int = 20
+    ): ApiResponse<CommunityFeedData>
 }
