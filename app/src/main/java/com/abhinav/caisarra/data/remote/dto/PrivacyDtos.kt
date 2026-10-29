@@ -1,7 +1,9 @@
 package com.abhinav.caisarra.data.remote.dto
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 enum class PrivacyOption(val value: String, val label: String, val description: String) {
     EVERYONE("everyone", "Everyone", "Anyone can interact with you"),
@@ -14,16 +16,24 @@ enum class PrivacyOption(val value: String, val label: String, val description: 
     }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class PrivacySettingsDto(
     @SerialName("direct_message")
-    val directMessage: String = "everyone",
+    @JsonNames("direct_messages", "directMessage", "directMessages")
+    val directMessage: String? = "everyone",
+
     @SerialName("club")
-    val club: String = "everyone",
+    @JsonNames("clubs", "clubOption")
+    val club: String? = "everyone",
+
     @SerialName("tournament")
-    val tournament: String = "everyone",
+    @JsonNames("tournaments", "tournamentOption")
+    val tournament: String? = "everyone",
+
     @SerialName("invite_friend")
-    val inviteFriend: String = "everyone"
+    @JsonNames("invite_friends", "inviteFriend", "inviteFriends", "friend_invite", "friend_invites")
+    val inviteFriend: String? = "everyone"
 ) {
     val directMessageOption: PrivacyOption get() = PrivacyOption.fromValue(directMessage)
     val clubOption: PrivacyOption get() = PrivacyOption.fromValue(club)

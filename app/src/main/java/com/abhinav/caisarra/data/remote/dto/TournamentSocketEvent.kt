@@ -17,4 +17,8 @@ sealed class TournamentSocketEvent {
     @Serializable
     @SerialName("tournament_completed")
     data class Completed(@SerialName("winner_id") val winnerId: Long? = null) : TournamentSocketEvent()
+
+    @Serializable
+    @SerialName("tournament_cancelled")
+    data class Cancelled(@SerialName("winner_id") val winnerId: Long? = null) : TournamentSocketEvent()
 }

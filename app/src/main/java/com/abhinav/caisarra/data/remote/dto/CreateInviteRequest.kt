@@ -8,5 +8,6 @@ data class CreateInviteRequest(
     @SerialName("time_control_minutes") val timeControlMinutes: Int,
     @SerialName("increment_seconds") val incrementSeconds: Int,
     val color: String,
+    @SerialName("opponent_id") val opponentId: Long? = null,
     val rated: Boolean = true
 )

@@ -59,6 +59,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.abhinav.caisarra.data.remote.dto.NearbyPlayer
 import com.abhinav.caisarra.presentation.common.singleClick
+import com.abhinav.caisarra.presentation.invite.components.DirectChallengeDialog
 import com.abhinav.caisarra.presentation.nearby.NearbyColors
 import com.abhinav.caisarra.presentation.nearby.NearbyMapState
 import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
@@ -77,7 +78,8 @@ fun NearbyScreen(
     onAddFriend: (NearbyPlayer) -> Unit = {},
     onChat: (NearbyPlayer) -> Unit = {},
     onFilter: () -> Unit = {},
-    onRefresh: (() -> Unit)? = null
+    onRefresh: (() -> Unit)? = null,
+    onGameStarted: (String) -> Unit = {}
 ) {
     BackHandler(onBack = onBack)
 
@@ -85,6 +87,7 @@ fun NearbyScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var isFirstResume by remember { mutableStateOf(true) }
+    var challengingPlayer by remember { mutableStateOf<NearbyPlayer?>(null) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -310,13 +313,28 @@ fun NearbyScreen(
                 key(player.userId) {
                     PlayerCard(
                         player = player,
-                        onChallenge = { onChallenge(player) },
+                        onChallenge = {
+                            challengingPlayer = player
+                        },
                         onAddFriend = { onAddFriend(player) },
                         onChat = { onChat(player) },
                         modifier = Modifier.padding(16.dp)
                     )
                 }
             }
+        }
+
+        challengingPlayer?.let { player ->
+            DirectChallengeDialog(
+                opponentId = player.userId.toLong(),
+                opponentUsername = player.username,
+                opponentRating = player.rating,
+                onDismiss = { challengingPlayer = null },
+                onGameStarted = { gameId ->
+                    challengingPlayer = null
+                    onGameStarted(gameId)
+                }
+            )
         }
     }
 }

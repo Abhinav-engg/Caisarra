@@ -54,13 +54,13 @@ class JoinInviteViewModel(
                     val loggedIn = accessToken != null
                     val myId = accessToken?.let { TokenExpiryChecker.getUserId(it) }
 
-                    if (myId != null && myId == preview.inviter.id) {
+                    if (myId != null && myId == preview.effectiveInviterId) {
                         _gameReady.send(preview.gameId)
                         return@onSuccess
                     }
 
                     _state.value = JoinInviteState.Preview(
-                        inviterName = preview.inviter.username,
+                        inviterName = preview.effectiveInviterUsername,
                         timeControlMinutes = preview.timeControlMinutes,
                         incrementSeconds = preview.incrementSeconds,
                         yourColor = when (preview.color) {

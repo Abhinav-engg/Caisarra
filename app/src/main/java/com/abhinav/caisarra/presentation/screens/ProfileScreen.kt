@@ -1,9 +1,9 @@
-
 package com.abhinav.caisarra.presentation.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,14 +12,28 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -29,45 +43,30 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.ui.focus.onFocusEvent
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import com.abhinav.caisarra.presentation.components.CountryUtils
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
-
-
+import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
+import com.abhinav.caisarra.presentation.invite.components.DirectChallengeDialog
+import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
+import kotlinx.coroutines.launch
 
 private val ProfileBackground = Color(0xFF080D13)
 private val ProfileCard = Color(0xFF161F2D)
@@ -87,7 +86,8 @@ fun ProfileScreen(
     onEditProfile: () -> Unit,
     onStatsClick: (GameMode, String?) -> Unit = { _, _ -> },
     onReviewGame: (String) -> Unit = {},
-    onDirectMessage: ((Long, String) -> Unit)? = null
+    onDirectMessage: ((Long, String) -> Unit)? = null,
+    onEnterGame: (String) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -97,6 +97,7 @@ fun ProfileScreen(
     var bio by remember { mutableStateOf("") }
     var avatarUrl by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
+    var showChallengeDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
@@ -241,34 +242,74 @@ fun ProfileScreen(
                         )
                     }
                 }
-            } else if (onDirectMessage != null && state.profile?.userId != null) {
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(ProfileCard)
-                        .border(1.dp, ProfileBorder, RoundedCornerShape(14.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    IconButton(
-                        onClick = {
-                            val uid = state.profile?.userId
-                            val uname = state.profile?.username
-                            if (uid != null && !uname.isNullOrBlank()) {
-                                onDirectMessage(uid, uname)
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
+            } else if (!state.isOwnProfile && state.profile?.userId != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(ProfileCard)
+                            .border(1.dp, ProfileBorder, RoundedCornerShape(14.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Chat,
-                            contentDescription = "Message player",
-                            tint = ProfileCyan,
-                            modifier = Modifier.size(22.dp)
-                        )
+                        IconButton(
+                            onClick = { showChallengeDialog = true },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SportsEsports,
+                                contentDescription = "Challenge player",
+                                tint = ProfileCyan,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    if (onDirectMessage != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(ProfileCard)
+                                .border(1.dp, ProfileBorder, RoundedCornerShape(14.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    val uid = state.profile?.userId
+                                    val uname = state.profile?.username
+                                    if (uid != null && !uname.isNullOrBlank()) {
+                                        onDirectMessage(uid, uname)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Chat,
+                                    contentDescription = "Message player",
+                                    tint = ProfileCyan,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        val profileToChallenge = state.profile
+        if (showChallengeDialog && profileToChallenge?.userId != null) {
+            DirectChallengeDialog(
+                opponentId = profileToChallenge.userId,
+                opponentUsername = profileToChallenge.username,
+                opponentAvatarUrl = profileToChallenge.avatarUrl,
+                opponentRating = profileToChallenge.rating,
+                onDismiss = { showChallengeDialog = false },
+                onGameStarted = { gameId ->
+                    showChallengeDialog = false
+                    onEnterGame(gameId)
+                }
+            )
         }
 
         if (state.loading && state.profile == null) {
@@ -397,9 +438,9 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
                             Box(modifier = Modifier
-                                    .size(5.dp)
-                                    .clip(CircleShape)
-                                    .background(ProfileCyan)
+                                .size(5.dp)
+                                .clip(CircleShape)
+                                .background(ProfileCyan)
                             )
                             Text(text = if (isGuest) "GUEST PLAYER" else "MOSAIC PLAYER",
                                 color = ProfileCyan,

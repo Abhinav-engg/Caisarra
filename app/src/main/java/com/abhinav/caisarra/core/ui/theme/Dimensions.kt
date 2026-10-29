@@ -51,3 +51,4 @@ val FriendsAvatarRadius = 12.dp
 val FriendsActionSize = 38.dp
 val FriendsActionRadius = 10.dp
 val FriendsButtonHeight = 42.dp
+val SplashProgressHeight = 2.dp
