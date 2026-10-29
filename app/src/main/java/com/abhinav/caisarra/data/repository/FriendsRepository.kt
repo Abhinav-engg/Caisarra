@@ -35,9 +35,27 @@ class FriendsRepository(context: Context) {
         response.data ?: error("Friendship status was empty.")
     }
 
-    suspend fun getFriends(): Result<List<FriendDto>> = execute {
-        val response = service.getFriends()
-        checkSuccess(response.success, response.error, response.message)
+    suspend fun getFriends(
+        status: String? = null
+    ): Result<List<FriendDto>> = execute {
+        val response = service.getFriends(
+            status = status
+        )
+        checkSuccess(
+            success = response.success,
+            error = response.error,
+            message = response.message
+        )
+        response.data?.friends.orEmpty()
+    }
+
+    suspend fun getOnlineFriends(): Result<List<FriendDto>> = execute {
+        val response = service.getOnlineFriends()
+        checkSuccess(
+            success = response.success,
+            error = response.error,
+            message = response.message
+        )
         response.data?.friends.orEmpty()
     }
 

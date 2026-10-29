@@ -14,6 +14,7 @@ import com.abhinav.caisarra.data.remote.api.ProfileService
 import com.abhinav.caisarra.data.remote.api.PuzzleApiService
 import com.abhinav.caisarra.data.remote.api.RatingService
 import com.abhinav.caisarra.data.local.ChessDatabase
+import com.abhinav.caisarra.data.remote.NotificationSocketClient
 import com.abhinav.caisarra.data.remote.dto.ApiError
 import com.abhinav.caisarra.data.remote.dto.DeleteAccountRequest
 import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
@@ -85,10 +86,11 @@ class AuthRepository private constructor(private val context: Context) {
             val username = pendingRegistration?.username
             if (!username.isNullOrBlank()) {
                 if (!username.contains("@")) {
-                tokenManager.saveUsername(username.trim())
-            }
+                    tokenManager.saveUsername(username.trim())
+                }
             }
             pendingRegistration = null
+            syncFcmToken()
             AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
@@ -108,6 +110,7 @@ class AuthRepository private constructor(private val context: Context) {
             if (!userToSave.isNullOrBlank()) {
                 tokenManager.saveUsername(userToSave.trim())
             }
+            syncFcmToken()
 
             AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
@@ -118,15 +121,23 @@ class AuthRepository private constructor(private val context: Context) {
     suspend fun getValidAccessToken(): String? = refresher.getValidAccessToken()
 
     suspend fun logout(): AuthResult {
-        val refreshToken = tokenManager.getRefreshToken()
-        tokenManager.clearTokens()
+        val fcmToken = tokenManager.getFcmToken()
+        if (!fcmToken.isNullOrBlank()) {
+            try {
+                NotificationRepository.get(context).unregisterDevice(fcmToken)
+            } catch (_: Exception) {}
+        }
 
+        val refreshToken = tokenManager.getRefreshToken()
         if (refreshToken != null) {
             try {
                 service.logout(RefreshTokenRequest(refreshToken))
-            } catch (_: Exception) {
-            }
+            } catch (_: Exception) {}
         }
+
+        tokenManager.clearTokens()
+        NotificationRepository.get(context).clearLocalState()
+        NotificationSocketClient.get(context).disconnect()
 
         return AuthResult.Success("Logged out")
     }
@@ -160,8 +171,18 @@ class AuthRepository private constructor(private val context: Context) {
             val response = service.deleteAccount(request)
 
             if (response.isSuccessful) {
+                // Remove device registration before clearing session
+                val fcmToken = tokenManager.getFcmToken()
+                if (!fcmToken.isNullOrBlank()) {
+                    try {
+                        NotificationRepository.get(context).unregisterDevice(fcmToken)
+                    } catch (_: Exception) {}
+                }
+
                 // Clear session tokens and preferences
                 tokenManager.clearTokens()
+                NotificationRepository.get(context).clearLocalState()
+                NotificationSocketClient.get(context).disconnect()
 
                 // Clear cached local Room database tables
                 try {
@@ -292,14 +313,17 @@ class AuthRepository private constructor(private val context: Context) {
 
     suspend fun updateFcmToken(token: String) {
         tokenManager.saveFcmToken(token)
-        if (isLoggedIn()) {
+        if (isLoggedIn() && !isGuest()) {
             syncFcmToken(token)
         }
     }
 
     suspend fun syncFcmToken(token: String? = null) {
         val fcmToken = token ?: tokenManager.getFcmToken() ?: return
-        if (!isLoggedIn()) return
+        if (!isLoggedIn() || isGuest()) return
+        try {
+            NotificationRepository.get(context).registerDevice(fcmToken)
+        } catch (_: Exception) {}
     }
 
     companion object {
