@@ -34,7 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardType
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
-
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 private val BoardBg = Color(0xFF10151F)
 private val BoardCard = Color(0xFF1A2230)
 private val BoardBorder = Color(0xFF303B4D)
@@ -62,36 +62,15 @@ fun LeaderboardScreen(
                 .background(BoardBg)
                 .statusBarsPadding()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
 
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        "Leaderboard",
-                        fontFamily = JetBrainsMono,
-                        fontSize = 21.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        "Compete. Improve. Climb.",
-                        color = Color.LightGray,
-                        fontSize = 12.sp
-                    )
-                }
-
-            }
+            CaisaaraTopBar(
+                title = "LEADERBOARD",
+                onBack = onBack,
+                backgroundColor = BoardBg,
+                titleColor = Color.White,
+                iconTint = Color.White,
+                titleFontSize = 18.sp
+            )
 
             Row(
                 modifier = Modifier

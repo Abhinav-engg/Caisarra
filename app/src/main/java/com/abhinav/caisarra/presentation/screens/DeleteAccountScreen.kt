@@ -19,14 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,8 +48,6 @@ import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.StatsBg
 import com.caisaara.ui.theme.StatsCardBg
 import com.caisaara.ui.theme.StatsCardBorder
-import com.caisaara.ui.theme.StatsTabBg
-import com.caisaara.ui.theme.StatsTabBorder
 import com.caisaara.ui.theme.StatsTextMuted
 import com.caisaara.ui.theme.StatsTextWhite
 import com.caisaara.ui.theme.TextSizeBadge
@@ -59,18 +55,11 @@ import com.caisaara.ui.theme.TextSizeBody
 import com.caisaara.ui.theme.TextSizeCaption
 import com.caisaara.ui.theme.TextSizeHeading
 import com.caisaara.ui.theme.TextSizeTitle
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 
-/**
- * Screen presenting user with clear account deletion warnings,
- * password verification input, and confirmation triggers.
- *
- * Implements client requirements from backend issue #332:
- * - Shows prominent warnings that deletion is irreversible.
- * - Collects user password to confirm identity (max 72 chars).
- * - Dispatches DELETE /api/account request.
- * - Displays error state inline when password is wrong (403) or rate-limited (429).
- * - On 200 OK: executes [onConfirmDelete] callback to navigate to login.
- */
+
 @Composable
 fun DeleteAccountScreen(
     viewModel: DeleteAccountViewModel,
@@ -84,55 +73,26 @@ fun DeleteAccountScreen(
             .fillMaxSize()
             .background(StatsBg)
             .statusBarsPadding()
+            .navigationBarsPadding()
+            .imePadding()
     ) {
-        // Top app bar with back navigation button and header title
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(StatsTabBg)
-                    .border(
-                        width = 1.dp,
-                        color = StatsTabBorder,
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.fillMaxSize(),
-                    enabled = !state.isLoading
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = StatsTextWhite,
-                        modifier = Modifier.size(20.dp)
-                    )
+        CaisaaraTopBar(
+            title = "Delete Account",
+            onBack = {
+                if (!state.isLoading) {
+                    onBack()
                 }
-            }
+            },
+            backgroundColor = StatsBg,
+            titleColor = RedNormal,
+            iconTint = StatsTextWhite,
+            titleFontSize = TextSizeHeading
+        )
 
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Text(
-                text = "Delete Account",
-                fontFamily = JetBrainsMono,
-                fontWeight = FontWeight.Bold,
-                fontSize = TextSizeHeading,
-                color = RedNormal
-            )
-        }
-
-        // Scrollable content body
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -166,7 +126,6 @@ fun DeleteAccountScreen(
                 textAlign = TextAlign.Center
             )
 
-            // Warning explanation card
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -192,7 +151,6 @@ fun DeleteAccountScreen(
                 }
             }
 
-            // Password confirmation field required by DELETE /api/account
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -218,7 +176,6 @@ fun DeleteAccountScreen(
                 )
             }
 
-            // Inline error message banner (e.g. "password is incorrect", rate limits)
             if (state.error != null) {
                 Box(
                     modifier = Modifier
@@ -251,7 +208,6 @@ fun DeleteAccountScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Confirm Delete Action Button
             Button(
                 onClick = {
                     viewModel.confirmDeleteAccount(onSuccess = onConfirmDelete)
@@ -291,7 +247,6 @@ fun DeleteAccountScreen(
                 }
             }
 
-            // Cancel and Back button
             OutlinedButton(
                 onClick = onBack,
                 enabled = !state.isLoading,
@@ -312,9 +267,6 @@ fun DeleteAccountScreen(
     }
 }
 
-/**
- * Reusable bullet point row for warning conditions.
- */
 @Composable
 private fun BulletPoint(text: String) {
     Row(

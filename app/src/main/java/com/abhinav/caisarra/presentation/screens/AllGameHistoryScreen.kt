@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -37,7 +38,7 @@ import com.abhinav.caisarra.presentation.game.components.GameHistorySection
 import com.abhinav.caisarra.presentation.screens.components.SkeletonBox
 import com.abhinav.caisarra.presentation.screens.components.rememberShimmerBrush
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
-
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 private val HistoryBackground = Color(0xFF080D13)
 private val HistoryWhite = Color(0xFFF5F5F5)
 private val HistoryCardBackground = Color(0xFF151F2B)
@@ -50,89 +51,87 @@ fun AllGameHistoryScreen(
     onReviewGame: (String) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .background(HistoryBackground)
-            .verticalScroll(rememberScrollState())
-            .padding(
-                horizontal = 16.dp,
-                vertical = 24.dp
-            )
     ) {
-        TextButton(onClick = onBack) {
-            Text(
-                text = "← BACK TO HOME",
-                color = HistoryWhite,
-                fontFamily = JetBrainsMono
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Text(
-            text = "ALL GAME HISTORY",
-            color = HistoryWhite,
-            fontFamily = JetBrainsMono,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp
+        CaisaaraTopBar(
+            title = "GAME HISTORY",
+            onBack = onBack,
+            backgroundColor = HistoryBackground,
+            titleColor = HistoryWhite,
+            iconTint = HistoryWhite,
+            titleFontSize = 18.sp
         )
 
-        Spacer(Modifier.height(20.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    horizontal = 16.dp,
+                    vertical = 16.dp
+                )
+        ) {
 
-        when {
-            state.isLoadingHistory -> {
-                GameHistorySkeleton()
-            }
 
-            state.error != null && state.gameHistory.isEmpty() -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(HistoryCardBackground)
-                        .border(
-                            1.dp,
-                            HistoryCardBorder,
-                            RoundedCornerShape(16.dp)
-                        )
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = state.error
-                            ?: "Unable to load game history.",
-                        color = HistoryWhite,
-                        fontFamily = JetBrainsMono,
-                        fontSize = 12.sp
-                    )
+            Spacer(Modifier.height(20.dp))
 
-                    TextButton(
-                        onClick = { viewModel.refresh() }
+            when {
+                state.isLoadingHistory -> {
+                    GameHistorySkeleton()
+                }
+
+                state.error != null && state.gameHistory.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(HistoryCardBackground)
+                            .border(
+                                1.dp,
+                                HistoryCardBorder,
+                                RoundedCornerShape(16.dp)
+                            )
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "RETRY",
-                            color = Color(0xFF10B981),
-                            fontFamily = JetBrainsMono
+                            text = state.error
+                                ?: "Unable to load game history.",
+                            color = HistoryWhite,
+                            fontFamily = JetBrainsMono,
+                            fontSize = 12.sp
                         )
+
+                        TextButton(
+                            onClick = { viewModel.refresh() }
+                        ) {
+                            Text(
+                                text = "RETRY",
+                                color = Color(0xFF10B981),
+                                fontFamily = JetBrainsMono
+                            )
+                        }
                     }
+                }
+
+                else -> {
+                    GameHistorySection(
+                        games = state.gameHistory,
+                        onReviewGame = onReviewGame,
+                        modifier = Modifier.fillMaxWidth(),
+                        showViewAll = false,
+                        isLoading = false
+                    )
                 }
             }
 
-            else -> {
-                GameHistorySection(
-                    games = state.gameHistory,
-                    onReviewGame = onReviewGame,
-                    modifier = Modifier.fillMaxWidth(),
-                    showViewAll = false,
-                    isLoading = false
-                )
-            }
+            Spacer(Modifier.height(24.dp))
         }
-
-        Spacer(Modifier.height(24.dp))
     }
 }
 
