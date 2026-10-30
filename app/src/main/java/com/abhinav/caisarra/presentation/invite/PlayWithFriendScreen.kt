@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -71,6 +72,7 @@ import com.caisaara.ui.theme.FriendsTextMuted
 import com.caisaara.ui.theme.FriendsTextWhite
 import com.caisaara.ui.theme.GoldColor
 import kotlinx.coroutines.launch
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 
 data class ChallengeTarget(
     val userId: Long,
@@ -130,21 +132,41 @@ fun PlayWithFriendScreen(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(FriendsBg).padding(top = 12.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = FriendsTextWhite) }
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Text("FRIENDS", color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 17.sp, letterSpacing = 1.sp)
-            }
-            if (onJoinByCode != null) {
-                IconButton(onClick = { showQrScanner = true }) {
-                    Icon(Icons.Default.QrCodeScanner, "Scan QR to join", tint = FriendsCyan)
+    Column(modifier = Modifier.fillMaxSize().background(FriendsBg).statusBarsPadding().padding(top = 12.dp)) {
+        CaisaaraTopBar(
+            title = "FRIENDS",
+            onBack = onBack,
+            backgroundColor = FriendsBg,
+            titleColor = FriendsTextWhite,
+            iconTint = FriendsTextWhite,
+            actions = {
+                if (onJoinByCode != null) {
+                    IconButton(
+                        onClick = {
+                            showQrScanner = true
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = "Scan QR to join",
+                            tint = FriendsCyan
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = {
+                        viewModel.setShowLeaderboard(true)
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = "Leaderboard",
+                        tint = GoldColor
+                    )
                 }
             }
-            IconButton(onClick = { viewModel.setShowLeaderboard(true) }) {
-                Icon(Icons.Default.EmojiEvents, "Leaderboard", tint = GoldColor)
-            }
-        }
+        )
         Spacer(Modifier.height(14.dp))
         Box(modifier = Modifier.padding(horizontal = FriendsScreenPadding)) {
             FriendsSearchBar(query = state.searchQuery, onQueryChange = viewModel::onSearchQueryChange, onClear = viewModel::clearSearch)

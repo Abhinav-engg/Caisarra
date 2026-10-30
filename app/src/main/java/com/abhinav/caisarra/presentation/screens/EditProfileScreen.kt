@@ -82,7 +82,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import android.os.SystemClock
 import androidx.compose.runtime.mutableLongStateOf
-
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 private val EditBackground = Color(0xFF080D13)
 private val EditCard = Color(0xFF151F2E)
 private val EditCardSecondary = Color(0xFF0F1925)
@@ -113,8 +113,6 @@ fun EditProfileScreen(
     var showPhotoOptions by remember { mutableStateOf(false) }
     var showCountryScreen by remember { mutableStateOf(false) }
     var showDefaultAvatarsScreen by remember { mutableStateOf(false) }
-    // Prevent rapid back taps from closing Edit Profile after
-// returning from Country or Default Chess Avatars.
     var blockParentBackUntil by remember {
         mutableLongStateOf(0L)
     }
@@ -217,409 +215,410 @@ fun EditProfileScreen(
             .background(EditBackground)
             .statusBarsPadding()
     ) {
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding()
                 .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = {
-                            focusManager.clearFocus()
-                        }
-                    )
-                }
-                .padding(horizontal = 20.dp)
-                .padding(top = 12.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = {
-                        handleEditProfileBack()
-                    },
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Close edit profile",
-                        tint = EditWhite
-                    )
-                }
 
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "EDIT PROFILE",
-                        color = EditWhite,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            CaisaaraTopBar(
+                title = "EDIT PROFILE",
+                onBack = {
+                    handleEditProfileBack()
+                },
+                backgroundColor = EditBackground,
+                titleColor = EditWhite,
+                iconTint = EditWhite,
+                titleFontSize = 16.sp,
+                actions = {
 
-                IconButton(
-                    onClick = {
-                        focusManager.clearFocus()
-                        validationError = validateEditProfile(
-                            displayName = displayName,
-                            bio = bio,
-                            country = country,
-                            avatarUrl = avatarUrl
-                        )
-                        if (validationError == null && !state.saving) {
-                            viewModel.updateProfile(
+                    IconButton(
+                        onClick = {
+                            focusManager.clearFocus()
+
+                            validationError = validateEditProfile(
                                 displayName = displayName,
-                                country = country,
                                 bio = bio,
+                                country = country,
                                 avatarUrl = avatarUrl
                             )
-                        }
-                    },
-                    enabled = !state.saving,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    if (state.saving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = EditCyan,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Save profile",
-                            tint = EditWhite
-                        )
-                    }
-                }
-            }
 
-            if (state.loading && !initialized) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 70.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = EditCyan)
-                }
-            } else if (state.profile != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color(0xFF172536), EditCard)
-                            )
-                        )
-                        .border(1.dp, EditBorder, RoundedCornerShape(22.dp))
-                        .padding(18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(112.dp)
-                            .clip(CircleShape)
-                            .background(EditCardSecondary)
-                            .border(
-                                width = 3.dp,
-                                brush = Brush.linearGradient(listOf(EditCyan, EditTeal)),
-                                shape = CircleShape
-                            )
-                            .padding(4.dp)
-                            .clip(CircleShape),
-                        contentAlignment = Alignment.Center
+                            if (
+                                validationError == null &&
+                                !state.saving
+                            ) {
+                                viewModel.updateProfile(
+                                    displayName = displayName,
+                                    country = country,
+                                    bio = bio,
+                                    avatarUrl = avatarUrl
+                                )
+                            }
+                        },
+                        enabled = !state.saving,
+                        modifier = Modifier.size(44.dp)
                     ) {
-                        if (avatarUrl.startsWith("https://", ignoreCase = true)) {
-                            AsyncImage(
-                                model = avatarUrl.trim(),
-                                contentDescription = "Profile picture preview",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize().clip(CircleShape)
+                        if (state.saving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = EditCyan,
+                                strokeWidth = 2.dp
                             )
                         } else {
                             Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Default avatar",
-                                tint = EditCyan,
-                                modifier = Modifier.size(58.dp)
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Save profile",
+                                tint = EditWhite,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
-                    }
-
-                    Text(
-                        text = when (selectedSource) {
-                            AvatarSource.URL -> "SOURCE: AVATAR URL"
-                            AvatarSource.GALLERY -> "SOURCE: GALLERY PHOTO"
-                            AvatarSource.CAMERA -> "SOURCE: CAMERA PHOTO"
-                        },
-                        color = EditCyan,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(EditCardSecondary)
-                            .clickable(enabled = !state.saving) {
-                                showPhotoOptions = true
-                            }
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = EditCyan,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Column(
-                            modifier = Modifier.weight(1f).padding(start = 10.dp)
-                        ) {
-                            Text(
-                                text = "Profile Picture",
-                                color = EditWhite,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-//
-                        }
-                        Text("›", color = EditMuted, fontSize = 26.sp)
                     }
                 }
+            )
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(EditCard)
-                        .border(1.dp, EditBorder, RoundedCornerShape(22.dp))
-                        .padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(15.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "PLAYER INFORMATION",
-                            color = EditCyan,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            "@${state.profile?.username.orEmpty()}",
-                            color = EditMuted,
-                            fontSize = 11.sp
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = {
+                                focusManager.clearFocus()
+                            }
                         )
                     }
+                    .padding(horizontal = 20.dp)
+                    .padding(
+                        top = 12.dp,
+                        bottom = 28.dp
+                    ),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
 
-                    ReadOnlyProfileRow(
-                        label = "Username",
-                        value = state.profile?.username.orEmpty()
-                    )
-                    ReadOnlyProfileRow(
-                        label = "Email",
-                        value = state.profile?.email.orEmpty()
-                    )
-
-                    EditProfileField(
-                        value = displayName,
-                        onValueChange = {
-                            displayName = it
-                            validationError = null
-                        },
-                        label = "Display name",
-                        singleLine = true,
-                        capitalization = KeyboardCapitalization.Words
-                    )
-
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                if (state.loading && !initialized) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 70.dp),
+                        contentAlignment = Alignment.Center
                     ) {
+                        CircularProgressIndicator(color = EditCyan)
+                    }
+                } else if (state.profile != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFF172536), EditCard)
+                                )
+                            )
+                            .border(1.dp, EditBorder, RoundedCornerShape(22.dp))
+                            .padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(112.dp)
+                                .clip(CircleShape)
+                                .background(EditCardSecondary)
+                                .border(
+                                    width = 3.dp,
+                                    brush = Brush.linearGradient(listOf(EditCyan, EditTeal)),
+                                    shape = CircleShape
+                                )
+                                .padding(4.dp)
+                                .clip(CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (avatarUrl.startsWith("https://", ignoreCase = true)) {
+                                AsyncImage(
+                                    model = avatarUrl.trim(),
+                                    contentDescription = "Profile picture preview",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Default avatar",
+                                    tint = EditCyan,
+                                    modifier = Modifier.size(58.dp)
+                                )
+                            }
+                        }
+
                         Text(
-                            text = "COUNTRY",
-                            color = EditMuted,
+                            text = when (selectedSource) {
+                                AvatarSource.URL -> "SOURCE: AVATAR URL"
+                                AvatarSource.GALLERY -> "SOURCE: GALLERY PHOTO"
+                                AvatarSource.CAMERA -> "SOURCE: CAMERA PHOTO"
+                            },
+                            color = EditCyan,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.8.sp
                         )
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
                                 .background(EditCardSecondary)
                                 .clickable(enabled = !state.saving) {
-                                    showCountryScreen = true
+                                    showPhotoOptions = true
                                 }
-                                .padding(horizontal = 14.dp, vertical = 16.dp),
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = EditCyan,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Column(
+                                modifier = Modifier.weight(1f).padding(start = 10.dp)
+                            ) {
+                                Text(
+                                    text = "Profile Picture",
+                                    color = EditWhite,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+//
+                            }
+                            Text("›", color = EditMuted, fontSize = 26.sp)
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(EditCard)
+                            .border(1.dp, EditBorder, RoundedCornerShape(22.dp))
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(15.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = CountryUtils.countryName(country)
-                                    .takeUnless { it == "Not set" } ?: "Select country",
-                                color = EditWhite,
-                                fontSize = 14.sp,
+                                "PLAYER INFORMATION",
+                                color = EditCyan,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp,
                                 modifier = Modifier.weight(1f)
                             )
-                            if (CountryUtils.find(country) != null) {
-                                Text(CountryUtils.flag(country), fontSize = 22.sp)
-                                Spacer(Modifier.size(12.dp))
+                            Text(
+                                "@${state.profile?.username.orEmpty()}",
+                                color = EditMuted,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        ReadOnlyProfileRow(
+                            label = "Username",
+                            value = state.profile?.username.orEmpty()
+                        )
+                        ReadOnlyProfileRow(
+                            label = "Email",
+                            value = state.profile?.email.orEmpty()
+                        )
+
+                        EditProfileField(
+                            value = displayName,
+                            onValueChange = {
+                                displayName = it
+                                validationError = null
+                            },
+                            label = "Display name",
+                            singleLine = true,
+                            capitalization = KeyboardCapitalization.Words
+                        )
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "COUNTRY",
+                                color = EditMuted,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.8.sp
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(EditCardSecondary)
+                                    .clickable(enabled = !state.saving) {
+                                        showCountryScreen = true
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = CountryUtils.countryName(country)
+                                        .takeUnless { it == "Not set" } ?: "Select country",
+                                    color = EditWhite,
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (CountryUtils.find(country) != null) {
+                                    Text(CountryUtils.flag(country), fontSize = 22.sp)
+                                    Spacer(Modifier.size(12.dp))
+                                }
+                                Text("›", color = EditMuted, fontSize = 24.sp)
+                            }
+                        }
+
+                        EditProfileField(
+                            value = bio,
+                            onValueChange = {
+                                bio = it.take(160)
+                                validationError = null
+                            },
+                            label = "Bio",
+                            supportingText = "${bio.length}/160",
+                            minLines = 3
+                        )
+
+                        EditProfileField(
+                            value = avatarUrl,
+                            onValueChange = { newValue ->
+                                avatarUrl = newValue
+                                selectedSource = AvatarSource.URL
+                                validationError = null
+                            },
+                            label = "Avatar HTTPS URL",
+                            singleLine = true,
+                            keyboardType = KeyboardType.Uri,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Link,
+                                    contentDescription = "Avatar URL",
+                                    tint = EditMuted
+                                )
+                            }
+                        )
+
+
+                        validationError?.let {
+                            Text(it, color = EditError, fontSize = 12.sp)
+                        }
+                        state.error?.let {
+                            Text(it, color = EditError, fontSize = 12.sp)
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(EditCardSecondary)
+                                .clickable(enabled = !state.saving) {
+                                    showDefaultAvatarsScreen = true
+                                }
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = EditCyan
+                            )
+                            Column(
+                                modifier = Modifier.weight(1f).padding(start = 12.dp)
+                            ) {
+                                Text(
+                                    text = "Default Chess Avatars",
+                                    color = EditWhite,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "Choose from the available chess avatars",
+                                    color = EditMuted,
+                                    fontSize = 11.sp
+                                )
                             }
                             Text("›", color = EditMuted, fontSize = 24.sp)
                         }
                     }
 
-                    EditProfileField(
-                        value = bio,
-                        onValueChange = {
-                            bio = it.take(160)
-                            validationError = null
-                        },
-                        label = "Bio",
-                        supportingText = "${bio.length}/160",
-                        minLines = 3
-                    )
-
-                    EditProfileField(
-                        value = avatarUrl,
-                        onValueChange = { newValue ->
-                            avatarUrl = newValue
-                            selectedSource = AvatarSource.URL
-                            validationError = null
-                        },
-                        label = "Avatar HTTPS URL",
-                        singleLine = true,
-                        keyboardType = KeyboardType.Uri,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Link,
-                                contentDescription = "Avatar URL",
-                                tint = EditMuted
-                            )
-                        }
-                    )
-
-
-                    validationError?.let {
-                        Text(it, color = EditError, fontSize = 12.sp)
-                    }
-                    state.error?.let {
-                        Text(it, color = EditError, fontSize = 12.sp)
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(EditCardSecondary)
-                            .clickable(enabled = !state.saving) {
-                                showDefaultAvatarsScreen = true
-                            }
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = EditCyan
-                        )
-                        Column(
-                            modifier = Modifier.weight(1f).padding(start = 12.dp)
-                        ) {
-                            Text(
-                                text = "Default Chess Avatars",
-                                color = EditWhite,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "Choose from the available chess avatars",
-                                color = EditMuted,
-                                fontSize = 11.sp
-                            )
-                        }
-                        Text("›", color = EditMuted, fontSize = 24.sp)
-                    }
-                }
-
-                Button(
-                    onClick = {
-                        focusManager.clearFocus()
-                        validationError = validateEditProfile(
-                            displayName = displayName,
-                            bio = bio,
-                            country = country,
-                            avatarUrl = avatarUrl
-                        )
-                        if (validationError == null) {
-                            viewModel.updateProfile(
+                    Button(
+                        onClick = {
+                            focusManager.clearFocus()
+                            validationError = validateEditProfile(
                                 displayName = displayName,
-                                country = country,
                                 bio = bio,
+                                country = country,
                                 avatarUrl = avatarUrl
                             )
+                            if (validationError == null) {
+                                viewModel.updateProfile(
+                                    displayName = displayName,
+                                    country = country,
+                                    bio = bio,
+                                    avatarUrl = avatarUrl
+                                )
+                            }
+                        },
+                        enabled = !state.saving,
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = EditCyan,
+                            contentColor = EditBackground,
+                            disabledContainerColor = EditCyan.copy(alpha = 0.45f)
+                        )
+                    ) {
+                        if (state.saving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(19.dp),
+                                color = EditBackground,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.size(10.dp))
+                            Text("SAVING...", fontWeight = FontWeight.Bold)
+                        } else {
+                            Text(
+                                "SAVE CHANGES",
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.6.sp
+                            )
                         }
-                    },
-                    enabled = !state.saving,
-                    modifier = Modifier.fillMaxWidth().height(54.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = EditCyan,
-                        contentColor = EditBackground,
-                        disabledContainerColor = EditCyan.copy(alpha = 0.45f)
+                    }
+
+                    OutlinedButton(
+                        onClick = onBack,
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                            contentColor = EditMuted
+                        )
+                    ) {
+                        Text("CANCEL", fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Text(
+                        state.error ?: "Unable to load your profile.",
+                        color = EditError,
+                        fontSize = 14.sp
                     )
-                ) {
-                    if (state.saving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(19.dp),
-                            color = EditBackground,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(Modifier.size(10.dp))
-                        Text("SAVING...", fontWeight = FontWeight.Bold)
-                    } else {
-                        Text(
-                            "SAVE CHANGES",
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.6.sp
-                        )
+                    OutlinedButton(onClick = { viewModel.loadProfile() }) {
+                        Text("RETRY", color = EditCyan)
                     }
                 }
 
-                OutlinedButton(
-                    onClick = onBack,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                        contentColor = EditMuted
-                    )
-                ) {
-                    Text("CANCEL", fontWeight = FontWeight.Bold)
-                }
-            } else {
-                Text(
-                    state.error ?: "Unable to load your profile.",
-                    color = EditError,
-                    fontSize = 14.sp
-                )
-                OutlinedButton(onClick = { viewModel.loadProfile() }) {
-                    Text("RETRY", color = EditCyan)
-                }
+                Spacer(Modifier.height(8.dp))
             }
-
-            Spacer(Modifier.height(8.dp))
         }
 
         SnackbarHost(
