@@ -22,6 +22,8 @@ data class CommunityUiState(
     val error: String? = null,
     val info: String? = null,
     val commentsPostId: Long? = null,
+    val showingBookmarks: Boolean = false,
+    val isLoadingBookmarks: Boolean = false,
     val shareableGames: List<GameHistoryDto> = emptyList(),
     val isLoadingGames: Boolean = false
 )
@@ -41,6 +43,10 @@ class CommunityViewModel(
 
     fun refresh() {
         if (_state.value.isLoading) return
+        if (_state.value.showingBookmarks) {
+            loadBookmarks()
+            return
+        }
 
         viewModelScope.launch {
             _state.update {
@@ -58,6 +64,7 @@ class CommunityViewModel(
                     it.copy(
                         posts = feed.posts,
                         nextBeforeId = feed.nextBeforeId,
+                        showingBookmarks = false,
                         isLoading = false
                     )
                 }
@@ -224,7 +231,7 @@ class CommunityViewModel(
             }
 
             try {
-                val feed = repository.loadFeed(cursor)
+                val feed = if (current.showingBookmarks) repository.loadBookmarks(cursor) else repository.loadFeed(cursor)
 
                 _state.update { old ->
                     old.copy(
@@ -315,6 +322,56 @@ class CommunityViewModel(
                             ?: "Unable to save reaction."
                     )
                 }
+            }
+        }
+    }
+
+    fun loadBookmarks() {
+        if (_state.value.isLoadingBookmarks) return
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingBookmarks = true, error = null, showingBookmarks = true) }
+            try {
+                val feed = repository.loadBookmarks()
+                _state.update {
+                    it.copy(
+                        posts = feed.posts,
+                        nextBeforeId = feed.nextBeforeId,
+                        showingBookmarks = true,
+                        isLoadingBookmarks = false
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(isLoadingBookmarks = false, error = e.message ?: "Unable to load saved posts.") }
+            }
+        }
+    }
+
+    fun showFeed() {
+        _state.update { it.copy(showingBookmarks = false, posts = emptyList(), nextBeforeId = null) }
+        refresh()
+    }
+
+    fun toggleBookmark(postId: Long) {
+        viewModelScope.launch {
+            val post = _state.value.posts.firstOrNull { it.id == postId } ?: return@launch
+            try {
+                val bookmarked = repository.setBookmark(postId, !post.isBookmarked)
+                _state.update { old ->
+                    val updated = old.posts.map { item ->
+                        if (item.id == postId) item.copy(isBookmarked = bookmarked) else item
+                    }
+                    old.copy(
+                        posts = if (old.showingBookmarks && !bookmarked) updated.filterNot { it.id == postId } else updated,
+                        error = null,
+                        info = if (bookmarked) "Post saved to bookmarks." else "Bookmark removed."
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Unable to update bookmark.") }
             }
         }
     }

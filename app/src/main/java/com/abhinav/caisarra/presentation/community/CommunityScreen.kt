@@ -1,4 +1,3 @@
-
 package com.abhinav.caisarra.presentation.community
 
 import androidx.compose.foundation.background
@@ -20,17 +19,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,6 +71,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.withStyle
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import com.abhinav.caisarra.R
 
 private val CommunityBackground = Color(0xFF080D13)
 private val CommunityCard = Color(0xFF101923)
@@ -103,6 +105,13 @@ fun CommunityScreen(
     var showGamePicker by remember { mutableStateOf(false) }
     var gameCaption by remember { mutableStateOf("") }
     var publishingFromWriteScreen by remember { mutableStateOf(false) }
+    var selectedPost by remember { mutableStateOf<CommunityPostDto?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.info, state.error) {
+        val message = state.info ?: state.error
+        if (!message.isNullOrBlank()) snackbarHostState.showSnackbar(message)
+    }
 
     LaunchedEffect(state.info) {
         if (publishingFromWriteScreen && state.info == "Post published successfully.") {
@@ -112,7 +121,21 @@ fun CommunityScreen(
         }
     }
 
-    if (showWritePost && isRegisteredUser) {
+    if (selectedPost != null) {
+        CommunityPostDetailScreen(
+            post = state.posts.firstOrNull { it.id == selectedPost!!.id } ?: selectedPost!!,
+            viewModel = viewModel,
+            isRegisteredUser = isRegisteredUser,
+            currentUsername = resolvedUsername,
+            onBack = { selectedPost = null },
+            onReact = { reaction -> selectedPost?.let { viewModel.react(it.id, reaction) } },
+            onBookmark = { selectedPost?.let { viewModel.toggleBookmark(it.id) } },
+            onDeletePost = {
+                selectedPost?.let { viewModel.deletePost(it.id) }
+                selectedPost = null
+            }
+        )
+    } else if (showWritePost && isRegisteredUser) {
         CommunityWritePostScreen(
             username = resolvedUsername,
             postText = postText,
@@ -140,24 +163,38 @@ fun CommunityScreen(
                 .fillMaxSize()
                 .background(CommunityBackground)
                 .statusBarsPadding()
-                .navigationBarsPadding()
         ) {
-            Text(
-                text = "COMMUNITY",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-                color = CommunityText,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (state.showingBookmarks) {
+                    TextButton(
+                        onClick = viewModel::showFeed,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                    ) {
+                        Text("‹", color = CommunityGreen, fontSize = 30.sp, lineHeight = 30.sp)
+                    }
+                }
+                Text(
+                    text = if (state.showingBookmarks) "SAVED POSTS" else "COMMUNITY",
+                    modifier = Modifier.weight(1f),
+                    color = CommunityText,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                )
+                if (isRegisteredUser && !state.showingBookmarks) {
+                    TextButton(onClick = viewModel::loadBookmarks) {
+                        Text("▣ Saved", color = CommunityGreen, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
 
             PullToRefreshBox(
                 isRefreshing = state.isLoading && state.posts.isNotEmpty(),
                 onRefresh = viewModel::refresh,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.weight(1f)
             ) {
                 LazyColumn(
                     modifier = Modifier
@@ -169,7 +206,7 @@ fun CommunityScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (isRegisteredUser) {
+                    if (isRegisteredUser && !state.showingBookmarks) {
 
                         item(key = "community_composer") {
                             Column(
@@ -304,7 +341,7 @@ fun CommunityScreen(
                         }
 
 
-                    } else {
+                    } else if (!isRegisteredUser && !state.showingBookmarks) {
                         item(key = "community_sign_in_notice") {
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
@@ -317,17 +354,6 @@ fun CommunityScreen(
                                     modifier = Modifier.padding(16.dp)
                                 )
                             }
-                        }
-                    }
-
-                    state.error?.let { message ->
-                        item(key = "community_error") {
-                            Text(message, color = CommunityDanger, fontSize = 13.sp)
-                        }
-                    }
-                    state.info?.let { message ->
-                        item(key = "community_info") {
-                            Text(message, color = CommunityGreen, fontSize = 13.sp)
                         }
                     }
 
@@ -403,7 +429,9 @@ fun CommunityScreen(
                                         post.author.username.equals(resolvedUsername, ignoreCase = true),
                                 onReact = { reaction -> viewModel.react(post.id, reaction) },
                                 onDelete = { viewModel.deletePost(post.id) },
-                                onComments = { viewModel.openComments(post.id) }
+                                onComments = { selectedPost = post },
+                                onBookmark = { viewModel.toggleBookmark(post.id) },
+                                onOpenPost = { selectedPost = post }
                             )
                         }
 
@@ -430,6 +458,10 @@ fun CommunityScreen(
                     }
                 }
             }
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 
@@ -538,7 +570,284 @@ fun CommunityScreen(
             postId = state.commentsPostId!!,
             viewModel = viewModel,
             isRegisteredUser = isRegisteredUser,
+            currentUsername = resolvedUsername,
+            canDeletePostComments = state.posts.firstOrNull { it.id == state.commentsPostId }
+                ?.author?.username?.equals(resolvedUsername, ignoreCase = true) == true,
             onDismiss = viewModel::closeComments
+        )
+    }
+}
+
+
+@Composable
+private fun CommunityPostDetailScreen(
+    post: CommunityPostDto,
+    viewModel: CommunityViewModel,
+    isRegisteredUser: Boolean,
+    currentUsername: String?,
+    onBack: () -> Unit,
+    onReact: (String) -> Unit,
+    onBookmark: () -> Unit,
+    onDeletePost: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var comments by remember(post.id) { mutableStateOf<List<CommunityCommentDto>>(emptyList()) }
+    var nextAfterId by remember(post.id) { mutableStateOf<Long?>(null) }
+    var commentText by remember(post.id) { mutableStateOf("") }
+    var isLoading by remember(post.id) { mutableStateOf(true) }
+    var isSending by remember(post.id) { mutableStateOf(false) }
+    var isLoadingOlder by remember(post.id) { mutableStateOf(false) }
+    var error by remember(post.id) { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(post.id) {
+        try {
+            val result = viewModel.loadComments(post.id)
+            comments = result.comments
+            nextAfterId = result.nextAfterId
+        } catch (e: Exception) {
+            error = e.message ?: "Unable to load comments."
+        } finally {
+            isLoading = false
+        }
+    }
+
+    LaunchedEffect(error) {
+        error?.let { snackbarHostState.showSnackbar(it) }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CommunityBackground)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .imePadding()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(
+                onClick = onBack,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text("‹", color = CommunityGreen, fontSize = 32.sp, lineHeight = 32.sp)
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("POST", color = CommunityText, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Community conversation", color = CommunityMuted, fontSize = 12.sp)
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item(key = "detail_post_${post.id}") {
+                CommunityPostCard(
+                    post = post,
+                    isRegisteredUser = isRegisteredUser,
+                    canDelete = isRegisteredUser &&
+                            !currentUsername.isNullOrBlank() &&
+                            post.author.username.equals(currentUsername, ignoreCase = true),
+                    onReact = onReact,
+                    onDelete = onDeletePost,
+                    onComments = {},
+                    onBookmark = onBookmark,
+                    onOpenPost = {}
+                )
+            }
+
+            item(key = "detail_comments_header_${post.id}") {
+                Text(
+                    text = "Comments ${comments.size.takeIf { it > 0 }?.let { "· $it loaded" } ?: ""}",
+                    color = CommunityText,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                )
+            }
+
+            if (isLoading && comments.isEmpty()) {
+                item(key = "detail_comments_loading") {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(140.dp),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator(color = CommunityGreen) }
+                }
+            } else if (comments.isEmpty()) {
+                item(key = "detail_comments_empty") {
+                    Text(
+                        "No comments yet. Start the conversation.",
+                        color = CommunityMuted,
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
+                }
+            } else {
+                items(comments, key = { "detail_comment_${it.id}" }) { comment ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(CommunityCard)
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        CommunityAvatar(
+                            avatarUrl = comment.author.avatarUrl,
+                            displayName = comment.author.displayName,
+                            username = comment.author.username,
+                            size = 38.dp
+                        )
+                        Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    comment.author.displayName?.takeIf { it.isNotBlank() }
+                                        ?: comment.author.username,
+                                    color = CommunityText,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(
+                                    formatCommunityDate(comment.createdAt),
+                                    color = CommunityMuted,
+                                    fontSize = 10.sp
+                                )
+                            }
+                            Text(
+                                comment.body,
+                                color = CommunityText,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                modifier = Modifier.padding(top = 5.dp)
+                            )
+                            if (isRegisteredUser && (
+                                        post.author.username.equals(currentUsername, ignoreCase = true) ||
+                                                (!currentUsername.isNullOrBlank() &&
+                                                        comment.author.username.equals(currentUsername, ignoreCase = true))
+                                        )) {
+                                Text(
+                                    "Delete",
+                                    color = CommunityDanger,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier
+                                        .clickable {
+                                            scope.launch {
+                                                try {
+                                                    viewModel.deleteComment(comment.id)
+                                                    comments = comments.filterNot { it.id == comment.id }
+                                                    viewModel.refresh()
+                                                    snackbarHostState.showSnackbar("Comment deleted")
+                                                } catch (e: Exception) {
+                                                    snackbarHostState.showSnackbar(
+                                                        e.message ?: "Unable to delete comment"
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        .padding(top = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (nextAfterId != null) {
+                item(key = "detail_load_older_comments") {
+                    TextButton(
+                        enabled = !isLoadingOlder,
+                        onClick = {
+                            scope.launch {
+                                isLoadingOlder = true
+                                try {
+                                    val result = viewModel.loadComments(post.id, nextAfterId)
+                                    comments = (comments + result.comments).distinctBy { it.id }
+                                    nextAfterId = result.nextAfterId
+                                } catch (e: Exception) {
+                                    snackbarHostState.showSnackbar(
+                                        e.message ?: "Unable to load older comments"
+                                    )
+                                } finally {
+                                    isLoadingOlder = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (isLoadingOlder) "Loading comments…" else "Load older comments",
+                            color = CommunityGreen
+                        )
+                    }
+                }
+            }
+        }
+
+        if (isRegisteredUser) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(CommunityCard)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                OutlinedTextField(
+                    value = commentText,
+                    onValueChange = { if (it.length <= 500) commentText = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Write a reply…", color = CommunityMuted) },
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = CommunityText),
+                    maxLines = 4,
+                    shape = RoundedCornerShape(18.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = CommunityText,
+                        unfocusedTextColor = CommunityText,
+                        cursorColor = CommunityGreen,
+                        focusedBorderColor = CommunityGreen,
+                        unfocusedBorderColor = CommunityOutline,
+                        focusedContainerColor = CommunityBackground,
+                        unfocusedContainerColor = CommunityBackground
+                    ),
+                    enabled = !isSending
+                )
+                Spacer(Modifier.width(8.dp))
+                Button(
+                    enabled = commentText.isNotBlank() && !isSending,
+                    onClick = {
+                        scope.launch {
+                            isSending = true
+                            try {
+                                val created = viewModel.addComment(post.id, commentText.trim())
+                                comments = (comments + created).distinctBy { it.id }
+                                commentText = ""
+                                viewModel.refresh()
+                                snackbarHostState.showSnackbar("Reply posted")
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(e.message ?: "Unable to post reply")
+                            } finally {
+                                isSending = false
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CommunityGreen,
+                        contentColor = Color(0xFF002128)
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp)
+                ) {
+                    Text(if (isSending) "…" else "Reply", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
@@ -780,6 +1089,20 @@ private fun CommunityAvatar(
         }
     }
 }
+@Composable
+private fun CommunityReactionIcon(
+    iconRes: Int,
+    contentDescription: String,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    Image(
+        painter = painterResource(id = iconRes),
+        contentDescription = contentDescription,
+        modifier = modifier,
+        colorFilter = ColorFilter.tint(tint)
+    )
+}
 
 @Composable
 private fun CommunityPostCard(
@@ -788,7 +1111,9 @@ private fun CommunityPostCard(
     canDelete: Boolean,
     onReact: (String) -> Unit,
     onDelete: () -> Unit,
-    onComments: () -> Unit
+    onComments: () -> Unit,
+    onBookmark: () -> Unit,
+    onOpenPost: () -> Unit
 ) {
     var showPostMenu by remember(post.id) { mutableStateOf(false) }
     var showDeleteConfirmation by remember(post.id) { mutableStateOf(false) }
@@ -798,6 +1123,7 @@ private fun CommunityPostCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(CommunityCard)
+            .clickable { onOpenPost() }
             .padding(horizontal = 12.dp, vertical = 12.dp)
     ) {
 
@@ -851,6 +1177,13 @@ private fun CommunityPostCard(
                     onDismissRequest = { showPostMenu = false },
                     modifier = Modifier.background(CommunityCard)
                 ) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text(if (post.isBookmarked) "Remove bookmark" else "Save post", color = CommunityText) },
+                        onClick = {
+                            showPostMenu = false
+                            onBookmark()
+                        }
+                    )
                     if (canDelete) {
                         androidx.compose.material3.DropdownMenuItem(
                             text = { Text("Delete post", color = CommunityDanger) },
@@ -890,47 +1223,58 @@ private fun CommunityPostCard(
             }
         }
 
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            listOf(
-                Triple("like", "👍", "Like"),
-                Triple("love", "♡", "Love"),
-                Triple("fire", "♨", "Fire"),
-                Triple("wow", "ⓘ", "Wow")
-            ).forEach { (reaction, emoji, label) ->
+            val reactions = listOf(
+                Triple("like", R.drawable.like, "Like"),
+                Triple("love", R.drawable.heart, "Love"),
+                Triple("fire", R.drawable.fire, "Fire"),
+                Triple("wow", R.drawable.wow, "Wow"),
+                Triple("dislike", R.drawable.dislike, "Dislike")
+            )
+
+            reactions.forEach { (reaction, iconRes, label) ->
+                val isSelected = post.myReaction == reaction
+                val reactionTint = if (isSelected) CommunityGreen else CommunityMuted
+
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .height(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF20303D))
-                        .clickable(enabled = isRegisteredUser) { onReact(reaction) }
-                        .padding(horizontal = 4.dp),
+                        .height(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (isSelected) {
+                                CommunityGreen.copy(alpha = 0.15f)
+                            } else {
+                                Color(0xFF20303D)
+                            }
+                        )
+                        .clickable(enabled = isRegisteredUser) {
+                            onReact(reaction)
+                        }
+                        .padding(horizontal = 3.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (reaction == "like") {
-                        Icon(
-                            imageVector = Icons.Outlined.ThumbUp,
-                            contentDescription = label,
-                            tint = if (post.myReaction == reaction) CommunityGreen else CommunityMuted,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    } else {
-                        Text(
-                            text = if (reaction == "love") "♡" else if (reaction == "fire") "♨" else "ⓘ",
-                            color = if (post.myReaction == reaction) CommunityGreen else CommunityMuted,
-                            fontSize = 14.sp
-                        )
-                    }
+                    CommunityReactionIcon(
+                        iconRes = iconRes,
+                        contentDescription = label,
+                        tint = reactionTint,
+                        modifier = Modifier.size(19.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(3.dp))
+
                     Text(
-                        text = " ${post.reactions[reaction] ?: 0}",
-                        color = if (post.myReaction == reaction) CommunityGreen else CommunityMuted,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
+                        text = (post.reactions[reaction] ?: 0).toString(),
+                        color = reactionTint,
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1
                     )
                 }
             }
@@ -951,7 +1295,19 @@ private fun CommunityPostCard(
                     .clickable { onComments() }
                     .padding(vertical = 4.dp, horizontal = 2.dp)
             )
-
+            Spacer(Modifier.weight(1f))
+            Image(
+                painter = painterResource(id = R.drawable.bookmarked),
+                contentDescription = if (post.isBookmarked) "Remove bookmark" else "Bookmark post",
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .clickable { onBookmark() }
+                    .padding(2.dp),
+                colorFilter = ColorFilter.tint(
+                    if (post.isBookmarked) CommunityGreen else CommunityMuted
+                )
+            )
         }
     }
 
@@ -981,10 +1337,12 @@ private fun CommunityPostCard(
 }
 
 @Composable
-private fun CommunityCommentsDialog(
+fun CommunityCommentsDialog(
     postId: Long,
     viewModel: CommunityViewModel,
     isRegisteredUser: Boolean,
+    currentUsername: String?,
+    canDeletePostComments: Boolean,
     onDismiss: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -1024,13 +1382,18 @@ private fun CommunityCommentsDialog(
             color = CommunityCard
         ) {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
-                Text(
-                    text = "Comments",
-                    color = CommunityText,
-                    fontSize = 25.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("CONVERSATION", color = CommunityGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                        Text("Comments", color = CommunityText, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                    }
+                    TextButton(onClick = onDismiss) {
+                        Text("✕", color = CommunityMuted, fontSize = 18.sp)
+                    }
+                }
 
                 error?.let {
                     Text(it, color = CommunityDanger, modifier = Modifier.padding(bottom = 8.dp))
@@ -1054,7 +1417,10 @@ private fun CommunityCommentsDialog(
                         ) {
                             items(comments, key = { it.id }) { comment ->
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier.fillMaxWidth()
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(CommunityBackground)
+                                        .padding(10.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     CommunityAvatar(
@@ -1078,12 +1444,35 @@ private fun CommunityCommentsDialog(
                                             lineHeight = 20.sp,
                                             modifier = Modifier.padding(top = 3.dp)
                                         )
-                                        Text(
-                                            text = formatCommunityDate(comment.createdAt),
-                                            color = CommunityMuted,
-                                            fontSize = 12.sp,
-                                            modifier = Modifier.padding(top = 3.dp)
-                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = formatCommunityDate(comment.createdAt),
+                                                color = CommunityMuted,
+                                                fontSize = 12.sp,
+                                                modifier = Modifier.padding(top = 3.dp)
+                                            )
+                                            if (isRegisteredUser && (canDeletePostComments ||
+                                                        (!currentUsername.isNullOrBlank() && comment.author.username.equals(currentUsername, ignoreCase = true)))) {
+                                                Text(
+                                                    text = "  ·  Delete",
+                                                    color = CommunityDanger,
+                                                    fontSize = 12.sp,
+                                                    modifier = Modifier
+                                                        .clickable {
+                                                            scope.launch {
+                                                                try {
+                                                                    viewModel.deleteComment(comment.id)
+                                                                    comments = comments.filterNot { it.id == comment.id }
+                                                                    viewModel.refresh()
+                                                                } catch (e: Exception) {
+                                                                    error = e.message ?: "Unable to delete comment."
+                                                                }
+                                                            }
+                                                        }
+                                                        .padding(top = 3.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
