@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -70,7 +71,7 @@ import com.caisaara.ui.theme.TextSizeSubhead
 import com.caisaara.ui.theme.TextSizeTiny
 import com.caisaara.ui.theme.ThemeSlateAccent
 import com.caisaara.ui.theme.White
-
+import androidx.compose.ui.platform.LocalConfiguration
 @Composable
 fun DailyPuzzleScreen(
     viewModel: DailyPuzzleViewModel,
@@ -147,6 +148,270 @@ fun DailyPuzzleScreen(
 
 @Composable
 private fun DailyPuzzlePlayingContent(
+    state: DailyPuzzleUiState.Playing,
+    viewModel: DailyPuzzleViewModel,
+    onBack: () -> Unit
+) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    if (isLandscape) {
+        DailyPuzzleLandscapeContent(state, viewModel, onBack)
+    } else {
+        DailyPuzzlePortraitContent(state, viewModel, onBack)
+    }
+}
+
+@Composable
+private fun DailyPuzzleLandscapeContent(
+    state: DailyPuzzleUiState.Playing,
+    viewModel: DailyPuzzleViewModel,
+    onBack: () -> Unit
+) {
+    ChessMoveSound(
+        board = state.board,
+        moveEventId = state.moveAnimationEvent?.id,
+        moveTo = state.moveAnimationEvent?.to
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(StatsBg)
+            .systemBarsPadding()
+    ) {
+        PuzzleTurnBanner(
+            playerColor = state.playerColor,
+            isCheckingMove = state.isAwaitingServer
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BoxWithConstraints(
+                modifier = Modifier.weight(1.05f).fillMaxHeight(),
+                contentAlignment = Alignment.Center
+            ) {
+                val boardSize = minOf(maxWidth, maxHeight)
+                Box(modifier = Modifier.size(boardSize).aspectRatio(1f)) {
+                    ChessBoard(
+                        board = state.board,
+                        selectedSquare = state.selectedSquare ?: state.highlightedSquare,
+                        legalMoves = state.legalMoves,
+                        lastMoveFrom = state.lastMoveFrom,
+                        lastMoveTo = state.lastMoveTo,
+                        isWhiteInCheck = state.isWhiteInCheck,
+                        isBlackInCheck = state.isBlackInCheck,
+                        isFlipped = state.isBoardFlipped,
+                        moveAnimationEvent = state.moveAnimationEvent,
+                        moveAnimationConsumedId = state.moveAnimationConsumedId,
+                        onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                        onSquareClick = { square -> viewModel.onSquareClicked(square) }
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(0.95f)
+                    .fillMaxHeight()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(
+                            modifier = Modifier.size(32.dp).background(SilverColor, RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(painter = painterResource(id = R.drawable.black_pawn), contentDescription = null, tint = SlateNormal, modifier = Modifier.size(22.dp))
+                        }
+                        Text("${state.streak}", color = White, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+                    }
+                    Text("DAILY", color = White, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AttemptsIndicator(attemptsLeft = state.attemptsLeft)
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Difficulty", color = ThemeSlateAccent, fontSize = TextSizeCaption, fontFamily = JetBrainsMono)
+                        Text("${state.puzzle.rating}", color = White, fontSize = TextSizeSubhead, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+                    }
+                }
+
+                state.message?.let {
+                    Text(it, color = ThemeSlateAccent, fontSize = TextSizeBadge)
+                }
+
+                if (state.puzzle.themes.isNotEmpty()) {
+                    Text("THEMES", color = StatsCyan, fontSize = TextSizeCaption, fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        state.puzzle.themes.take(4).forEach { theme ->
+                            Box(
+                                modifier = Modifier.background(StatsBarSlate, RoundedCornerShape(8.dp)).padding(horizontal = 7.dp, vertical = 4.dp)
+                            ) {
+                                Text(theme, color = ThemeSlateAccent, fontSize = TextSizeTiny)
+                            }
+                        }
+                    }
+                }
+
+                if (state.solutionRevealed && state.solutionMoves.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = PuzzleDarkCard),
+                        border = BorderStroke(1.dp, StatsBarSlate)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(10.dp)) {
+                            Text("SOLUTION", color = StatsCyan, fontSize = TextSizeCaption, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = state.solutionMoves.mapIndexed { index, move -> "${if (index % 2 == 0) (index / 2 + 1).toString() + "." else ""}$move" }.joinToString(" "),
+                                color = White,
+                                fontSize = TextSizeTiny
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                GeneralButton(text = "Replay", onClick = { viewModel.replaySolution() }, modifier = Modifier.weight(1f))
+                                GeneralButton(text = "Try Moves", onClick = { viewModel.resetPuzzleToStart() }, modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(0.75f)
+                            .singleClickable {
+                                onBack()
+                            }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronLeft,
+                            contentDescription = "Back",
+                            tint = White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Text(
+                            text = "Back",
+                            color = White,
+                            fontSize = 12.sp,
+                            fontFamily = JetBrainsMono
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1.15f)
+                            .padding(horizontal = 4.dp)
+                            .background(
+                                color = if (state.hintAvailable) StatsBarSlate else PuzzleDarkCard,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = if (state.hintAvailable) StatsPieceCircleDark else StatsBarSlate,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .singleClickable(
+                                enabled = state.hintAvailable && !state.isAwaitingServer
+                            ) {
+                                viewModel.requestHint()
+                            }
+                            .padding(horizontal = 10.dp, vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lightbulb,
+                                contentDescription = "Hint",
+                                tint = if (state.hintAvailable) GoldColor else SlateNormal,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Hint",
+                                color = if (state.hintAvailable) White else SlateNormal,
+                                fontSize = TextSizeBadge,
+                                fontWeight = FontWeight.Medium,
+                                fontFamily = JetBrainsMono
+                            )
+                        }
+                    }
+
+                    if (state.canViewSolution) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .padding(start = 4.dp)
+                                .background(StatsBarSlate, RoundedCornerShape(12.dp))
+                                .border(
+                                    width = 1.dp,
+                                    color = StatsPieceCircleDark,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .singleClickable(enabled = !state.isAwaitingServer) {
+                                    viewModel.requestSolution()
+                                }
+                                .padding(horizontal = 8.dp, vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Visibility,
+                                    contentDescription = "Solution",
+                                    tint = White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Solution",
+                                    color = White,
+                                    fontSize = TextSizeBadge,
+                                    fontWeight = FontWeight.Medium,
+                                    fontFamily = JetBrainsMono
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    state.promotionPending?.let {
+        PromotionDialog(onPieceSelected = { pieceType -> viewModel.onPromotionPieceSelected(pieceType) })
+    }
+}
+
+@Composable
+private fun DailyPuzzlePortraitContent(
     state: DailyPuzzleUiState.Playing,
     viewModel: DailyPuzzleViewModel,
     onBack: () -> Unit
@@ -243,7 +508,20 @@ private fun DailyPuzzlePlayingContent(
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp)
         ) {
-            val boardSize = maxWidth
+            val configuration = LocalConfiguration.current
+            val isLandscape =
+                configuration.screenWidthDp > configuration.screenHeightDp
+
+            // Reserve space for the puzzle header and controls in landscape.
+            val landscapeBoardLimit =
+                (configuration.screenHeightDp.dp - 180.dp)
+                    .coerceAtLeast(180.dp)
+
+            val boardSize = if (isLandscape) {
+                minOf(maxWidth, landscapeBoardLimit)
+            } else {
+                maxWidth
+            }
             Box(
                 modifier = Modifier
                     .size(boardSize)
@@ -595,7 +873,7 @@ private fun DailyPuzzleSolvedContent(
                 .weight(1f)
                 .padding(8.dp)
         ) {
-            val boardSize = maxWidth
+            val boardSize = minOf(maxWidth, maxHeight)
             Box(
                 modifier = Modifier
                     .size(boardSize)
@@ -645,7 +923,7 @@ private fun DailyPuzzleFailedContent(
                 .weight(1f)
                 .padding(8.dp)
         ) {
-            val boardSize = maxWidth
+            val boardSize = minOf(maxWidth, maxHeight)
             Box(
                 modifier = Modifier
                     .size(boardSize)
