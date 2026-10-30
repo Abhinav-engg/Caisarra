@@ -12,14 +12,24 @@ data class FriendsListData(
 data class FriendDto(
     @SerialName("user_id")
     val userId: Long,
+
+    @SerialName("username")
     val username: String,
+
+    @SerialName("rating")
     val rating: Int? = null,
+
     @SerialName("friends_since")
     val friendsSince: String? = null,
+
     @SerialName("avatar_url")
     val avatarUrl: String? = null,
+
     @SerialName("display_name")
-    val displayName: String? = null
+    val displayName: String? = null,
+
+    @SerialName("is_online")
+    val isOnline: Boolean = false
 )
 
 @Serializable
@@ -79,9 +89,14 @@ data class PlayerSearchDto(
 )
 @Serializable
 data class FriendshipStatusData(
+    @SerialName("status")
     val status: String,
+
     @SerialName("request_id")
-    val requestId: Long? = null
+    val requestId: Long? = null,
+
+    @SerialName("is_online")
+    val isOnline: Boolean? = null
 )
 
 @Serializable

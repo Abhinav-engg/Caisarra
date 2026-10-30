@@ -67,6 +67,7 @@ import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import com.abhinav.caisarra.presentation.invite.components.DirectChallengeDialog
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import kotlinx.coroutines.launch
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 
 private val ProfileBackground = Color(0xFF080D13)
 private val ProfileCard = Color(0xFF161F2D)
@@ -98,7 +99,7 @@ fun ProfileScreen(
     var avatarUrl by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
     var showChallengeDialog by remember { mutableStateOf(false) }
-
+    var settingsExpanded by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
     }
@@ -122,88 +123,24 @@ fun ProfileScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
             .imePadding()
-            .verticalScroll(rememberScrollState())
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        focusManager.clearFocus()
-                    }
-                )
-            }
-            .padding(
-                start = 22.dp,
-                end = 22.dp,
-                top = 16.dp,
-                bottom = 24.dp
-            ),
-        verticalArrangement = Arrangement.spacedBy(22.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(ProfileCard)
-                    .border(
-                        width = 1.dp,
-                        color = ProfileBorder,
-                        shape = RoundedCornerShape(14.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = ProfileWhite,
-                        modifier = Modifier.size(23.dp)
-                    )
-                }
-            }
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(text = "Player Profile",
-                    color = ProfileWhite,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.sp,
-                    maxLines = 1
-                )
+        CaisaaraTopBar(
+            title = "PROFILE",
+            onBack = onBack,
+            backgroundColor = ProfileBackground,
+            titleColor = ProfileWhite,
+            iconTint = ProfileWhite,
+            titleFontSize = 18.sp,
+            actions = {
 
-                Spacer(modifier = Modifier.height(3.dp))
+                if (state.isOwnProfile) {
 
-                Text(
-                    text = if (state.isOwnProfile) "Your chess identity" else state.profile?.let { "@${it.username}" } ?: "Player overview",
-                    color = ProfileMuted,
-                    fontSize = 12.sp
-                )
-            }
-
-            if (state.isOwnProfile) {
-                var settingsExpanded by remember { mutableStateOf(false) }
-                Box {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(ProfileCard)
-                            .border(1.dp, ProfileBorder, RoundedCornerShape(14.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box {
                         IconButton(
-                            onClick = { settingsExpanded = true },
-                            modifier = Modifier.fillMaxSize()
+                            onClick = {
+                                settingsExpanded = true
+                            }
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
@@ -212,515 +149,538 @@ fun ProfileScreen(
                                 modifier = Modifier.size(22.dp)
                             )
                         }
+
+                        DropdownMenu(
+                            expanded = settingsExpanded,
+                            onDismissRequest = {
+                                settingsExpanded = false
+                            },
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(ProfileCard)
+                                .border(
+                                    1.dp,
+                                    ProfileBorder,
+                                    RoundedCornerShape(18.dp)
+                                ),
+                            containerColor = ProfileCard,
+                            shape = RoundedCornerShape(18.dp),
+                            shadowElevation = 10.dp,
+                            tonalElevation = 0.dp
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "Edit Profile",
+                                        color = ProfileWhite,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                },
+                                onClick = {
+                                    settingsExpanded = false
+                                    onEditProfile()
+                                },
+                                modifier = Modifier.padding(
+                                    horizontal = 4.dp
+                                )
+                            )
+                        }
                     }
 
-                    DropdownMenu(
-                        expanded = settingsExpanded,
-                        onDismissRequest = { settingsExpanded = false },
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(ProfileCard)
-                            .border(1.dp, ProfileBorder, RoundedCornerShape(18.dp)),
-                        containerColor = ProfileCard,
-                        shape = RoundedCornerShape(18.dp),
-                        shadowElevation = 10.dp,
-                        tonalElevation = 0.dp
+                } else if (
+                    state.profile?.userId != null
+                ) {
+
+
+                    IconButton(
+                        onClick = {
+                            showChallengeDialog = true
+                        }
                     ) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = "Edit Profile",
-                                    color = ProfileWhite,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            },
-                            onClick = {
-                                settingsExpanded = false
-                                onEditProfile()
-                            },
-                            modifier = Modifier.padding(horizontal = 4.dp)
+                        Icon(
+                            imageVector = Icons.Default.SportsEsports,
+                            contentDescription = "Challenge player",
+                            tint = ProfileCyan,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
-                }
-            } else if (!state.isOwnProfile && state.profile?.userId != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(ProfileCard)
-                            .border(1.dp, ProfileBorder, RoundedCornerShape(14.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
+
+
+                    if (onDirectMessage != null) {
                         IconButton(
-                            onClick = { showChallengeDialog = true },
-                            modifier = Modifier.fillMaxSize()
+                            onClick = {
+                                val uid = state.profile?.userId
+                                val username = state.profile?.username
+
+                                if (
+                                    uid != null &&
+                                    !username.isNullOrBlank()
+                                ) {
+                                    onDirectMessage(uid, username)
+                                }
+                            }
                         ) {
                             Icon(
-                                imageVector = Icons.Default.SportsEsports,
-                                contentDescription = "Challenge player",
+                                imageVector = Icons.AutoMirrored.Filled.Chat,
+                                contentDescription = "Message player",
                                 tint = ProfileCyan,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
                     }
+                }
+            }
+        )
 
-                    if (onDirectMessage != null) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = {
+                            focusManager.clearFocus()
+                        }
+                    )
+                }
+                .padding(
+                    start = 22.dp,
+                    end = 22.dp,
+                    top = 16.dp,
+                    bottom = 24.dp
+                ),
+            verticalArrangement = Arrangement.spacedBy(22.dp)
+        ) {
+
+            val profileToChallenge = state.profile
+            if (showChallengeDialog && profileToChallenge?.userId != null) {
+                DirectChallengeDialog(
+                    opponentId = profileToChallenge.userId,
+                    opponentUsername = profileToChallenge.username,
+                    opponentAvatarUrl = profileToChallenge.avatarUrl,
+                    opponentRating = profileToChallenge.rating,
+                    onDismiss = { showChallengeDialog = false },
+                    onGameStarted = { gameId ->
+                        showChallengeDialog = false
+                        onEnterGame(gameId)
+                    }
+                )
+            }
+
+            if (state.loading && state.profile == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = ProfileCyan
+                    )
+                }
+            }
+
+            state.error?.let { message ->
+                MessageCard(
+                    message = message,
+                    color = ProfileError
+                )
+            }
+
+            state.message?.let { message ->
+                MessageCard(
+                    message = message,
+                    color = ProfileCyan
+                )
+            }
+
+            state.profile?.let { profile ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(26.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF1A2B3A),
+                                    ProfileCard,
+                                    Color(0xFF13232E)
+                                )
+                            )
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = ProfileBorder,
+                            shape = RoundedCornerShape(26.dp)
+                        )
+                        .padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
-                                .size(46.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(ProfileCard)
-                                .border(1.dp, ProfileBorder, RoundedCornerShape(14.dp)),
+                                .size(76.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            ProfileCyan,
+                                            ProfileTeal
+                                        )
+                                    )
+                                ),
+
                             contentAlignment = Alignment.Center
                         ) {
-                            IconButton(
-                                onClick = {
-                                    val uid = state.profile?.userId
-                                    val uname = state.profile?.username
-                                    if (uid != null && !uname.isNullOrBlank()) {
-                                        onDirectMessage(uid, uname)
-                                    }
-                                },
-                                modifier = Modifier.fillMaxSize()
+                            val avatarUrl = profile.avatarUrl?.trim()
+
+                            if (!avatarUrl.isNullOrBlank() &&
+                                avatarUrl.startsWith("https://", ignoreCase = true)
                             ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.Chat,
-                                    contentDescription = "Message player",
-                                    tint = ProfileCyan,
-                                    modifier = Modifier.size(22.dp)
+                                AsyncImage(
+                                    model = avatarUrl,
+                                    contentDescription = "Player profile avatar",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(76.dp)
+                                        .clip(CircleShape)
+                                )
+                            } else {
+                                Text(
+                                    text = (
+                                            profile.displayName
+                                                ?.takeIf { it.isNotBlank() }
+                                                ?: profile.username
+                                            ).take(1).uppercase(),
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ProfileBackground
+                                )
+                            }
+                        }
+
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Text(
+                                text = profile.displayName
+                                    ?.takeIf { it.isNotBlank() }
+                                    ?: profile.username,
+                                color = ProfileWhite,
+                                fontSize = 23.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Text(
+                                text = "@${profile.username}",
+                                color = ProfileCyan,
+                                fontSize = 14.sp
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color(0xFF073743))
+                                    .border(1.dp, Color(0xFF0B5965), RoundedCornerShape(50))
+                                    .padding(horizontal = 9.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(5.dp)
+                                        .clip(CircleShape)
+                                        .background(ProfileCyan)
+                                )
+                                Text(
+                                    text = if (isGuest) "GUEST PLAYER" else "MOSAIC PLAYER",
+                                    color = ProfileCyan,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.7.sp,
+                                    maxLines = 1
                                 )
                             }
                         }
                     }
-                }
-            }
-        }
 
-        val profileToChallenge = state.profile
-        if (showChallengeDialog && profileToChallenge?.userId != null) {
-            DirectChallengeDialog(
-                opponentId = profileToChallenge.userId,
-                opponentUsername = profileToChallenge.username,
-                opponentAvatarUrl = profileToChallenge.avatarUrl,
-                opponentRating = profileToChallenge.rating,
-                onDismiss = { showChallengeDialog = false },
-                onGameStarted = { gameId ->
-                    showChallengeDialog = false
-                    onEnterGame(gameId)
-                }
-            )
-        }
-
-        if (state.loading && state.profile == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 48.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = ProfileCyan
-                )
-            }
-        }
-
-        state.error?.let { message ->
-            MessageCard(
-                message = message,
-                color = ProfileError
-            )
-        }
-
-        state.message?.let { message ->
-            MessageCard(
-                message = message,
-                color = ProfileCyan
-            )
-        }
-
-        state.profile?.let { profile ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF1A2B3A),
-                                ProfileCard,
-                                Color(0xFF13232E)
-                            )
-                        )
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = ProfileBorder,
-                        shape = RoundedCornerShape(26.dp)
-                    )
-                    .padding(22.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(76.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        ProfileCyan,
-                                        ProfileTeal
-                                    )
-                                )
-                            ),
-
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val avatarUrl = profile.avatarUrl?.trim()
-
-                        if (!avatarUrl.isNullOrBlank() &&
-                            avatarUrl.startsWith("https://", ignoreCase = true)
-                        ) {
-                            AsyncImage(
-                                model = avatarUrl,
-                                contentDescription = "Player profile avatar",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(76.dp)
-                                    .clip(CircleShape)
-                            )
-                        } else {
-                            Text(
-                                text = (
-                                        profile.displayName
-                                            ?.takeIf { it.isNotBlank() }
-                                            ?: profile.username
-                                        ).take(1).uppercase(),
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ProfileBackground
-                            )
-                        }
-                    }
-
-
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        Text(
-                            text = profile.displayName
-                                ?.takeIf { it.isNotBlank() }
-                                ?: profile.username,
-                            color = ProfileWhite,
-                            fontSize = 23.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            text = "@${profile.username}",
-                            color = ProfileCyan,
-                            fontSize = 14.sp
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(Color(0xFF073743))
-                                .border(1.dp, Color(0xFF0B5965), RoundedCornerShape(50))
-                                .padding(horizontal = 9.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            Box(modifier = Modifier
-                                .size(5.dp)
-                                .clip(CircleShape)
-                                .background(ProfileCyan)
-                            )
-                            Text(text = if (isGuest) "GUEST PLAYER" else "MOSAIC PLAYER",
-                                color = ProfileCyan,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.7.sp,
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(ProfileBorder)
-                )
-
-                if (state.isOwnProfile && profile.email.isNotBlank()) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        SectionLabel("EMAIL ADDRESS")
-                        Text(
-                            text = profile.email,
-                            color = ProfileWhite,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    InfoChip(
-                        label = "COUNTRY",
-                        value = if (CountryUtils.find(profile.country) != null) {
-                            "${CountryUtils.flag(profile.country)} " +
-                                    CountryUtils.countryName(profile.country)
-                        } else {
-                            "Not set"
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    InfoChip(label = "MEMBER SINCE",
-                        value = profile.joinedAt
-                            ?.substringBefore('T')
-                            ?: "Unknown",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(ProfileCard)
-                    .border(
-                        1.dp,
-                        ProfileBorder,
-                        RoundedCornerShape(24.dp)
-                    )
-                    .padding(22.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        SectionLabel(if (state.isOwnProfile) "YOUR CURRENT STRENGTH" else "PLAYER STRENGTH")
-                        Spacer(Modifier.height(7.dp))
-                        Text(
-                            text = profile.rating?.toString() ?: "—",
-                            fontSize = 43.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = ProfileCyan
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(ProfileCardSecondary)
-                            .padding(horizontal = 13.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = if (profile.provisional) {
-                                "PROVISIONAL"
-                            } else {
-                                "ESTABLISHED"
-                            },
-                            color = if (profile.provisional) {
-                                ProfileCyan
-                            } else {
-                                Color(0xFF79D6A5)
-                            },
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Text(
-                    text = profile.skillLevel
-                        ?.takeIf { it.isNotBlank() }
-                        ?.replaceFirstChar { it.uppercase() }
-                        ?: "Skill level not set",
-                    color = ProfileWhite,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Text(
-                    text = if (profile.provisional) {
-                        if (state.isOwnProfile) {
-                            "Your rating is still being established through games. Play rated matches to unlock your competitive tier."
-                        } else {
-                            "This player's rating is still being established through games."
-                        }
-                    } else {
-                        if (state.isOwnProfile) {
-                            "Your rating reflects your current playing strength. Keep playing rated games to improve."
-                        } else {
-                            "This rating reflects the player's current playing strength."
-                        }
-                    },
-                    color = ProfileMuted,
-                    fontSize = 13.sp,
-                    lineHeight = 19.sp
-                )
-
-                if (profile.provisional) {
-                    Spacer(Modifier.height(2.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "RATING CALIBRATION",
-                            color = ProfileMuted,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.7.sp
-                        )
-                        Text(
-                            text = "Play rated games",
-                            color = ProfileCyan,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(ProfileCardSecondary)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.22f)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(
-                                    Brush.horizontalGradient(listOf(ProfileCyan, ProfileTeal))
-                                )
-                        )
+                            .height(1.dp)
+                            .background(ProfileBorder)
+                    )
+
+                    if (state.isOwnProfile && profile.email.isNotBlank()) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            SectionLabel("EMAIL ADDRESS")
+                            Text(
+                                text = profile.email,
+                                color = ProfileWhite,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
-                }
-            }
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                SectionHeading(
-                    title = "RATING BREAKDOWN",
-                    subtitle = if (state.isOwnProfile) "Your strength across game modes" else "Strength across game modes"
-                )
-
-                val modes = GameMode.entries
-
-                modes.chunked(2).forEach { rowModes ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        rowModes.forEach { mode ->
-                            val rating = profile.ratings?.entries?.firstOrNull {
-                                it.key.equals(mode.ratingKey, ignoreCase = true)
-                            }?.value ?: if (mode == GameMode.RAPID) {
-                                com.abhinav.caisarra.data.remote.dto.ModeRating(
-                                    rating = profile.rating,
-                                    provisional = profile.provisional
-                                )
-                            } else null
+                        InfoChip(
+                            label = "COUNTRY",
+                            value = if (CountryUtils.find(profile.country) != null) {
+                                "${CountryUtils.flag(profile.country)} " +
+                                        CountryUtils.countryName(profile.country)
+                            } else {
+                                "Not set"
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
 
-                            RatingModeCard(
-                                title = mode.label,
-                                rating = rating?.rating,
-                                provisional = rating?.provisional ?: false,
-                                modifier = Modifier.weight(1f),
-                                onClick = { onStatsClick(mode, profile.username) }
-                            )
-                        }
-
-                        if (rowModes.size == 1) {
-                            Spacer(Modifier.weight(1f))
-                        }
+                        InfoChip(
+                            label = "MEMBER SINCE",
+                            value = profile.joinedAt
+                                ?.substringBefore('T')
+                                ?: "Unknown",
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
-            }
-            Column(
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                SectionHeading(
-                    title = if (state.isOwnProfile) "ABOUT YOU" else "ABOUT PLAYER",
-                    subtitle = "A little about the player"
-                )
 
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(24.dp))
                         .background(ProfileCard)
                         .border(
                             1.dp,
                             ProfileBorder,
-                            RoundedCornerShape(22.dp)
+                            RoundedCornerShape(24.dp)
                         )
-                        .clickable(enabled = state.isOwnProfile && !isGuest) { onEditProfile() }
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        SectionLabel("PLAYER BIO")
-                        if (state.isOwnProfile && !isGuest) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            SectionLabel(if (state.isOwnProfile) "YOUR CURRENT STRENGTH" else "PLAYER STRENGTH")
+                            Spacer(Modifier.height(7.dp))
                             Text(
-                                text = if (profile.bio.isNullOrBlank()) "+ Add bio" else "Edit bio",
-                                color = ProfileCyan,
-                                fontSize = 11.sp,
+                                text = profile.rating?.toString() ?: "—",
+                                fontSize = 43.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = ProfileCyan
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(ProfileCardSecondary)
+                                .padding(horizontal = 13.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = if (profile.provisional) {
+                                    "PROVISIONAL"
+                                } else {
+                                    "ESTABLISHED"
+                                },
+                                color = if (profile.provisional) {
+                                    ProfileCyan
+                                } else {
+                                    Color(0xFF79D6A5)
+                                },
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
 
                     Text(
-                        text = profile.bio
+                        text = profile.skillLevel
                             ?.takeIf { it.isNotBlank() }
-                            ?: if (state.isOwnProfile) "No bio added yet." else "This player hasn't added a bio yet.",
-                        color = if (profile.bio.isNullOrBlank()) {
-                            ProfileMuted
+                            ?.replaceFirstChar { it.uppercase() }
+                            ?: "Skill level not set",
+                        color = ProfileWhite,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Text(
+                        text = if (profile.provisional) {
+                            if (state.isOwnProfile) {
+                                "Your rating is still being established through games. Play rated matches to unlock your competitive tier."
+                            } else {
+                                "This player's rating is still being established through games."
+                            }
                         } else {
-                            ProfileWhite
+                            if (state.isOwnProfile) {
+                                "Your rating reflects your current playing strength. Keep playing rated games to improve."
+                            } else {
+                                "This rating reflects the player's current playing strength."
+                            }
                         },
-                        fontSize = 15.sp,
-                        lineHeight = 22.sp
+                        color = ProfileMuted,
+                        fontSize = 13.sp,
+                        lineHeight = 19.sp
+                    )
+
+                    if (profile.provisional) {
+                        Spacer(Modifier.height(2.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "RATING CALIBRATION",
+                                color = ProfileMuted,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.7.sp
+                            )
+                            Text(
+                                text = "Play rated games",
+                                color = ProfileCyan,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(ProfileCardSecondary)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.22f)
+                                    .height(4.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(
+                                        Brush.horizontalGradient(listOf(ProfileCyan, ProfileTeal))
+                                    )
+                            )
+                        }
+                    }
+                }
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    SectionHeading(
+                        title = "RATING BREAKDOWN",
+                        subtitle = if (state.isOwnProfile) "Your strength across game modes" else "Strength across game modes"
+                    )
+
+                    val modes = GameMode.entries
+
+                    modes.chunked(2).forEach { rowModes ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowModes.forEach { mode ->
+                                val rating = profile.ratings?.entries?.firstOrNull {
+                                    it.key.equals(mode.ratingKey, ignoreCase = true)
+                                }?.value ?: if (mode == GameMode.RAPID) {
+                                    com.abhinav.caisarra.data.remote.dto.ModeRating(
+                                        rating = profile.rating,
+                                        provisional = profile.provisional
+                                    )
+                                } else null
+
+                                RatingModeCard(
+                                    title = mode.label,
+                                    rating = rating?.rating,
+                                    provisional = rating?.provisional ?: false,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onStatsClick(mode, profile.username) }
+                                )
+                            }
+
+                            if (rowModes.size == 1) {
+                                Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    SectionHeading(
+                        title = if (state.isOwnProfile) "ABOUT YOU" else "ABOUT PLAYER",
+                        subtitle = "A little about the player"
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(ProfileCard)
+                            .border(
+                                1.dp,
+                                ProfileBorder,
+                                RoundedCornerShape(22.dp)
+                            )
+                            .clickable(enabled = state.isOwnProfile && !isGuest) { onEditProfile() }
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            SectionLabel("PLAYER BIO")
+                            if (state.isOwnProfile && !isGuest) {
+                                Text(
+                                    text = if (profile.bio.isNullOrBlank()) "+ Add bio" else "Edit bio",
+                                    color = ProfileCyan,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = profile.bio
+                                ?.takeIf { it.isNotBlank() }
+                                ?: if (state.isOwnProfile) "No bio added yet." else "This player hasn't added a bio yet.",
+                            color = if (profile.bio.isNullOrBlank()) {
+                                ProfileMuted
+                            } else {
+                                ProfileWhite
+                            },
+                            fontSize = 15.sp,
+                            lineHeight = 22.sp
+                        )
+                    }
+                }
+
+                if (state.recentGames.isNotEmpty() || state.loadingGames) {
+                    GameHistorySection(
+                        games = state.recentGames,
+                        onReviewGame = onReviewGame,
+                        isLoading = state.loadingGames,
+                        showViewAll = false
                     )
                 }
-            }
 
-            if (state.recentGames.isNotEmpty() || state.loadingGames) {
-                GameHistorySection(
-                    games = state.recentGames,
-                    onReviewGame = onReviewGame,
-                    isLoading = state.loadingGames,
-                    showViewAll = false
-                )
+                Spacer(Modifier.height(12.dp))
             }
-
-            Spacer(Modifier.height(12.dp))
         }
     }
 }

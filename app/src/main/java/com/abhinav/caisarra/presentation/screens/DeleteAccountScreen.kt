@@ -19,15 +19,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,16 +38,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.ui.components.PasswordTextField
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
+import com.abhinav.caisarra.presentation.viewmodel.DeleteAccountViewModel
 import com.caisaara.ui.theme.DeleteWarningBg
 import com.caisaara.ui.theme.DeleteWarningBorder
 import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.StatsBg
 import com.caisaara.ui.theme.StatsCardBg
 import com.caisaara.ui.theme.StatsCardBorder
-import com.caisaara.ui.theme.StatsTabBg
-import com.caisaara.ui.theme.StatsTabBorder
 import com.caisaara.ui.theme.StatsTextMuted
 import com.caisaara.ui.theme.StatsTextWhite
 import com.caisaara.ui.theme.TextSizeBadge
@@ -53,70 +55,52 @@ import com.caisaara.ui.theme.TextSizeBody
 import com.caisaara.ui.theme.TextSizeCaption
 import com.caisaara.ui.theme.TextSizeHeading
 import com.caisaara.ui.theme.TextSizeTitle
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+
 
 @Composable
 fun DeleteAccountScreen(
+    viewModel: DeleteAccountViewModel,
     onBack: () -> Unit,
     onConfirmDelete: () -> Unit
 ) {
+    val state by viewModel.state.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(StatsBg)
             .statusBarsPadding()
+            .navigationBarsPadding()
+            .imePadding()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(StatsTabBg)
-                    .border(
-                        width = 1.dp,
-                        color = StatsTabBorder,
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = StatsTextWhite,
-                        modifier = Modifier.size(20.dp)
-                    )
+        CaisaaraTopBar(
+            title = "Delete Account",
+            onBack = {
+                if (!state.isLoading) {
+                    onBack()
                 }
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Text(
-                text = "Delete Account",
-                fontFamily = JetBrainsMono,
-                fontWeight = FontWeight.Bold,
-                fontSize = TextSizeHeading,
-                color = RedNormal
-            )
-        }
+            },
+            backgroundColor = StatsBg,
+            titleColor = RedNormal,
+            iconTint = StatsTextWhite,
+            titleFontSize = TextSizeHeading
+        )
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
+            // Warning icon badge
             Box(
                 modifier = Modifier
                     .size(72.dp)
@@ -163,32 +147,109 @@ fun DeleteAccountScreen(
                     BulletPoint(text = "All game records, match histories, and analysis will be removed.")
                     BulletPoint(text = "Your ratings (Rapid, Blitz, Bullet, Puzzles) will be reset.")
                     BulletPoint(text = "Friend lists, club memberships, and messages will be lost.")
+                    BulletPoint(text = "Active tournaments will be cancelled or withdrawn.")
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "CONFIRM WITH PASSWORD",
+                    fontFamily = JetBrainsMono,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = TextSizeCaption,
+                    color = StatsTextMuted
+                )
+
+                PasswordTextField(
+                    label = "",
+                    value = state.password,
+                    onValueChange = viewModel::onPasswordChange,
+                    placeholder = "Enter your current password",
+                    helperText = if (state.password.length > 72) {
+                        "Password cannot exceed 72 characters."
+                    } else {
+                        null
+                    }
+                )
+            }
+
+            if (state.error != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(DeleteWarningBg)
+                        .border(1.dp, RedNormal.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ErrorOutline,
+                            contentDescription = "Error",
+                            tint = RedNormal,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = state.error ?: "",
+                            fontFamily = JetBrainsMono,
+                            fontSize = TextSizeCaption,
+                            color = StatsTextWhite,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             Button(
-                onClick = onConfirmDelete,
+                onClick = {
+                    viewModel.confirmDeleteAccount(onSuccess = onConfirmDelete)
+                },
+                enabled = state.canSubmit,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = RedNormal
+                    containerColor = RedNormal,
+                    disabledContainerColor = RedNormal.copy(alpha = 0.4f)
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
             ) {
-                Text(
-                    text = "DELETE MY ACCOUNT",
-                    fontFamily = JetBrainsMono,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = TextSizeBody,
-                    color = Color.White
-                )
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "DELETING ACCOUNT...",
+                        fontFamily = JetBrainsMono,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = TextSizeBody,
+                        color = Color.White
+                    )
+                } else {
+                    Text(
+                        text = "DELETE MY ACCOUNT",
+                        fontFamily = JetBrainsMono,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = TextSizeBody,
+                        color = Color.White
+                    )
+                }
             }
 
             OutlinedButton(
                 onClick = onBack,
+                enabled = !state.isLoading,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()

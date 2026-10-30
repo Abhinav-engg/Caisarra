@@ -57,7 +57,7 @@ import com.caisaara.ui.theme.TextSizeBadge
 import com.caisaara.ui.theme.TextSizeCaption
 import com.caisaara.ui.theme.TextSizeSubhead
 import com.caisaara.ui.theme.ThemeSlateAccent
-
+import androidx.compose.ui.platform.LocalConfiguration
 @Composable
 fun PuzzlesScreen(
     viewModel: PuzzlesHubViewModel,
@@ -66,66 +66,105 @@ fun PuzzlesScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
-
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
 
     var isLaunchingPuzzle by remember { mutableStateOf(false) }
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                isLaunchingPuzzle = false
-            }
+            if (event == Lifecycle.Event.ON_RESUME) isLaunchingPuzzle = false
         }
-
         lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadHubData()
-    }
+    LaunchedEffect(Unit) { viewModel.loadHubData() }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(StatsBg)
             .statusBarsPadding()
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         PuzzlesHeader()
 
-        Spacer(modifier = Modifier.height(16.dp))
+        if (isLandscape) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    DailyPuzzleCard(
+                        streak = state.streak,
+                        rating = state.puzzleRating,
+                        enabled = !isLaunchingPuzzle,
+                        onPlayClick = {
+                            if (!isLaunchingPuzzle) {
+                                isLaunchingPuzzle = true
+                                onPlayDailyPuzzle()
+                            }
+                        }
+                    )
+                }
 
-        DailyPuzzleCard(
-            streak = state.streak,
-            rating = state.puzzleRating,
-            enabled = !isLaunchingPuzzle,
-            onPlayClick = {
-                if (!isLaunchingPuzzle) {
-                    isLaunchingPuzzle = true
-                    onPlayDailyPuzzle()
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    ModesSection(
+                        rushHighScore = state.rushHighScore,
+                        enabled = !isLaunchingPuzzle,
+                        onPlayPuzzleRush = { mode ->
+                            if (!isLaunchingPuzzle) {
+                                isLaunchingPuzzle = true
+                                onPlayPuzzleRush(mode)
+                            }
+                        }
+                    )
                 }
             }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        ModesSection(
-            rushHighScore = state.rushHighScore,
-            enabled = !isLaunchingPuzzle,
-            onPlayPuzzleRush = { mode ->
-                if (!isLaunchingPuzzle) {
-                    isLaunchingPuzzle = true
-                    onPlayPuzzleRush(mode)
-                }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                DailyPuzzleCard(
+                    streak = state.streak,
+                    rating = state.puzzleRating,
+                    enabled = !isLaunchingPuzzle,
+                    onPlayClick = {
+                        if (!isLaunchingPuzzle) {
+                            isLaunchingPuzzle = true
+                            onPlayDailyPuzzle()
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                ModesSection(
+                    rushHighScore = state.rushHighScore,
+                    enabled = !isLaunchingPuzzle,
+                    onPlayPuzzleRush = { mode ->
+                        if (!isLaunchingPuzzle) {
+                            isLaunchingPuzzle = true
+                            onPlayPuzzleRush(mode)
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
             }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
+        }
     }
 }
 
@@ -146,8 +185,7 @@ private fun DailyPuzzleCard(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = StatsSkeletonChartBg
@@ -210,8 +248,7 @@ private fun ModesSection(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = StatsSkeletonChartBg

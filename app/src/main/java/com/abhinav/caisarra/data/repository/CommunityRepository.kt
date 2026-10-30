@@ -5,6 +5,7 @@ import com.abhinav.caisarra.data.remote.api.CommunityService
 import com.abhinav.caisarra.data.remote.dto.CommunityCommentDto
 import com.abhinav.caisarra.data.remote.dto.CommunityPostDto
 import com.abhinav.caisarra.data.remote.dto.CommunityReactionData
+import com.abhinav.caisarra.data.remote.dto.CommunityFeedData
 import com.abhinav.caisarra.data.remote.dto.CreateCommunityCommentRequest
 import com.abhinav.caisarra.data.remote.dto.CreateCommunityPostRequest
 import com.abhinav.caisarra.data.remote.dto.CommunityReactionRequest
@@ -85,7 +86,7 @@ class CommunityRepository(
         postId: Long,
         reaction: String
     ): CommunityReactionData {
-        require(reaction in setOf("like", "love", "fire", "wow")) {
+        require(reaction in setOf("like", "love", "fire", "wow", "dislike")) {
             "Invalid reaction."
         }
 
@@ -155,4 +156,26 @@ class CommunityRepository(
             result.error ?: result.message ?: "Unable to delete comment"
         }
     }
+
+    suspend fun setBookmark(postId: Long, bookmarked: Boolean): Boolean {
+        val result = if (bookmarked) {
+            service.bookmarkPost(postId)
+        } else {
+            service.removeBookmark(postId)
+        }
+        check(result.success) {
+            result.error ?: result.message ?: "Unable to update bookmark"
+        }
+        return result.data?.bookmarked ?: bookmarked
+    }
+
+    suspend fun loadBookmarks(beforeId: Long? = null): CommunityFeedData {
+        val result = service.getBookmarks(beforeId = beforeId, limit = 20)
+        check(result.success) {
+            result.error ?: result.message ?: "Unable to load bookmarks"
+        }
+        return result.data ?: error("Bookmarks response was empty")
+    }
 }
+
+

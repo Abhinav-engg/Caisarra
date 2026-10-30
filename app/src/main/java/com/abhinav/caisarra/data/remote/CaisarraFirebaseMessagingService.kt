@@ -12,6 +12,8 @@ import com.abhinav.caisarra.R
 import com.abhinav.caisarra.app.CaisarraApplication
 import com.abhinav.caisarra.app.MainActivity
 import com.abhinav.caisarra.data.repository.AuthRepository
+import com.abhinav.caisarra.data.repository.ChallengeManager
+import com.abhinav.caisarra.data.repository.NotificationRepository
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
@@ -34,51 +36,54 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(remoteMessage)
         val data = remoteMessage.data
 
-        val title = data["title"]
-            ?: remoteMessage.notification?.title
+        val title = remoteMessage.notification?.title
+            ?: data["title"]
             ?: getString(R.string.app_name)
 
-        val body = data["body"]
-            ?: remoteMessage.notification?.body
+        val body = remoteMessage.notification?.body
+            ?: data["body"]
             ?: ""
 
         val type = data["type"].orEmpty()
-        val targetId = data["target_id"].orEmpty()
-        val code = data["code"]
-        val gameId = data["game_id"] ?: data["gameId"]
-        val deepLink = data["deep_link"]
-            ?: when {
-                !gameId.isNullOrBlank() && type.contains("accepted", ignoreCase = true) ->
-                    "https://caisaara.duckdns.org/game/$gameId"
-                !code.isNullOrBlank() ->
-                    "https://caisaara.duckdns.org/play/$code"
-                !gameId.isNullOrBlank() ->
-                    "https://caisaara.duckdns.org/game/$gameId"
-                else -> null
-            }
+        val notificationIdStr = data["notification_id"]
+        val notificationId = notificationIdStr?.toIntOrNull() ?: (System.currentTimeMillis() % 100000).toInt()
+
         val channelId = data["channel_id"]?.takeIf { it.isNotBlank() } ?: resolveChannel(type)
 
         if (type.contains("challenge", ignoreCase = true)) {
-            com.abhinav.caisarra.data.repository.ChallengeManager.get(applicationContext).refreshChallenges()
+            ChallengeManager.get(applicationContext).refreshChallenges()
+        }
+
+        serviceScope.launch {
+            NotificationRepository.get(applicationContext).fetchUnreadCount()
         }
 
         showNotification(
             title = title,
             body = body,
             channelId = channelId,
-            deepLink = deepLink,
             type = type,
-            targetId = targetId,
-            notificationId = data["notification_id"]?.toIntOrNull() ?: (System.currentTimeMillis() % 100000).toInt()
+            dataMap = data,
+            notificationId = notificationId
         )
     }
 
-    private fun resolveChannel(type: String): String = when (type.uppercase()) {
-        "GAME_MOVE", "TURN", "GAME_TURN" -> CaisarraApplication.CHANNEL_GAME_TURNS
-        "GAME_INVITE", "CHALLENGE", "GAME_CHALLENGE" -> CaisarraApplication.CHANNEL_GAME_INVITES
-        "CHAT", "DIRECT_MESSAGE", "CLUB_CHAT", "MESSAGE" -> CaisarraApplication.CHANNEL_MESSAGES
-        "TOURNAMENT", "TOURNAMENT_ROUND", "TOURNAMENT_START" -> CaisarraApplication.CHANNEL_TOURNAMENTS
-        "DAILY_PUZZLE", "PUZZLE", "STREAK" -> CaisarraApplication.CHANNEL_DAILY_PUZZLES
+    private fun resolveChannel(type: String): String = when (type.lowercase()) {
+        "friend_request", "friend_accepted", "game_challenge", "challenge_declined", "game_invite", "challenge" ->
+            CaisarraApplication.CHANNEL_GAME_INVITES
+
+        "tournament_round_started", "tournament_finished", "tournament_cancelled", "tournament" ->
+            CaisarraApplication.CHANNEL_TOURNAMENTS
+
+        "direct_message", "chat", "message" ->
+            CaisarraApplication.CHANNEL_MESSAGES
+
+        "post_comment", "post_reaction", "club_promoted", "club_demoted", "club_new_owner", "club_kicked", "club_banned" ->
+            CaisarraApplication.CHANNEL_MESSAGES
+
+        "daily_puzzle", "puzzle", "streak" ->
+            CaisarraApplication.CHANNEL_DAILY_PUZZLES
+
         else -> CaisarraApplication.CHANNEL_GAME_TURNS
     }
 
@@ -86,9 +91,8 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
         title: String,
         body: String,
         channelId: String,
-        deepLink: String?,
         type: String,
-        targetId: String,
+        dataMap: Map<String, String>,
         notificationId: Int
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -97,9 +101,15 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("notification_id", dataMap["notification_id"])
             putExtra("notification_type", type)
-            putExtra("target_id", targetId)
-            if (!deepLink.isNullOrBlank()) data = Uri.parse(deepLink)
+            for ((key, value) in dataMap) {
+                putExtra(key, value)
+            }
+            val deepLink = dataMap["deep_link"]
+            if (!deepLink.isNullOrBlank()) {
+                data = Uri.parse(deepLink)
+            }
         }
 
         val pendingIntent = PendingIntent.getActivity(

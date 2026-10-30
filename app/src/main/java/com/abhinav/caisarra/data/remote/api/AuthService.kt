@@ -3,6 +3,8 @@ package com.abhinav.caisarra.data.remote.api
 import com.abhinav.caisarra.data.remote.dto.AccessTokenResponse
 import com.abhinav.caisarra.data.remote.dto.ApiResponse
 import com.abhinav.caisarra.data.remote.dto.AuthResponse
+import com.abhinav.caisarra.data.remote.dto.DeleteAccountRequest
+import com.abhinav.caisarra.data.remote.dto.DeleteAccountResponse
 import com.abhinav.caisarra.data.remote.dto.ForgotPasswordRequest
 import com.abhinav.caisarra.data.remote.dto.GuestLoginResponse
 import com.abhinav.caisarra.data.remote.dto.LoginData
@@ -20,6 +22,7 @@ import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.HTTP
 import retrofit2.http.POST
 
 interface AuthService {
@@ -59,5 +62,17 @@ interface AuthService {
     @POST("api/rating")
     suspend fun submitRating(@Body request: RatingRequest): ApiResponse<RatingData>
 
-
+    /**
+     * Permanently deletes the logged-in player's account after confirming their password.
+     *
+     * Rules & Constraints:
+     * - Endpoint: DELETE /api/account
+     * - Authentication: Bearer access token, registered users only (no guests)
+     * - Rate limit: 5 requests per 15 minutes per IP
+     * - Body: { "password": "<current_password>" } (required, max 72 characters)
+     */
+    @HTTP(method = "DELETE", path = "api/account", hasBody = true)
+    suspend fun deleteAccount(
+        @Body body: DeleteAccountRequest
+    ): Response<DeleteAccountResponse>
 }

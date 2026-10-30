@@ -44,6 +44,8 @@ data class CommunityPostDto(
     val reactions: Map<String, Int> = emptyMap(),
     @SerialName("my_reaction")
     val myReaction: String? = null,
+    @SerialName("is_bookmarked")
+    val isBookmarked: Boolean = false,
     @SerialName("comment_count")
     val commentCount: Int = 0,
     @SerialName("created_at")
@@ -97,4 +99,10 @@ data class CommunityReactionRequest(
 @Serializable
 data class CreateCommunityCommentRequest(
     val body: String
+)
+
+
+@Serializable
+data class CommunityBookmarkData(
+    val bookmarked: Boolean
 )

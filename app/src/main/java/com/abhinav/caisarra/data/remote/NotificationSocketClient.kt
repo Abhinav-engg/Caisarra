@@ -2,10 +2,13 @@ package com.abhinav.caisarra.data.remote
 
 import android.content.Context
 import android.util.Log
-import com.abhinav.caisarra.data.remote.dto.WsNotificationData
+import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.remote.dto.WsNotificationEnvelope
 import com.abhinav.caisarra.data.remote.dto.WsNotificationPayload
+import com.abhinav.caisarra.data.remote.dto.getLongData
+import com.abhinav.caisarra.data.remote.dto.getStringData
 import com.abhinav.caisarra.data.repository.AuthRepository
+import com.abhinav.caisarra.data.repository.NotificationRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -69,6 +72,7 @@ sealed interface ChallengeNotificationEvent {
 class NotificationSocketClient(private val context: Context) {
 
     private val authRepository = AuthRepository.get(context)
+    private val notificationRepository = NotificationRepository.get(context)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex()
 
@@ -76,6 +80,7 @@ class NotificationSocketClient(private val context: Context) {
     private var reconnectJob: Job? = null
     private var generation = 0
     private var isExplicitlyStopped = false
+    private var reconnectAttempts = 0
 
     private val _connected = MutableStateFlow(false)
     val connected: StateFlow<Boolean> = _connected.asStateFlow()
@@ -98,6 +103,7 @@ class NotificationSocketClient(private val context: Context) {
                 isExplicitlyStopped = true
                 reconnectJob?.cancel()
                 reconnectJob = null
+                reconnectAttempts = 0
                 val curGen = ++generation
                 socket?.close(1000, "Normal closure")
                 socket = null
@@ -146,7 +152,11 @@ class NotificationSocketClient(private val context: Context) {
                         return
                     }
                     _connected.value = true
+                    reconnectAttempts = 0
                     Log.i(TAG, "Notification WebSocket connected; HTTP ${response.code}")
+                    scope.launch {
+                        notificationRepository.fetchUnreadCount()
+                    }
                 }
 
                 override fun onMessage(webSocket: WebSocket, text: String) {
@@ -179,7 +189,10 @@ class NotificationSocketClient(private val context: Context) {
         if (isExplicitlyStopped) return
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
-            delay(3000L)
+            reconnectAttempts++
+            val delayMs = minOf(30_000L, 2_000L * (1 shl minOf(reconnectAttempts, 4)))
+            Log.d(TAG, "Scheduling notification socket reconnect in ${delayMs}ms (attempt $reconnectAttempts)")
+            delay(delayMs)
             mutex.withLock {
                 if (!isExplicitlyStopped && !_connected.value) {
                     connectInternal()
@@ -191,30 +204,108 @@ class NotificationSocketClient(private val context: Context) {
     private fun handleIncomingMessage(text: String) {
         try {
             Log.d(TAG, "Notification raw payload: $text")
-            val payload = parseNotificationPayload(text) ?: return
-            dispatchNotification(payload)
+
+            val envelope = runCatching {
+                RetrofitInstance.json.decodeFromString(WsNotificationEnvelope.serializer(), text)
+            }.getOrNull()
+
+            if (envelope?.notification != null) {
+                val item = envelope.notification
+                notificationRepository.onNotificationReceived(item)
+                dispatchNotificationItemToChallenges(item)
+                return
+            }
+
+            val legacy = runCatching {
+                RetrofitInstance.json.decodeFromString(WsNotificationPayload.serializer(), text)
+            }.getOrNull()
+
+            if (legacy != null) {
+                dispatchLegacyPayload(legacy)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse notification payload: $text", e)
         }
     }
 
-    private fun parseNotificationPayload(text: String): WsNotificationPayload? {
-        // Try decoding envelope first: { "type": "notification", "notification": { ... } }
-        val envelope = runCatching {
-            RetrofitInstance.json.decodeFromString(WsNotificationEnvelope.serializer(), text)
-        }.getOrNull()
+    private fun dispatchNotificationItemToChallenges(item: NotificationItemDto) {
+        val eventType = item.type.lowercase()
+        val code = item.getStringData("code").orEmpty()
+        val gameId = item.getStringData("game_id").orEmpty()
+        val userId = item.getLongData("user_id")
+        val username = item.getStringData("username").orEmpty()
+        val link = item.getStringData("link")
+        val title = item.title
+        val body = item.body
 
-        if (envelope?.notification != null) {
-            return envelope.notification
+        when (eventType) {
+            "game_challenge", "challenge_received" -> {
+                val challengerId = userId ?: 0L
+                val challengerUsername = username
+                if (code.isNotBlank() || gameId.isNotBlank()) {
+                    _challengeEvents.tryEmit(
+                        ChallengeNotificationEvent.Received(
+                            code = code,
+                            gameId = gameId,
+                            link = link,
+                            challengerId = challengerId,
+                            challengerUsername = challengerUsername,
+                            title = title.ifBlank { "New challenge" },
+                            body = body.ifBlank { "$challengerUsername challenged you to a game" }
+                        )
+                    )
+                }
+            }
+
+            "game_challenge_accepted", "challenge_accepted" -> {
+                if (gameId.isNotBlank()) {
+                    _challengeEvents.tryEmit(
+                        ChallengeNotificationEvent.Accepted(
+                            code = code.ifBlank { null },
+                            gameId = gameId,
+                            link = link,
+                            opponentId = userId,
+                            opponentUsername = username,
+                            title = title.ifBlank { "Challenge accepted" },
+                            body = body.ifBlank { "${username.ifBlank { "Opponent" }} accepted your challenge!" }
+                        )
+                    )
+                }
+            }
+
+            "game_challenge_declined", "challenge_declined" -> {
+                _challengeEvents.tryEmit(
+                    ChallengeNotificationEvent.Declined(
+                        code = code.ifBlank { null },
+                        gameId = gameId.ifBlank { null },
+                        opponentId = userId,
+                        opponentUsername = username,
+                        title = title.ifBlank { "Challenge declined" },
+                        body = body.ifBlank { "${username.ifBlank { "Opponent" }} declined your challenge" }
+                    )
+                )
+            }
+
+            "game_challenge_cancelled", "challenge_cancelled" -> {
+                _challengeEvents.tryEmit(
+                    ChallengeNotificationEvent.Cancelled(
+                        code = code.ifBlank { null },
+                        gameId = gameId.ifBlank { null },
+                        challengerId = userId,
+                        challengerUsername = username,
+                        title = title.ifBlank { "Challenge cancelled" },
+                        body = body.ifBlank { "${username.ifBlank { "Challenger" }} cancelled the challenge" }
+                    )
+                )
+            }
+
+            else -> {
+                Log.d(TAG, "Processed general notification item of type: $eventType")
+            }
         }
-
-        // Or payload directly: { "type": "game_challenge", ... }
-        return runCatching {
-            RetrofitInstance.json.decodeFromString(WsNotificationPayload.serializer(), text)
-        }.getOrNull()
     }
 
-    private fun dispatchNotification(payload: WsNotificationPayload) {
+    private fun dispatchLegacyPayload(payload: WsNotificationPayload) {
         val data = payload.data
         val code = data?.code ?: payload.code.orEmpty()
         val gameId = data?.gameId ?: payload.gameId.orEmpty()
@@ -287,7 +378,7 @@ class NotificationSocketClient(private val context: Context) {
             }
 
             else -> {
-                Log.d(TAG, "Unhandled notification type: ${payload.type}")
+                Log.d(TAG, "Unhandled legacy notification type: ${payload.type}")
             }
         }
     }

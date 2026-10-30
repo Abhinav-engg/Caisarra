@@ -31,7 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
-
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.data.remote.dto.DirectConversationDto
 import com.abhinav.caisarra.data.remote.dto.DirectPlayerDto
 import com.abhinav.caisarra.data.repository.DirectMessageRepository
@@ -142,54 +142,27 @@ fun DirectMessagesListScreen(
             .background(StatsBg)
             .statusBarsPadding()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 12.dp,
-                    vertical = 10.dp
-                ),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBack
-            ) {
-                Icon(
-                    imageVector =
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = StatsTextWhite
-                )
+        CaisaaraTopBar(
+            title = "DIRECT MESSAGES",
+            onBack = onBack,
+            backgroundColor = StatsBg,
+            titleColor = StatsTextWhite,
+            iconTint = StatsTextWhite,
+            titleFontSize = 16.sp,
+            actions = {
+                IconButton(
+                    onClick = {
+                        loadConversations()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Refresh conversations",
+                        tint = StatsCyan
+                    )
+                }
             }
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "DIRECT MESSAGES",
-                    fontFamily = JetBrainsMono,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = StatsTextWhite
-                )
-
-                Text(
-                    text = "Chat with your players",
-                    color = StatsTextMuted,
-                    fontSize = 12.sp
-                )
-            }
-
-            IconButton(
-                onClick = { loadConversations() }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh conversations",
-                    tint = StatsCyan
-                )
-            }
-        }
+        )
 
         HorizontalDivider(
             color = StatsCardBorder

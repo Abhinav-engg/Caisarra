@@ -35,7 +35,8 @@ data class TournamentDetailUiState(
     val actionInProgress: Boolean = false,
     val winnerId: Long? = null,
     val message: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val isTournamentCancelled: Boolean = false
 )
 
 class TournamentDetailViewModel(
@@ -163,8 +164,13 @@ class TournamentDetailViewModel(
                     }
 
                     is TournamentSocketEvent.Cancelled -> {
-                        _state.update { it.copy(winnerId = event.winnerId) }
-                        refreshAll(showLoading = false)
+                        _state.update {
+                            it.copy(
+                                winnerId = event.winnerId,
+                                isTournamentCancelled = true,
+                                message = "Tournament cancelled"
+                            )
+                        }
                     }
                 }
             }

@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -39,6 +40,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import com.abhinav.caisarra.data.repository.NotificationRepository
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -104,11 +107,19 @@ fun HomeScreen(
     onPlayBots: () -> Unit = {},
     onOpenProfile: () -> Unit,
     onOpenCommunity: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {},
     onStatsClick: (GameMode) -> Unit = {},
     onStreakClick: () -> Unit = {}
 ) {
 
+    val context = LocalContext.current
     val state by viewModel.state.collectAsState()
+    val notificationRepo = remember { NotificationRepository.get(context) }
+    val unreadCount by notificationRepo.unreadCount.collectAsState()
+
+    LaunchedEffect(Unit) {
+        notificationRepo.fetchUnreadCount()
+    }
 
     Box(
         modifier = Modifier
@@ -143,6 +154,8 @@ fun HomeScreen(
                     displayName = state.displayName,
                     username = state.username,
                     avatarUrl = state.avatarUrl,
+                    unreadNotificationsCount = unreadCount,
+                    onNotificationsClick = onOpenNotifications,
                     onOpenProfile = onOpenProfile,
                     onStreakClick = onStreakClick
                 )
@@ -228,6 +241,8 @@ private fun HomeTopBar(
     displayName: String?,
     username: String,
     avatarUrl: String?,
+    unreadNotificationsCount: Int = 0,
+    onNotificationsClick: () -> Unit = {},
     onStreakClick: () -> Unit = {},
     onOpenProfile: () -> Unit
 ) {
@@ -248,7 +263,7 @@ private fun HomeTopBar(
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -274,6 +289,45 @@ private fun HomeTopBar(
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF1E293B).copy(alpha = 0.5f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(),
+                        onClick = singleClick(onNotificationsClick)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Notifications,
+                    contentDescription = "Notifications",
+                    tint = if (unreadNotificationsCount > 0) Color(0xFF00D8E8) else White.copy(alpha = 0.85f),
+                    modifier = Modifier.size(22.dp)
+                )
+                if (unreadNotificationsCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 4.dp, end = 4.dp)
+                            .size(if (unreadNotificationsCount > 9) 16.dp else 14.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFEF4444)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        androidx.compose.material3.Text(
+                            text = if (unreadNotificationsCount > 99) "99+" else unreadNotificationsCount.toString(),
+                            color = White,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = JetBrainsMono
+                        )
+                    }
+                }
             }
 
             val initials = remember(displayName, username) {

@@ -23,9 +23,10 @@ import com.abhinav.caisarra.data.remote.api.PuzzleApiService
 import com.abhinav.caisarra.data.remote.api.ClubService
 import com.abhinav.caisarra.data.remote.api.LeaderboardService
 import com.abhinav.caisarra.data.remote.api.DirectMessageService
+import com.abhinav.caisarra.data.remote.api.NotificationService
 import com.abhinav.caisarra.data.remote.api.PrivacyService
 object RetrofitInstance {
-    const val BASE_URL = "https://caisaara.duckdns.org"
+    const val BASE_URL = "https://caisaara.app"
     val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
@@ -122,8 +123,10 @@ object RetrofitInstance {
     fun createLeaderboardService(tokenManager: TokenManager): LeaderboardService =
         authenticatedRetrofit(tokenManager).create()
     fun createDirectMessageService(tokenManager: TokenManager): DirectMessageService { return authenticatedRetrofit(tokenManager)
-            .create(DirectMessageService::class.java)
+        .create(DirectMessageService::class.java)
     }
     fun createPrivacyService(tokenManager: TokenManager): PrivacyService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createNotificationService(tokenManager: TokenManager): NotificationService =
         authenticatedRetrofit(tokenManager).create()
 }

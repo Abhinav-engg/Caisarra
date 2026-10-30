@@ -1,10 +1,18 @@
 package com.abhinav.caisarra.presentation.navigation
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
+import com.abhinav.caisarra.app.MainActivity
+import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
+import com.abhinav.caisarra.data.remote.dto.getStringData
+import com.abhinav.caisarra.data.remote.dto.getLongData
+import com.abhinav.caisarra.data.repository.NotificationRepository
+import com.abhinav.caisarra.presentation.notifications.NotificationsScreen
+import com.abhinav.caisarra.presentation.notifications.NotificationsViewModel
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -133,6 +141,7 @@ import com.abhinav.caisarra.presentation.tournament.TournamentDetailScreen
 import com.abhinav.caisarra.presentation.tournament.TournamentDetailViewModel
 import com.abhinav.caisarra.presentation.tournament.TournamentListScreen
 import com.abhinav.caisarra.presentation.tournament.TournamentListViewModel
+import com.abhinav.caisarra.presentation.viewmodel.DeleteAccountViewModel
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
@@ -263,6 +272,10 @@ object AppRoutes {
     fun joinInvite(code: String) = "play/${Uri.encode(code)}"
     fun matchmaking(minutes: Int, incrementSeconds: Int) = "matchmaking/$minutes/$incrementSeconds"
     fun gameAnalysis(gameId: String) = "game_analysis/${Uri.encode(gameId)}"
+
+    const val NOTIFICATIONS = "notifications"
+    fun directMessage(userId: Long, username: String) =
+        "direct_message/$userId/${Uri.encode(username)}"
 
 }
 
@@ -444,6 +457,21 @@ fun AppNavigation(authRepository: AuthRepository) {
             navController.navigate(AppRoutes.LOGIN) {
                 popUpTo(navController.graph.id) { inclusive = true }
                 launchSingleTop = true
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        MainActivity.pendingIntentFlow.collect { intent ->
+            if (intent == null) return@collect
+            val notifType = intent.getStringExtra("notification_type") ?: intent.getStringExtra("type")
+            val notifId = intent.getStringExtra("notification_id")?.toLongOrNull()
+            if (!notifType.isNullOrBlank() || notifId != null) {
+                MainActivity.pendingIntentFlow.value = null
+                if (notifId != null && notifId > 0) {
+                    NotificationRepository.get(context).markAsRead(notifId)
+                }
+                handleIntentNotificationNavigation(intent, notifType, navController)
             }
         }
     }
@@ -890,6 +918,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     },
                     onOpenCommunity = {
                         navController.navigate(AppRoutes.COMMUNITY)
+                    },
+                    onOpenNotifications = {
+                        requireAuth("Notifications") {
+                            navController.navigateOnce(AppRoutes.NOTIFICATIONS)
+                        }
                     },
                     onStatsClick = { mode ->
                         navController.navigateOnce(AppRoutes.stats(mode = mode.ratingKey))
@@ -1359,9 +1392,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                         navController.navigate(AppRoutes.onlineGame(gameId)) {
                             launchSingleTop = true
                         }
-                    },
-                    onJoinByCode = { code ->
-                        navController.navigate(AppRoutes.joinInvite(code))
                     }
                 )
             }
@@ -1426,6 +1456,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navArgument("code") { type = NavType.StringType }
                 ),
                 deepLinks = listOf(
+                    navDeepLink { uriPattern = "https://caisaara.app/play/{code}" },
                     navDeepLink { uriPattern = "https://caisaara.duckdns.org/play/{code}" }
                 )
             ) { entry ->
@@ -1516,6 +1547,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 ),
                 deepLinks = listOf(
                     navDeepLink { uriPattern = "caisarra://game/online/{gameId}" },
+                    navDeepLink { uriPattern = "https://caisaara.app/game/{gameId}" },
                     navDeepLink { uriPattern = "https://caisaara.duckdns.org/game/{gameId}" }
                 )
             ) { entry ->
@@ -1661,9 +1693,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                         navController.navigate(AppRoutes.onlineGame(gameId)) {
                             launchSingleTop = true
                         }
-                    },
-                    onJoinByCode = { code ->
-                        navController.navigate(AppRoutes.joinInvite(code))
                     }
                 )
             }
@@ -2176,6 +2205,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                         requireAuth("Privacy settings") {
                             navController.navigateOnce(AppRoutes.PRIVACY_SETTINGS)
                         }
+                    },
+                    isGuest = isGuestUser,
+                    onDeleteAccountClick = {
+                        navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)
                     }
                 )
             }
@@ -2200,14 +2233,31 @@ fun AppNavigation(authRepository: AuthRepository) {
 
 
             composable(route = AppRoutes.DELETE_ACCOUNT) {
-                DeleteAccountScreen(
-                    onBack = { navController.safePop() },
-                    onConfirmDelete = {
-                        scope.launch {
-                            authRepository.logout()
+                androidx.activity.compose.BackHandler {
+                    navController.safePop()
+                }
+
+                if (isGuestUser) {
+                    LaunchedEffect(Unit) {
+                        Toast.makeText(
+                            context,
+                            "Guest accounts cannot be deleted.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        navController.safePop()
+                    }
+                } else {
+                    val deleteAccountViewModel: DeleteAccountViewModel = screenViewModel {
+                        DeleteAccountViewModel(authRepository)
+                    }
+
+                    DeleteAccountScreen(
+                        viewModel = deleteAccountViewModel,
+                        onBack = { navController.safePop() },
+                        onConfirmDelete = {
                             Toast.makeText(
                                 context,
-                                "Account deletion request submitted.",
+                                "Account deleted successfully.",
                                 Toast.LENGTH_LONG
                             ).show()
                             navController.navigate(AppRoutes.LOGIN) {
@@ -2217,8 +2267,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 launchSingleTop = true
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
 
             composable(route = AppRoutes.WATCH) {
@@ -2241,6 +2291,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                 ),
                 deepLinks = listOf(
                     navDeepLink {
+                        uriPattern = "https://caisaara.app/watch/{watchCode}"
+                    },
+                    navDeepLink {
                         uriPattern = "https://caisaara.duckdns.org/watch/{watchCode}"
                     }
                 )
@@ -2262,6 +2315,17 @@ fun AppNavigation(authRepository: AuthRepository) {
                 )
             }
 
+            composable(route = AppRoutes.NOTIFICATIONS) {
+                val notifViewModel: NotificationsViewModel = viewModel()
+                NotificationsScreen(
+                    viewModel = notifViewModel,
+                    onBack = { navController.safePop() },
+                    onNotificationClick = { notification ->
+                        handleNotificationItemClick(notification, navController)
+                    }
+                )
+            }
+
         }
 
         incomingChallenge?.let { challenge ->
@@ -2277,6 +2341,156 @@ fun AppNavigation(authRepository: AuthRepository) {
                     challengeManager.dismissIncomingChallenge()
                 }
             )
+        }
+    }
+}
+
+private fun handleNotificationItemClick(
+    notification: NotificationItemDto,
+    navController: NavController
+) {
+    val type = notification.type.lowercase()
+    when (type) {
+        "friend_request" -> {
+            navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
+        }
+        "friend_accepted" -> {
+            val username = notification.getStringData("username")
+            navController.navigateOnce(AppRoutes.profile(username))
+        }
+        "game_challenge" -> {
+            val code = notification.getStringData("code")
+            if (!code.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.joinInvite(code))
+            }
+        }
+        "challenge_declined" -> {
+            val username = notification.getStringData("username")
+            navController.navigateOnce(AppRoutes.profile(username))
+        }
+        "tournament_round_started" -> {
+            val gameId = notification.getStringData("game_id")
+            val tournamentId = notification.getStringData("tournament_id")
+            if (!gameId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.onlineGame(gameId))
+            } else if (!tournamentId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))
+            } else {
+                navController.navigateOnce(AppRoutes.TOURNAMENTS)
+            }
+        }
+        "tournament_finished" -> {
+            val tournamentId = notification.getStringData("tournament_id")
+            if (!tournamentId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))
+            } else {
+                navController.navigateOnce(AppRoutes.TOURNAMENTS)
+            }
+        }
+        "tournament_cancelled" -> {
+            navController.navigateOnce(AppRoutes.TOURNAMENTS)
+        }
+        "post_comment", "post_reaction" -> {
+            navController.navigateOnce(AppRoutes.COMMUNITY)
+        }
+        "club_promoted", "club_demoted", "club_new_owner" -> {
+            val clubId = notification.getStringData("club_id")
+            if (!clubId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.clubDetail(clubId))
+            } else {
+                navController.navigateOnce(AppRoutes.CLUBS)
+            }
+        }
+        "club_kicked", "club_banned" -> {
+            navController.navigateOnce(AppRoutes.CLUBS)
+        }
+        "direct_message" -> {
+            val userId = notification.getLongData("user_id")
+            val username = notification.getStringData("username")
+            if (userId != null && !username.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.directMessage(userId, username))
+            } else {
+                navController.navigateOnce(AppRoutes.DIRECT_MESSAGES_LIST)
+            }
+        }
+        else -> {}
+    }
+}
+
+private fun handleIntentNotificationNavigation(
+    intent: Intent,
+    notifType: String?,
+    navController: NavController
+) {
+    val type = notifType?.lowercase().orEmpty()
+    when (type) {
+        "friend_request" -> {
+            navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
+        }
+        "friend_accepted" -> {
+            val username = intent.getStringExtra("username")
+            navController.navigateOnce(AppRoutes.profile(username))
+        }
+        "game_challenge" -> {
+            val code = intent.getStringExtra("code")
+            if (!code.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.joinInvite(code))
+            }
+        }
+        "challenge_declined" -> {
+            val username = intent.getStringExtra("username")
+            navController.navigateOnce(AppRoutes.profile(username))
+        }
+        "tournament_round_started" -> {
+            val gameId = intent.getStringExtra("game_id")
+            val tournamentId = intent.getStringExtra("tournament_id")
+            if (!gameId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.onlineGame(gameId))
+            } else if (!tournamentId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))
+            } else {
+                navController.navigateOnce(AppRoutes.TOURNAMENTS)
+            }
+        }
+        "tournament_finished" -> {
+            val tournamentId = intent.getStringExtra("tournament_id")
+            if (!tournamentId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))
+            } else {
+                navController.navigateOnce(AppRoutes.TOURNAMENTS)
+            }
+        }
+        "tournament_cancelled" -> {
+            navController.navigateOnce(AppRoutes.TOURNAMENTS)
+        }
+        "post_comment", "post_reaction" -> {
+            navController.navigateOnce(AppRoutes.COMMUNITY)
+        }
+        "club_promoted", "club_demoted", "club_new_owner" -> {
+            val clubId = intent.getStringExtra("club_id")
+            if (!clubId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.clubDetail(clubId))
+            } else {
+                navController.navigateOnce(AppRoutes.CLUBS)
+            }
+        }
+        "club_kicked", "club_banned" -> {
+            navController.navigateOnce(AppRoutes.CLUBS)
+        }
+        "direct_message" -> {
+            val userId = intent.getStringExtra("user_id")?.toLongOrNull()
+            val username = intent.getStringExtra("username")
+            if (userId != null && !username.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.directMessage(userId, username))
+            } else {
+                navController.navigateOnce(AppRoutes.DIRECT_MESSAGES_LIST)
+            }
+        }
+        else -> {
+            val dataUri = intent.data
+            if (dataUri == null) {
+                navController.navigateOnce(AppRoutes.NOTIFICATIONS)
+            }
         }
     }
 }
