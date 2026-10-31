@@ -138,27 +138,6 @@ fun CreateTournamentScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                FieldLabel("Visibility")
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val visibilities = listOf(
-                        "public" to "Public",
-                        "private" to "Private (Invite mode)"
-                    )
-                    visibilities.forEach { (key, label) ->
-                        PillButton(
-                            text = label,
-                            isSelected = state.visibility == key,
-                            onClick = { viewModel.onVisibilityChange(key) },
-                            modifier = Modifier.weight(if (key == "private") 1.35f else 0.95f)
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
                 FieldLabel("Players")
                 Row(
                     modifier = Modifier.fillMaxWidth(),

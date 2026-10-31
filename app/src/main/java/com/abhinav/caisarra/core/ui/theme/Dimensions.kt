@@ -19,7 +19,6 @@ val LoginCardHeight = 440.dp
 val SignUpCardHeight = 600.dp
 val VerifyCardHeight = 340.dp
 val SetNewPasswordCardHeight = 420.dp
-val GuestOptionsCardHeight = 220.dp
 
 val RatingCardHeight = 460.dp
 
@@ -52,3 +51,11 @@ val FriendsActionSize = 38.dp
 val FriendsActionRadius = 10.dp
 val FriendsButtonHeight = 42.dp
 val SplashProgressHeight = 2.dp
+
+val OnboardingHorizontalPadding = 24.dp
+val OnboardingButtonHeight = 56.dp
+val OnboardingButtonCornerRadius = 28.dp
+val OnboardingDotSize = 8.dp
+val OnboardingDotSpacing = 8.dp
+val OnboardingTopPadding = 16.dp
+val OnboardingTextSpacing = 12.dp

@@ -9,6 +9,11 @@ import com.abhinav.caisarra.data.remote.dto.DirectConversationDto
 import com.abhinav.caisarra.data.remote.dto.DirectMessageDto
 import com.abhinav.caisarra.data.remote.dto.DirectPlayerDto
 import com.abhinav.caisarra.data.remote.dto.SendDirectMessageRequest
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import retrofit2.HttpException
+
+class DirectMessageBlockedException(message: String) : Exception(message)
 
 class DirectMessageRepository(context: Context) {
 
@@ -54,9 +59,13 @@ class DirectMessageRepository(context: Context) {
     suspend fun getMessages(
         userId: Long
     ): List<DirectMessageDto> {
-        return service.getHistory(userId)
-            .data
-            .messages
+        try {
+            return service.getHistory(userId)
+                .data
+                .messages
+        } catch (e: HttpException) {
+            throw toReadableError(e, "Couldn't load chat history.")
+        }
     }
 
     suspend fun sendMessage(
@@ -71,11 +80,49 @@ class DirectMessageRepository(context: Context) {
             "Message cannot exceed 500 characters."
         }
 
-        return service.sendMessage(
-            userId = userId,
-            request = SendDirectMessageRequest(
-                message = message.trim()
+        try {
+            return service.sendMessage(
+                userId = userId,
+                request = SendDirectMessageRequest(
+                    message = message.trim()
+                )
             )
-        )
+        } catch (e: HttpException) {
+            throw toReadableError(e, "Message could not be sent.")
+        }
+    }
+
+    private fun toReadableError(e: HttpException, fallback: String): Exception {
+        val body = try {
+            e.response()?.errorBody()?.string()
+        } catch (ex: Exception) {
+            null
+        }
+
+        var serverMessage: String? = null
+        if (!body.isNullOrBlank()) {
+            try {
+                val obj = RetrofitInstance.json.parseToJsonElement(body).jsonObject
+                serverMessage = (obj["error"] ?: obj["message"])?.jsonPrimitive?.content
+            } catch (ex: Exception) {
+                serverMessage = null
+            }
+        }
+
+        if (e.code() == 403) {
+            return DirectMessageBlockedException(
+                if (serverMessage.isNullOrBlank()) {
+                    "This player only accepts messages from friends."
+                } else {
+                    serverMessage
+                }
+            )
+        }
+
+        if (!serverMessage.isNullOrBlank()) {
+            return Exception(serverMessage)
+        }
+
+        return Exception(fallback)
     }
 }

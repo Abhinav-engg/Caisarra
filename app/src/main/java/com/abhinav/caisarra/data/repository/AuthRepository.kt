@@ -320,10 +320,16 @@ class AuthRepository private constructor(private val context: Context) {
 
     suspend fun syncFcmToken(token: String? = null) {
         val fcmToken = token ?: tokenManager.getFcmToken() ?: return
-        if (!isLoggedIn() || isGuest()) return
+        if (!isLoggedIn() || isGuest()) {
+            android.util.Log.d("FCM_DEBUG", "syncFcmToken skipped: isLoggedIn=${isLoggedIn()}, isGuest=${isGuest()}")
+            return
+        }
         try {
-            NotificationRepository.get(context).registerDevice(fcmToken)
-        } catch (_: Exception) {}
+            val res = NotificationRepository.get(context).registerDevice(fcmToken)
+            android.util.Log.i("FCM_DEBUG", "syncFcmToken registerDevice result: $res")
+        } catch (e: Exception) {
+            android.util.Log.e("FCM_DEBUG", "syncFcmToken registerDevice threw exception", e)
+        }
     }
 
     companion object {

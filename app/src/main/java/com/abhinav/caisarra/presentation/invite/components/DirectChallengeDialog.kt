@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.presentation.invite.components
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -46,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -53,6 +56,10 @@ import androidx.compose.ui.window.DialogProperties
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.data.repository.ChallengeManager
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
+import com.abhinav.caisarra.presentation.game.screens.TimeControlsScreen
+import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
+import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupEvent
+import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupUiState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -77,6 +84,28 @@ val DEFAULT_TIME_PRESETS = listOf(
     TimePreset("1 min", 1, 0)
 )
 
+fun resolveGameMode(minutes: Float): GameMode = when {
+    minutes >= 1440f -> GameMode.DAILY
+    minutes < 3f -> GameMode.BULLET
+    minutes < 10f -> GameMode.BLITZ
+    else -> GameMode.RAPID
+}
+
+fun formatTimeControlLabel(minutes: Float, incrementSeconds: Float): String {
+    val totalMinutes = minutes.toInt()
+    val increment = incrementSeconds.toInt()
+    val duration = when (totalMinutes) {
+        1440 -> "1 day"
+        2880 -> "2 days"
+        4320 -> "3 days"
+        7200 -> "5 days"
+        10080 -> "7 days"
+        20160 -> "14 days"
+        else -> "$totalMinutes min"
+    }
+    return if (increment == 0) duration else "$duration + $increment"
+}
+
 @Composable
 fun DirectChallengeDialog(
     opponentId: Long,
@@ -94,6 +123,21 @@ fun DirectChallengeDialog(
 
     var selectedMinutes by remember { mutableIntStateOf(10) }
     var selectedIncrement by remember { mutableIntStateOf(0) }
+    var selectedControlLabel by remember { mutableStateOf("10 min") }
+    var selectedMode by remember { mutableStateOf(GameMode.RAPID) }
+    var showTimeControls by remember { mutableStateOf(false) }
+
+    var timeControlState by remember {
+        mutableStateOf(
+            GameSetupUiState(
+                minutes = selectedMinutes.toFloat(),
+                bonusSeconds = selectedIncrement.toFloat(),
+                selectedControl = selectedControlLabel,
+                mode = selectedMode
+            )
+        )
+    }
+
     var selectedColor by remember { mutableStateOf("random") }
     var isRated by remember { mutableStateOf(true) }
 
@@ -127,20 +171,83 @@ fun DirectChallengeDialog(
 
     Dialog(
         onDismissRequest = {
-            challengeManager.clearOutgoingChallenge()
-            onDismiss()
+            if (showTimeControls) {
+                showTimeControls = false
+            } else {
+                challengeManager.clearOutgoingChallenge()
+                onDismiss()
+            }
         },
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = !showTimeControls
+        )
     ) {
-        val shape = RoundedCornerShape(24.dp)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .clip(shape)
-                .background(DialogBg)
-                .border(1.dp, DialogBorder, shape)
-                .padding(20.dp)
-        ) {
+        if (showTimeControls) {
+            BackHandler(enabled = true) {
+                showTimeControls = false
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(SetupColors.Background)
+            ) {
+                TimeControlsScreen(
+                    state = timeControlState,
+                    onEvent = { event ->
+                        when (event) {
+                            is GameSetupEvent.ControlSelected -> {
+                                timeControlState = timeControlState.copy(
+                                    selectedControl = event.label,
+                                    minutes = event.minutes,
+                                    bonusSeconds = event.incrementSeconds,
+                                    mode = event.mode
+                                )
+                            }
+                            is GameSetupEvent.TimeChanged -> {
+                                timeControlState = timeControlState.copy(
+                                    minutes = event.minutes,
+                                    selectedControl = formatTimeControlLabel(
+                                        event.minutes,
+                                        timeControlState.bonusSeconds
+                                    ),
+                                    mode = resolveGameMode(event.minutes)
+                                )
+                            }
+                            is GameSetupEvent.BonusChanged -> {
+                                timeControlState = timeControlState.copy(
+                                    bonusSeconds = event.seconds,
+                                    selectedControl = formatTimeControlLabel(
+                                        timeControlState.minutes,
+                                        event.seconds
+                                    )
+                                )
+                            }
+                        }
+                    },
+                    onConfirm = {
+                        selectedMinutes = timeControlState.minutes.toInt()
+                        selectedIncrement = timeControlState.bonusSeconds.toInt()
+                        selectedControlLabel = timeControlState.selectedControl
+                        selectedMode = timeControlState.mode
+                        showTimeControls = false
+                    },
+                    onBack = {
+                        showTimeControls = false
+                    }
+                )
+            }
+        } else {
+            val shape = RoundedCornerShape(24.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .clip(shape)
+                    .background(DialogBg)
+                    .border(1.dp, DialogBorder, shape)
+                    .padding(20.dp)
+            ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -306,20 +413,36 @@ fun DirectChallengeDialog(
                 } else {
                     // Setup mode
                     // Time control presets
-                    Text(
-                        text = "TIME CONTROL",
-                        color = TextMuted,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "TIME CONTROL",
+                            color = TextMuted,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "$selectedControlLabel • ${selectedMode.label}",
+                            color = AccentCyan,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                     Spacer(Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        DEFAULT_TIME_PRESETS.take(4).forEach { preset ->
+                        val quickPresets = DEFAULT_TIME_PRESETS.take(4)
+                        val isPresetSelected = quickPresets.any { preset ->
+                            selectedMinutes == preset.minutes && selectedIncrement == preset.increment
+                        }
+
+                        quickPresets.forEach { preset ->
                             val selected = selectedMinutes == preset.minutes && selectedIncrement == preset.increment
                             Box(
                                 modifier = Modifier
@@ -331,16 +454,49 @@ fun DirectChallengeDialog(
                                     .clickable {
                                         selectedMinutes = preset.minutes
                                         selectedIncrement = preset.increment
+                                        selectedControlLabel = preset.label
+                                        selectedMode = resolveGameMode(preset.minutes.toFloat())
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = preset.label,
                                     color = if (selected) AccentCyan else TextWhite,
-                                    fontSize = 13.sp,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                    fontSize = 12.sp,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
+                        }
+
+                        val isMoreSelected = !isPresetSelected
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isMoreSelected) Color(0xFF123638) else DialogCard)
+                                .border(1.dp, if (isMoreSelected) AccentCyan else DialogBorder, RoundedCornerShape(12.dp))
+                                .clickable {
+                                    timeControlState = GameSetupUiState(
+                                        minutes = selectedMinutes.toFloat(),
+                                        bonusSeconds = selectedIncrement.toFloat(),
+                                        selectedControl = selectedControlLabel,
+                                        mode = selectedMode
+                                    )
+                                    showTimeControls = true
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "More",
+                                color = if (isMoreSelected) AccentCyan else TextWhite,
+                                fontSize = 12.sp,
+                                fontWeight = if (isMoreSelected) FontWeight.Bold else FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
 
@@ -477,4 +633,5 @@ fun DirectChallengeDialog(
             }
         }
     }
+}
 }

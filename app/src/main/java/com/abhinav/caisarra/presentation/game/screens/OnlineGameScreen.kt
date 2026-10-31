@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -46,6 +47,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -68,6 +70,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
 import com.abhinav.caisarra.presentation.game.components.CapturedPieces
@@ -515,7 +518,7 @@ fun OnlineGameScreen(
                 if (watchUrl.isNotBlank()) {
                     TextButton(onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Caisaara Watch Link", watchUrl))
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Mosaic Watch Link", watchUrl))
                         Toast.makeText(context, "Watch link copied!", Toast.LENGTH_SHORT).show()
                     }) {
                         Text(
@@ -535,7 +538,7 @@ fun OnlineGameScreen(
                                 type = "text/plain"
                                 putExtra(
                                     Intent.EXTRA_TEXT,
-                                    "Watch my live chess game on Caisaara: $watchUrl"
+                                    "Watch my live chess game on Mosaic: $watchUrl"
                                 )
                             }
                             context.startActivity(Intent.createChooser(shareIntent, "Share Watch Link"))
@@ -611,7 +614,7 @@ fun OnlineGameScreen(
                                         shareGame(
                                             context,
                                             invite.link,
-                                            "Rematch on Caisaara with $opponentName: ${invite.link}"
+                                            "Rematch on Mosaic with $opponentName: ${invite.link}"
                                         )
                                     }
                                     onRematchStarted(invite.gameId, invite.link, opponentName)
@@ -667,7 +670,7 @@ private fun resultShareText(state: GameUiState, result: GameResult): String {
         }.orEmpty()
         " Rating $rating$change."
     }.orEmpty()
-    return "I just $outcome $opponent on Caisaara.$rating"
+    return "I just $outcome $opponent on Mosaic.$rating"
 }
 
 private fun savePgn(context: Context, pgn: String) {
@@ -676,7 +679,7 @@ private fun savePgn(context: Context, pgn: String) {
 
 private fun copyText(context: Context, text: String, toast: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("caisaara", text))
+    clipboard.setPrimaryClip(ClipData.newPlainText("mosaic", text))
     Toast.makeText(context, toast, Toast.LENGTH_SHORT).show()
 }
 
@@ -832,88 +835,131 @@ private fun OnlineTopBar(
             .height(52.dp)
     ) {
         val compact = maxWidth < 380.dp
-        Column(
-            modifier = Modifier.align(Alignment.Center),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "MOSAIC",
-                color = Color.White,
-                fontSize = if (compact) 15.sp else 17.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = if (compact) 1.sp else 1.5.sp,
-                maxLines = 1
-            )
-
-            Text(
-                text = if (isRated) "RATED" else "UNRATED",
-                color = if (isRated) Accent else Color(0xFFA6C1D4),
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                maxLines = 1
-            )
-        }
-        TextButton(
-            onClick = onHome,
-            modifier = Modifier.align(Alignment.CenterStart)
-        ) {
-            Text(
-                text = "Home",
-                color = Color.White,
-                fontSize = if (compact) 12.sp else 14.sp,
-                maxLines = 1
-            )
-        }
         Row(
-            modifier = Modifier.align(Alignment.CenterEnd),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (hasWatchLink || spectatorCount > 0) {
-                TextButton(onClick = onWatchClick) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+            // Left: Home + Spectator/Watch link button
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    TextButton(
+                        onClick = onHome,
+                        contentPadding = PaddingValues(horizontal = if (compact) 6.dp else 10.dp, vertical = 4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Visibility,
-                            contentDescription = "Spectators",
-                            tint = if (spectatorCount > 0) Color(0xFF22D3EE) else Color.White,
-                            modifier = Modifier.size(15.dp)
+                        Text(
+                            text = "Home",
+                            color = Color.White,
+                            fontSize = if (compact) 12.sp else 14.sp,
+                            maxLines = 1
                         )
-                        if (spectatorCount > 0) {
-                            Text(
-                                text = "$spectatorCount",
-                                color = Color(0xFF22D3EE),
-                                fontSize = if (compact) 11.sp else 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                    }
+
+                    if (hasWatchLink || spectatorCount > 0) {
+                        Surface(
+                            onClick = onWatchClick,
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (spectatorCount > 0) Color(0xFF142230) else Color.Transparent,
+                            contentColor = if (spectatorCount > 0) Color(0xFF22D3EE) else Color.White
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(
+                                    horizontal = if (compact) 6.dp else 8.dp,
+                                    vertical = 6.dp
+                                ),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Visibility,
+                                    contentDescription = "Spectators",
+                                    tint = if (spectatorCount > 0) Color(0xFF22D3EE) else Color.White,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                if (spectatorCount > 0) {
+                                    Text(
+                                        text = "$spectatorCount",
+                                        color = Color(0xFF22D3EE),
+                                        fontSize = if (compact) 11.sp else 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = JetBrainsMono
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            TextButton(onClick = onFlip) {
+            // Center: MOSAIC / RATED
+            Column(
+                modifier = Modifier.padding(horizontal = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
-                    text = "Flip",
+                    text = "MOSAIC",
                     color = Color.White,
-                    fontSize = if (compact) 12.sp else 14.sp,
+                    fontSize = if (compact) 15.sp else 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = if (compact) 1.sp else 1.5.sp,
+                    maxLines = 1
+                )
+
+                Text(
+                    text = if (isRated) "RATED" else "UNRATED",
+                    color = if (isRated) Accent else Color(0xFFA6C1D4),
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
                     maxLines = 1
                 )
             }
 
-            TextButton(onClick = onChat) {
-                Text(
-                    text = when {
-                        muted -> if (compact) "Muted" else "Chat (muted)"
-                        unread > 0 -> "Chat ($unread)"
-                        else -> "Chat"
-                    },
-                    color = if (unread > 0) Accent else Color.White,
-                    fontSize = if (compact) 12.sp else 14.sp,
-                    maxLines = 1
-                )
+            // Right: Flip and Chat
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    TextButton(
+                        onClick = onFlip,
+                        contentPadding = PaddingValues(horizontal = if (compact) 6.dp else 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "Flip",
+                            color = Color.White,
+                            fontSize = if (compact) 12.sp else 14.sp,
+                            maxLines = 1
+                        )
+                    }
+
+                    TextButton(
+                        onClick = onChat,
+                        contentPadding = PaddingValues(horizontal = if (compact) 6.dp else 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = when {
+                                muted -> if (compact) "Muted" else "Chat (muted)"
+                                unread > 0 -> "Chat ($unread)"
+                                else -> "Chat"
+                            },
+                            color = if (unread > 0) Accent else Color.White,
+                            fontSize = if (compact) 12.sp else 14.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
             }
         }
     }

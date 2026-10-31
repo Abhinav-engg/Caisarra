@@ -358,8 +358,8 @@ class OnlineGameViewModel(
             }
         }
         return buildString {
-            appendLine("[Event \"Caisaara Rated\"]")
-            appendLine("[Site \"Caisaara\"]")
+            appendLine("[Event \"Mosaic Rated\"]")
+            appendLine("[Site \"Mosaic\"]")
             appendLine("[White \"${state.whitePlayerName}\"]")
             appendLine("[Black \"${state.blackPlayerName}\"]")
             appendLine("[Result \"$result\"]")
@@ -1022,11 +1022,11 @@ class OnlineGameViewModel(
                     legalMoves = emptyList(),
                     promotionPending = null,
 
-                    lastMoveFrom = state.lastMove?.let {
+                    lastMoveFrom = state.lastMove?.takeIf { it.length >= 4 }?.let {
                         uciToSquare(it.take(2))
                     } ?: previous.lastMoveFrom,
 
-                    lastMoveTo = state.lastMove?.let {
+                    lastMoveTo = state.lastMove?.takeIf { it.length >= 4 }?.let {
                         uciToSquare(it.drop(2).take(2))
                     } ?: previous.lastMoveTo,
 

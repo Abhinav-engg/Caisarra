@@ -44,9 +44,14 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -153,6 +158,24 @@ fun EditProfileScreen(
             }
             selectedSource = AvatarSource.CAMERA
             viewModel.uploadAvatar(context, Uri.fromFile(file))
+        }
+    }
+
+    fun openCamera() {
+        try {
+            cameraLauncher.launch(null)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "No camera app found", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            openCamera()
+        } else {
+            Toast.makeText(context, "Camera permission is needed to take a photo", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -641,7 +664,15 @@ fun EditProfileScreen(
                         icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) }
                     ) {
                         showPhotoOptions = false
-                        cameraLauncher.launch(null)
+                        val granted = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (granted) {
+                            openCamera()
+                        } else {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
                     }
                     PhotoOptionRow(
                         title = "Choose photo",

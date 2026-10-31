@@ -163,7 +163,6 @@ private fun ChatHeader(muted: Boolean, onToggleMute: () -> Unit) {
                     tint = Muted
                 )
             }
-            Text(text = "⋮", color = Muted, fontSize = 30.sp, modifier = Modifier.padding(start = 12.dp))
         }
         Row(
             modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 20.dp),

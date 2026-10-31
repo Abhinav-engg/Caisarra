@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
+import com.abhinav.caisarra.presentation.common.singleClick
 
 @Composable
 fun CaisaaraTopBar(
@@ -65,7 +66,7 @@ fun CaisaaraTopBar(
 
         if (onBack != null) {
             IconButton(
-                onClick = onBack,
+                onClick = singleClick(onBack),
                 modifier = Modifier
                     .size(40.dp)
                     .align(Alignment.CenterStart)

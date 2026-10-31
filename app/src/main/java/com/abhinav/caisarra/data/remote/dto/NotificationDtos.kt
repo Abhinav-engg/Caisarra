@@ -11,19 +11,24 @@ import kotlinx.serialization.json.longOrNull
 @Serializable
 data class RegisterDeviceRequest(
     val token: String,
+    @SerialName("fcm_token") val fcmToken: String? = null,
+    @SerialName("device_token") val deviceToken: String? = null,
     val platform: String = "android"
 )
 
 @Serializable
 data class DeleteDeviceRequest(
-    val token: String
+    val token: String,
+    @SerialName("fcm_token") val fcmToken: String? = null,
+    @SerialName("device_token") val deviceToken: String? = null
 )
 
 @Serializable
 data class SimpleApiResponse(
-    val success: Boolean,
+    val success: Boolean = true,
     val message: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val status: String? = null
 )
 
 @Serializable

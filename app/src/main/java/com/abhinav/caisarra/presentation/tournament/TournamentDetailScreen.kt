@@ -1,7 +1,10 @@
 package com.abhinav.caisarra.presentation.tournament
 
-import android.content.Intent
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,8 +26,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
@@ -266,7 +273,7 @@ private fun OverviewTab(
             )
         }
 
-        if (isCreator && tournament.inviteCode.isNotBlank()) {
+        if (tournament.inviteCode.isNotBlank()) {
             Spacer(Modifier.height(20.dp))
             Column(
                 Modifier
@@ -284,27 +291,58 @@ private fun OverviewTab(
                     letterSpacing = 1.sp
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(
-                    tournament.inviteCode,
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 4.sp
-                )
-                Spacer(Modifier.height(12.dp))
-                TournamentActionButton(
-                    text = "Share Invite Code",
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("tournament_invite_code", tournament.inviteCode))
+                            Toast.makeText(context, "Invite code copied", Toast.LENGTH_SHORT).show()
+                        },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        tournament.inviteCode,
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 4.sp
+                    )
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = "Copy Code",
+                        tint = TournamentColors.Muted,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(Modifier.height(14.dp))
+                OutlinedButton(
                     onClick = {
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(
-                                Intent.EXTRA_TEXT,
-                                "Join my chess tournament \"${tournament.name}\" with invite code ${tournament.inviteCode}"
-                            )
-                        }
-                        context.startActivity(Intent.createChooser(intent, "Share invite code"))
-                    }
-                )
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("tournament_invite_code", tournament.inviteCode))
+                        Toast.makeText(context, "Invite code copied", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, TournamentColors.CardBorder)
+                ) {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        tint = TournamentColors.Accent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "Copy Code",
+                        color = TournamentColors.Accent,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
+                    )
+                }
             }
         }
 

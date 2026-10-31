@@ -54,18 +54,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.padding
 import com.abhinav.caisarra.data.local.BOARD_COORDINATES_KEY
-
-private val LightSquare = Color(0xFFE8EDF3)
-private val DarkSquare = Color(0xFF253449)
-
-private val SelectedColor = Color(0xFF10B981)
-private val LastMoveColor = Color(0xFFB8D879)
-
-private val LegalMoveDot = Color(0xFF00D6A0)
-private val LegalMoveRing = Color(0xFF00E5A0)
-private val LegalMoveOverlay = Color(0x3300D6A0)
-
-private val CheckColor = Color(0xFFF04452)
+import com.abhinav.caisarra.data.local.BOARD_THEME_KEY
+import com.abhinav.caisarra.presentation.game.model.BoardTheme
+import com.abhinav.caisarra.presentation.game.model.BoardThemeId
+import com.abhinav.caisarra.presentation.game.model.BoardThemes
 
 private const val MIN_MOVE_DURATION = 120
 private const val MAX_MOVE_DURATION = 320
@@ -81,6 +73,7 @@ fun ChessBoard(
     isWhiteInCheck: Boolean,
     isBlackInCheck: Boolean,
     isFlipped: Boolean,
+    boardTheme: BoardTheme? = null,
     moveAnimationEvent: PieceMoveAnimationEvent? = null,
     moveAnimationConsumedId: Long? = null,
     onMoveAnimationStarted: (Long) -> Unit = {},
@@ -96,6 +89,14 @@ fun ChessBoard(
             it[BOARD_COORDINATES_KEY] ?: true
         }
     }.collectAsState(initial = true)
+    val currentThemeKey by remember(context) {
+        context.settingsDataStore.data.map {
+            it[BOARD_THEME_KEY] ?: BoardThemeId.MIDNIGHT_CYAN.storageKey
+        }
+    }.collectAsState(initial = BoardThemeId.MIDNIGHT_CYAN.storageKey)
+    val theme = boardTheme ?: remember(currentThemeKey) {
+        BoardThemes.getByStorageKey(currentThemeKey)
+    }
 
     var movingPiece by remember {
         mutableStateOf<PieceMoveAnimationEvent?>(null)
@@ -200,17 +201,16 @@ fun ChessBoard(
                             lastMoveFrom == square || lastMoveTo == square
 
                         val isCheck = piece != null && piece.type == PieceType.KING && ((piece.color == PieceColor.WHITE && isWhiteInCheck) || (piece.color == PieceColor.BLACK && isBlackInCheck))
-                        val baseColor = when {
-                            isLastMove -> LastMoveColor
-                            isDark -> DarkSquare
-                            else -> LightSquare
-                        }
+                        val squareColor = if (isDark) theme.darkSquare else theme.lightSquare
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .aspectRatio(1f)
-                                .background(baseColor)
+                                .background(squareColor)
+                                .then(
+                                    if (isLastMove) Modifier.background(theme.lastMoveColor) else Modifier
+                                )
                                 .border(
                                     width = 0.5.dp,
                                     color = Color.Black.copy(alpha = 0.15f)
@@ -227,8 +227,8 @@ fun ChessBoard(
                                         .background(
                                             Brush.radialGradient(
                                                 colors = listOf(
-                                                    CheckColor.copy(alpha = 0.85f),
-                                                    CheckColor.copy(alpha = 0.35f),
+                                                    theme.checkColor.copy(alpha = 0.85f),
+                                                    theme.checkColor.copy(alpha = 0.35f),
                                                     Color.Transparent
                                                 )
                                             )
@@ -238,7 +238,8 @@ fun ChessBoard(
 
                             if (isSelected) {
                                 AnimatedSelectionCircle(
-                                    modifier = Modifier.fillMaxSize()
+                                    modifier = Modifier.fillMaxSize(),
+                                    color = theme.selectedColor
                                 )
                             }
 
@@ -253,9 +254,9 @@ fun ChessBoard(
                                         .align(Alignment.TopStart)
                                         .padding(start = 3.dp, top = 1.dp),
                                     color = if (isDark) {
-                                        LightSquare.copy(alpha = 0.78f)
+                                        theme.lightSquare.copy(alpha = 0.78f)
                                     } else {
-                                        DarkSquare.copy(alpha = 0.55f)
+                                        theme.darkSquare.copy(alpha = 0.55f)
                                     },
                                     fontSize = 10.sp,
                                     lineHeight = 10.sp,
@@ -269,9 +270,9 @@ fun ChessBoard(
                                         .align(Alignment.BottomEnd)
                                         .padding(end = 3.dp, bottom = 1.dp),
                                     color = if (isDark) {
-                                        LightSquare.copy(alpha = 0.78f)
+                                        theme.lightSquare.copy(alpha = 0.78f)
                                     } else {
-                                        DarkSquare.copy(alpha = 0.55f)
+                                        theme.darkSquare.copy(alpha = 0.55f)
                                     },
                                     fontSize = 10.sp,
                                     lineHeight = 10.sp,
@@ -285,13 +286,17 @@ fun ChessBoard(
                                         modifier = Modifier
                                             .size(18.dp)
                                             .background(
-                                                color = LegalMoveDot,
+                                                color = theme.legalMoveDot,
                                                 shape = CircleShape
                                             )
-                                            .border(
-                                                width = 1.5.dp,
-                                                color = Color.White.copy(alpha = 0.85f),
-                                                shape = CircleShape
+                                            .then(
+                                                if (theme.showLegalMoveDotBorder) {
+                                                    Modifier.border(
+                                                        width = 1.5.dp,
+                                                        color = Color.White.copy(alpha = 0.85f),
+                                                        shape = CircleShape
+                                                    )
+                                                } else Modifier
                                             )
                                     )
                                 } else {
@@ -299,12 +304,12 @@ fun ChessBoard(
                                         modifier = Modifier
                                             .fillMaxSize(0.82f)
                                             .background(
-                                                color = LegalMoveOverlay,
+                                                color = theme.legalMoveOverlay,
                                                 shape = CircleShape
                                             )
                                             .border(
                                                 width = 3.dp,
-                                                color = LegalMoveRing,
+                                                color = theme.legalMoveRing,
                                                 shape = CircleShape
                                             )
                                     )
@@ -352,7 +357,7 @@ fun ChessBoard(
 @Composable
 fun AnimatedSelectionCircle(
     modifier: Modifier = Modifier,
-    color: Color = SelectedColor
+    color: Color = Color(0xFF10B981)
 ) {
     val progress = remember {
         Animatable(0f)

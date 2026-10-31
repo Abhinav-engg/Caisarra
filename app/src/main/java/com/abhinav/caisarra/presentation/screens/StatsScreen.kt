@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -116,6 +117,10 @@ fun StatsScreen(
     val state by viewModel.state.collectAsState()
     val stats = state.stats
     val pullToRefreshState = rememberPullToRefreshState()
+
+    BackHandler {
+        onBack()
+    }
 
     Column(
         modifier = Modifier

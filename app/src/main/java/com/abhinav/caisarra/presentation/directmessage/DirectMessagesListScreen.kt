@@ -18,6 +18,9 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Refresh
 
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,11 +33,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
-import com.abhinav.caisarra.data.remote.dto.DirectConversationDto
-import com.abhinav.caisarra.data.remote.dto.DirectPlayerDto
-import com.abhinav.caisarra.data.repository.DirectMessageRepository
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.caisaara.ui.theme.StatsBg
 import com.caisaara.ui.theme.StatsCardBg
@@ -43,97 +43,31 @@ import com.caisaara.ui.theme.StatsCyan
 import com.caisaara.ui.theme.StatsTextMuted
 import com.caisaara.ui.theme.StatsTextWhite
 
-import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DirectMessagesListScreen(
     onBack: () -> Unit,
     onOpenChat: (Long, String) -> Unit
 ) {
-    val context = LocalContext.current.applicationContext
+    val viewModel: DirectMessagesListViewModel = viewModel()
+    val pullToRefreshState = rememberPullToRefreshState()
 
-    val repository = remember {
-        DirectMessageRepository(context)
-    }
+    val conversations = viewModel.conversations
+    val searchResults = viewModel.searchResults
+    val query = viewModel.query
+    val loadingConversations = viewModel.loadingConversations
+    val isRefreshing = viewModel.isRefreshing
+    val searching = viewModel.searching
+    val error = viewModel.error
+    val searchPerformed = viewModel.searchPerformed
 
-    val scope = rememberCoroutineScope()
-
-    var conversations by remember {
-        mutableStateOf<List<DirectConversationDto>>(emptyList())
-    }
-
-    var searchResults by remember {
-        mutableStateOf<List<DirectPlayerDto>>(emptyList())
-    }
-
-    var query by remember {
-        mutableStateOf("")
-    }
-
-    var loadingConversations by remember {
-        mutableStateOf(true)
-    }
-
-    var searching by remember {
-        mutableStateOf(false)
-    }
-
-    var error by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    var searchPerformed by remember {
-        mutableStateOf(false)
-    }
-
-    fun loadConversations() {
-        scope.launch {
-            loadingConversations = true
-            error = null
-
-            try {
-                conversations = repository.getConversations()
-            } catch (e: Exception) {
-                error = e.message
-                    ?: "Unable to load conversations."
-            } finally {
-                loadingConversations = false
-            }
-        }
+    fun refreshConversations() {
+        viewModel.refreshConversations()
     }
 
     fun searchPlayers() {
-        val searchQuery = query.trim()
-
-        if (
-            searchQuery.isBlank() ||
-            (searchQuery.length < 2 &&
-                    !searchQuery.all { it.isDigit() })
-        ) {
-            error = "Enter at least two characters or a numeric user ID."
-            return
-        }
-
-        scope.launch {
-            searching = true
-            searchPerformed = true
-            error = null
-
-            try {
-                searchResults =
-                    repository.searchPlayers(searchQuery)
-            } catch (e: Exception) {
-                searchResults = emptyList()
-                error = e.message
-                    ?: "Unable to search players."
-            } finally {
-                searching = false
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        loadConversations()
+        viewModel.searchPlayers()
     }
 
     Column(
@@ -152,7 +86,7 @@ fun DirectMessagesListScreen(
             actions = {
                 IconButton(
                     onClick = {
-                        loadConversations()
+                        refreshConversations()
                     }
                 ) {
                     Icon(
@@ -181,8 +115,7 @@ fun DirectMessagesListScreen(
             OutlinedTextField(
                 value = query,
                 onValueChange = {
-                    query = it
-                    error = null
+                    viewModel.onQueryChange(it)
                 },
                 modifier = Modifier
                     .weight(1f)
@@ -271,29 +204,109 @@ fun DirectMessagesListScreen(
             )
         }
 
-        LazyColumn(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { refreshConversations() },
+            state = pullToRefreshState,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                bottom = 24.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullToRefreshState,
+                    isRefreshing = isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    containerColor = StatsCardBg,
+                    color = StatsCyan
+                )
+            }
         ) {
-            if (searchPerformed) {
-                item {
-                    SectionTitle("SEARCH RESULTS")
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = 24.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (searchPerformed) {
+                    item {
+                        SectionTitle("SEARCH RESULTS")
+                    }
+
+                    if (
+                        searchResults.isEmpty() &&
+                        !searching
+                    ) {
+                        item {
+                            Text(
+                                text = "No players found. Try another username.",
+                                color = StatsTextMuted,
+                                modifier = Modifier.padding(
+                                    vertical = 12.dp
+                                )
+                            )
+                        }
+                    }
+
+                    items(
+                        items = searchResults,
+                        key = { "player_${it.userId}" }
+                    ) { player ->
+                        DirectPlayerRow(
+                            name = player.displayName
+                                ?.takeIf { it.isNotBlank() }
+                                ?: player.username,
+                            username = player.username,
+                            subtitle = player.rating?.let {
+                                "Rating: $it"
+                            } ?: "Player",
+                            onClick = {
+                                onOpenChat(
+                                    player.userId,
+                                    player.username
+                                )
+                            }
+                        )
+                    }
+
+                    item {
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
+
+                        HorizontalDivider(
+                            color = StatsCardBorder
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
+                    }
                 }
 
-                if (
-                    searchResults.isEmpty() &&
-                    !searching
-                ) {
+                item {
+                    SectionTitle("YOUR CONVERSATIONS")
+                }
+
+                if (loadingConversations) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(28.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = StatsCyan
+                            )
+                        }
+                    }
+                } else if (conversations.isEmpty()) {
                     item {
                         Text(
-                            text = "No players found. Try another username.",
+                            text = "No conversations yet. Search for a player above to start chatting.",
                             color = StatsTextMuted,
                             modifier = Modifier.padding(
                                 vertical = 12.dp
@@ -303,89 +316,25 @@ fun DirectMessagesListScreen(
                 }
 
                 items(
-                    items = searchResults,
-                    key = { "player_${it.userId}" }
-                ) { player ->
+                    items = conversations,
+                    key = { "conversation_${it.userId}" }
+                ) { conversation ->
                     DirectPlayerRow(
-                        name = player.displayName
+                        name = conversation.displayName
                             ?.takeIf { it.isNotBlank() }
-                            ?: player.username,
-                        username = player.username,
-                        subtitle = player.rating?.let {
-                            "Rating: $it"
-                        } ?: "Player",
+                            ?: conversation.username,
+                        username = conversation.username,
+                        subtitle = conversation.lastMessage
+                            ?: "Start a conversation",
+                        unreadCount = conversation.unreadCount,
                         onClick = {
                             onOpenChat(
-                                player.userId,
-                                player.username
+                                conversation.userId,
+                                conversation.username
                             )
                         }
                     )
                 }
-
-                item {
-                    Spacer(
-                        modifier = Modifier.height(8.dp)
-                    )
-
-                    HorizontalDivider(
-                        color = StatsCardBorder
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(8.dp)
-                    )
-                }
-            }
-
-            item {
-                SectionTitle("YOUR CONVERSATIONS")
-            }
-
-            if (loadingConversations) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(28.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = StatsCyan
-                        )
-                    }
-                }
-            } else if (conversations.isEmpty()) {
-                item {
-                    Text(
-                        text = "No conversations yet. Search for a player above to start chatting.",
-                        color = StatsTextMuted,
-                        modifier = Modifier.padding(
-                            vertical = 12.dp
-                        )
-                    )
-                }
-            }
-
-            items(
-                items = conversations,
-                key = { "conversation_${it.userId}" }
-            ) { conversation ->
-                DirectPlayerRow(
-                    name = conversation.displayName
-                        ?.takeIf { it.isNotBlank() }
-                        ?: conversation.username,
-                    username = conversation.username,
-                    subtitle = conversation.lastMessage
-                        ?: "Start a conversation",
-                    unreadCount = conversation.unreadCount,
-                    onClick = {
-                        onOpenChat(
-                            conversation.userId,
-                            conversation.username
-                        )
-                    }
-                )
             }
         }
     }

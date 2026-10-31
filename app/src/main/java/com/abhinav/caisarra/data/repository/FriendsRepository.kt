@@ -11,6 +11,9 @@ import com.abhinav.caisarra.data.remote.dto.FriendRequestDto
 import com.abhinav.caisarra.data.remote.dto.FriendshipStatusData
 import com.abhinav.caisarra.data.remote.dto.PlayerSearchDto
 import com.abhinav.caisarra.data.remote.dto.SendFriendRequest
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import retrofit2.HttpException
 
 class FriendsRepository(context: Context) {
 
@@ -123,6 +126,8 @@ class FriendsRepository(context: Context) {
     ): Result<T> {
         return try {
             Result.success(block())
+        } catch (e: HttpException) {
+            Result.failure(Exception(httpErrorMessage(e)))
         } catch (e: Exception) {
             Result.failure(
                 Exception(
@@ -131,5 +136,32 @@ class FriendsRepository(context: Context) {
                 )
             )
         }
+    }
+
+    private fun httpErrorMessage(e: HttpException): String {
+        val body = try {
+            e.response()?.errorBody()?.string()
+        } catch (ex: Exception) {
+            null
+        }
+
+        if (!body.isNullOrBlank()) {
+            try {
+                val obj = RetrofitInstance.json.parseToJsonElement(body).jsonObject
+                val serverMessage = (obj["error"] ?: obj["message"])?.jsonPrimitive?.content
+                if (!serverMessage.isNullOrBlank()) {
+                    return serverMessage
+                }
+            } catch (ex: Exception) {
+            }
+        }
+
+        if (e.code() == 409) {
+            return "You are already friends or a request is already pending."
+        }
+        if (e.code() == 404) {
+            return "Player not found."
+        }
+        return ApiErrorInterpreter.toUserMessage(e)
     }
 }

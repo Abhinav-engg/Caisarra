@@ -281,7 +281,7 @@ private fun shareLink(context: Context, link: String) {
         Intent.createChooser(
             Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, "Play chess with me on Caisaara: $link")
+                putExtra(Intent.EXTRA_TEXT, "Play chess with me on Mosaic: $link")
             },
             null
         )
