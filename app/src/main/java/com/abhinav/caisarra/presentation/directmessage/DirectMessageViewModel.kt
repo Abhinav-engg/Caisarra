@@ -58,7 +58,6 @@ class DirectMessageViewModel(
             return
         }
 
-
         if (
             activeChatUserId == userId &&
             reconnectJob?.isActive == true
@@ -211,7 +210,6 @@ class DirectMessageViewModel(
         }
     }
 
-
     private fun addMessage(message: DirectMessageDto) {
         val current = _state.value
 
@@ -227,10 +225,6 @@ class DirectMessageViewModel(
         )
     }
 
-    /**
-     * Sends through the existing REST endpoint.
-     * The returned server message is added immediately.
-     */
     fun send() {
         val current = _state.value
         val text = current.draft.trim()

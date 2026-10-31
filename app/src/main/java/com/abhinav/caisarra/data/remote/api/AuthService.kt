@@ -51,8 +51,6 @@ interface AuthService {
     @POST("reset-password")
     suspend fun resetPassword(@Body body: ResetPasswordRequest): MessageResponse
 
-
-
     @POST("guest-login")
     suspend fun guestLogin(): ApiResponse<GuestLoginResponse>
 
@@ -62,15 +60,6 @@ interface AuthService {
     @POST("api/rating")
     suspend fun submitRating(@Body request: RatingRequest): ApiResponse<RatingData>
 
-    /**
-     * Permanently deletes the logged-in player's account after confirming their password.
-     *
-     * Rules & Constraints:
-     * - Endpoint: DELETE /api/account
-     * - Authentication: Bearer access token, registered users only (no guests)
-     * - Rate limit: 5 requests per 15 minutes per IP
-     * - Body: { "password": "<current_password>" } (required, max 72 characters)
-     */
     @HTTP(method = "DELETE", path = "api/account", hasBody = true)
     suspend fun deleteAccount(
         @Body body: DeleteAccountRequest

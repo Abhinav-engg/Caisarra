@@ -248,7 +248,6 @@ private fun RushLandscapeContent(
                     }
                 }
 
-                // Keep the same icon-based Back, Hint and Skip controls used in portrait mode.
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

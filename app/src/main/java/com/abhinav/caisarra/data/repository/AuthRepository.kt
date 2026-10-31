@@ -142,17 +142,6 @@ class AuthRepository private constructor(private val context: Context) {
         return AuthResult.Success("Logged out")
     }
 
-    /**
-     * Permanently deletes the logged-in user's account using:
-     * DELETE /api/account
-     *
-     * Specification & Rules:
-     * - Only registered accounts are permitted (guest accounts are blocked from deleting).
-     * - Requires re-entering current password (maximum 72 characters).
-     * - On 200 OK: Clears all local tokens, user sessions, and cached Room databases.
-     * - On 403 (wrong password): Returns an error message while keeping the user on screen.
-     * - On 429 (rate limited): Informs the user to try again later.
-     */
     suspend fun deleteAccount(password: String): AuthResult {
         if (isGuest()) {
             return AuthResult.Error("Feature requires a registered account. Guests cannot delete accounts.")
@@ -171,7 +160,6 @@ class AuthRepository private constructor(private val context: Context) {
             val response = service.deleteAccount(request)
 
             if (response.isSuccessful) {
-                // Remove device registration before clearing session
                 val fcmToken = tokenManager.getFcmToken()
                 if (!fcmToken.isNullOrBlank()) {
                     try {
@@ -179,16 +167,13 @@ class AuthRepository private constructor(private val context: Context) {
                     } catch (_: Exception) {}
                 }
 
-                // Clear session tokens and preferences
                 tokenManager.clearTokens()
                 NotificationRepository.get(context).clearLocalState()
                 NotificationSocketClient.get(context).disconnect()
 
-                // Clear cached local Room database tables
                 try {
                     ChessDatabase.get(context).clearAllTables()
                 } catch (_: Exception) {
-                    // Safe cleanup ignore
                 }
 
                 val successMessage = response.body()?.message ?: "Account deleted successfully."
@@ -206,7 +191,6 @@ class AuthRepository private constructor(private val context: Context) {
                         )
                         parsedError = decoded.error
                     } catch (_: Exception) {
-                        // Could not parse as ApiError
                     }
                 }
 

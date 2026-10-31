@@ -816,7 +816,6 @@ private fun Banner(text: String, background: Color, modifier: Modifier = Modifie
     )
 }
 
-
 @Composable
 private fun OnlineTopBar(
     isRated: Boolean,
@@ -841,7 +840,6 @@ private fun OnlineTopBar(
                 .height(52.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left: Home + Spectator/Watch link button
             Box(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.CenterStart
@@ -898,7 +896,6 @@ private fun OnlineTopBar(
                 }
             }
 
-            // Center: MOSAIC / RATED
             Column(
                 modifier = Modifier.padding(horizontal = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -923,7 +920,6 @@ private fun OnlineTopBar(
                 )
             }
 
-            // Right: Flip and Chat
             Box(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.CenterEnd
@@ -964,8 +960,6 @@ private fun OnlineTopBar(
         }
     }
 }
-
-
 
 @Composable
 private fun TopClock(
@@ -1026,7 +1020,6 @@ private fun BottomClock(
         )
     }
 }
-
 
 @Composable
 private fun CenteredColumn(content: @Composable () -> Unit) {

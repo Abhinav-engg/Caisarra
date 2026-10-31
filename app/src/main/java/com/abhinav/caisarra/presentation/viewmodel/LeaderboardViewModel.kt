@@ -108,7 +108,6 @@ class LeaderboardViewModel(
                     loadClubLeaderboard()
                 }
             } catch (_: Exception) {
-                // If fetching clubs fails, user can still enter club ID manually
             }
         }
     }

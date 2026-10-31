@@ -27,7 +27,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -108,7 +107,6 @@ fun PrivacySettingsScreen(
             .navigationBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top Bar
             CaisaaraTopBar(
                 title = "PRIVACY SETTINGS",
                 onBack = onBack,
@@ -182,7 +180,6 @@ fun PrivacySettingsScreen(
                         .padding(StatsScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(StatsSectionSpacing)
                 ) {
-                    // Header Card
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -219,7 +216,7 @@ fun PrivacySettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Choose who is permitted to send you direct messages or friend requests across Mosaic.",
+                                    text = "Choose who is permitted to send you direct messages across Mosaic.",
                                     fontFamily = JetBrainsMono,
                                     fontSize = TextSizeTiny,
                                     color = StatsTextMuted,
@@ -229,7 +226,6 @@ fun PrivacySettingsScreen(
                         }
                     }
 
-                    // Section 1: Direct Messages
                     PrivacySectionCard(
                         section = PrivacySection.DIRECT_MESSAGE,
                         icon = Icons.AutoMirrored.Filled.Chat,
@@ -238,18 +234,6 @@ fun PrivacySettingsScreen(
                         isUpdating = uiState.updatingSection == PrivacySection.DIRECT_MESSAGE,
                         onOptionSelected = { option ->
                             viewModel.updateSection(PrivacySection.DIRECT_MESSAGE, option)
-                        }
-                    )
-
-                    // Section 2: Friend Invites
-                    PrivacySectionCard(
-                        section = PrivacySection.INVITE_FRIEND,
-                        icon = Icons.Default.PersonAdd,
-                        subtitle = "Who can send you friend requests",
-                        currentOption = uiState.settings.inviteFriendOption,
-                        isUpdating = uiState.updatingSection == PrivacySection.INVITE_FRIEND,
-                        onOptionSelected = { option ->
-                            viewModel.updateSection(PrivacySection.INVITE_FRIEND, option)
                         }
                     )
 
@@ -285,7 +269,6 @@ private fun PrivacySectionCard(
             .padding(16.dp)
     ) {
         Column {
-            // Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -359,7 +342,6 @@ private fun PrivacySectionCard(
             HorizontalDivider(color = SettingsDivider, thickness = 1.dp)
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Options List
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 PrivacyOption.entries.forEach { option ->
                     val isSelected = currentOption == option

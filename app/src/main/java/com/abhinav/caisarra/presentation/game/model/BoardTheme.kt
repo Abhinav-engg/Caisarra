@@ -58,13 +58,13 @@ object BoardThemes {
         id = BoardThemeId.EMERALD_CLASSIC,
         name = "Emerald Classic",
         description = "Classic tournament green with championship gold accents",
-        lightSquare = Color(0xFFC3EDE1),       // #AFF0D7 with 60% opacity (#AFF0D799)
-        darkSquare = Color(0xFF1D5757),        // #1D5757
-        selectedColor = Color(0x99FF9933),     // #FF9933 at 60% (#FF993399)
-        lastMoveColor = Color(0x33FCBF49),     // #FCBF49 at 20% (#FCBF4933)
-        legalMoveDot = Color(0xFFA57F41),      // Legal move dot (#FCBF49 / #FF9933 on board)
-        legalMoveRing = Color(0xFFA57F41),     // Capture ring
-        legalMoveOverlay = Color(0x33FCBF49),  // Capture overlay (#FCBF49 at 20% #FCBF4933)
+        lightSquare = Color(0xFFC3EDE1),
+        darkSquare = Color(0xFF1D5757),
+        selectedColor = Color(0x99FF9933),
+        lastMoveColor = Color(0x33FCBF49),
+        legalMoveDot = Color(0xFFA57F41),
+        legalMoveRing = Color(0xFFA57F41),
+        legalMoveOverlay = Color(0x33FCBF49),
         showLegalMoveDotBorder = false,
         palette = listOf(
             Color(0xFF1D5757),
