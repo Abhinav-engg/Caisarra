@@ -65,7 +65,6 @@ fun LeaderboardScreen(
             onBack = onBack
         )
 
-        // Leaderboard Type Tabs (Global / Club / Puzzle Rush)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -108,7 +107,6 @@ fun LeaderboardScreen(
             }
         }
 
-        // Sub-header and mode selectors
         when (state.selectedType) {
             LeaderboardType.GLOBAL -> {
                 Column(
@@ -152,7 +150,6 @@ fun LeaderboardScreen(
                         }
                     )
 
-                    // Club Selector chips if user belongs to clubs
                     if (state.myClubs.isNotEmpty()) {
                         Text(
                             "My Clubs",
@@ -203,7 +200,6 @@ fun LeaderboardScreen(
                         }
                     }
 
-                    // Mode chips (Rapid / Blitz / Bullet / Daily)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -219,7 +215,6 @@ fun LeaderboardScreen(
                         }
                     }
 
-                    // Manual search / enter club code or ID
                     var isSearchExpanded by remember { mutableStateOf(false) }
 
                     if (!isSearchExpanded && state.myClubs.isNotEmpty()) {
@@ -308,7 +303,6 @@ fun LeaderboardScreen(
             }
         }
 
-        // List / Loading / Error states
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -549,9 +543,9 @@ private fun RankingRow(
     onClick: (() -> Unit)? = null
 ) {
     val rankColor = when (rank) {
-        1 -> Color(0xFFFFD166) // Gold
-        2 -> Color(0xFFC5D0DF) // Silver
-        3 -> Color(0xFFD69A72) // Bronze
+        1 -> Color(0xFFFFD166)
+        2 -> Color(0xFFC5D0DF)
+        3 -> Color(0xFFD69A72)
         else -> Color.LightGray
     }
 

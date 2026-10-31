@@ -147,7 +147,6 @@ fun DirectChallengeDialog(
     var sentGameId by remember { mutableStateOf<String?>(null) }
     var isDeclined by remember { mutableStateOf(false) }
 
-    // Listen for acceptance / decline events
     LaunchedEffect(opponentId, sentCode, sentGameId) {
         challengeManager.acceptedEvent.collectLatest { event ->
             if (sentCode != null && (event.code == sentCode || event.gameId == sentGameId ||
@@ -252,7 +251,6 @@ fun DirectChallengeDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -286,7 +284,6 @@ fun DirectChallengeDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Opponent info
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -324,7 +321,6 @@ fun DirectChallengeDialog(
                 Spacer(Modifier.height(20.dp))
 
                 if (sentCode != null && !isDeclined) {
-                    // Waiting state
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -387,7 +383,6 @@ fun DirectChallengeDialog(
                         }
                     }
                 } else if (isDeclined) {
-                    // Declined state
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -411,8 +406,6 @@ fun DirectChallengeDialog(
                         )
                     }
                 } else {
-                    // Setup mode
-                    // Time control presets
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -502,7 +495,6 @@ fun DirectChallengeDialog(
 
                     Spacer(Modifier.height(18.dp))
 
-                    // Choose side
                     Text(
                         text = "YOUR PIECES",
                         color = TextMuted,
@@ -554,7 +546,6 @@ fun DirectChallengeDialog(
 
                     Spacer(Modifier.height(18.dp))
 
-                    // Rated Switch
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

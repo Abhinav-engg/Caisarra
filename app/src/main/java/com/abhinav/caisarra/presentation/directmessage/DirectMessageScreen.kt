@@ -71,7 +71,6 @@ fun DirectMessageScreen(
             .navigationBarsPadding()
             .imePadding()
     ) {
-        // Header: back button, username and WebSocket status.
         Row(
             modifier = Modifier
                 .fillMaxWidth()

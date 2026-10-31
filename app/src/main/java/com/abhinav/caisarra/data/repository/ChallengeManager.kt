@@ -29,7 +29,7 @@ data class OutgoingChallengeState(
     val gameId: String,
     val opponentId: Long,
     val opponentUsername: String,
-    val status: String // "pending", "accepted", "declined"
+    val status: String
 )
 
 class ChallengeManager private constructor(private val context: Context) {

@@ -478,7 +478,6 @@ fun PlayWithFriendScreen(
                             }
                         }
                         FriendsTab.REQUESTS -> {
-                            // 1. Incoming Challenges
                             if (receivedChallenges.isNotEmpty()) {
                                 item { Text("INCOMING CHALLENGES", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
                                 items(receivedChallenges) { challenge ->
@@ -506,7 +505,6 @@ fun PlayWithFriendScreen(
                                 item { Spacer(Modifier.height(8.dp)) }
                             }
 
-                            // 2. Sent Challenges
                             if (sentChallenges.isNotEmpty()) {
                                 item { Text("SENT CHALLENGES", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
                                 items(sentChallenges) { challenge ->
@@ -524,7 +522,6 @@ fun PlayWithFriendScreen(
                                 item { Spacer(Modifier.height(8.dp)) }
                             }
 
-                            // 3. Friend requests
                             if (state.incomingRequests.isEmpty() && state.sentRequests.isEmpty() && receivedChallenges.isEmpty() && sentChallenges.isEmpty() && !state.isLoading) {
                                 item { EmptyNotice("No pending challenges or requests", "Incoming and sent challenges and friend requests will appear here.") }
                             }

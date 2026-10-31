@@ -219,7 +219,6 @@ fun CommunityScreen(
                                     .padding(18.dp)
                             ) {
 
-
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -244,7 +243,6 @@ fun CommunityScreen(
                                     )
                                 }
 
-
                                 HorizontalDivider(
                                     modifier = Modifier.padding(
                                         horizontal = 8.dp,
@@ -253,7 +251,6 @@ fun CommunityScreen(
                                     thickness = 1.dp,
                                     color = CommunityMuted.copy(alpha = 0.16f)
                                 )
-
 
                                 Row(
                                     modifier = Modifier
@@ -294,7 +291,6 @@ fun CommunityScreen(
                                     }
                                 }
 
-
                                 Button(
                                     onClick = {
                                         gameCaption = ""
@@ -324,7 +320,6 @@ fun CommunityScreen(
                                 }
                             }
                         }
-
 
                     } else if (!isRegisteredUser && !state.showingBookmarks) {
                         item(key = "community_sign_in_notice") {
@@ -555,7 +550,6 @@ fun CommunityScreen(
         )
     }
 }
-
 
 @Composable
 private fun CommunityPostDetailScreen(
@@ -1187,7 +1181,6 @@ private fun CommunityPostCard(
             }
         }
 
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -1510,7 +1503,6 @@ fun CommunityCommentsDialog(
                                         val created = viewModel.addComment(postId, commentText.trim())
                                         comments = (comments + created).distinctBy { it.id }
                                         commentText = ""
-                                        // Refresh the feed so the post's displayed comment count updates too.
                                         viewModel.refresh()
                                     } catch (e: Exception) {
                                         error = e.message ?: "Unable to add comment."
@@ -1538,7 +1530,6 @@ private fun formatCommunityDate(value: String): String {
         value
     }
 }
-
 
 private fun usernameFromJwt(token: String?): String? {
     if (token.isNullOrBlank()) return null

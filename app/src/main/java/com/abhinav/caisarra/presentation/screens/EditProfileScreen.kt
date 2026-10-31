@@ -412,7 +412,6 @@ fun EditProfileScreen(
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium
                                 )
-//
                             }
                             Text("›", color = EditMuted, fontSize = 26.sp)
                         }
@@ -532,7 +531,6 @@ fun EditProfileScreen(
                                 )
                             }
                         )
-
 
                         validationError?.let {
                             Text(it, color = EditError, fontSize = 12.sp)
