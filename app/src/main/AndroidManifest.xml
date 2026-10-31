@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature
@@ -54,12 +55,28 @@
                     android:pathPrefix="/watch/" />
                 <data
                     android:scheme="https"
+                    android:host="caisaara.app"
+                    android:pathPrefix="/tournament/" />
+                <data
+                    android:scheme="https"
+                    android:host="caisaara.app"
+                    android:pathPrefix="/club/" />
+                <data
+                    android:scheme="https"
                     android:host="caisaara.duckdns.org"
                     android:pathPrefix="/play/" />
                 <data
                     android:scheme="https"
                     android:host="caisaara.duckdns.org"
                     android:pathPrefix="/watch/" />
+                <data
+                    android:scheme="https"
+                    android:host="caisaara.duckdns.org"
+                    android:pathPrefix="/tournament/" />
+                <data
+                    android:scheme="https"
+                    android:host="caisaara.duckdns.org"
+                    android:pathPrefix="/club/" />
             </intent-filter>
 
             <intent-filter>
@@ -72,11 +89,22 @@
 
         <service
             android:name=".data.remote.CaisarraFirebaseMessagingService"
-            android:exported="false">
+            android:exported="false"
+            android:directBootAware="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="messages" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
     </application>
 
 </manifest>

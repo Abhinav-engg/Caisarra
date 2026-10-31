@@ -139,7 +139,7 @@ fun CommunityScreen(
         CommunityWritePostScreen(
             username = resolvedUsername,
             postText = postText,
-            onPostTextChange = { if (it.length <= 2000) postText = it },
+            onPostTextChange = { if (it.count { ch -> !ch.isWhitespace() } <= 2000) postText = it },
             isPublishing = state.isPublishing,
             error = state.error,
             onBack = {
@@ -236,22 +236,7 @@ fun CommunityScreen(
                                     )
 
                                     Text(
-                                        text = buildAnnotatedString {
-                                            append("What's your next thought? ")
-
-                                            withStyle(
-                                                style = SpanStyle(
-                                                    color = CommunityMuted,
-                                                    fontWeight = FontWeight.Medium
-                                                )
-                                            ) {
-                                                append(
-                                                    resolvedUsername.orEmpty()
-                                                        .removePrefix("@")
-                                                        .ifBlank { "You" }
-                                                )
-                                            }
-                                        },
+                                        text = "What's your next thought?",
                                         color = CommunityMuted,
                                         fontSize = 17.sp,
                                         lineHeight = 24.sp,
@@ -371,14 +356,7 @@ fun CommunityScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(Modifier.weight(1f))
-                            Text(
-                                text = "Latest ↓",
-                                color = CommunityGreen,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
                             if (state.isLoading && state.posts.isNotEmpty()) {
-                                Spacer(Modifier.width(8.dp))
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(18.dp),
                                     color = CommunityGreen,
@@ -930,15 +908,6 @@ private fun CommunityWritePostScreen(
                     Text(displayName, color = CommunityText, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Text("@$displayUsername", color = CommunityMuted, fontSize = 12.sp)
                 }
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(CommunityBackground),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("•••", color = CommunityMuted, fontSize = 15.sp)
-                }
             }
 
             OutlinedTextField(
@@ -981,13 +950,14 @@ private fun CommunityWritePostScreen(
                 )
             )
 
+            val charCount = postText.count { !it.isWhitespace() }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("${postText.length} / 2000 characters", color = CommunityMuted, fontSize = 11.sp)
+                Text("$charCount / 2000 characters", color = CommunityMuted, fontSize = 11.sp)
                 Spacer(Modifier.weight(1f))
-                Text("${2000 - postText.length} left", color = CommunityGreen, fontSize = 11.sp)
+                Text("${(2000 - charCount).coerceAtLeast(0)} left", color = CommunityGreen, fontSize = 11.sp)
             }
 
             error?.let {
@@ -1191,12 +1161,6 @@ private fun CommunityPostCard(
                                 showPostMenu = false
                                 showDeleteConfirmation = true
                             }
-                        )
-                    } else {
-                        androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Post options", color = CommunityMuted) },
-                            onClick = { showPostMenu = false },
-                            enabled = false
                         )
                     }
                 }

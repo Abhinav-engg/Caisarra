@@ -25,12 +25,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -52,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.theme.FriendsCardRadius
 import com.abhinav.caisarra.core.ui.theme.FriendsScreenPadding
+import com.abhinav.caisarra.data.remote.dto.FriendDto
 import com.abhinav.caisarra.data.repository.ChallengeManager
 import com.abhinav.caisarra.presentation.invite.components.DirectChallengeDialog
 import com.abhinav.caisarra.presentation.invite.components.FriendCardItem
@@ -103,6 +106,7 @@ fun PlayWithFriendScreen(
 
     var challengeTarget by remember { mutableStateOf<ChallengeTarget?>(null) }
     var showQrScanner by remember { mutableStateOf(false) }
+    var removeTarget by remember { mutableStateOf<FriendDto?>(null) }
 
     LaunchedEffect(Unit) {
         challengeManager.refreshChallenges()
@@ -128,6 +132,37 @@ fun PlayWithFriendScreen(
             onGameStarted = { gameId ->
                 challengeTarget = null
                 onEnterGame(gameId)
+            }
+        )
+    }
+
+    removeTarget?.let { friend ->
+        AlertDialog(
+            onDismissRequest = { removeTarget = null },
+            containerColor = FriendsCardBg,
+            title = {
+                Text("Remove friend", color = FriendsTextWhite, fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(
+                    "Remove ${friend.displayName ?: friend.username} from your friends?",
+                    color = FriendsTextMuted
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.removeFriend(friend.userId)
+                        removeTarget = null
+                    }
+                ) {
+                    Text("Remove", color = Color(0xFFF87171), fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { removeTarget = null }) {
+                    Text("Cancel", color = FriendsTextMuted)
+                }
             }
         )
     }
@@ -426,6 +461,9 @@ fun PlayWithFriendScreen(
                                                         avatarUrl = friend.avatarUrl,
                                                         rating = friend.rating
                                                     )
+                                                },
+                                                onRemove = {
+                                                    removeTarget = friend
                                                 }
                                             )
                                             if (index < state.visibleFriends.lastIndex) {

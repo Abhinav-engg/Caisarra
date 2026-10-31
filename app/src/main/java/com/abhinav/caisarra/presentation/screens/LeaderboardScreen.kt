@@ -16,9 +16,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,10 +34,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardType
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
-import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+
 private val BoardBg = Color(0xFF10151F)
 private val BoardCard = Color(0xFF1A2230)
 private val BoardBorder = Color(0xFF303B4D)
@@ -48,84 +52,114 @@ fun LeaderboardScreen(
     onPlayerClick: (String) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val pullToRefreshState = rememberPullToRefreshState()
 
-    PullToRefreshBox(
-        isRefreshing = state.isLoading,
-        onRefresh = { viewModel.retry() },
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(BoardBg)
+            .statusBarsPadding()
     ) {
-        Column(
+        CaisaaraTopBar(
+            title = "LEADERBOARD",
+            onBack = onBack
+        )
+
+        // Leaderboard Type Tabs (Global / Club / Puzzle Rush)
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .background(BoardBg)
-                .statusBarsPadding()
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            listOf(
+                LeaderboardType.GLOBAL to "Global",
+                LeaderboardType.CLUB to "Club",
+                LeaderboardType.PUZZLE_RUSH to "Puzzle Rush"
+            ).forEach { (type, label) ->
+                val selected = state.selectedType == type
 
-            CaisaaraTopBar(
-                title = "LEADERBOARD",
-                onBack = onBack,
-                backgroundColor = BoardBg,
-                titleColor = Color.White,
-                iconTint = Color.White,
-                titleFontSize = 18.sp
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                listOf(
-                    LeaderboardType.GLOBAL to "Global",
-                    LeaderboardType.CLUB to "Club",
-                    LeaderboardType.PUZZLE_RUSH to "Puzzle Rush"
-                ).forEach { (type, label) ->
-                    val selected = state.selectedType == type
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (selected) BoardCyan.copy(alpha = 0.15f)
-                                else BoardCard
-                            )
-                            .border(
-                                1.dp,
-                                if (selected) BoardCyan else BoardBorder,
-                                RoundedCornerShape(10.dp)
-                            )
-                            .clickable { viewModel.selectType(type) }
-                            .padding(vertical = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            label,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (selected) BoardCyan else Color.LightGray,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(
+                            if (selected) BoardCyan.copy(alpha = 0.15f)
+                            else BoardCard
                         )
+                        .border(
+                            1.dp,
+                            if (selected) BoardCyan else BoardBorder,
+                            RoundedCornerShape(10.dp)
+                        )
+                        .clickable { viewModel.selectType(type) }
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        label,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (selected) BoardCyan else Color.LightGray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+
+        // Sub-header and mode selectors
+        when (state.selectedType) {
+            LeaderboardType.GLOBAL -> {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    SectionHeading(
+                        title = "GLOBAL RANKINGS",
+                        subtitle = "Ranked by ${state.globalMode.replaceFirstChar { it.uppercase() }} rating"
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("rapid", "blitz", "bullet", "daily").forEach { mode ->
+                            StyledModeChip(
+                                label = mode.replaceFirstChar { it.uppercase() },
+                                selected = state.globalMode == mode,
+                                onClick = { viewModel.selectGlobalMode(mode) }
+                            )
+                        }
                     }
                 }
             }
 
+            LeaderboardType.CLUB -> {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SectionHeading(
+                        title = "CLUB STANDINGS",
+                        subtitle = if (state.selectedClub != null) {
+                            "Viewing ${state.selectedClub?.name.orEmpty()} (${state.clubMode.replaceFirstChar { it.uppercase() }})"
+                        } else {
+                            "Compare rankings with club members"
+                        }
+                    )
 
-            when (state.selectedType) {
-                LeaderboardType.GLOBAL -> {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                    ) {
-                        SectionHeading(
-                            title = "GLOBAL RANKINGS",
-                            subtitle = "Ranked by ${state.globalMode.replaceFirstChar { it.uppercase() }} rating"
+                    // Club Selector chips if user belongs to clubs
+                    if (state.myClubs.isNotEmpty()) {
+                        Text(
+                            "My Clubs",
+                            color = Color.LightGray,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
-
-                        Spacer(Modifier.height(8.dp))
 
                         Row(
                             modifier = Modifier
@@ -133,202 +167,176 @@ fun LeaderboardScreen(
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            listOf("rapid", "blitz", "bullet", "daily").forEach { mode ->
-                                StyledModeChip(
-                                    label = mode.replaceFirstChar { it.uppercase() },
-                                    selected = state.globalMode == mode,
-                                    onClick = { viewModel.selectGlobalMode(mode) }
-                                )
-                            }
-                        }
-                    }
-                }
+                            state.myClubs.forEach { club ->
+                                val isSelected = state.selectedClub?.effectiveId == club.effectiveId ||
+                                        state.clubId.equals(club.effectiveId, ignoreCase = true) ||
+                                        state.clubId.equals(club.shareCode, ignoreCase = true)
 
-                LeaderboardType.CLUB -> {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        SectionHeading(
-                            title = "CLUB STANDINGS",
-                            subtitle = if (state.selectedClub != null) {
-                                "Viewing ${state.selectedClub?.name.orEmpty()} (${state.clubMode.replaceFirstChar { it.uppercase() }})"
-                            } else {
-                                "Compare rankings with club members"
-                            }
-                        )
-
-
-                        if (state.myClubs.isNotEmpty()) {
-                            Text(
-                                "My Clubs",
-                                color = Color.LightGray,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                state.myClubs.forEach { club ->
-                                    val isSelected = state.selectedClub?.effectiveId == club.effectiveId ||
-                                            state.clubId.equals(club.effectiveId, ignoreCase = true) ||
-                                            state.clubId.equals(club.shareCode, ignoreCase = true)
-
-                                    Surface(
-                                        onClick = { viewModel.selectClub(club) },
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isSelected) BoardCyan.copy(alpha = 0.18f) else BoardCard,
-                                        border = BorderStroke(1.dp, if (isSelected) BoardCyan else BoardBorder)
+                                Surface(
+                                    onClick = { viewModel.selectClub(club) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = if (isSelected) BoardCyan.copy(alpha = 0.18f) else BoardCard,
+                                    border = BorderStroke(1.dp, if (isSelected) BoardCyan else BoardBorder)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Groups,
-                                                contentDescription = null,
-                                                tint = if (isSelected) BoardCyan else Color.LightGray,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Text(
-                                                club.name,
-                                                color = if (isSelected) BoardCyan else Color.White,
-                                                fontSize = 12.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
+                                        Icon(
+                                            Icons.Default.Groups,
+                                            contentDescription = null,
+                                            tint = if (isSelected) BoardCyan else Color.LightGray,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            club.name,
+                                            color = if (isSelected) BoardCyan else Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
                                     }
                                 }
                             }
                         }
+                    }
 
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            listOf("rapid", "blitz", "bullet", "daily").forEach { mode ->
-                                StyledModeChip(
-                                    label = mode.replaceFirstChar { it.uppercase() },
-                                    selected = state.clubMode == mode,
-                                    onClick = { viewModel.selectClubMode(mode) }
-                                )
-                            }
-                        }
-
-
-                        var isSearchExpanded by remember { mutableStateOf(false) }
-
-                        if (!isSearchExpanded && state.myClubs.isNotEmpty()) {
-                            TextButton(
-                                onClick = { isSearchExpanded = true },
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Search,
-                                    contentDescription = null,
-                                    tint = BoardCyan,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    "Search another club by ID or share code",
-                                    color = BoardCyan,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        } else {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedTextField(
-                                    value = state.clubId,
-                                    onValueChange = viewModel::setClubId,
-                                    modifier = Modifier.weight(1f),
-                                    singleLine = true,
-                                    label = { Text("Club ID, Code, or Name", color = Color.LightGray, fontSize = 12.sp) },
-                                    placeholder = { Text("e.g. 12 or SHARECODE", color = Color.Gray, fontSize = 12.sp) },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
-                                        cursorColor = BoardCyan,
-                                        focusedBorderColor = BoardCyan,
-                                        unfocusedBorderColor = BoardBorder
-                                    )
-                                )
-
-                                Button(
-                                    onClick = { viewModel.loadClubLeaderboard() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = BoardCyan, contentColor = Color.Black),
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Text("Load", fontWeight = FontWeight.Bold)
-                                }
-                            }
+                    // Mode chips (Rapid / Blitz / Bullet / Daily)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("rapid", "blitz", "bullet", "daily").forEach { mode ->
+                            StyledModeChip(
+                                label = mode.replaceFirstChar { it.uppercase() },
+                                selected = state.clubMode == mode,
+                                onClick = { viewModel.selectClubMode(mode) }
+                            )
                         }
                     }
-                }
 
-                LeaderboardType.PUZZLE_RUSH -> {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                    ) {
-                        SectionHeading(
-                            title = "PUZZLE RUSH CHAMPIONS",
-                            subtitle = "Highest scores in speed puzzle solving"
-                        )
+                    // Manual search / enter club code or ID
+                    var isSearchExpanded by remember { mutableStateOf(false) }
 
-                        Spacer(Modifier.height(8.dp))
-
+                    if (!isSearchExpanded && state.myClubs.isNotEmpty()) {
+                        TextButton(
+                            onClick = { isSearchExpanded = true },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = BoardCyan,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "Search another club by ID or share code",
+                                color = BoardCyan,
+                                fontSize = 12.sp
+                            )
+                        }
+                    } else {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            listOf(
-                                "3min" to "3 Minutes",
-                                "5min" to "5 Minutes",
-                                "survival" to "Survival"
-                            ).forEach { (mode, label) ->
-                                StyledModeChip(
-                                    label = label,
-                                    selected = state.puzzleMode == mode,
-                                    onClick = { viewModel.selectPuzzleMode(mode) }
+                            OutlinedTextField(
+                                value = state.clubId,
+                                onValueChange = viewModel::setClubId,
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                label = { Text("Club ID, Code, or Name", color = Color.LightGray, fontSize = 12.sp) },
+                                placeholder = { Text("e.g. 12 or SHARECODE", color = Color.Gray, fontSize = 12.sp) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    cursorColor = BoardCyan,
+                                    focusedBorderColor = BoardCyan,
+                                    unfocusedBorderColor = BoardBorder
                                 )
+                            )
+
+                            Button(
+                                onClick = { viewModel.loadClubLeaderboard() },
+                                colors = ButtonDefaults.buttonColors(containerColor = BoardCyan, contentColor = Color.Black),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Load", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
             }
 
+            LeaderboardType.PUZZLE_RUSH -> {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    SectionHeading(
+                        title = "PUZZLE RUSH CHAMPIONS",
+                        subtitle = "Highest scores in speed puzzle solving"
+                    )
 
-            if (state.isLoading) {
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            "3min" to "3 Minutes",
+                            "5min" to "5 Minutes",
+                            "survival" to "Survival"
+                        ).forEach { (mode, label) ->
+                            StyledModeChip(
+                                label = label,
+                                selected = state.puzzleMode == mode,
+                                onClick = { viewModel.selectPuzzleMode(mode) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // List / Loading / Error states
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = viewModel::refresh,
+            state = pullToRefreshState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullToRefreshState,
+                    isRefreshing = state.isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    containerColor = BoardCard,
+                    color = BoardCyan
+                )
+            }
+        ) {
+            if (state.isLoading && !state.isRefreshing) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = BoardCyan)
                 }
-            } else if (state.error != null) {
+            } else if (state.error != null && !state.isRefreshing) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
+                        .fillMaxSize()
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -353,11 +361,11 @@ fun LeaderboardScreen(
                         if (state.globalEntries.isEmpty()) {
                             EmptyLeaderboard(
                                 message = "No players ranked in ${state.globalMode.replaceFirstChar { it.uppercase() }} mode yet.",
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.fillMaxSize()
                             )
                         } else {
                             LazyColumn(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -416,11 +424,11 @@ fun LeaderboardScreen(
                             }
                             EmptyLeaderboard(
                                 message = emptyMsg,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.fillMaxSize()
                             )
                         } else {
                             LazyColumn(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -451,11 +459,11 @@ fun LeaderboardScreen(
                         if (state.puzzleRushEntries.isEmpty()) {
                             EmptyLeaderboard(
                                 message = "No puzzle rush entries yet for this mode.",
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.fillMaxSize()
                             )
                         } else {
                             LazyColumn(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -484,8 +492,8 @@ fun LeaderboardScreen(
             }
         }
     }
-
 }
+
 @Composable
 private fun SectionHeading(
     title: String,
@@ -541,9 +549,9 @@ private fun RankingRow(
     onClick: (() -> Unit)? = null
 ) {
     val rankColor = when (rank) {
-        1 -> Color(0xFFFFD166)
-        2 -> Color(0xFFC5D0DF)
-        3 -> Color(0xFFD69A72)
+        1 -> Color(0xFFFFD166) // Gold
+        2 -> Color(0xFFC5D0DF) // Silver
+        3 -> Color(0xFFD69A72) // Bronze
         else -> Color.LightGray
     }
 
@@ -626,5 +634,3 @@ private fun EmptyLeaderboard(
         )
     }
 }
-
-

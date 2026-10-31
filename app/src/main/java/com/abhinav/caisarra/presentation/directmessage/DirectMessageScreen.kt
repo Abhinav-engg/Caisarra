@@ -278,13 +278,13 @@ fun DirectMessageScreen(
                     )
                 },
                 singleLine = true,
-                enabled = !state.sending,
+                enabled = !state.sending && !state.blocked,
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Send
                 ),
                 keyboardActions = KeyboardActions(
                     onSend = {
-                        if (state.draft.isNotBlank() && !state.sending) {
+                        if (state.draft.isNotBlank() && !state.sending && !state.blocked) {
                             viewModel.send()
                         }
                     }
@@ -307,7 +307,7 @@ fun DirectMessageScreen(
 
             IconButton(
                 onClick = viewModel::send,
-                enabled = state.draft.isNotBlank() && !state.sending,
+                enabled = state.draft.isNotBlank() && !state.sending && !state.blocked,
                 modifier = Modifier
                     .size(52.dp)
                     .clip(CircleShape)

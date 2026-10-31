@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PersonOutline
@@ -289,15 +288,7 @@ fun MenuScreen(
             SectionHeader(title = "Account")
             Spacer(Modifier.height(8.dp))
             MenuCard {
-                MenuItem(
-                    icon = Icons.Default.Lock,
-                    iconTint = StatsCyan,
-                    iconBg = ThemeNeonDeep,
-                    title = "Privacy Settings",
-                    onClick = onPrivacyClick
-                )
                 if (!isGuest) {
-                    ItemDivider()
                     MenuItem(
                         icon = Icons.Default.DeleteForever,
                         iconTint = RedNormal,
@@ -305,8 +296,8 @@ fun MenuScreen(
                         title = "Delete Account",
                         onClick = onDeleteAccountClick
                     )
+                    ItemDivider()
                 }
-                ItemDivider()
                 MenuItem(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     iconTint = ThemeSlateAccent,

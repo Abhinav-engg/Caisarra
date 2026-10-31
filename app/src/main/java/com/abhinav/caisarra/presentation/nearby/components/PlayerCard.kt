@@ -176,7 +176,9 @@ fun SquareIconButton(
     icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    iconModifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(16.dp)
     Box(
@@ -186,6 +188,7 @@ fun SquareIconButton(
             .background(NearbyColors.SurfaceHigh)
             .border(1.dp, NearbyColors.Border, shape)
             .clickable(
+                enabled = enabled,
                 onClick = singleClick(onClick),
                 role = Role.Button,
                 onClickLabel = contentDescription
@@ -193,6 +196,11 @@ fun SquareIconButton(
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center
     ) {
-        Icon(icon, contentDescription = null, tint = NearbyColors.TextPrimary)
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = if (enabled) NearbyColors.TextPrimary else NearbyColors.TextSecondary.copy(alpha = 0.5f),
+            modifier = iconModifier
+        )
     }
 }

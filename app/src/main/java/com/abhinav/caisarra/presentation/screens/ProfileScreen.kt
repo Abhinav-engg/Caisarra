@@ -17,12 +17,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -34,8 +31,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,21 +38,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -66,7 +56,6 @@ import com.abhinav.caisarra.presentation.game.components.GameHistorySection
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import com.abhinav.caisarra.presentation.invite.components.DirectChallengeDialog
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
-import kotlinx.coroutines.launch
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 
 private val ProfileBackground = Color(0xFF080D13)
@@ -92,25 +81,10 @@ fun ProfileScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
-    var editing by remember { mutableStateOf(false) }
-    var displayName by remember { mutableStateOf("") }
-    var country by remember { mutableStateOf("") }
-    var bio by remember { mutableStateOf("") }
-    var avatarUrl by remember { mutableStateOf("") }
-    var validationError by remember { mutableStateOf<String?>(null) }
     var showChallengeDialog by remember { mutableStateOf(false) }
     var settingsExpanded by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
-    }
-
-    LaunchedEffect(state.profile) {
-        state.profile?.let { profile ->
-            displayName = profile.displayName.orEmpty()
-            country = profile.country.orEmpty()
-            bio = profile.bio.orEmpty()
-            avatarUrl = profile.avatarUrl.orEmpty()
-        }
     }
     LaunchedEffect(isGuest) {
         viewModel.loadProfile(isGuest = isGuest)
@@ -807,58 +781,6 @@ private fun RatingModeCard(
 }
 
 @Composable
-private fun ProfileInput(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    singleLine: Boolean = false,
-    supportingText: String? = null,
-    capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
-    keyboardType: KeyboardType = KeyboardType.Text
-) {
-    val bringIntoViewRequester = remember {
-        BringIntoViewRequester()
-    }
-    val coroutineScope = rememberCoroutineScope()
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .bringIntoViewRequester(bringIntoViewRequester)
-            .onFocusEvent { focusState ->
-                if (focusState.isFocused) {
-                    coroutineScope.launch {
-                        bringIntoViewRequester.bringIntoView()
-                    }
-                }
-            },
-        singleLine = singleLine,
-        supportingText = supportingText?.let {
-            { Text(it, color = ProfileMuted) }
-        },
-        keyboardOptions = KeyboardOptions(
-            capitalization = capitalization,
-            keyboardType = keyboardType,
-            imeAction = ImeAction.Done
-        ),
-        shape = RoundedCornerShape(15.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = ProfileWhite,
-            unfocusedTextColor = ProfileWhite,
-            focusedBorderColor = ProfileCyan,
-            unfocusedBorderColor = ProfileBorder,
-            focusedLabelColor = ProfileCyan,
-            unfocusedLabelColor = ProfileMuted,
-            cursorColor = ProfileCyan,
-            focusedContainerColor = ProfileCardSecondary,
-            unfocusedContainerColor = ProfileCardSecondary
-        )
-    )
-}
-
-@Composable
 private fun MessageCard(
     message: String,
     color: Color
@@ -873,39 +795,4 @@ private fun MessageCard(
             .background(ProfileCard)
             .padding(14.dp)
     )
-}
-
-@Composable
-private fun GradientActionButton(
-    text: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(58.dp)
-            .clip(RoundedCornerShape(17.dp))
-            .background(
-                if (enabled) {
-                    Brush.horizontalGradient(
-                        listOf(ProfileCyan, ProfileTeal)
-                    )
-                } else {
-                    Brush.horizontalGradient(
-                        listOf(ProfileBorder, ProfileBorder)
-                    )
-                }
-            )
-            .clickable(enabled = enabled, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = if (enabled) ProfileBackground else ProfileMuted,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 1.sp
-        )
-    }
 }

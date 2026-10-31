@@ -35,6 +35,7 @@ data class LeaderboardUiState(
     val clubId: String = "",
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
+    val isRefreshing: Boolean = false,
     val hasMoreGlobal: Boolean = true,
     val globalOffset: Int = 0,
     val error: String? = null
@@ -107,7 +108,7 @@ class LeaderboardViewModel(
                     loadClubLeaderboard()
                 }
             } catch (_: Exception) {
-
+                // If fetching clubs fails, user can still enter club ID manually
             }
         }
     }
@@ -175,7 +176,7 @@ class LeaderboardViewModel(
 
     fun loadGlobalLeaderboard(refresh: Boolean = false) {
         val current = _state.value
-        if (current.isLoading || current.isLoadingMore) return
+        if ((current.isLoading && !refresh) || current.isLoadingMore) return
 
         val offset = if (refresh) 0 else current.globalOffset
         val mode = current.globalMode
@@ -183,7 +184,8 @@ class LeaderboardViewModel(
         viewModelScope.launch {
             _state.update {
                 it.copy(
-                    isLoading = offset == 0,
+                    isLoading = offset == 0 && !refresh,
+                    isRefreshing = refresh,
                     isLoadingMore = offset > 0,
                     error = null
                 )
@@ -218,6 +220,7 @@ class LeaderboardViewModel(
                         hasMoreGlobal = mappedEntries.size == pageSize && mappedEntries.isNotEmpty(),
                         isLoading = false,
                         isLoadingMore = false,
+                        isRefreshing = false,
                         error = null
                     )
                 }
@@ -229,6 +232,7 @@ class LeaderboardViewModel(
                     it.copy(
                         isLoading = false,
                         isLoadingMore = false,
+                        isRefreshing = false,
                         error = userError
                     )
                 }
@@ -252,7 +256,7 @@ class LeaderboardViewModel(
         if (input.isBlank()) {
             input = _state.value.selectedClub?.effectiveId
                 ?: _state.value.myClubs.firstOrNull()?.effectiveId
-                    .orEmpty()
+                .orEmpty()
         }
 
         if (input.isBlank()) {
@@ -347,6 +351,7 @@ class LeaderboardViewModel(
                         selectedClub = resolvedClub ?: it.selectedClub,
                         clubEntries = entries,
                         isLoading = false,
+                        isRefreshing = false,
                         error = null
                     )
                 }
@@ -357,6 +362,7 @@ class LeaderboardViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
+                        isRefreshing = false,
                         error = userError
                     )
                 }
@@ -371,7 +377,10 @@ class LeaderboardViewModel(
 
         if (normalizedMode !in setOf("3min", "5min", "survival")) {
             _state.update {
-                it.copy(error = "Select a valid Puzzle Rush mode.")
+                it.copy(
+                    isRefreshing = false,
+                    error = "Select a valid Puzzle Rush mode."
+                )
             }
             return
         }
@@ -395,6 +404,7 @@ class LeaderboardViewModel(
                     it.copy(
                         puzzleRushEntries = response.entries,
                         isLoading = false,
+                        isRefreshing = false,
                         error = null
                     )
                 }
@@ -405,10 +415,25 @@ class LeaderboardViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
+                        isRefreshing = false,
                         error = userError
                     )
                 }
             }
+        }
+    }
+
+    fun refresh() {
+        _state.update { it.copy(isRefreshing = true, error = null) }
+        when (_state.value.selectedType) {
+            LeaderboardType.GLOBAL ->
+                loadGlobalLeaderboard(refresh = true)
+
+            LeaderboardType.CLUB ->
+                loadClubLeaderboard()
+
+            LeaderboardType.PUZZLE_RUSH ->
+                loadPuzzleRushLeaderboard()
         }
     }
 

@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -201,18 +203,19 @@ private fun AnalysisContent(
         val totalAvailableWidth = maxWidth - 24.dp
         val barWidth = 18.dp
         val gap = 8.dp
-        val boardSize = minOf(totalAvailableWidth - barWidth - gap, 360.dp)
+        val isWide = maxWidth > maxHeight && maxWidth >= 600.dp
+        val boardSize = if (isWide) {
+            minOf(maxHeight - 24.dp, maxWidth * 0.55f - barWidth - gap)
+        } else {
+            minOf(totalAvailableWidth - barWidth - gap, 360.dp)
+        }
+        val currentEval = if (state.currentPly == 0) {
+            0
+        } else {
+            state.moves.getOrNull(state.currentPly - 1)?.evalAfter ?: 0
+        }
 
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            val currentEval = if (state.currentPly == 0) {
-                0
-            } else {
-                state.moves.getOrNull(state.currentPly - 1)?.evalAfter ?: 0
-            }
-
+        val boardPanel: @Composable () -> Unit = {
             Row(
                 modifier = Modifier.padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -244,7 +247,9 @@ private fun AnalysisContent(
                     )
                 }
             }
+        }
 
+        val detailsPanel: @Composable ColumnScope.() -> Unit = {
             CurrentMoveCard(
                 currentPly = state.currentPly,
                 moves = state.moves,
@@ -309,6 +314,32 @@ private fun AnalysisContent(
                         .weight(1f)
                         .fillMaxWidth()
                 )
+            }
+        }
+
+        if (isWide) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                boardPanel()
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    content = detailsPanel
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                boardPanel()
+                detailsPanel()
             }
         }
     }
@@ -564,7 +595,7 @@ private fun MovesListTab(
     }
 
     val movePairs: List<List<MoveAnalysisDto>> = remember(moves) {
-        moves.chunked(2)
+        moves.distinctBy { it.moveNumber }.chunked(2)
     }
 
     LazyColumn(
@@ -866,8 +897,14 @@ private fun EvaluationBar(
     val bottomColor = if (isFlipped) Color(0xFF1E242B) else Color(0xFFF3F6F9)
 
     val evalScoreText = remember(evalCentipawns) {
-        if (evalCentipawns >= 0) "+%.1f".format(evalCentipawns / 100.0)
-        else "%.1f".format(evalCentipawns / 100.0)
+        val pawns = Math.abs(evalCentipawns) / 100.0
+        if (pawns >= 100) {
+            "M"
+        } else if (pawns >= 10) {
+            pawns.toInt().toString()
+        } else {
+            "%.1f".format(pawns)
+        }
     }
 
     Column(
@@ -891,6 +928,8 @@ private fun EvaluationBar(
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = JetBrainsMono,
+                    maxLines = 1,
+                    softWrap = false,
                     modifier = Modifier.padding(top = 3.dp)
                 )
             }
@@ -911,6 +950,8 @@ private fun EvaluationBar(
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = JetBrainsMono,
+                    maxLines = 1,
+                    softWrap = false,
                     modifier = Modifier.padding(bottom = 3.dp)
                 )
             }

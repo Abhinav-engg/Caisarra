@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -23,14 +24,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -50,8 +48,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
 import com.abhinav.caisarra.core.ui.theme.StatsScreenPadding
@@ -105,72 +105,39 @@ fun PrivacySettingsScreen(
             .fillMaxSize()
             .background(StatsBg)
             .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Top Bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(StatsTabBg)
-                        .border(
-                            width = 1.dp,
-                            color = StatsTabBorder,
-                            shape = RoundedCornerShape(12.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = StatsTextWhite,
-                            modifier = Modifier.size(20.dp)
+            CaisaaraTopBar(
+                title = "PRIVACY SETTINGS",
+                onBack = onBack,
+                backgroundColor = StatsBg,
+                titleColor = StatsTextWhite,
+                iconTint = StatsTextWhite,
+                titleFontSize = 18.sp,
+                actions = {
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = StatsCyan,
+                            strokeWidth = 2.dp
                         )
+                    } else {
+                        IconButton(
+                            onClick = { viewModel.loadSettings() },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = StatsCyan,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Text(
-                    text = "Privacy Settings",
-                    fontFamily = JetBrainsMono,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = TextSizeHeading,
-                    color = StatsTextWhite
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = StatsCyan,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    IconButton(
-                        onClick = { viewModel.loadSettings() },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = StatsCyan,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
+            )
 
             if (uiState.isLoading && !uiState.hasLoaded) {
                 Box(
@@ -194,7 +161,8 @@ fun PrivacySettingsScreen(
                             text = uiState.errorMessage ?: "Failed to load privacy settings",
                             fontFamily = JetBrainsMono,
                             fontSize = TextSizeBody,
-                            color = StatsRed
+                            color = StatsRed,
+                            textAlign = TextAlign.Center
                         )
                         TextButton(onClick = { viewModel.loadSettings() }) {
                             Text(
@@ -251,7 +219,7 @@ fun PrivacySettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Choose who is permitted to message, invite, or play matches with you across Caisarra.",
+                                    text = "Choose who is permitted to send you direct messages or friend requests across Mosaic.",
                                     fontFamily = JetBrainsMono,
                                     fontSize = TextSizeTiny,
                                     color = StatsTextMuted,
@@ -264,7 +232,7 @@ fun PrivacySettingsScreen(
                     // Section 1: Direct Messages
                     PrivacySectionCard(
                         section = PrivacySection.DIRECT_MESSAGE,
-                        icon = Icons.Default.Chat,
+                        icon = Icons.AutoMirrored.Filled.Chat,
                         subtitle = "Who can send you direct private messages",
                         currentOption = uiState.settings.directMessageOption,
                         isUpdating = uiState.updatingSection == PrivacySection.DIRECT_MESSAGE,
@@ -273,31 +241,7 @@ fun PrivacySettingsScreen(
                         }
                     )
 
-                    // Section 2: Clubs
-                    PrivacySectionCard(
-                        section = PrivacySection.CLUB,
-                        icon = Icons.Default.Shield,
-                        subtitle = "Who can invite you or interact in clubs",
-                        currentOption = uiState.settings.clubOption,
-                        isUpdating = uiState.updatingSection == PrivacySection.CLUB,
-                        onOptionSelected = { option ->
-                            viewModel.updateSection(PrivacySection.CLUB, option)
-                        }
-                    )
-
-                    // Section 3: Tournaments
-                    PrivacySectionCard(
-                        section = PrivacySection.TOURNAMENT,
-                        icon = Icons.Default.EmojiEvents,
-                        subtitle = "Who can challenge or pair with you in tournaments",
-                        currentOption = uiState.settings.tournamentOption,
-                        isUpdating = uiState.updatingSection == PrivacySection.TOURNAMENT,
-                        onOptionSelected = { option ->
-                            viewModel.updateSection(PrivacySection.TOURNAMENT, option)
-                        }
-                    )
-
-                    // Section 4: Friend Invites
+                    // Section 2: Friend Invites
                     PrivacySectionCard(
                         section = PrivacySection.INVITE_FRIEND,
                         icon = Icons.Default.PersonAdd,
@@ -348,6 +292,7 @@ private fun PrivacySectionCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
+                    modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -366,7 +311,7 @@ private fun PrivacySectionCard(
                         )
                     }
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = section.title,
                             fontFamily = JetBrainsMono,
@@ -382,6 +327,8 @@ private fun PrivacySectionCard(
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 if (isUpdating) {
                     CircularProgressIndicator(

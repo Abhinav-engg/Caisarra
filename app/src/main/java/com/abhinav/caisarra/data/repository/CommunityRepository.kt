@@ -28,7 +28,7 @@ class CommunityRepository(
         require(text.isNotEmpty()) {
             "Post cannot be empty."
         }
-        require(text.length <= 2000) {
+        require(text.count { !it.isWhitespace() } <= 2000) {
             "Post must not exceed 2000 characters."
         }
 

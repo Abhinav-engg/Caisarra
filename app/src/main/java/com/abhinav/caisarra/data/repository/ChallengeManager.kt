@@ -87,10 +87,83 @@ class ChallengeManager private constructor(private val context: Context) {
         inviteRepository.getReceivedChallenges()
             .onSuccess { list ->
                 _receivedChallenges.value = list
+                if (_incomingChallenge.value == null) {
+                    val pending = list.firstOrNull { it.status.equals("pending", ignoreCase = true) }
+                    if (pending != null) {
+                        _incomingChallenge.value = ChallengeNotificationEvent.Received(
+                            code = pending.code,
+                            gameId = pending.gameId,
+                            link = pending.link,
+                            challengerId = pending.challengerId,
+                            challengerUsername = pending.challengerUsername,
+                            title = "Game Challenge",
+                            body = "${pending.challengerUsername} challenged you to a game"
+                        )
+                    }
+                }
             }
             .onFailure {
                 Log.w(TAG, "Failed to load received challenges: ${it.message}")
             }
+    }
+
+    fun postChallengeReceived(
+        code: String,
+        gameId: String = "",
+        link: String? = null,
+        challengerId: Long = 0L,
+        challengerUsername: String = "",
+        title: String = "New challenge",
+        body: String = ""
+    ) {
+        val event = ChallengeNotificationEvent.Received(
+            code = code,
+            gameId = gameId,
+            link = link,
+            challengerId = challengerId,
+            challengerUsername = challengerUsername,
+            title = title.ifBlank { "New challenge" },
+            body = body.ifBlank { "${challengerUsername.ifBlank { "Opponent" }} challenged you to a game" }
+        )
+        _incomingChallenge.value = event
+        scope.launch(Dispatchers.IO) { refreshReceivedChallenges() }
+    }
+
+    fun postChallengeAccepted(code: String?, gameId: String, opponentId: Long? = null, opponentUsername: String? = null) {
+        val event = ChallengeNotificationEvent.Accepted(
+            code = code,
+            gameId = gameId,
+            link = null,
+            opponentId = opponentId,
+            opponentUsername = opponentUsername,
+            title = "Challenge accepted",
+            body = "${opponentUsername ?: "Opponent"} accepted your challenge!"
+        )
+        handleChallengeEvent(event)
+    }
+
+    fun postChallengeDeclined(code: String?, gameId: String?, opponentId: Long? = null, opponentUsername: String? = null) {
+        val event = ChallengeNotificationEvent.Declined(
+            code = code,
+            gameId = gameId,
+            opponentId = opponentId,
+            opponentUsername = opponentUsername,
+            title = "Challenge declined",
+            body = "${opponentUsername ?: "Opponent"} declined your challenge"
+        )
+        handleChallengeEvent(event)
+    }
+
+    fun postChallengeCancelled(code: String?, gameId: String?, challengerId: Long? = null, challengerUsername: String? = null) {
+        val event = ChallengeNotificationEvent.Cancelled(
+            code = code,
+            gameId = gameId,
+            challengerId = challengerId,
+            challengerUsername = challengerUsername,
+            title = "Challenge cancelled",
+            body = "${challengerUsername ?: "Challenger"} cancelled the challenge"
+        )
+        handleChallengeEvent(event)
     }
 
     suspend fun refreshSentChallenges() {
