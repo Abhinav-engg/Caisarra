@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 data class DirectMessageUiState(
     val userId: Long = 0L,
     val username: String = "Player",
+    val avatarUrl: String? = null,
     val messages: List<DirectMessageDto> = emptyList(),
     val draft: String = "",
     val loading: Boolean = true,
@@ -32,6 +33,12 @@ class DirectMessageViewModel(
 ) : AndroidViewModel(application) {
 
     private val repository = DirectMessageRepository(application)
+
+    private val profileRepository = com.abhinav.caisarra.data.repository.ProfileRepository(
+        com.abhinav.caisarra.data.remote.RetrofitInstance.createProfileService(
+            com.abhinav.caisarra.data.local.TokenManager.get(application)
+        )
+    )
 
     private val directSocket = DirectMessageSocket(application)
 
@@ -48,7 +55,8 @@ class DirectMessageViewModel(
 
     fun startChat(
         userId: Long,
-        username: String
+        username: String,
+        initialAvatarUrl: String? = null
     ) {
         if (userId <= 0L) {
             _state.value = _state.value.copy(
@@ -62,6 +70,9 @@ class DirectMessageViewModel(
             activeChatUserId == userId &&
             reconnectJob?.isActive == true
         ) {
+            if (!initialAvatarUrl.isNullOrBlank() && _state.value.avatarUrl.isNullOrBlank()) {
+                _state.value = _state.value.copy(avatarUrl = initialAvatarUrl)
+            }
             return
         }
 
@@ -72,8 +83,20 @@ class DirectMessageViewModel(
         _state.value = DirectMessageUiState(
             userId = userId,
             username = username,
+            avatarUrl = initialAvatarUrl,
             loading = true
         )
+
+        viewModelScope.launch {
+            try {
+                val profile = profileRepository.getPublicProfile(username)
+                if (_state.value.userId == userId && !profile.avatarUrl.isNullOrBlank()) {
+                    _state.value = _state.value.copy(avatarUrl = profile.avatarUrl)
+                }
+            } catch (_: Exception) {
+                // Ignore profile fetch failure
+            }
+        }
 
         incomingJob = viewModelScope.launch {
             directSocket.incoming.collect { incomingMessage ->

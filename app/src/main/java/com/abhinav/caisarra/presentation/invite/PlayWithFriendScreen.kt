@@ -57,6 +57,7 @@ import com.abhinav.caisarra.core.ui.theme.FriendsScreenPadding
 import com.abhinav.caisarra.data.remote.dto.FriendDto
 import com.abhinav.caisarra.data.repository.ChallengeManager
 import com.abhinav.caisarra.presentation.invite.components.DirectChallengeDialog
+import com.abhinav.caisarra.presentation.invite.components.FriendAvatar
 import com.abhinav.caisarra.presentation.invite.components.FriendCardItem
 import com.abhinav.caisarra.presentation.invite.components.FriendRequestCardItem
 import com.abhinav.caisarra.presentation.invite.components.FriendsLeaderboardView
@@ -90,7 +91,7 @@ fun PlayWithFriendScreen(
     viewModel: FriendsViewModel,
     onCreateMatchLink: () -> Unit,
     onBack: () -> Unit,
-    onDirectMessage: (Long, String) -> Unit,
+    onDirectMessage: (Long, String, String?) -> Unit,
     onViewProfile: (String) -> Unit = {},
     onEnterGame: (String) -> Unit = {},
     onJoinByCode: ((String) -> Unit)? = null
@@ -174,6 +175,7 @@ fun PlayWithFriendScreen(
             backgroundColor = FriendsBg,
             titleColor = FriendsTextWhite,
             iconTint = FriendsTextWhite,
+            titlePadding = 80.dp,
             actions = {
                 if (onJoinByCode != null) {
                     IconButton(
@@ -199,6 +201,50 @@ fun PlayWithFriendScreen(
                         contentDescription = "Leaderboard",
                         tint = GoldColor
                     )
+                }
+
+                val myProfile = state.myProfile
+                val myAvatarUrl = myProfile?.avatarUrl
+                val myDisplayName = myProfile?.displayName ?: myProfile?.username ?: "Me"
+                val myUsername = myProfile?.username.orEmpty()
+
+                Box(
+                    modifier = Modifier
+                        .padding(start = 4.dp, end = 6.dp)
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF1E293B))
+                        .border(1.dp, FriendsCyan.copy(alpha = 0.6f), CircleShape)
+                        .clickable {
+                            if (myUsername.isNotBlank()) {
+                                onViewProfile(myUsername)
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    val resolvedAvatar = myAvatarUrl?.trim()?.takeIf { it.isNotBlank() }?.let { url ->
+                        if (url.startsWith("/")) "${com.abhinav.caisarra.data.remote.RetrofitInstance.BASE_URL}$url" else url
+                    }
+                    var avatarFailed by remember(resolvedAvatar) { mutableStateOf(false) }
+
+                    if (resolvedAvatar != null && !avatarFailed) {
+                        coil.compose.AsyncImage(
+                            model = resolvedAvatar,
+                            contentDescription = "My profile",
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            onError = { avatarFailed = true },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Text(
+                            text = myDisplayName.trim().take(1).uppercase().ifBlank { "U" },
+                            color = FriendsTextWhite,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         )
@@ -257,7 +303,7 @@ fun PlayWithFriendScreen(
                                 status = if (isFriend) "friends" else status?.status,
                                 isBusy = state.activeUsername == player.username,
                                 onPlayerClick = { onViewProfile(player.username) },
-                                onDirectMessage = { onDirectMessage(player.userId, player.username) },
+                                onDirectMessage = { onDirectMessage(player.userId, player.username, player.avatarUrl) },
                                 onChallenge = {
                                     challengeTarget = ChallengeTarget(
                                         userId = player.userId,
@@ -452,7 +498,7 @@ fun PlayWithFriendScreen(
                                                     onViewProfile(friend.username)
                                                 },
                                                 onDirectMessage = {
-                                                    onDirectMessage(friend.userId, friend.username)
+                                                    onDirectMessage(friend.userId, friend.username, friend.avatarUrl)
                                                 },
                                                 onChallenge = {
                                                     challengeTarget = ChallengeTarget(
@@ -578,6 +624,8 @@ private fun SentRequestItem(name: String, onProfileClick: (() -> Unit)? = null, 
         modifier = Modifier.fillMaxWidth().clip(cardShape).background(FriendsCardBg).border(1.dp, FriendsCardBorder, cardShape).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        FriendAvatar(name = name, avatarUrl = null, size = 44.dp)
+        Spacer(Modifier.width(12.dp))
         Column(
             modifier = Modifier
                 .weight(1f)

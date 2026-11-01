@@ -16,5 +16,7 @@ data class ChallengeDto(
     @SerialName("time_control_minutes") val timeControlMinutes: Int = 10,
     @SerialName("increment_seconds") val incrementSeconds: Int = 0,
     val rated: Boolean = true,
-    val status: String = "pending"
+    val status: String = "pending",
+    @SerialName("challenger_avatar_url") val challengerAvatarUrl: String? = null,
+    @SerialName("opponent_avatar_url") val opponentAvatarUrl: String? = null
 )
