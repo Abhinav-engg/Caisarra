@@ -80,6 +80,8 @@ dependencies {
     implementation("com.github.bhlangonijr:chesslib:1.3.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("com.github.yalantis:ucrop:2.2.8")
+    implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("org.osmdroid:osmdroid-android:6.1.20")

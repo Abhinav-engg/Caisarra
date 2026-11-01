@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
+import retrofit2.HttpException
 enum class ClubTab {
     DISCOVER,
     MINE
@@ -87,6 +87,10 @@ class ClubViewModel(
 
     fun submitSearch() {
         if (_state.value.isLoading) return
+        if (_state.value.search.isBlank()) {
+            _state.update { it.copy(info = "Enter a club name to search.") }
+            return
+        }
 
         viewModelScope.launch {
             _state.update {
@@ -280,6 +284,16 @@ class ClubViewModel(
             )
         }
     }
+    private fun getClubErrorMessage(e: Exception): String {
+        if (e is HttpException) {
+            return when (e.code()) {
+                409 -> "A club with this name already exists. Please choose a different name."
+                else -> "Unable to complete the club operation. Please try again."
+            }
+        }
+
+        return e.message ?: "Club operation failed. Please try again."
+    }
 
     private fun submit(action: suspend () -> Unit) {
         if (_state.value.isSubmitting) return
@@ -297,14 +311,13 @@ class ClubViewModel(
                 action()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            }  catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        error = e.message
-                            ?: "Club operation failed."
+                        error = getClubErrorMessage(e)
                     )
                 }
-            } finally {
+            }finally {
                 _state.update {
                     it.copy(isSubmitting = false)
                 }

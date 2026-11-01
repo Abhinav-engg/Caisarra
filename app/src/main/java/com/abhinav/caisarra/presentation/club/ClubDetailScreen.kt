@@ -44,7 +44,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.ClubChatSocket
-
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.Brush
 
 private val DetailBg = Color(0xFF080D13)
 private val DetailCard = Color(0xFF101923)
@@ -69,7 +75,8 @@ data class ClubDetailState(
     val chatConnected: Boolean = false,
     val error: String? = null,
     val info: String? = null,
-    val clubRemoved: Boolean = false
+    val clubRemoved: Boolean = false,
+    val isJoined: Boolean = false
 )
 
 class ClubDetailViewModel(
@@ -83,9 +90,10 @@ class ClubDetailViewModel(
     var state by mutableStateOf(ClubDetailState())
         private set
 
+    private var chatCollectorsStarted = false
+
     init {
         load()
-        connectChat()
     }
 
     fun load() {
@@ -96,45 +104,71 @@ class ClubDetailViewModel(
                 val detailClub = repository.getClub(clubId)
                 val currentUsername = runCatching {
                     TokenManager.get(appContext).getUsername()
-                }.getOrNull()?.trim()?.lowercase()
+                }.getOrNull()?.trim()?.lowercase().orEmpty()
 
-                val myClubRole = runCatching {
+                val myClubs = runCatching {
                     repository.getMyClubs()
-                        .firstOrNull { it.effectiveId == clubId || it.id == detailClub.id }
-                        ?.role
                 }.onFailure {
-                    Log.w("ClubDetail", "Could not resolve role from my clubs", it)
-                }.getOrNull()
+                    Log.w("ClubDetail", "Could not load user's clubs", it)
+                }.getOrDefault(emptyList())
+
+                val myClub = myClubs.firstOrNull {
+                    it.effectiveId == clubId ||
+                            it.id == detailClub.id ||
+                            it.effectiveId == detailClub.effectiveId
+                }
 
                 val loadedMembers = runCatching {
                     repository.getMembers(clubId)
                 }.onFailure {
-                    Log.w("ClubDetail", "Could not resolve role from members", it)
+                    Log.w("ClubDetail", "Could not load club members", it)
                 }.getOrDefault(emptyList())
 
-                val currentMemberRole = if (currentUsername.isNullOrBlank()) {
-                    null
-                } else {
+                val currentMember = if (currentUsername.isBlank()) null else {
                     loadedMembers.firstOrNull {
                         it.username.trim().lowercase() == currentUsername
-                    }?.role
+                    }
                 }
 
-                fun normalizedRole(value: String?): String =
-                    value.orEmpty().trim().lowercase()
-                        .replace('-', '_')
-                        .replace(' ', '_')
-
-                val resolvedRole = currentMemberRole
-                    ?: myClubRole
-                    ?: detailClub.role
+                val isMember = myClub != null || currentMember != null
+                val resolvedRole = currentMember?.role ?: myClub?.role
 
                 state = state.copy(
                     club = detailClub.copy(role = resolvedRole),
-                    currentUsername = currentUsername.orEmpty(),
-                    members = loadedMembers,
-                    loading = false
+                    currentUsername = currentUsername,
+                    members = if (isMember) loadedMembers else emptyList(),
+                    loading = false,
+                    isJoined = isMember,
+                    selectedTab = if (isMember) state.selectedTab else "MEMBERS"
                 )
+
+                if (!isMember) {
+                    // Clear protected club data and do not request member-only
+                    // sections or establish a club chat connection.
+                    state = state.copy(
+                        leaderboard = emptyList(),
+                        messages = emptyList(),
+                        bans = emptyList(),
+                        chatConnected = false
+                    )
+                    return@launch
+                }
+
+                connectChat()
+
+                launchSection("leaderboard") {
+                    state = state.copy(
+                        leaderboard = repository.getLeaderboard(
+                            clubId, state.leaderboardMode
+                        )
+                    )
+                }
+                launchSection("messages") {
+                    state = state.copy(messages = repository.getMessages(clubId))
+                }
+                launchSection("bans") {
+                    state = state.copy(bans = repository.getBans(clubId))
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -143,20 +177,28 @@ class ClubDetailViewModel(
                     loading = false,
                     error = "Couldn't load club details. Please try again."
                 )
-                return@launch
             }
-            launchSection("leaderboard") {
+        }
+    }
+
+    fun joinClub() {
+        if (state.busy || state.isJoined) return
+
+        viewModelScope.launch {
+            state = state.copy(busy = true, error = null, info = null)
+            try {
+                repository.joinClub(clubId)
+                state = state.copy(info = "Successfully joined club.")
+                load()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("ClubDetail", "Failed to join club", e)
                 state = state.copy(
-                    leaderboard = repository.getLeaderboard(
-                        clubId, state.leaderboardMode
-                    )
+                    error = e.message ?: "Couldn't join this club. Please try again."
                 )
-            }
-            launchSection("messages") {
-                state = state.copy(messages = repository.getMessages(clubId))
-            }
-            launchSection("bans") {
-                state = state.copy(bans = repository.getBans(clubId))
+            } finally {
+                state = state.copy(busy = false)
             }
         }
     }
@@ -192,40 +234,45 @@ class ClubDetailViewModel(
     }
 
     private fun connectChat() {
-        viewModelScope.launch {
-            launch {
-                chatSocket.connected.collect { connected ->
-                    state = state.copy(chatConnected = connected)
+        if (!state.isJoined) return
+
+        if (!chatCollectorsStarted) {
+            chatCollectorsStarted = true
+            viewModelScope.launch {
+                launch {
+                    chatSocket.connected.collect { connected ->
+                        state = state.copy(chatConnected = connected)
+                    }
                 }
-            }
-
-            launch {
-                chatSocket.messages.collect { message ->
-                    val existing = state.messages
-
-                    val alreadyReceived = message.id.isNotBlank() &&
-                            existing.any { it.id == message.id }
-
-                    if (!alreadyReceived) {
-                        state = state.copy(
-                            messages = (existing + message).takeLast(200)
-                        )
+                launch {
+                    chatSocket.messages.collect { message ->
+                        val existing = state.messages
+                        val alreadyReceived = message.id.isNotBlank() &&
+                                existing.any { it.id == message.id }
+                        if (!alreadyReceived && state.isJoined) {
+                            state = state.copy(
+                                messages = (existing + message).takeLast(200)
+                            )
+                        }
+                    }
+                }
+                launch {
+                    chatSocket.errors.collect { message ->
+                        if (state.isJoined) {
+                            state = state.copy(error = clubUiError(message))
+                        }
                     }
                 }
             }
+        }
 
-            launch {
-                chatSocket.errors.collect { message ->
-                    state = state.copy(error = clubUiError(message))
-                }
-            }
-
+        viewModelScope.launch {
             chatSocket.connect(clubId)
         }
     }
 
-
     fun reconnectChat() {
+        if (!state.isJoined) return
         viewModelScope.launch {
             chatSocket.connect(clubId)
         }
@@ -234,7 +281,7 @@ class ClubDetailViewModel(
     fun sendMessage() {
         val text = state.chatInput.trim()
 
-        if (text.isBlank() || state.busy) return
+        if (text.isBlank() || state.busy || !state.isJoined) return
 
         viewModelScope.launch {
             state = state.copy(
@@ -350,7 +397,7 @@ class ClubDetailViewModel(
         removesClub: Boolean = false,
         action: suspend () -> Unit
     ) {
-        if (state.busy) return
+        if (state.busy || !state.isJoined) return
 
         viewModelScope.launch {
             state = state.copy(busy = true, error = null, info = null)
@@ -530,10 +577,14 @@ fun ClubDetailScreen(
             )
         }
     ) { padding ->
-        if (state.loading) {
-            Box(Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = DetailGreen)
+        if (state.loading && state.club == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(DetailBg)
+            ) {
+                ClubDetailLoadingSkeleton()
             }
         } else if (state.club == null) {
             Column(Modifier.fillMaxSize().padding(padding).padding(20.dp)) {
@@ -542,6 +593,75 @@ fun ClubDetailScreen(
                     color = DetailMuted
                 )
                 Button(onClick = vm::load) { Text("Retry") }
+            }
+        }
+        else if (!state.isJoined) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = DetailCard)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Groups,
+                            contentDescription = null,
+                            tint = DetailGreen,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            text = state.club.name,
+                            color = DetailText,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = state.club.description ?: "Welcome to this club.",
+                            color = DetailMuted
+                        )
+                        Text(
+                            text = "${state.club.memberCount} members",
+                            color = DetailGreen,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Join this club to access its members, leaderboard, chat, and management features.",
+                            color = DetailMuted
+                        )
+                        Button(
+                            onClick = vm::joinClub,
+                            enabled = !state.busy,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DetailGreen,
+                                contentColor = DetailBg
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            if (state.busy) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = DetailBg
+                                )
+                                Spacer(Modifier.width(8.dp))
+                            }
+                            Text(if (state.busy) "Joining..." else "Join club")
+                        }
+                    }
+                }
             }
         }
         else if (state.selectedTab == "CHAT") {
@@ -1493,4 +1613,192 @@ private fun ClubChatContent(
         }
     }
 }
+@Composable
+private fun ClubDetailSkeletonBox(
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(12.dp)
+) {
+    val transition = rememberInfiniteTransition(label = "clubSkeletonTransition")
 
+    val shimmerOffset = transition.animateFloat(
+        initialValue = -400f,
+        targetValue = 1200f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 1200,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "clubSkeletonShimmer"
+    )
+
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFF18232F),
+            Color(0xFF344454),
+            Color(0xFF18232F)
+        ),
+        start = androidx.compose.ui.geometry.Offset(
+            shimmerOffset.value,
+            0f
+        ),
+        end = androidx.compose.ui.geometry.Offset(
+            shimmerOffset.value + 400f,
+            400f
+        )
+    )
+
+    Box(
+        modifier = modifier.background(
+            brush = shimmerBrush,
+            shape = shape
+        )
+    )
+}
+
+@Composable
+private fun ClubDetailLoadingSkeleton() {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DetailBg),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Club header skeleton
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = DetailCard
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ClubDetailSkeletonBox(
+                            modifier = Modifier.size(42.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ClubDetailSkeletonBox(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.65f)
+                                    .height(22.dp)
+                            )
+
+                            ClubDetailSkeletonBox(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.4f)
+                                    .height(12.dp)
+                            )
+                        }
+                    }
+
+                    ClubDetailSkeletonBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(14.dp)
+                    )
+
+                    ClubDetailSkeletonBox(
+                        modifier = Modifier
+                            .fillMaxWidth(0.75f)
+                            .height(14.dp)
+                    )
+
+                    ClubDetailSkeletonBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
+        }
+
+
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        DetailCard,
+                        RoundedCornerShape(16.dp)
+                    )
+                    .padding(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                repeat(4) {
+                    ClubDetailSkeletonBox(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            }
+        }
+
+
+        items(5) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = DetailCard
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ClubDetailSkeletonBox(
+                        modifier = Modifier.size(46.dp),
+                        shape = RoundedCornerShape(50)
+                    )
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(9.dp)
+                    ) {
+                        ClubDetailSkeletonBox(
+                            modifier = Modifier
+                                .fillMaxWidth(0.55f)
+                                .height(15.dp)
+                        )
+
+                        ClubDetailSkeletonBox(
+                            modifier = Modifier
+                                .fillMaxWidth(0.35f)
+                                .height(11.dp)
+                        )
+                    }
+
+                    ClubDetailSkeletonBox(
+                        modifier = Modifier
+                            .width(64.dp)
+                            .height(32.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            }
+        }
+    }
+}
