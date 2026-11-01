@@ -123,14 +123,10 @@ class OnlineGameViewModel(
         viewModelScope.launch {
             clock.times.collect { (white, black) ->
                 _uiState.update { state ->
-                    if (state.isDailyMode) {
-                        state
-                    } else {
-                        state.copy(
-                            whiteTimeMillis = white,
-                            blackTimeMillis = black
-                        )
-                    }
+                    state.copy(
+                        whiteTimeMillis = white,
+                        blackTimeMillis = black
+                    )
                 }
             }
         }
@@ -970,12 +966,12 @@ class OnlineGameViewModel(
         val whiteTimeMs = if (dailyMode && state.whiteTimeMs <= 0L && !finished) initialDailyTimeMs else state.whiteTimeMs
         val blackTimeMs = if (dailyMode && state.blackTimeMs <= 0L && !finished) initialDailyTimeMs else state.blackTimeMs
 
-        if (dailyMode || finished) {
+        if (finished) {
             clock.stop()
         } else {
             clock.restore(
-                state.whiteTimeMs,
-                state.blackTimeMs
+                whiteTimeMs,
+                blackTimeMs
             )
             clock.start(turn)
         }
