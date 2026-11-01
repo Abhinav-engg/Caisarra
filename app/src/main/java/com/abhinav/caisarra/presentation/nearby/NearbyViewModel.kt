@@ -55,10 +55,15 @@ class NearbyViewModel(
 
     fun refresh(silent: Boolean = false) {
         if (_state.value.guest) return
+        if (!locationProvider.hasPermission()) return
         enable()
     }
 
     fun enable() {
+        if (!locationProvider.hasPermission()) {
+            permissionDenied()
+            return
+        }
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = null) }
             val location = locationProvider.current()

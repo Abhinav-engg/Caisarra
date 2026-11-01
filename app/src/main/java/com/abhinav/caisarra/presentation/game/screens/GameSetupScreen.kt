@@ -20,7 +20,6 @@ import com.abhinav.caisarra.presentation.game.components.setup.SetupHeader
 import com.abhinav.caisarra.presentation.game.components.setup.SetupPage
 import com.abhinav.caisarra.presentation.game.components.setup.TimeControlRow
 import com.abhinav.caisarra.presentation.game.viewmodel.GameSetupUiState
-import com.abhinav.caisarra.presentation.game.components.AutoQueenPromotionSetting
 @Composable
 fun GameSetupScreen(
     state: GameSetupUiState,
@@ -36,8 +35,6 @@ fun GameSetupScreen(
         SetupHeader("New Game", onBack)
         Spacer(Modifier.height(24.dp))
         TimeControlRow("${state.mode.label} · ${state.selectedControl}", onOpenTimeControls)
-        Spacer(Modifier.height(16.dp))
-        AutoQueenPromotionSetting()
         Spacer(Modifier.height(20.dp))
         GeneralButton("START MATCH", onClick = onStartMatch)
         Spacer(Modifier.height(28.dp))

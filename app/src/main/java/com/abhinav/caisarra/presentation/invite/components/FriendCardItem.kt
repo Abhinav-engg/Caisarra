@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -45,6 +46,7 @@ fun FriendCardItem(
     onProfileClick: () -> Unit = {},
     onDirectMessage: () -> Unit,
     onChallenge: () -> Unit,
+    onRemove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val displayName = friend.displayName ?: friend.username
@@ -179,5 +181,30 @@ fun FriendCardItem(
                     onClick = onDirectMessage
                 )
         )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Box(
+            modifier = Modifier
+                .size(FriendsActionSize)
+                .clip(actionShape)
+                .background(FriendsActionBg)
+                .border(
+                    width = 1.dp,
+                    color = FriendsActionBorder,
+                    shape = actionShape
+                )
+                .clickable(
+                    onClick = onRemove
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.PersonRemove,
+                contentDescription = "Remove friend",
+                tint = Color(0xFFF87171),
+                modifier = Modifier.size(19.dp)
+            )
+        }
     }
 }

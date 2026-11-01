@@ -1,27 +1,7 @@
-
 package com.abhinav.caisarra.data.remote.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-//@Serializable
-//data class ClubDto(
-//    val id: Long = 0L,
-//    @SerialName("club_id")
-//    val clubId: Long? = null,
-//    val name: String = "",
-//    val description: String? = null,
-//    @SerialName("share_code")
-//    val shareCode: String? = null,
-//    @SerialName("member_count")
-//    val memberCount: Int = 0,
-//    @SerialName("owner_id")
-//    val ownerId: Long? = null,
-//    val role: String? = null
-//) {
-//    val effectiveId: Long
-//        get() = clubId ?: id
-//}
 
 @Serializable
 data class ClubDto(
@@ -41,7 +21,6 @@ data class ClubDto(
     val effectiveId: String
         get() = clubId ?: id
 }
-
 
 @Serializable
 data class ClubListData(
@@ -82,7 +61,6 @@ data class ClubLeaderboardPlayerDto(
     val rating: Int = 0,
     val rank: Int = 0
 )
-
 
 @Serializable
 data class ClubLeaderboardData(

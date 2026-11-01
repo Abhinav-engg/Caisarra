@@ -27,7 +27,15 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) {}
+    ) { isGranted ->
+        if (isGranted) {
+            NotificationHelper.ensureChannels(applicationContext)
+            val authRepository = AuthRepository.get(applicationContext)
+            FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+                lifecycleScope.launch { saveFcmToken(authRepository, token) }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -41,9 +49,13 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermission()
 
         val authRepository = AuthRepository.get(applicationContext)
-        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
-            lifecycleScope.launch { authRepository.updateFcmToken(token) }
-        }
+        FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { token ->
+                lifecycleScope.launch { saveFcmToken(authRepository, token) }
+            }
+            .addOnFailureListener { error ->
+                android.util.Log.e("FCM_DEBUG", "Failed to retrieve FCM token from Google Play Services", error)
+            }
 
         setContent {
             val repo = remember { authRepository }
@@ -55,6 +67,14 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingIntentFlow.value = intent
+    }
+
+    private suspend fun saveFcmToken(authRepository: AuthRepository, token: String) {
+        try {
+            authRepository.updateFcmToken(token)
+        } catch (e: Exception) {
+            android.util.Log.e("FCM_DEBUG", "Failed to save FCM token", e)
+        }
     }
 
     private fun requestNotificationPermission() {

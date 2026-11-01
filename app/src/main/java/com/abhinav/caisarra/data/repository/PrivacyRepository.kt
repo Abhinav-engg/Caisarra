@@ -12,7 +12,7 @@ class PrivacyRepository(
         val response = try {
             service.getPrivacySettings()
         } catch (e: HttpException) {
-            if (e.code() == 404) {
+            if (e.code() == 404 || e.code() == 405) {
                 service.getPrivacySettingsLegacy()
             } else {
                 throw e
@@ -21,7 +21,7 @@ class PrivacyRepository(
         if (!response.success) {
             error(response.error ?: response.message ?: "Failed to fetch privacy settings")
         }
-        return response.data ?: error("Privacy settings response was empty")
+        return response.data ?: PrivacySettingsDto()
     }
 
     suspend fun updatePrivacySettings(
@@ -41,23 +41,20 @@ class PrivacyRepository(
             service.updatePrivacySettings(request)
         } catch (e: HttpException) {
             when (e.code()) {
-                404 -> {
+                404, 405 -> {
                     try {
                         service.patchPrivacySettings(request)
                     } catch (e2: HttpException) {
-                        if (e2.code() == 404) {
+                        if (e2.code() == 404 || e2.code() == 405) {
                             try {
                                 service.updatePrivacySettingsLegacy(request)
                             } catch (e3: HttpException) {
-                                if (e3.code() == 404) {
+                                if (e3.code() == 404 || e3.code() == 405) {
                                     service.patchPrivacySettingsLegacy(request)
                                 } else throw e3
                             }
                         } else throw e2
                     }
-                }
-                405 -> {
-                    service.patchPrivacySettings(request)
                 }
                 else -> throw e
             }

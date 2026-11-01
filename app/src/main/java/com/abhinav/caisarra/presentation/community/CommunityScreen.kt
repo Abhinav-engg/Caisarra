@@ -139,7 +139,7 @@ fun CommunityScreen(
         CommunityWritePostScreen(
             username = resolvedUsername,
             postText = postText,
-            onPostTextChange = { if (it.length <= 2000) postText = it },
+            onPostTextChange = { if (it.count { ch -> !ch.isWhitespace() } <= 2000) postText = it },
             isPublishing = state.isPublishing,
             error = state.error,
             onBack = {
@@ -219,7 +219,6 @@ fun CommunityScreen(
                                     .padding(18.dp)
                             ) {
 
-
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -236,29 +235,13 @@ fun CommunityScreen(
                                     )
 
                                     Text(
-                                        text = buildAnnotatedString {
-                                            append("What's your next thought? ")
-
-                                            withStyle(
-                                                style = SpanStyle(
-                                                    color = CommunityMuted,
-                                                    fontWeight = FontWeight.Medium
-                                                )
-                                            ) {
-                                                append(
-                                                    resolvedUsername.orEmpty()
-                                                        .removePrefix("@")
-                                                        .ifBlank { "You" }
-                                                )
-                                            }
-                                        },
+                                        text = "What's your next thought?",
                                         color = CommunityMuted,
                                         fontSize = 17.sp,
                                         lineHeight = 24.sp,
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
-
 
                                 HorizontalDivider(
                                     modifier = Modifier.padding(
@@ -268,7 +251,6 @@ fun CommunityScreen(
                                     thickness = 1.dp,
                                     color = CommunityMuted.copy(alpha = 0.16f)
                                 )
-
 
                                 Row(
                                     modifier = Modifier
@@ -309,7 +291,6 @@ fun CommunityScreen(
                                     }
                                 }
 
-
                                 Button(
                                     onClick = {
                                         gameCaption = ""
@@ -339,7 +320,6 @@ fun CommunityScreen(
                                 }
                             }
                         }
-
 
                     } else if (!isRegisteredUser && !state.showingBookmarks) {
                         item(key = "community_sign_in_notice") {
@@ -371,14 +351,7 @@ fun CommunityScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(Modifier.weight(1f))
-                            Text(
-                                text = "Latest ↓",
-                                color = CommunityGreen,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
                             if (state.isLoading && state.posts.isNotEmpty()) {
-                                Spacer(Modifier.width(8.dp))
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(18.dp),
                                     color = CommunityGreen,
@@ -577,7 +550,6 @@ fun CommunityScreen(
         )
     }
 }
-
 
 @Composable
 private fun CommunityPostDetailScreen(
@@ -930,15 +902,6 @@ private fun CommunityWritePostScreen(
                     Text(displayName, color = CommunityText, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Text("@$displayUsername", color = CommunityMuted, fontSize = 12.sp)
                 }
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(CommunityBackground),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("•••", color = CommunityMuted, fontSize = 15.sp)
-                }
             }
 
             OutlinedTextField(
@@ -981,13 +944,14 @@ private fun CommunityWritePostScreen(
                 )
             )
 
+            val charCount = postText.count { !it.isWhitespace() }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("${postText.length} / 2000 characters", color = CommunityMuted, fontSize = 11.sp)
+                Text("$charCount / 2000 characters", color = CommunityMuted, fontSize = 11.sp)
                 Spacer(Modifier.weight(1f))
-                Text("${2000 - postText.length} left", color = CommunityGreen, fontSize = 11.sp)
+                Text("${(2000 - charCount).coerceAtLeast(0)} left", color = CommunityGreen, fontSize = 11.sp)
             }
 
             error?.let {
@@ -1192,12 +1156,6 @@ private fun CommunityPostCard(
                                 showDeleteConfirmation = true
                             }
                         )
-                    } else {
-                        androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Post options", color = CommunityMuted) },
-                            onClick = { showPostMenu = false },
-                            enabled = false
-                        )
                     }
                 }
             }
@@ -1222,7 +1180,6 @@ private fun CommunityPostCard(
                 Spacer(Modifier.height(8.dp))
             }
         }
-
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1546,7 +1503,6 @@ fun CommunityCommentsDialog(
                                         val created = viewModel.addComment(postId, commentText.trim())
                                         comments = (comments + created).distinctBy { it.id }
                                         commentText = ""
-                                        // Refresh the feed so the post's displayed comment count updates too.
                                         viewModel.refresh()
                                     } catch (e: Exception) {
                                         error = e.message ?: "Unable to add comment."
@@ -1574,7 +1530,6 @@ private fun formatCommunityDate(value: String): String {
         value
     }
 }
-
 
 private fun usernameFromJwt(token: String?): String? {
     if (token.isNullOrBlank()) return null

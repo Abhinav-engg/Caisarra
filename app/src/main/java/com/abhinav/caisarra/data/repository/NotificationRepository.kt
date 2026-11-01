@@ -9,6 +9,10 @@ import com.abhinav.caisarra.data.remote.api.NotificationService
 import com.abhinav.caisarra.data.remote.dto.DeleteDeviceRequest
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.remote.dto.RegisterDeviceRequest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import retrofit2.HttpException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -29,21 +33,80 @@ class NotificationRepository private constructor(context: Context) {
     val incomingNotifications: SharedFlow<NotificationItemDto> = _incomingNotifications.asSharedFlow()
 
     suspend fun registerDevice(token: String): Result<Unit> = execute {
-        Log.d(TAG, "Registering FCM device token: $token")
-        val response = service.registerDevice(
-            RegisterDeviceRequest(token = token, platform = "android")
+        val candidates: List<Pair<String, JsonObject>> = listOf(
+            "token + platform" to buildJsonObject {
+                put("token", token)
+                put("platform", "android")
+            },
+            "fcm_token + platform" to buildJsonObject {
+                put("fcm_token", token)
+                put("platform", "android")
+            },
+            "device_token + platform" to buildJsonObject {
+                put("device_token", token)
+                put("platform", "android")
+            },
+            "token only" to buildJsonObject {
+                put("token", token)
+            },
+            "fcm_token only" to buildJsonObject {
+                put("fcm_token", token)
+            },
+            "device_token only" to buildJsonObject {
+                put("device_token", token)
+            },
+            "token + ANDROID uppercase" to buildJsonObject {
+                put("token", token)
+                put("platform", "ANDROID")
+            },
+            "all combined" to buildJsonObject {
+                put("token", token)
+                put("fcm_token", token)
+                put("device_token", token)
+                put("platform", "android")
+            }
         )
-        checkSuccess(response.success, response.error, response.message)
-        Log.i(TAG, "Device registered successfully for push")
+
+        var lastException: Exception? = null
+        for ((name, body) in candidates) {
+            try {
+                Log.d(TAG, "Attempting registerDevice with payload shape: $name")
+                val response = service.registerDeviceRaw(body)
+                checkSuccess(response.success, response.error, response.message)
+                Log.i(TAG, "Device registered successfully with shape '$name': ${response.message}")
+                android.util.Log.i("FCM_DEBUG", "Device registered successfully with shape '$name': ${response.message}")
+                return@execute
+            } catch (e: Exception) {
+                lastException = e
+                val errorBody = if (e is HttpException) {
+                    try { e.response()?.errorBody()?.string() } catch (_: Exception) { null }
+                } else null
+                Log.w(TAG, "registerDevice shape '$name' failed (${e.message}), server body: $errorBody")
+                android.util.Log.w("FCM_DEBUG", "registerDevice shape '$name' failed (${e.message}), server body: $errorBody")
+                if (e is HttpException && e.code() != 400) {
+                    break
+                }
+            }
+        }
+        throw lastException ?: IllegalStateException("Failed to register device")
     }
 
     suspend fun unregisterDevice(token: String): Result<Unit> = execute {
-        Log.d(TAG, "Unregistering FCM device token: $token")
-        val response = service.deleteDevice(
-            DeleteDeviceRequest(token = token)
+        val candidates = listOf(
+            buildJsonObject { put("token", token) },
+            buildJsonObject { put("fcm_token", token) },
+            buildJsonObject { put("device_token", token) }
         )
-        checkSuccess(response.success, response.error, response.message)
-        Log.i(TAG, "Device unregistered successfully from push")
+        for (body in candidates) {
+            try {
+                val response = service.deleteDeviceRaw(body)
+                checkSuccess(response.success, response.error, response.message)
+                Log.i(TAG, "Device unregistered successfully: ${response.message}")
+                return@execute
+            } catch (e: Exception) {
+                if (e is HttpException && e.code() == 404) return@execute
+            }
+        }
     }
 
     suspend fun fetchUnreadCount(): Result<Int> = execute {
@@ -92,10 +155,11 @@ class NotificationRepository private constructor(context: Context) {
         error: String?,
         message: String?
     ) {
-        if (!success) {
-            throw IllegalStateException(
-                error ?: message ?: "The request could not be completed."
-            )
+        if (!error.isNullOrBlank()) {
+            throw IllegalStateException(error)
+        }
+        if (!success && message?.contains("fail", ignoreCase = true) == true) {
+            throw IllegalStateException(message)
         }
     }
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.remote.DirectMessageSocket
 import com.abhinav.caisarra.data.remote.dto.DirectMessageDto
+import com.abhinav.caisarra.data.repository.DirectMessageBlockedException
 import com.abhinav.caisarra.data.repository.DirectMessageRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -22,6 +23,7 @@ data class DirectMessageUiState(
     val loading: Boolean = true,
     val sending: Boolean = false,
     val connected: Boolean = false,
+    val blocked: Boolean = false,
     val error: String? = null
 )
 
@@ -55,7 +57,6 @@ class DirectMessageViewModel(
             )
             return
         }
-
 
         if (
             activeChatUserId == userId &&
@@ -106,7 +107,7 @@ class DirectMessageViewModel(
 
                 _state.value = current.copy(
                     connected = connected,
-                    error = if (connected) {
+                    error = if (connected && !current.blocked) {
                         null
                     } else {
                         current.error
@@ -158,6 +159,10 @@ class DirectMessageViewModel(
     }
 
     fun onDraftChange(value: String) {
+        if (_state.value.blocked) {
+            return
+        }
+
         _state.value = _state.value.copy(
             draft = value.take(500),
             error = null
@@ -199,11 +204,11 @@ class DirectMessageViewModel(
 
             _state.value = _state.value.copy(
                 loading = false,
+                blocked = e is DirectMessageBlockedException,
                 error = e.message ?: "Couldn't load chat history."
             )
         }
     }
-
 
     private fun addMessage(message: DirectMessageDto) {
         val current = _state.value
@@ -216,14 +221,10 @@ class DirectMessageViewModel(
             messages = (current.messages + message)
                 .distinctBy { it.id }
                 .sortedBy { it.createdAt ?: "" },
-            error = null
+            error = if (current.blocked) current.error else null
         )
     }
 
-    /**
-     * Sends through the existing REST endpoint.
-     * The returned server message is added immediately.
-     */
     fun send() {
         val current = _state.value
         val text = current.draft.trim()
@@ -232,7 +233,7 @@ class DirectMessageViewModel(
             return
         }
 
-        if (current.sending) {
+        if (current.sending || current.blocked) {
             return
         }
 
@@ -282,6 +283,7 @@ class DirectMessageViewModel(
                 if (_state.value.userId == recipientId) {
                     _state.value = _state.value.copy(
                         sending = false,
+                        blocked = e is DirectMessageBlockedException,
                         error = e.message
                             ?: "Message could not be sent."
                     )

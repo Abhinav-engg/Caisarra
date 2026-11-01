@@ -290,7 +290,7 @@ class HomeViewModel(
                             whiteTimeMs = dto.whiteTimeMs,
                             blackTimeMs = dto.blackTimeMs
                         )
-                    }
+                    }.distinctBy { it.id }
 
                     _state.update {
                         it.copy(

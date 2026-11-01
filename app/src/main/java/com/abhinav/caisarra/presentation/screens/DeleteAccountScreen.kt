@@ -59,7 +59,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 
-
 @Composable
 fun DeleteAccountScreen(
     viewModel: DeleteAccountViewModel,
@@ -100,7 +99,6 @@ fun DeleteAccountScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Warning icon badge
             Box(
                 modifier = Modifier
                     .size(72.dp)

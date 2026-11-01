@@ -18,8 +18,20 @@ interface NotificationService {
     @POST("api/notifications/devices")
     suspend fun registerDevice(@Body body: RegisterDeviceRequest): SimpleApiResponse
 
+    @POST("api/notifications/devices")
+    suspend fun registerDeviceRaw(@Body body: kotlinx.serialization.json.JsonObject): SimpleApiResponse
+
+    @POST("api/v1/notifications/devices")
+    suspend fun registerDeviceV1(@Body body: RegisterDeviceRequest): SimpleApiResponse
+
     @HTTP(method = "DELETE", path = "api/notifications/devices", hasBody = true)
     suspend fun deleteDevice(@Body body: DeleteDeviceRequest): SimpleApiResponse
+
+    @HTTP(method = "DELETE", path = "api/notifications/devices", hasBody = true)
+    suspend fun deleteDeviceRaw(@Body body: kotlinx.serialization.json.JsonObject): SimpleApiResponse
+
+    @HTTP(method = "DELETE", path = "api/v1/notifications/devices", hasBody = true)
+    suspend fun deleteDeviceV1(@Body body: DeleteDeviceRequest): SimpleApiResponse
 
     @GET("api/notifications")
     suspend fun getNotifications(

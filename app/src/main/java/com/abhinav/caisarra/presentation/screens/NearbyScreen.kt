@@ -6,6 +6,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -47,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -74,10 +81,8 @@ import com.caisaara.ui.theme.White
 fun NearbyScreen(
     viewModel: NearbyViewModel,
     onBack: () -> Unit = {},
-    onChallenge: (NearbyPlayer) -> Unit = {},
     onAddFriend: (NearbyPlayer) -> Unit = {},
     onChat: (NearbyPlayer) -> Unit = {},
-    onFilter: () -> Unit = {},
     onRefresh: (() -> Unit)? = null,
     onGameStarted: (String) -> Unit = {}
 ) {
@@ -88,6 +93,17 @@ fun NearbyScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     var isFirstResume by remember { mutableStateOf(true) }
     var challengingPlayer by remember { mutableStateOf<NearbyPlayer?>(null) }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "refreshSpin")
+    val refreshRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "refreshRotation"
+    )
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -268,7 +284,9 @@ fun NearbyScreen(
                 SquareIconButton(
                     icon = Icons.Filled.Refresh,
                     contentDescription = "Refresh",
-                    onClick = singleClick(refreshAction)
+                    enabled = !state.loading,
+                    iconModifier = if (state.loading) Modifier.rotate(refreshRotation) else Modifier,
+                    onClick = refreshAction
                 )
             }
         }

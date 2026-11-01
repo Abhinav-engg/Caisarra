@@ -66,26 +66,15 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.9.5")
     implementation(libs.androidx.datastore.preferences)
-    implementation(kotlin("test"))
     val room_version = "2.8.5"
 
     implementation("androidx.room:room-runtime:$room_version")
 
     ksp("androidx.room:room-compiler:$room_version")
 
-    annotationProcessor("androidx.room:room-compiler:$room_version")
-
     implementation("androidx.room:room-ktx:$room_version")
 
-    implementation("androidx.room:room-rxjava2:$room_version")
-
-    implementation("androidx.room:room-rxjava3:$room_version")
-
-    implementation("androidx.room:room-guava:$room_version")
-
     testImplementation("androidx.room:room-testing:$room_version")
-
-    implementation("androidx.room:room-paging:$room_version")
 
     implementation("com.github.bhlangonijr:chesslib:1.3.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")
@@ -95,11 +84,9 @@ dependencies {
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
 
-    // CameraX and ML Kit Barcode Scanning
     val cameraxVersion = "1.4.1"
     implementation("androidx.camera:camera-core:$cameraxVersion")
     implementation("androidx.camera:camera-camera2:$cameraxVersion")

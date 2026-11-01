@@ -512,7 +512,6 @@ private fun DailyPuzzlePortraitContent(
             val isLandscape =
                 configuration.screenWidthDp > configuration.screenHeightDp
 
-            // Reserve space for the puzzle header and controls in landscape.
             val landscapeBoardLimit =
                 (configuration.screenHeightDp.dp - 180.dp)
                     .coerceAtLeast(180.dp)

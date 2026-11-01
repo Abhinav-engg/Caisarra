@@ -44,9 +44,6 @@ class CreateTournamentViewModel(application: Application) : AndroidViewModel(app
     fun onMaxPlayersChange(value: String) =
         _state.update { it.copy(maxPlayers = value.filter(Char::isDigit).take(3), error = null) }
 
-    fun onVisibilityChange(value: String) =
-        _state.update { it.copy(visibility = value, error = null) }
-
     fun submit() {
         val s = _state.value
         if (s.submitting) return
@@ -76,7 +73,7 @@ class CreateTournamentViewModel(application: Application) : AndroidViewModel(app
                     timeControl = s.timeControl,
                     minPlayers = min,
                     maxPlayers = max,
-                    visibility = s.visibility,
+                    visibility = "public",
                     totalRounds = 0,
                     startAt = null
                 )

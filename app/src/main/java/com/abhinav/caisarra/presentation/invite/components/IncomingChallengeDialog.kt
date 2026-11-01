@@ -87,7 +87,6 @@ fun IncomingChallengeDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -121,7 +120,6 @@ fun IncomingChallengeDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Challenger info
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -160,7 +158,6 @@ fun IncomingChallengeDialog(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)

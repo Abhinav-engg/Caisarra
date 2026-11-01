@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import com.abhinav.caisarra.presentation.common.singleClick
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,7 +99,7 @@ private val DashboardBorder = Color(0xFF304154)
 fun HomeScreen(
     viewModel: HomeViewModel,
     onStartChallenge: () -> Unit = {},
-    onStartQuickPlay: () -> Unit = {},
+    onStartQuickPlay: (GameMode) -> Unit = {},
     onOpenActiveGame: (String) -> Unit = {},
     onReviewGame: (String) -> Unit = {},
     onLogoutSuccess: () -> Unit = {},
@@ -167,7 +168,7 @@ fun HomeScreen(
                     provisional = state.provisional,
                     modeRatings = state.modeRatings,
                     onSelectMode = viewModel::selectMode,
-                    onStatsClick = { onStatsClick(state.selectedMode) }
+                    onStatsClick = singleClick { onStatsClick(state.selectedMode) }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -181,7 +182,7 @@ fun HomeScreen(
                         GameMode.RAPID -> "10 min • Rapid"
                         GameMode.DAILY -> "1 day • Daily"
                     },
-                    onStartQuickPlay = onStartQuickPlay,
+                    onStartQuickPlay = { onStartQuickPlay(state.selectedMode) },
                     onOpenActiveGame = onOpenActiveGame,
                     onGameExpired = viewModel::removeExpiredGame
                 )
@@ -489,7 +490,7 @@ private fun RatingCard(
                 fontSize = 48.sp,
                 lineHeight = 50.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable(onClick = onStatsClick)
+                modifier = Modifier.clickable(onClick = singleClick(onStatsClick))
             )
 
             val changeText = when {

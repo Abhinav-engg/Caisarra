@@ -29,6 +29,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -48,6 +50,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.abhinav.caisarra.data.local.OnboardingPreferencesStore
 import com.abhinav.caisarra.data.local.PendingInviteStore
 import com.abhinav.caisarra.data.local.PendingOtpStore
 import com.abhinav.caisarra.data.local.RatingPreferencesStore
@@ -78,6 +81,7 @@ import com.abhinav.caisarra.presentation.community.CommunityScreen
 import com.abhinav.caisarra.presentation.community.CommunityViewModel
 import com.abhinav.caisarra.presentation.directmessage.DirectMessageScreen
 import com.abhinav.caisarra.presentation.directmessage.DirectMessagesListScreen
+import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import com.abhinav.caisarra.presentation.game.BotGameViewModel
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
@@ -99,6 +103,7 @@ import com.abhinav.caisarra.presentation.game.viewmodel.PassAndPlaySetupViewMode
 import com.abhinav.caisarra.presentation.invite.CreateInviteScreen
 import com.abhinav.caisarra.presentation.invite.CreateInviteViewModel
 import com.abhinav.caisarra.presentation.invite.FriendsViewModel
+import com.abhinav.caisarra.presentation.invite.InviteCodeParser
 import com.abhinav.caisarra.presentation.invite.JoinInviteScreen
 import com.abhinav.caisarra.presentation.invite.JoinInviteViewModel
 import com.abhinav.caisarra.presentation.invite.PlayWithFriendHomeScreen
@@ -117,11 +122,15 @@ import com.abhinav.caisarra.presentation.screens.DeleteAccountScreen
 import com.abhinav.caisarra.presentation.screens.EditProfileScreen
 import com.abhinav.caisarra.presentation.screens.GuestHomeScreen
 import com.abhinav.caisarra.presentation.screens.HomeScreen
+import com.abhinav.caisarra.data.local.BOARD_THEME_KEY
+import com.abhinav.caisarra.data.local.settingsDataStore
+import com.abhinav.caisarra.presentation.game.model.BoardThemeId
+import com.abhinav.caisarra.presentation.game.model.BoardThemes
 import com.abhinav.caisarra.presentation.screens.LeaderboardScreen
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.MenuScreen
-import com.abhinav.caisarra.presentation.screens.MessagesScreen
 import com.abhinav.caisarra.presentation.screens.NearbyScreen
+import com.abhinav.caisarra.presentation.screens.OnboardingScreen
 import com.abhinav.caisarra.presentation.screens.PrivacySettingsScreen
 import com.abhinav.caisarra.presentation.screens.ProfileScreen
 import com.abhinav.caisarra.presentation.screens.PuzzlesScreen
@@ -163,6 +172,7 @@ import kotlinx.coroutines.launch
 
 object AppRoutes {
     const val SPLASH = "splash"
+    const val ONBOARDING = "onboarding"
     const val WATCH = "watch"
     const val SPECTATE_GAME = "spectate/{watchCode}"
     fun spectateGame(watchCode: String): String =
@@ -224,7 +234,6 @@ object AppRoutes {
         return if (queryParts.isEmpty()) "stats" else "stats?${queryParts.joinToString("&")}"
     }
     const val THEME = "theme"
-    const val MESSAGES = "messages"
     const val CLUBS = "clubs"
     const val CLUB_DETAIL = "club_detail/{clubId}"
 
@@ -370,8 +379,12 @@ private fun rememberCurrentUserProfile(
 
 private suspend fun resolveStartDestination(
     authRepository: AuthRepository,
-    pendingOtpStore: PendingOtpStore
+    pendingOtpStore: PendingOtpStore,
+    onboardingStore: OnboardingPreferencesStore
 ): String {
+    if (!onboardingStore.hasSeenOnboarding()) {
+        return AppRoutes.ONBOARDING
+    }
     val pending = pendingOtpStore.getPendingVerification()
     val isGuest = authRepository.isGuest()
     return when {
@@ -399,6 +412,9 @@ fun AppNavigation(authRepository: AuthRepository) {
     val context = LocalContext.current.applicationContext
     val pendingOtpStore = remember {
         PendingOtpStore(context)
+    }
+    val onboardingPreferencesStore = remember {
+        OnboardingPreferencesStore.get(context)
     }
     val pendingInviteStore = remember {
         PendingInviteStore.get(context)
@@ -432,14 +448,18 @@ fun AppNavigation(authRepository: AuthRepository) {
     val incomingChallenge by challengeManager.incomingChallenge.collectAsState()
 
     LaunchedEffect(Unit) {
-        challengeManager.startListening()
+        authRepository.isLoggedInFlow.distinctUntilChanged().collect { loggedIn ->
+            if (loggedIn) challengeManager.startListening()
+        }
     }
 
     LaunchedEffect(Unit) {
         challengeManager.acceptedEvent.collect { event ->
             Toast.makeText(context, "${event.opponentUsername ?: "Opponent"} accepted your challenge!", Toast.LENGTH_SHORT).show()
-            navController.navigate(AppRoutes.onlineGame(event.gameId)) {
-                launchSingleTop = true
+            if (event.gameId.isNotBlank()) {
+                navController.navigate(AppRoutes.onlineGame(event.gameId)) {
+                    launchSingleTop = true
+                }
             }
         }
     }
@@ -538,11 +558,27 @@ fun AppNavigation(authRepository: AuthRepository) {
             ) {
                 SplashScreen(
                     loadDestination = {
-                        resolveStartDestination(authRepository, pendingOtpStore)
+                        resolveStartDestination(authRepository, pendingOtpStore, onboardingPreferencesStore)
                     },
                     onSplashFinished = { targetRoute ->
                         navController.navigate(targetRoute) {
                             popUpTo(AppRoutes.SPLASH) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(
+                route = AppRoutes.ONBOARDING,
+                exitTransition = { fadeOut(animationSpec = tween(300)) }
+            ) {
+                OnboardingScreen(
+                    onFinishOnboarding = {
+                        onboardingPreferencesStore.setHasSeenOnboarding(true)
+                        navController.navigate(AppRoutes.LOGIN) {
+                            popUpTo(AppRoutes.ONBOARDING) {
                                 inclusive = true
                             }
                             launchSingleTop = true
@@ -880,9 +916,15 @@ fun AppNavigation(authRepository: AuthRepository) {
                 HomeScreen(
                     viewModel = homeViewModel,
                     onStartChallenge = { openPlayGame() },
-                    onStartQuickPlay = {
+                    onStartQuickPlay = { mode ->
+                        val minutes = when (mode) {
+                            GameMode.BULLET -> 1
+                            GameMode.BLITZ -> 3
+                            GameMode.RAPID -> 10
+                            GameMode.DAILY -> 1440
+                        }
                         requireAuth("Online matchmaking") {
-                            navController.navigateOnce(AppRoutes.matchmaking(10, 0))
+                            navController.navigateOnce(AppRoutes.matchmaking(minutes, 0))
                         }
                     },
                     onOpenActiveGame = { gameId ->
@@ -925,7 +967,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                         }
                     },
                     onStatsClick = { mode ->
-                        navController.navigateOnce(AppRoutes.stats(mode = mode.ratingKey))
+                        navController.navigateOnce(AppRoutes.stats(mode = mode.ratingKey)) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -1525,6 +1569,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                         nullable = true
                         defaultValue = null
                     }
+                ),
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "caisarra://tournament/{id}?code={code}" },
+                    navDeepLink { uriPattern = "https://caisaara.app/tournament/{id}?code={code}" },
+                    navDeepLink { uriPattern = "https://caisaara.duckdns.org/tournament/{id}?code={code}" }
                 )
             ) { entry ->
                 val id = entry.arguments?.getString("id").orEmpty()
@@ -1535,7 +1584,7 @@ fun AppNavigation(authRepository: AuthRepository) {
 
                 TournamentDetailScreen(
                     viewModel = detailViewModel,
-                    onOpenGame = { gameId -> navController.navigate(AppRoutes.onlineGame(gameId)) },
+                    onOpenGame = { gameId -> navController.navigateOnce(AppRoutes.onlineGame(gameId)) },
                     onBack = { navController.safeBack(AppRoutes.TOURNAMENTS) }
                 )
             }
@@ -1552,10 +1601,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                 )
             ) { entry ->
                 val gameId = entry.arguments?.getString("gameId").orEmpty()
-                val onlineViewModel = screenViewModel {
+                val onlineViewModel = screenViewModel(key = "online_game_$gameId") {
                     OnlineGameViewModel(context as Application, gameId)
                 }
-                val analysisViewModel = screenViewModel {
+                val analysisViewModel = screenViewModel(key = "online_game_analysis_$gameId") {
                     GameAnalysisViewModel(
                         repository = GameAnalysisRepository(authRepository.createAnalysisService()),
                         gameId = gameId
@@ -1666,7 +1715,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                         }
                     },
                     onStatsClick = { mode, username ->
-                        navController.navigateOnce(AppRoutes.stats(username = username, mode = mode.ratingKey))
+                        navController.navigateOnce(AppRoutes.stats(username = username, mode = mode.ratingKey)) {
+                            launchSingleTop = true
+                        }
                     },
                     onReviewGame = { gameId ->
                         navController.navigateOnce(AppRoutes.gameHistory(gameId))
@@ -1739,6 +1790,23 @@ fun AppNavigation(authRepository: AuthRepository) {
                     onAddFriend = { player ->
                         requireAuth("Adding friends") {
                             val friendsRepo = FriendsRepository(context)
+                            val currentStatus = friendsRepo.getFriendshipStatus(player.username)
+                                .getOrNull()
+                                ?.status
+                            val statusMessage = when (currentStatus) {
+                                "friends" -> "You are already friends with ${player.username}"
+                                "request_sent" -> "Friend request already sent to ${player.username}"
+                                "request_received" -> "${player.username} already sent you a friend request. Check your requests."
+                                else -> null
+                            }
+                            if (statusMessage != null) {
+                                Toast.makeText(
+                                    context,
+                                    statusMessage,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@requireAuth
+                            }
                             friendsRepo.sendFriendRequest(player.username)
                                 .onSuccess {
                                     Toast.makeText(
@@ -1915,12 +1983,21 @@ fun AppNavigation(authRepository: AuthRepository) {
             composable(route = AppRoutes.MENU) {
                 val tokenManager = remember { TokenManager.get(context) }
                 val profile by rememberCurrentUserProfile(tokenManager, isGuestUser, refreshKey = currentRoute)
+                val currentThemeKey by remember(context) {
+                    context.settingsDataStore.data.map {
+                        it[BOARD_THEME_KEY] ?: BoardThemeId.MIDNIGHT_CYAN.storageKey
+                    }
+                }.collectAsState(initial = BoardThemeId.MIDNIGHT_CYAN.storageKey)
+                val activeTheme = remember(currentThemeKey) {
+                    BoardThemes.getByStorageKey(currentThemeKey)
+                }
 
                 MenuScreen(
                     profileName = profile?.displayName,
                     username = profile?.username,
                     avatarUrl = profile?.avatarUrl,
                     isGuest = isGuestUser,
+                    activeThemeName = activeTheme.name,
                     onBack = {
                         scope.launch {
                             navController.safeBack(homeRoute(authRepository))
@@ -1933,7 +2010,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                         navController.navigateOnce(AppRoutes.profile())
                     },
                     onStatsClick = {
-                        navController.navigateOnce(AppRoutes.stats())
+                        navController.navigateOnce(AppRoutes.stats()) {
+                            launchSingleTop = true
+                        }
                     },
                     onGameHistoryClick = {
                         navController.navigateOnce(AppRoutes.ALL_GAME_HISTORY)
@@ -2029,7 +2108,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                         if (navController.previousBackStackEntry != null) {
                             navController.popBackStack()
                         } else {
-                            navController.safeBack(AppRoutes.MENU)
+                            navController.safePop(AppRoutes.HOME)
                         }
                     },
                     onGameClick = { gameId ->
@@ -2057,14 +2136,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                     }
                 )
             }
-
-
-            composable(route = AppRoutes.MESSAGES) {
-                MessagesScreen(
-                    onBack = { navController.safePop() }
-                )
-            }
-
 
             composable(route = AppRoutes.CLUBS) {
                 val tokenManager = remember(context) {
@@ -2120,6 +2191,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navArgument("clubId") {
                         type = NavType.StringType
                     }
+                ),
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "caisarra://club/{clubId}" },
+                    navDeepLink { uriPattern = "https://caisaara.app/club/{clubId}" },
+                    navDeepLink { uriPattern = "https://caisaara.duckdns.org/club/{clubId}" }
                 )
             ) { backStackEntry ->
 
@@ -2333,7 +2409,12 @@ fun AppNavigation(authRepository: AuthRepository) {
                 challenge = challenge,
                 onAccept = { gameId ->
                     challengeManager.dismissIncomingChallenge()
+                    if (gameId.isBlank()) {
+                        Toast.makeText(context, "Could not open the game", Toast.LENGTH_SHORT).show()
+                        return@IncomingChallengeDialog
+                    }
                     navController.navigate(AppRoutes.onlineGame(gameId)) {
+                        popUpTo(AppRoutes.ONLINE_GAME) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
@@ -2358,10 +2439,17 @@ private fun handleNotificationItemClick(
             val username = notification.getStringData("username")
             navController.navigateOnce(AppRoutes.profile(username))
         }
-        "game_challenge" -> {
-            val code = notification.getStringData("code")
+        "game_challenge", "game_invite", "game_invitation", "challenge", "invite", "challenge_received", "invite_received" -> {
+            val raw = notification.getStringData("code")
+                ?: notification.getStringData("invite_code")
+                ?: notification.getStringData("challenge_code")
+                ?: notification.getStringData("deep_link")
+                ?: notification.getStringData("link")
+            val code = raw?.let { InviteCodeParser.extractCode(it) }?.takeIf { it.isNotBlank() }
             if (!code.isNullOrBlank()) {
                 navController.navigateOnce(AppRoutes.joinInvite(code))
+            } else {
+                navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
             }
         }
         "challenge_declined" -> {
@@ -2431,10 +2519,26 @@ private fun handleIntentNotificationNavigation(
             val username = intent.getStringExtra("username")
             navController.navigateOnce(AppRoutes.profile(username))
         }
-        "game_challenge" -> {
-            val code = intent.getStringExtra("code")
+        "game_challenge", "game_invite", "game_invitation", "challenge", "invite", "challenge_received", "invite_received" -> {
+            val raw = intent.getStringExtra("code")
+                ?: intent.getStringExtra("invite_code")
+                ?: intent.getStringExtra("challenge_code")
+                ?: intent.getStringExtra("deep_link")
+                ?: intent.getStringExtra("link")
+                ?: intent.dataString
+            val code = raw?.let { InviteCodeParser.extractCode(it) }?.takeIf { it.isNotBlank() }
             if (!code.isNullOrBlank()) {
                 navController.navigateOnce(AppRoutes.joinInvite(code))
+            } else {
+                navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
+            }
+        }
+        "challenge_accepted", "game_challenge_accepted", "invite_accepted", "game_invite_accepted" -> {
+            val gameId = intent.getStringExtra("game_id") ?: intent.getStringExtra("gameId")
+            if (!gameId.isNullOrBlank()) {
+                navController.navigate(AppRoutes.onlineGame(gameId)) {
+                    launchSingleTop = true
+                }
             }
         }
         "challenge_declined" -> {

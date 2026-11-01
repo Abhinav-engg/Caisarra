@@ -289,7 +289,6 @@ private fun CameraScannerView(
         val boxSize = 260.dp
         ScannerOverlay(boxSize = boxSize)
 
-        // Top Controls Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -338,7 +337,6 @@ private fun CameraScannerView(
             }
         }
 
-        // Bottom Controls / Guidance
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -412,17 +410,14 @@ private fun ScannerOverlay(boxSize: Dp) {
 
         val scrimColor = Color.Black.copy(alpha = 0.6f)
 
-        // Draw Scrim (outside the scan box)
         drawRect(color = scrimColor, topLeft = Offset(0f, 0f), size = Size(width, top))
         drawRect(color = scrimColor, topLeft = Offset(0f, bottom), size = Size(width, height - bottom))
         drawRect(color = scrimColor, topLeft = Offset(0f, top), size = Size(left, boxPx))
         drawRect(color = scrimColor, topLeft = Offset(right, top), size = Size(width - right, boxPx))
 
-        // Corner Brackets
         val cornerLength = 28.dp.toPx()
         val cornerStroke = 4.dp.toPx()
 
-        // Top-Left
         drawLine(
             color = ScannerCyan,
             start = Offset(left, top + cornerLength),
@@ -438,7 +433,6 @@ private fun ScannerOverlay(boxSize: Dp) {
             cap = StrokeCap.Round
         )
 
-        // Top-Right
         drawLine(
             color = ScannerCyan,
             start = Offset(right - cornerLength, top),
@@ -454,7 +448,6 @@ private fun ScannerOverlay(boxSize: Dp) {
             cap = StrokeCap.Round
         )
 
-        // Bottom-Left
         drawLine(
             color = ScannerCyan,
             start = Offset(left, bottom - cornerLength),
@@ -470,7 +463,6 @@ private fun ScannerOverlay(boxSize: Dp) {
             cap = StrokeCap.Round
         )
 
-        // Bottom-Right
         drawLine(
             color = ScannerCyan,
             start = Offset(right - cornerLength, bottom),
@@ -486,7 +478,6 @@ private fun ScannerOverlay(boxSize: Dp) {
             cap = StrokeCap.Round
         )
 
-        // Subtle box border
         drawRect(
             color = ScannerCyan.copy(alpha = 0.2f),
             topLeft = Offset(left, top),
@@ -494,7 +485,6 @@ private fun ScannerOverlay(boxSize: Dp) {
             style = Stroke(width = 1.dp.toPx())
         )
 
-        // Animated Laser Line
         val laserY = top + (boxPx * laserPosition)
         drawLine(
             brush = Brush.horizontalGradient(
