@@ -189,6 +189,7 @@ fun TournamentDetailScreen(
                                 onLeave = viewModel::leave,
                                 onStart = viewModel::start,
                                 onEnd = viewModel::end,
+                                onCancel = viewModel::cancel,
                                 onOpenGame = onOpenGame
                             )
 
@@ -210,6 +211,7 @@ private fun OverviewTab(
     onLeave: () -> Unit,
     onStart: () -> Unit,
     onEnd: () -> Unit,
+    onCancel: () -> Unit,
     onOpenGame: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -391,8 +393,10 @@ private fun OverviewTab(
 
         if (isCreator && tournament.status.equals("ongoing", ignoreCase = true)) {
             Spacer(Modifier.height(14.dp))
+            TournamentActionButton("End Tournament", onClick = onEnd)
+            Spacer(Modifier.height(12.dp))
             OutlinedButton(
-                onClick = onEnd,
+                onClick = onCancel,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),

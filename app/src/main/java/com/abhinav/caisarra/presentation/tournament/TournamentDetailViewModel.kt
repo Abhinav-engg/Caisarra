@@ -84,8 +84,12 @@ class TournamentDetailViewModel(
         repository.startTournament(tournamentId)
     }
 
-    fun end() = perform("Tournament cancelled") {
+    fun end() = perform("Tournament ended") {
         repository.endTournament(tournamentId)
+    }
+
+    fun cancel() = perform("Tournament cancelled") {
+        repository.cancelTournament(tournamentId)
     }
 
     private fun perform(
@@ -159,6 +163,11 @@ class TournamentDetailViewModel(
                     TournamentSocketEvent.StandingsUpdated -> refreshAll(showLoading = false)
 
                     is TournamentSocketEvent.Completed -> {
+                        _state.update { it.copy(winnerId = event.winnerId) }
+                        refreshAll(showLoading = false)
+                    }
+
+                    is TournamentSocketEvent.Finished -> {
                         _state.update { it.copy(winnerId = event.winnerId) }
                         refreshAll(showLoading = false)
                     }
