@@ -2482,7 +2482,7 @@ private fun handleNotificationItemClick(
                 navController.navigateOnce(AppRoutes.TOURNAMENTS)
             }
         }
-        "tournament_finished" -> {
+        "tournament_finished", "tournament_completed" -> {
             val tournamentId = notification.getStringData("tournament_id")
             if (!tournamentId.isNullOrBlank()) {
                 navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))
@@ -2571,7 +2571,7 @@ private fun handleIntentNotificationNavigation(
                 navController.navigateOnce(AppRoutes.TOURNAMENTS)
             }
         }
-        "tournament_finished" -> {
+        "tournament_finished", "tournament_completed" -> {
             val tournamentId = intent.getStringExtra("tournament_id")
             if (!tournamentId.isNullOrBlank()) {
                 navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))
