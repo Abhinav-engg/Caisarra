@@ -45,6 +45,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import android.Manifest
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.pm.PackageManager
@@ -88,6 +89,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import android.os.SystemClock
 import androidx.compose.runtime.mutableLongStateOf
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.yalantis.ucrop.UCrop
+
 private val EditBackground = Color(0xFF080D13)
 private val EditCard = Color(0xFF151F2E)
 private val EditCardSecondary = Color(0xFF0F1925)
@@ -140,24 +143,137 @@ fun EditProfileScreen(
     var selectedSource by remember {
         mutableStateOf(AvatarSource.URL)
     }
+
+    // Receives the fixed 1:1 crop result. Only the cropped image is uploaded.
+    val cropLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val croppedUri = result.data?.let { UCrop.getOutput(it) }
+            if (croppedUri != null) {
+                viewModel.uploadAvatar(context, croppedUri)
+            } else {
+                Toast.makeText(context, "Unable to crop this photo.", Toast.LENGTH_SHORT).show()
+            }
+        } else if (result.resultCode == UCrop.RESULT_ERROR) {
+            val error = result.data?.let { UCrop.getError(it) }
+            Toast.makeText(
+                context,
+                error?.localizedMessage ?: "Unable to crop this photo.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    fun launchImageCrop(sourceUri: Uri) {
+        try {
+            val destinationFile = File(
+                context.cacheDir,
+                "profile_crop_${System.currentTimeMillis()}.jpg"
+            )
+
+            val destinationUri = Uri.fromFile(destinationFile)
+
+            val cropIntent = UCrop.of(sourceUri, destinationUri)
+                .withAspectRatio(1f, 1f)
+                .withMaxResultSize(512, 512)
+                .withOptions(
+                    UCrop.Options().apply {
+                        setCircleDimmedLayer(true)
+                        setShowCropFrame(true)
+                        setShowCropGrid(true)
+
+                        setToolbarTitle("Adjust profile photo")
+                        setToolbarColor(
+                            android.graphics.Color.rgb(8, 13, 19)
+                        )
+                        setToolbarWidgetColor(
+                            android.graphics.Color.WHITE
+                        )
+                        setStatusBarColor(
+                            android.graphics.Color.rgb(8, 13, 19)
+                        )
+
+                        setActiveControlsWidgetColor(
+                            android.graphics.Color.rgb(8, 213, 229)
+                        )
+                        setDimmedLayerColor(
+                            android.graphics.Color.BLACK
+                        )
+                        setCropFrameColor(
+                            android.graphics.Color.rgb(8, 213, 229)
+                        )
+                        setCropGridColor(
+                            android.graphics.Color.rgb(8, 213, 229)
+                        )
+                    }
+                )
+                .getIntent(context)
+                .apply {
+                    setClass(
+                        context,
+                        com.abhinav.caisarra.app.InsetAwareUCropActivity::class.java
+                    )
+                }
+
+            cropLauncher.launch(cropIntent)
+
+        } catch (e: Exception) {
+            android.util.Log.e(
+                "ProfilePhotoCrop",
+                "Failed to launch photo cropping",
+                e
+            )
+            Toast.makeText(
+                context,
+                "Unable to open photo cropping: ${
+                    e.localizedMessage ?: "Unknown error"
+                }",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
             selectedSource = AvatarSource.GALLERY
-            viewModel.uploadAvatar(context, uri)
+            launchImageCrop(uri)
         }
     }
+
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
+
         if (bitmap != null) {
-            val file = File(context.cacheDir, "profile_${System.currentTimeMillis()}.jpg")
-            FileOutputStream(file).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            try {
+                val file = File(
+                    context.cacheDir,
+                    "profile_camera_${System.currentTimeMillis()}.jpg"
+                )
+
+                FileOutputStream(file).use { output ->
+                    bitmap.compress(
+                        Bitmap.CompressFormat.JPEG,
+                        95,
+                        output
+                    )
+                }
+
+                selectedSource = AvatarSource.CAMERA
+
+                // Open cropping instead of uploading the original image
+                launchImageCrop(Uri.fromFile(file))
+
+            } catch (e: Exception) {
+                Toast.makeText(
+                    context,
+                    "Unable to process camera photo.",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
-            selectedSource = AvatarSource.CAMERA
-            viewModel.uploadAvatar(context, Uri.fromFile(file))
         }
     }
 
