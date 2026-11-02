@@ -40,7 +40,7 @@ import java.util.Locale
 private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.US)
 
 @Composable
-internal fun ResultsCard(
+fun ResultsCard(
     stats: ModeStatsData,
     modeName: String
 ) {
@@ -156,7 +156,7 @@ internal fun ResultsCard(
     }
 }
 @Composable
-internal fun StackedProgressBar(
+ fun StackedProgressBar(
     wins: Int,
     draws: Int,
     losses: Int,

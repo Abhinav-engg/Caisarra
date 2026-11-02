@@ -41,7 +41,7 @@ import java.util.Locale
 private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.US)
 
 @Composable
-internal fun GuestStatsCard(
+fun GuestStatsCard(
     onSignIn: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -87,7 +87,7 @@ internal fun GuestStatsCard(
     }
 }
 @Composable
-internal fun ErrorStateCard(
+fun ErrorStateCard(
     errorMessage: String,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier

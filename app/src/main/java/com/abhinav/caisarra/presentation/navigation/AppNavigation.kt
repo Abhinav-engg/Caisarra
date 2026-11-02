@@ -197,9 +197,9 @@ object AppRoutes {
     const val JOIN_INVITE = "play/{code}"
     const val ONLINE_GAME = "online_game/{gameId}"
     const val ALL_GAME_HISTORY = "all_game_history"
-    const val PROFILE = "profile?username={username}"
+    const val PROFILE = "com/abhinav/caisarra/presentation/screens/components/profile"
     fun profile(username: String? = null): String =
-        if (username.isNullOrBlank()) "profile" else "profile?username=${Uri.encode(username.trim())}"
+        if (username.isNullOrBlank()) "com/abhinav/caisarra/presentation/screens/components/profile" else "profile?username=${Uri.encode(username.trim())}"
     const val EDIT_PROFILE = "edit_profile"
     const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
     const val GAME_ANALYSIS = "game_analysis/{gameId}"
@@ -1690,7 +1690,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
                 val profileEntry = currentBackStackEntry
-                    ?.takeIf { it.destination.route?.startsWith("profile") == true }
+                    ?.takeIf { it.destination.route?.startsWith("com/abhinav/caisarra/presentation/screens/components/profile") == true }
 
                 val refreshRequested by (
                         profileEntry?.savedStateHandle
