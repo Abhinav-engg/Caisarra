@@ -13,5 +13,6 @@ data class CreateTournamentRequest(
     @SerialName("max_players") val maxPlayers: Int,
     val visibility: String,
     @SerialName("total_rounds") val totalRounds: Int,
-    @SerialName("start_at") val startAt: String?
+    @SerialName("start_at") val startAt: String?,
+    @SerialName("min_rating") val minRating: Int? = null
 )
