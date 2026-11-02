@@ -16,7 +16,10 @@ data class ClubDto(
     val memberCount: Int = 0,
     @SerialName("owner_id")
     val ownerId: Long? = null,
-    val role: String? = null
+    val role: String? = null,
+    val link: String? = null,
+    @SerialName("created_at")
+    val createdAt: String? = null
 ) {
     val effectiveId: String
         get() = clubId ?: id

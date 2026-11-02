@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -143,8 +144,6 @@ class ClubDetailViewModel(
                 )
 
                 if (!isMember) {
-                    // Clear protected club data and do not request member-only
-                    // sections or establish a club chat connection.
                     state = state.copy(
                         leaderboard = emptyList(),
                         messages = emptyList(),
@@ -768,29 +767,56 @@ fun ClubDetailScreen(
                                                     letterSpacing = 2.sp
                                                 )
                                             }
-                                            OutlinedButton(
-                                                onClick = {
-                                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                                    clipboard.setPrimaryClip(ClipData.newPlainText("club_share_code", shareCode))
-                                                    Toast.makeText(context, "Club code copied", Toast.LENGTH_SHORT).show()
-                                                },
-                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                                shape = RoundedCornerShape(8.dp),
-                                                border = BorderStroke(1.dp, DetailGreen.copy(alpha = 0.5f))
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.ContentCopy,
-                                                    contentDescription = null,
-                                                    tint = DetailGreen,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(Modifier.width(4.dp))
-                                                Text(
-                                                    "Copy",
-                                                    color = DetailGreen,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.SemiBold
-                                                )
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                                        clipboard.setPrimaryClip(ClipData.newPlainText("club_share_code", shareCode))
+                                                        Toast.makeText(context, "Club code copied", Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    border = BorderStroke(1.dp, DetailGreen.copy(alpha = 0.5f))
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.ContentCopy,
+                                                        contentDescription = null,
+                                                        tint = DetailGreen,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                    Spacer(Modifier.width(4.dp))
+                                                    Text(
+                                                        "Copy",
+                                                        color = DetailGreen,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        val link = state.club.link?.takeIf { it.isNotBlank() } ?: "https://caisaara.app/club/$shareCode"
+                                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                                        clipboard.setPrimaryClip(ClipData.newPlainText("club_link", link))
+                                                        Toast.makeText(context, "Club link copied", Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    border = BorderStroke(1.dp, DetailGreen.copy(alpha = 0.5f))
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Link,
+                                                        contentDescription = null,
+                                                        tint = DetailGreen,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                    Spacer(Modifier.width(4.dp))
+                                                    Text(
+                                                        "Link",
+                                                        color = DetailGreen,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
                                             }
                                         }
                                     }
