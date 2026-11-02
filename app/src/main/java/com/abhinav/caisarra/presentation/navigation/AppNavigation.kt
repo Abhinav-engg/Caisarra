@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity
 import com.abhinav.caisarra.app.MainActivity
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.remote.dto.getStringData
@@ -16,9 +15,6 @@ import com.abhinav.caisarra.presentation.notifications.NotificationsViewModel
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -226,12 +222,12 @@ object AppRoutes {
     fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
     const val SOCIAL = "social"
     const val MENU = "menu"
-    const val STATS = "stats?username={username}&mode={mode}"
+    const val STATS = "com/abhinav/caisarra/presentation/screens/components/stats"
     fun stats(username: String? = null, mode: String? = null): String {
         val queryParts = mutableListOf<String>()
         if (!username.isNullOrBlank()) queryParts.add("username=${Uri.encode(username.trim())}")
         if (!mode.isNullOrBlank()) queryParts.add("mode=${Uri.encode(mode.trim())}")
-        return if (queryParts.isEmpty()) "stats" else "stats?${queryParts.joinToString("&")}"
+        return if (queryParts.isEmpty()) "com/abhinav/caisarra/presentation/screens/components/stats" else "stats?${queryParts.joinToString("&")}"
     }
     const val THEME = "theme"
     const val CLUBS = "clubs"
