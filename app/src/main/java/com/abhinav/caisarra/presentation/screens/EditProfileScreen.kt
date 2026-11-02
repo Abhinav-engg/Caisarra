@@ -797,7 +797,13 @@ fun EditProfileScreen(
                     }
                     PhotoOptionRow(
                         title = "Default chess avatars",
-                        icon = { Icon(Icons.Default.Person, contentDescription = null, tint = EditCyan) }
+                        icon = {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = EditCyan
+                            )
+                        }
                     ) {
                         showPhotoOptions = false
                         showDefaultAvatarsScreen = true
@@ -810,7 +816,9 @@ fun EditProfileScreen(
                     Text("Cancel", color = EditCyan)
                 }
             }
+
         )
+
     }
 }
 

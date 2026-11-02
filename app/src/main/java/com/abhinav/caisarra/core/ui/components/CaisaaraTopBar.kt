@@ -39,6 +39,7 @@ fun CaisaaraTopBar(
     backgroundColor: Color = Color.Transparent,
     titleFontSize: TextUnit = 20.sp,
     height: Dp = 52.dp,
+    titlePadding: Dp = 48.dp,
     actions: @Composable (RowScope.() -> Unit)? = null
 ) {
     Box(
@@ -60,7 +61,7 @@ fun CaisaaraTopBar(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-                .padding(horizontal = 48.dp)
+                .padding(horizontal = titlePadding)
                 .align(Alignment.Center)
         )
 

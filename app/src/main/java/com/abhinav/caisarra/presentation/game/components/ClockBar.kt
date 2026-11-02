@@ -20,8 +20,26 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.presentation.game.model.Piece
+import com.caisaara.ui.theme.EmeraldNormal
+import com.caisaara.ui.theme.White
 
 private const val DAY_MILLIS = 86_400_000L
+
+fun formatDailyTime(timeMillis: Long): String {
+    if (timeMillis <= 0L) return "0s"
+    val totalSec = timeMillis / 1000L
+    val days = totalSec / 86400L
+    val hours = (totalSec % 86400L) / 3600L
+    val minutes = (totalSec % 3600L) / 60L
+    val seconds = totalSec % 60L
+
+    return when {
+        days > 0L -> "${days}d ${hours}h"
+        hours > 0L -> "${hours}h ${minutes}m"
+        minutes > 0L -> "${minutes}m ${seconds}s"
+        else -> "${seconds}s"
+    }
+}
 
 @Composable
 fun ClockBar(
@@ -37,21 +55,7 @@ fun ClockBar(
     val daily = isDailyMode || timeMillis >= DAY_MILLIS
 
     val timeText = if (daily) {
-        when {
-            timeMillis <= 0L -> "0 days"
-            timeMillis >= DAY_MILLIS -> {
-                val remainingDays = ((timeMillis - 1L) / DAY_MILLIS) + 1L
-                if (remainingDays == 1L) "1 day" else "$remainingDays days"
-            }
-            timeMillis >= 3600_000L -> {
-                val hours = (timeMillis + 3599_999L) / 3600_000L
-                if (hours == 1L) "1 hr" else "$hours hrs"
-            }
-            else -> {
-                val minutes = ((timeMillis + 59_999L) / 60_000L).coerceAtLeast(1L)
-                if (minutes == 1L) "1 min" else "$minutes min"
-            }
-        }
+        formatDailyTime(timeMillis)
     } else {
         val totalSeconds = timeMillis.coerceAtLeast(0L) / 1000L
         "%02d:%02d".format(totalSeconds / 60L, totalSeconds % 60L)
@@ -83,7 +87,7 @@ fun ClockBar(
             ) {
                 Text(
                     text = playerName,
-                    color = Color.White,
+                    color = White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -114,9 +118,9 @@ fun ClockBar(
         Text(
             text = timeText,
             color = if (isActive) {
-                Color(0xFF10B981)
+                EmeraldNormal
             } else {
-                Color.White
+                White
             },
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold

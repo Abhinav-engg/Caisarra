@@ -67,7 +67,7 @@ fun ReceivedChallengeCardItem(
                 .clickable(onClick = onProfileClick),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FriendAvatar(name = challenge.challengerUsername, avatarUrl = null, size = 44.dp)
+            FriendAvatar(name = challenge.challengerUsername, avatarUrl = challenge.challengerAvatarUrl, size = 44.dp)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -143,7 +143,7 @@ fun SentChallengeCardItem(
                 .clickable(onClick = onProfileClick),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FriendAvatar(name = challenge.opponentUsername, avatarUrl = null, size = 44.dp)
+            FriendAvatar(name = challenge.opponentUsername, avatarUrl = challenge.opponentAvatarUrl, size = 44.dp)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(

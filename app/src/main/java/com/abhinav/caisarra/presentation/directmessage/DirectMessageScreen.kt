@@ -2,9 +2,11 @@ package com.abhinav.caisarra.presentation.directmessage
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,21 +27,30 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
+import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.caisaara.ui.theme.StatsBg
 import com.caisaara.ui.theme.StatsCardBg
 import com.caisaara.ui.theme.StatsCardBorder
 import com.caisaara.ui.theme.StatsCyan
 import com.caisaara.ui.theme.StatsTextMuted
 import com.caisaara.ui.theme.StatsTextWhite
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
 fun DirectMessageScreen(
     userId: Long,
     username: String,
+    initialAvatarUrl: String? = null,
+    onViewProfile: ((String) -> Unit)? = null,
     onBack: () -> Unit,
     viewModel: DirectMessageViewModel = viewModel()
 ) {
@@ -50,10 +61,11 @@ fun DirectMessageScreen(
         onBack()
     }
 
-    LaunchedEffect(userId, username) {
+    LaunchedEffect(userId, username, initialAvatarUrl) {
         viewModel.startChat(
             userId = userId,
-            username = username
+            username = username,
+            initialAvatarUrl = initialAvatarUrl
         )
     }
 
@@ -74,9 +86,9 @@ fun DirectMessageScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             IconButton(onClick = onBack) {
                 Icon(
@@ -86,13 +98,59 @@ fun DirectMessageScreen(
                 )
             }
 
-            Column(modifier = Modifier.weight(1f)) {
+            val recipientAvatar = state.avatarUrl ?: initialAvatarUrl
+            val resolvedUrl = recipientAvatar?.trim()?.takeIf { it.isNotBlank() }?.let { url ->
+                if (url.startsWith("/")) "${RetrofitInstance.BASE_URL}$url" else url
+            }
+            var imageFailed by remember(resolvedUrl) { mutableStateOf(false) }
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(StatsCardBg)
+                    .border(1.dp, StatsCyan.copy(alpha = 0.6f), CircleShape)
+                    .clickable(
+                        enabled = onViewProfile != null,
+                        onClick = { onViewProfile?.invoke(username) }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (resolvedUrl != null && !imageFailed) {
+                    AsyncImage(
+                        model = resolvedUrl,
+                        contentDescription = "$username's profile picture",
+                        contentScale = ContentScale.Crop,
+                        onError = { imageFailed = true },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Text(
+                        text = username.trim().take(1).uppercase().ifBlank { "?" },
+                        color = StatsCyan,
+                        fontFamily = JetBrainsMono,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(
+                        enabled = onViewProfile != null,
+                        onClick = { onViewProfile?.invoke(username) }
+                    )
+            ) {
                 Text(
                     text = username,
                     color = StatsTextWhite,
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
+                    fontSize = 17.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -106,7 +164,8 @@ fun DirectMessageScreen(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(end = 6.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -179,65 +238,137 @@ fun DirectMessageScreen(
                     }
                 }
             } else {
-                items(
+                itemsIndexed(
                     items = state.messages,
-                    key = { it.id }
-                ) { message ->
-                    val mine = message.senderId != userId
+                    key = { _, item -> item.id }
+                ) { index, message ->
+                    val messageDate = remember(message.createdAt) {
+                        message.createdAt?.let { parseToLocalDate(it) }
+                    }
+                    val prevMessageDate = remember(index, state.messages.getOrNull(index - 1)?.createdAt) {
+                        if (index > 0) {
+                            state.messages.getOrNull(index - 1)?.createdAt?.let { parseToLocalDate(it) }
+                        } else null
+                    }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = if (mine) {
-                            Arrangement.End
-                        } else {
-                            Arrangement.Start
-                        }
+                    val isFirstMessageOfDay = messageDate != null && (index == 0 || messageDate != prevMessageDate)
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .widthIn(max = 300.dp)
-                                .background(
-                                    color = if (mine) StatsCyan else StatsCardBg,
-                                    shape = RoundedCornerShape(
-                                        topStart = 18.dp,
-                                        topEnd = 18.dp,
-                                        bottomStart = if (mine) 18.dp else 4.dp,
-                                        bottomEnd = if (mine) 4.dp else 18.dp
-                                    )
-                                )
-                                .padding(
-                                    horizontal = 14.dp,
-                                    vertical = 10.dp
-                                )
+                        if (isFirstMessageOfDay) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        top = if (index == 0) 0.dp else 8.dp,
+                                        bottom = 12.dp
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                DateHeaderBadge(text = formatDateHeader(messageDate))
+                            }
+                        }
+
+                        val mine = message.senderId != userId
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = if (mine) {
+                                Arrangement.End
+                            } else {
+                                Arrangement.Start
+                            },
+                            verticalAlignment = Alignment.Bottom
                         ) {
-                            Text(
-                                text = if (mine) "You" else username,
-                                color = if (mine) StatsBg else StatsCyan,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            if (!mine) {
+                                val recipientAvatar = state.avatarUrl ?: initialAvatarUrl
+                                val resolvedUrl = recipientAvatar?.trim()?.takeIf { it.isNotBlank() }?.let { url ->
+                                    if (url.startsWith("/")) "${RetrofitInstance.BASE_URL}$url" else url
+                                }
+                                var msgAvatarFailed by remember(resolvedUrl) { mutableStateOf(false) }
 
-                            Spacer(modifier = Modifier.height(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .padding(bottom = 2.dp, end = 6.dp)
+                                        .size(28.dp)
+                                        .clip(CircleShape)
+                                        .background(StatsCardBg)
+                                        .border(1.dp, StatsCardBorder, CircleShape)
+                                        .clickable(
+                                            enabled = onViewProfile != null,
+                                            onClick = { onViewProfile?.invoke(username) }
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (resolvedUrl != null && !msgAvatarFailed) {
+                                        AsyncImage(
+                                            model = resolvedUrl,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            onError = { msgAvatarFailed = true },
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clip(CircleShape)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = username.trim().take(1).uppercase().ifBlank { "?" },
+                                            color = StatsCyan,
+                                            fontFamily = JetBrainsMono,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                            }
 
-                            Text(
-                                text = message.message,
-                                color = if (mine) StatsBg else StatsTextWhite,
-                                fontSize = 15.sp
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .widthIn(max = 280.dp)
+                                    .background(
+                                        color = if (mine) StatsCyan else StatsCardBg,
+                                        shape = RoundedCornerShape(
+                                            topStart = 18.dp,
+                                            topEnd = 18.dp,
+                                            bottomStart = if (mine) 18.dp else 4.dp,
+                                            bottomEnd = if (mine) 4.dp else 18.dp
+                                        )
+                                    )
+                                    .padding(
+                                        horizontal = 14.dp,
+                                        vertical = 10.dp
+                                    )
+                            ) {
+                                Text(
+                                    text = if (mine) "You" else username,
+                                    color = if (mine) StatsBg else StatsCyan,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
 
-                            message.createdAt?.let { timestamp ->
-                                Spacer(modifier = Modifier.height(5.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
 
                                 Text(
-                                    text = timestamp.toChatTime(),
-                                    color = if (mine) {
-                                        StatsBg.copy(alpha = 0.65f)
-                                    } else {
-                                        StatsTextMuted
-                                    },
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.align(Alignment.End)
+                                    text = message.message,
+                                    color = if (mine) StatsBg else StatsTextWhite,
+                                    fontSize = 15.sp
                                 )
+
+                                message.createdAt?.let { timestamp ->
+                                    Spacer(modifier = Modifier.height(5.dp))
+
+                                    Text(
+                                        text = timestamp.toChatTime(),
+                                        color = if (mine) {
+                                            StatsBg.copy(alpha = 0.65f)
+                                        } else {
+                                            StatsTextMuted
+                                        },
+                                        fontSize = 10.sp,
+                                        modifier = Modifier.align(Alignment.End)
+                                    )
+                                }
                             }
                         }
                     }
@@ -340,14 +471,93 @@ fun DirectMessageScreen(
     }
 }
 
-private fun String.toChatTime(): String {
-    return try {
-        val instant = java.time.Instant.parse(this)
+@Composable
+private fun DateHeaderBadge(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(StatsCardBg)
+            .border(
+                width = 1.dp,
+                color = StatsCardBorder,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(horizontal = 14.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = StatsTextMuted,
+            fontSize = 11.sp,
+            fontFamily = JetBrainsMono,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
 
-        SimpleDateFormat(
-            "HH:mm",
-            Locale.getDefault()
-        ).format(Date.from(instant))
+private fun parseToLocalDate(isoString: String): LocalDate? {
+    if (isoString.isBlank()) return null
+    return try {
+        Instant.parse(isoString.trim())
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+    } catch (_: Exception) {
+        try {
+            OffsetDateTime.parse(isoString.trim())
+                .atZoneSameInstant(ZoneId.systemDefault())
+                .toLocalDate()
+        } catch (_: Exception) {
+            try {
+                val normalized = isoString.trim().replace(" ", "T")
+                LocalDateTime.parse(normalized)
+                    .atZone(ZoneId.of("UTC"))
+                    .withZoneSameInstant(ZoneId.systemDefault())
+                    .toLocalDate()
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+}
+
+private fun formatDateHeader(date: LocalDate): String {
+    val today = LocalDate.now()
+    val yesterday = today.minusDays(1)
+
+    return when (date) {
+        today -> "Today"
+        yesterday -> "Yesterday"
+        else -> {
+            val pattern = if (date.year == today.year) {
+                "MMM d"
+            } else {
+                "MMM d, yyyy"
+            }
+            DateTimeFormatter.ofPattern(pattern, Locale.getDefault()).format(date)
+        }
+    }
+}
+
+private fun String.toChatTime(): String {
+    if (this.isBlank()) return ""
+    return try {
+        val instant = try {
+            Instant.parse(this.trim())
+        } catch (_: Exception) {
+            try {
+                OffsetDateTime.parse(this.trim()).toInstant()
+            } catch (_: Exception) {
+                val normalized = this.trim().replace(" ", "T")
+                LocalDateTime.parse(normalized).atZone(ZoneId.of("UTC")).toInstant()
+            }
+        }
+        val formatter = DateTimeFormatter
+            .ofPattern("HH:mm", Locale.getDefault())
+            .withZone(ZoneId.systemDefault())
+        formatter.format(instant)
     } catch (_: Exception) {
         this
     }

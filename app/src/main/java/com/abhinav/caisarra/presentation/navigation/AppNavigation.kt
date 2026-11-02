@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity
 import com.abhinav.caisarra.app.MainActivity
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.remote.dto.getStringData
@@ -16,9 +15,6 @@ import com.abhinav.caisarra.presentation.notifications.NotificationsViewModel
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -221,17 +217,17 @@ object AppRoutes {
     const val PUZZLES = "puzzles"
     const val DAILY_PUZZLE = "daily_puzzle"
     const val PUZZLE_RUSH = "puzzle_rush?mode={mode}"
-    const val DIRECT_MESSAGE = "direct_message/{userId}/{username}"
+    const val DIRECT_MESSAGE = "direct_message/{userId}/{username}?avatarUrl={avatarUrl}"
 
     fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
     const val SOCIAL = "social"
     const val MENU = "menu"
-    const val STATS = "stats?username={username}&mode={mode}"
+    const val STATS = "com/abhinav/caisarra/presentation/screens/components/stats"
     fun stats(username: String? = null, mode: String? = null): String {
         val queryParts = mutableListOf<String>()
         if (!username.isNullOrBlank()) queryParts.add("username=${Uri.encode(username.trim())}")
         if (!mode.isNullOrBlank()) queryParts.add("mode=${Uri.encode(mode.trim())}")
-        return if (queryParts.isEmpty()) "stats" else "stats?${queryParts.joinToString("&")}"
+        return if (queryParts.isEmpty()) "com/abhinav/caisarra/presentation/screens/components/stats" else "stats?${queryParts.joinToString("&")}"
     }
     const val THEME = "theme"
     const val CLUBS = "clubs"
@@ -283,8 +279,12 @@ object AppRoutes {
     fun gameAnalysis(gameId: String) = "game_analysis/${Uri.encode(gameId)}"
 
     const val NOTIFICATIONS = "notifications"
-    fun directMessage(userId: Long, username: String) =
-        "direct_message/$userId/${Uri.encode(username)}"
+    fun directMessage(userId: Long, username: String, avatarUrl: String? = null) =
+        if (avatarUrl.isNullOrBlank()) {
+            "direct_message/$userId/${Uri.encode(username)}"
+        } else {
+            "direct_message/$userId/${Uri.encode(username)}?avatarUrl=${Uri.encode(avatarUrl.trim())}"
+        }
 
 }
 
@@ -1137,6 +1137,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     },
                     navArgument("username") {
                         type = NavType.StringType
+                    },
+                    navArgument("avatarUrl") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
                     }
                 )
             ) { backStackEntry ->
@@ -1147,6 +1152,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                 val username = backStackEntry.arguments
                     ?.getString("username") ?: "Player"
 
+                val avatarUrl = backStackEntry.arguments
+                    ?.getString("avatarUrl")
 
                 var isLeavingScreen by remember(backStackEntry) {
                     mutableStateOf(false)
@@ -1155,6 +1162,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                 DirectMessageScreen(
                     userId = userId,
                     username = username,
+                    initialAvatarUrl = avatarUrl,
+                    onViewProfile = { targetUsername ->
+                        navController.navigateOnce(AppRoutes.profile(targetUsername))
+                    },
                     onBack = {
                         if (!isLeavingScreen) {
                             isLeavingScreen = true
@@ -1208,9 +1219,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                             }
                         }
                     },
-                    onOpenChat = { userId, username ->
+                    onOpenChat = { userId, username, chatAvatarUrl ->
                         navController.navigate(
-                            "${AppRoutes.DIRECT_MESSAGE.substringBefore("/{")}/$userId/${Uri.encode(username)}"
+                            AppRoutes.directMessage(userId, username, chatAvatarUrl)
                         )
                     }
                 )
@@ -1411,7 +1422,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     onBack = {
                         navController.safeBack(friendsBackRoute)
                     },
-                    onDirectMessage = { userId, username ->
+                    onDirectMessage = { userId: Long, username: String, friendAvatarUrl: String? ->
                         scope.launch {
                             val isGuest = authRepository.isGuest()
                             val isLoggedIn = authRepository.isLoggedIn()
@@ -1424,7 +1435,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 ).show()
                             } else {
                                 navController.navigate(
-                                    "direct_message/$userId/${Uri.encode(username)}"
+                                    AppRoutes.directMessage(userId, username, friendAvatarUrl)
                                 )
                             }
                         }
@@ -1735,7 +1746,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 ).show()
                             } else {
                                 navController.navigate(
-                                    "direct_message/$userId/${Uri.encode(username)}"
+                                    AppRoutes.directMessage(userId, username)
                                 )
                             }
                         }
@@ -1827,7 +1838,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     onChat = { player ->
                         requireAuth("Direct messages") {
                             navController.navigate(
-                                "direct_message/${player.userId}/${Uri.encode(player.username)}"
+                                AppRoutes.directMessage(player.userId.toLong(), player.username)
                             )
                         }
                     },
@@ -2467,7 +2478,7 @@ private fun handleNotificationItemClick(
                 navController.navigateOnce(AppRoutes.TOURNAMENTS)
             }
         }
-        "tournament_finished" -> {
+        "tournament_finished", "tournament_completed" -> {
             val tournamentId = notification.getStringData("tournament_id")
             if (!tournamentId.isNullOrBlank()) {
                 navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))
@@ -2556,7 +2567,7 @@ private fun handleIntentNotificationNavigation(
                 navController.navigateOnce(AppRoutes.TOURNAMENTS)
             }
         }
-        "tournament_finished" -> {
+        "tournament_finished", "tournament_completed" -> {
             val tournamentId = intent.getStringExtra("tournament_id")
             if (!tournamentId.isNullOrBlank()) {
                 navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))

@@ -34,6 +34,7 @@ class RushViewModel(
     private var animationId = 0L
     private var timerJob: Job? = null
     private var startJob: Job? = null
+    private var totalTimeSeconds = 0
     private var timeRemainingSeconds = 0
 
     init {
@@ -44,21 +45,30 @@ class RushViewModel(
         if (startJob?.isActive == true) return
 
         timerJob?.cancel()
+        timerJob = null
         _state.value = RushUiState.Loading
 
         startJob = viewModelScope.launch {
             try {
                 puzzleRepository.startRush(mode)
                     .onSuccess { response ->
+                        val initialLimit = if (response.timeLimitSec > 0) {
+                            response.timeLimitSec
+                        } else if (mode == "5min") {
+                            300
+                        } else {
+                            180
+                        }
+                        totalTimeSeconds = initialLimit
                         setupFirstPuzzle(
                             response.sessionId,
                             response.mode,
-                            response.timeLimitSec,
+                            initialLimit,
                             response.puzzle
                         )
 
                         if (mode != "survival") {
-                            startTimer(response.timeLimitSec)
+                            startTimer(initialLimit)
                         }
                     }
                     .onFailure { error ->
@@ -83,6 +93,11 @@ class RushViewModel(
     fun onSquareClicked(square: UiSquare) {
         val current = _state.value
         if (current !is RushUiState.Playing || current.isAwaitingServer || current.isSkipping) return
+
+        if (current.secondsRemaining != null && (current.secondsRemaining <= 0 || timeRemainingSeconds <= 0)) {
+            onGameOver(current.copy(secondsRemaining = 0))
+            return
+        }
 
         val selected = current.selectedSquare
         if (selected == null) {
@@ -139,6 +154,12 @@ class RushViewModel(
     fun onPromotionPieceSelected(pieceType: UiPieceType) {
         val current = _state.value
         if (current !is RushUiState.Playing) return
+
+        if (current.secondsRemaining != null && (current.secondsRemaining <= 0 || timeRemainingSeconds <= 0)) {
+            onGameOver(current.copy(secondsRemaining = 0))
+            return
+        }
+
         val pending = current.promotionPending ?: return
 
         val domainPromotion = when (pieceType) {
@@ -156,6 +177,11 @@ class RushViewModel(
     fun requestHint() {
         val current = _state.value
         if (current !is RushUiState.Playing || current.isAwaitingServer || current.isSkipping) return
+
+        if (current.secondsRemaining != null && (current.secondsRemaining <= 0 || timeRemainingSeconds <= 0)) {
+            onGameOver(current.copy(secondsRemaining = 0))
+            return
+        }
 
         viewModelScope.launch {
             puzzleRepository.getHint(current.currentPuzzle.puzzleId)
@@ -201,11 +227,16 @@ class RushViewModel(
         val current = _state.value
         if (current !is RushUiState.Playing || current.isAwaitingServer || current.isSkipping) return
 
+        if (current.secondsRemaining != null && (current.secondsRemaining <= 0 || timeRemainingSeconds <= 0)) {
+            onGameOver(current.copy(secondsRemaining = 0))
+            return
+        }
+
         if (current.secondsRemaining != null) {
             timeRemainingSeconds = maxOf(0, timeRemainingSeconds - 45)
             if (timeRemainingSeconds <= 0) {
-                _state.value = current.copy(secondsRemaining = 0)
-                quitRush()
+                timeRemainingSeconds = 0
+                onGameOver(current.copy(secondsRemaining = 0))
                 return
             }
             _state.value = current.copy(secondsRemaining = timeRemainingSeconds, isSkipping = true, isAwaitingServer = true)
@@ -245,13 +276,69 @@ class RushViewModel(
 
     fun quitRush() {
         val current = _state.value
-        if (current !is RushUiState.Playing) return
         timerJob?.cancel()
+        timerJob = null
 
-        viewModelScope.launch {
-            try {
-                puzzleRepository.endRush(current.sessionId)
-            } catch (_: Exception) {
+        if (current is RushUiState.Playing) {
+            viewModelScope.launch {
+                try {
+                    puzzleRepository.endRush(current.sessionId)
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
+    private fun onGameOver(
+        playingState: RushUiState.Playing,
+        serverSummary: RushSummaryDto? = null
+    ) {
+        timerJob?.cancel()
+        timerJob = null
+
+        val elapsedSec = if (playingState.mode != "survival") {
+            maxOf(0, totalTimeSeconds - maxOf(0, timeRemainingSeconds))
+        } else {
+            0
+        }
+
+        val baseSummary = serverSummary ?: RushSummaryDto(
+            sessionId = playingState.sessionId,
+            mode = playingState.mode,
+            finalScore = playingState.score,
+            totalStrikes = playingState.strikes,
+            isNewHighScore = false,
+            bestScore = playingState.score,
+            durationSec = elapsedSec
+        )
+
+        _state.value = RushUiState.GameOver(
+            summary = baseSummary,
+            mode = playingState.mode
+        )
+
+        if (serverSummary == null) {
+            viewModelScope.launch {
+                try {
+                    puzzleRepository.endRush(playingState.sessionId)
+                        .onSuccess { endResponse ->
+                            val current = _state.value
+                            if (current is RushUiState.GameOver && current.summary.sessionId == endResponse.sessionId) {
+                                _state.value = current.copy(
+                                    summary = RushSummaryDto(
+                                        sessionId = endResponse.sessionId,
+                                        mode = endResponse.mode,
+                                        finalScore = if (endResponse.finalScore > 0) endResponse.finalScore else baseSummary.finalScore,
+                                        totalStrikes = maxOf(endResponse.totalStrikes, baseSummary.totalStrikes),
+                                        isNewHighScore = endResponse.isNewHighScore,
+                                        bestScore = if (endResponse.bestScore > 0) endResponse.bestScore else baseSummary.bestScore,
+                                        durationSec = if (endResponse.durationSec > 0) endResponse.durationSec else baseSummary.durationSec
+                                    )
+                                )
+                            }
+                        }
+                } catch (_: Exception) {
+                }
             }
         }
     }
@@ -312,6 +399,11 @@ class RushViewModel(
         val current = _state.value
         if (current !is RushUiState.Playing) return
 
+        if (current.secondsRemaining != null && (current.secondsRemaining <= 0 || timeRemainingSeconds <= 0)) {
+            onGameOver(current.copy(secondsRemaining = 0))
+            return
+        }
+
         val domainMove = Move(
             from = from.toDomainSquare(),
             to = to.toDomainSquare(),
@@ -355,10 +447,14 @@ class RushViewModel(
                 val restoredBoard = currentBoardMap()
                 val stateNow = _state.value
                 if (stateNow is RushUiState.Playing) {
-                    _state.value = stateNow.copy(
-                        board = restoredBoard,
-                        isAwaitingServer = false
-                    )
+                    if (stateNow.secondsRemaining != null && timeRemainingSeconds <= 0) {
+                        onGameOver(stateNow.copy(board = restoredBoard, secondsRemaining = 0))
+                    } else {
+                        _state.value = stateNow.copy(
+                            board = restoredBoard,
+                            isAwaitingServer = false
+                        )
+                    }
                 }
             }
         }
@@ -368,62 +464,71 @@ class RushViewModel(
         response: RushMoveResponse,
         playingState: RushUiState.Playing
     ) {
+        val currentState = _state.value
+        if (currentState !is RushUiState.Playing) {
+            if (currentState is RushUiState.GameOver && response.correct && response.score > currentState.summary.finalScore) {
+                _state.value = currentState.copy(
+                    summary = currentState.summary.copy(
+                        finalScore = response.score,
+                        bestScore = maxOf(currentState.summary.bestScore, response.score)
+                    )
+                )
+            }
+            return
+        }
+
         if (response.gameOver) {
-            timerJob?.cancel()
-            _state.value = RushUiState.GameOver(
-                summary = response.summary ?: RushSummaryDto(
-                    sessionId = playingState.sessionId,
-                    mode = playingState.mode,
-                    finalScore = response.score,
-                    totalStrikes = response.strikes ?: playingState.strikes,
-                    isNewHighScore = false,
-                    bestScore = response.score,
-                    durationSec = 0
-                ),
-                mode = playingState.mode
+            onGameOver(currentState.copy(score = response.score), response.summary)
+            return
+        }
+
+        if (currentState.secondsRemaining != null && timeRemainingSeconds <= 0) {
+            val finalScore = if (response.correct) response.score else currentState.score
+            val finalStrikes = if (!response.correct) currentState.strikes + 1 else currentState.strikes
+            onGameOver(
+                currentState.copy(score = finalScore, strikes = finalStrikes, secondsRemaining = 0),
+                response.summary
             )
             return
         }
 
-        if (playingState.isSkipping) {
+        if (currentState.isSkipping) {
             val nextPuzzle = response.nextPuzzle
-            val preservedStrikes = if (playingState.mode == "survival") {
-                playingState.strikes + 1
+            val preservedStrikes = if (currentState.mode == "survival") {
+                currentState.strikes + 1
             } else {
-                playingState.strikes
+                currentState.strikes
             }
             val preservedStrikesLeft = maxOf(0, 3 - preservedStrikes)
 
-            if (playingState.mode == "survival" && (preservedStrikes >= 3 || preservedStrikesLeft <= 0)) {
-                timerJob?.cancel()
-                _state.value = RushUiState.GameOver(
-                    summary = response.summary ?: RushSummaryDto(
-                        sessionId = playingState.sessionId,
-                        mode = playingState.mode,
-                        finalScore = playingState.score,
-                        totalStrikes = preservedStrikes,
-                        isNewHighScore = false,
-                        bestScore = playingState.score,
-                        durationSec = 0
-                    ),
-                    mode = playingState.mode
+            if (currentState.mode == "survival" && (preservedStrikes >= 3 || preservedStrikesLeft <= 0)) {
+                onGameOver(
+                    currentState.copy(strikes = preservedStrikes, strikesLeft = preservedStrikesLeft),
+                    response.summary
                 )
-                viewModelScope.launch {
-                    try {
-                        puzzleRepository.endRush(playingState.sessionId)
-                    } catch (_: Exception) {
-                    }
-                }
+                return
+            }
+
+            if (currentState.secondsRemaining != null && timeRemainingSeconds <= 0) {
+                onGameOver(
+                    currentState.copy(
+                        strikes = preservedStrikes,
+                        strikesLeft = preservedStrikesLeft,
+                        secondsRemaining = 0
+                    ),
+                    response.summary
+                )
                 return
             }
 
             if (nextPuzzle != null) {
-                loadNextPuzzle(nextPuzzle, playingState.score, preservedStrikes, preservedStrikesLeft, playingState)
+                loadNextPuzzle(nextPuzzle, currentState.score, preservedStrikes, preservedStrikesLeft, currentState)
             } else {
-                _state.value = playingState.copy(
+                _state.value = currentState.copy(
                     board = currentBoardMap(),
                     strikes = preservedStrikes,
                     strikesLeft = preservedStrikesLeft,
+                    secondsRemaining = if (currentState.secondsRemaining != null) timeRemainingSeconds else null,
                     isAwaitingServer = false,
                     isSkipping = false
                 )
@@ -432,23 +537,56 @@ class RushViewModel(
         }
 
         if (response.correct) {
-            val preservedStrikes = maxOf(playingState.strikes, response.strikes ?: 0)
-            val preservedStrikesLeft = minOf(playingState.strikesLeft, response.strikesLeft ?: (3 - preservedStrikes)).coerceAtLeast(0)
+            val preservedStrikes = maxOf(currentState.strikes, response.strikes ?: 0)
+            val preservedStrikesLeft = minOf(currentState.strikesLeft, response.strikesLeft ?: (3 - preservedStrikes)).coerceAtLeast(0)
 
             val nextPuzzle = response.nextPuzzle
             if (nextPuzzle != null) {
-                _state.value = playingState.copy(
+                _state.value = currentState.copy(
                     score = response.score,
                     strikes = preservedStrikes,
                     strikesLeft = preservedStrikesLeft,
+                    secondsRemaining = if (currentState.secondsRemaining != null) timeRemainingSeconds else null,
                     isCorrectFlash = true,
                     isAwaitingServer = true,
                     isSkipping = false
                 )
                 delay(200)
-                loadNextPuzzle(nextPuzzle, response.score, preservedStrikes, preservedStrikesLeft, playingState)
+
+                val stateAfterDelay = _state.value
+                if (stateAfterDelay !is RushUiState.Playing) return
+                if (stateAfterDelay.secondsRemaining != null && timeRemainingSeconds <= 0) {
+                    onGameOver(
+                        stateAfterDelay.copy(
+                            score = response.score,
+                            strikes = preservedStrikes,
+                            strikesLeft = preservedStrikesLeft,
+                            secondsRemaining = 0
+                        ),
+                        response.summary
+                    )
+                    return
+                }
+
+                loadNextPuzzle(nextPuzzle, response.score, preservedStrikes, preservedStrikesLeft, stateAfterDelay)
             } else if (!response.nextMove.isNullOrBlank()) {
                 delay(200)
+
+                val stateAfterDelay = _state.value
+                if (stateAfterDelay !is RushUiState.Playing) return
+                if (stateAfterDelay.secondsRemaining != null && timeRemainingSeconds <= 0) {
+                    onGameOver(
+                        stateAfterDelay.copy(
+                            score = response.score,
+                            strikes = preservedStrikes,
+                            strikesLeft = preservedStrikesLeft,
+                            secondsRemaining = 0
+                        ),
+                        response.summary
+                    )
+                    return
+                }
+
                 val replyMove = parseUciMove(response.nextMove)
                 val replyPiece = engine.pieces().find { it.square == replyMove.from }?.toUiPiece()
                 engine.play(replyMove)
@@ -462,10 +600,11 @@ class RushViewModel(
                     )
                 }
 
-                _state.value = playingState.copy(
+                _state.value = stateAfterDelay.copy(
                     board = currentBoardMap(),
                     strikes = preservedStrikes,
                     strikesLeft = preservedStrikesLeft,
+                    secondsRemaining = if (stateAfterDelay.secondsRemaining != null) timeRemainingSeconds else null,
                     lastMoveFrom = replyMove.from.toUiSquare(),
                     lastMoveTo = replyMove.to.toUiSquare(),
                     moveAnimationEvent = replyAnimation,
@@ -473,9 +612,10 @@ class RushViewModel(
                     isSkipping = false
                 )
             } else {
-                _state.value = playingState.copy(
+                _state.value = currentState.copy(
                     strikes = preservedStrikes,
                     strikesLeft = preservedStrikesLeft,
+                    secondsRemaining = if (currentState.secondsRemaining != null) timeRemainingSeconds else null,
                     isAwaitingServer = false,
                     isSkipping = false
                 )
@@ -483,48 +623,66 @@ class RushViewModel(
         } else {
             engine.undo()
             val serverStrikes = response.strikes ?: 0
-            val calculatedStrikes = maxOf(playingState.strikes + 1, serverStrikes)
+            val calculatedStrikes = maxOf(currentState.strikes + 1, serverStrikes)
             val calculatedStrikesLeft = maxOf(0, 3 - calculatedStrikes)
 
             if (calculatedStrikes >= 3 || calculatedStrikesLeft <= 0) {
-                timerJob?.cancel()
-                _state.value = RushUiState.GameOver(
-                    summary = response.summary ?: RushSummaryDto(
-                        sessionId = playingState.sessionId,
-                        mode = playingState.mode,
-                        finalScore = if (response.score > 0) response.score else playingState.score,
-                        totalStrikes = calculatedStrikes,
-                        isNewHighScore = false,
-                        bestScore = playingState.score,
-                        durationSec = 0
+                onGameOver(
+                    currentState.copy(
+                        score = if (response.score > 0) response.score else currentState.score,
+                        strikes = calculatedStrikes,
+                        strikesLeft = calculatedStrikesLeft
                     ),
-                    mode = playingState.mode
+                    response.summary
                 )
-                viewModelScope.launch {
-                    try {
-                        puzzleRepository.endRush(playingState.sessionId)
-                    } catch (_: Exception) {
-                    }
-                }
+                return
+            }
+
+            if (currentState.secondsRemaining != null && timeRemainingSeconds <= 0) {
+                onGameOver(
+                    currentState.copy(
+                        strikes = calculatedStrikes,
+                        strikesLeft = calculatedStrikesLeft,
+                        secondsRemaining = 0
+                    ),
+                    response.summary
+                )
                 return
             }
 
             val nextPuzzle = response.nextPuzzle
             if (nextPuzzle != null) {
-                _state.value = playingState.copy(
+                _state.value = currentState.copy(
                     strikes = calculatedStrikes,
                     strikesLeft = calculatedStrikesLeft,
+                    secondsRemaining = if (currentState.secondsRemaining != null) timeRemainingSeconds else null,
                     isStrikeFlash = true,
                     isAwaitingServer = true,
                     isSkipping = false
                 )
                 delay(250)
-                loadNextPuzzle(nextPuzzle, playingState.score, calculatedStrikes, calculatedStrikesLeft, playingState)
+
+                val stateAfterDelay = _state.value
+                if (stateAfterDelay !is RushUiState.Playing) return
+                if (stateAfterDelay.secondsRemaining != null && timeRemainingSeconds <= 0) {
+                    onGameOver(
+                        stateAfterDelay.copy(
+                            strikes = calculatedStrikes,
+                            strikesLeft = calculatedStrikesLeft,
+                            secondsRemaining = 0
+                        ),
+                        response.summary
+                    )
+                    return
+                }
+
+                loadNextPuzzle(nextPuzzle, currentState.score, calculatedStrikes, calculatedStrikesLeft, stateAfterDelay)
             } else {
-                _state.value = playingState.copy(
+                _state.value = currentState.copy(
                     board = currentBoardMap(),
                     strikes = calculatedStrikes,
                     strikesLeft = calculatedStrikesLeft,
+                    secondsRemaining = if (currentState.secondsRemaining != null) timeRemainingSeconds else null,
                     isAwaitingServer = false,
                     isSkipping = false,
                     isStrikeFlash = true
@@ -540,6 +698,18 @@ class RushViewModel(
         newStrikesLeft: Int,
         previousState: RushUiState.Playing
     ) {
+        if (previousState.secondsRemaining != null && timeRemainingSeconds <= 0) {
+            onGameOver(
+                previousState.copy(
+                    score = newScore,
+                    strikes = newStrikes,
+                    strikesLeft = newStrikesLeft,
+                    secondsRemaining = 0
+                )
+            )
+            return
+        }
+
         val fenTokens = nextPuzzle.fen.trim().split(" ")
         val fenSide = fenTokens.getOrNull(1) ?: "w"
         val playerColor = if (fenSide == "w") UiPieceColor.BLACK else UiPieceColor.WHITE
@@ -571,6 +741,7 @@ class RushViewModel(
             score = newScore,
             strikes = newStrikes,
             strikesLeft = newStrikesLeft,
+            secondsRemaining = if (previousState.secondsRemaining != null) timeRemainingSeconds else null,
             selectedSquare = null,
             legalMoves = emptyList(),
             lastMoveFrom = initialMoveObj.from.toUiSquare(),
@@ -588,6 +759,7 @@ class RushViewModel(
 
     private fun startTimer(totalSeconds: Int) {
         timerJob?.cancel()
+        totalTimeSeconds = totalSeconds
         timeRemainingSeconds = totalSeconds
         timerJob = viewModelScope.launch {
             while (timeRemainingSeconds > 0) {
@@ -598,7 +770,10 @@ class RushViewModel(
                     _state.value = current.copy(secondsRemaining = timeRemainingSeconds)
                 }
             }
-            quitRush()
+            val current = _state.value
+            if (current is RushUiState.Playing) {
+                onGameOver(current.copy(secondsRemaining = 0))
+            }
         }
     }
 
