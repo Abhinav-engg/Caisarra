@@ -33,7 +33,7 @@ import java.util.Locale
 private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.US)
 
 @Composable
-internal fun KeyMetricsGrid(
+ fun KeyMetricsGrid(
     stats: ModeStatsData
 ) {
     Column(
@@ -75,7 +75,7 @@ internal fun KeyMetricsGrid(
 
 
 @Composable
-internal fun MetricCard(
+ fun MetricCard(
     value: String,
     label: String,
     modifier: Modifier = Modifier

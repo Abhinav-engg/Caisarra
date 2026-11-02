@@ -51,7 +51,7 @@ import java.util.Locale
 private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.US)
 
 @Composable
-internal fun RecentGamesSection(
+fun RecentGamesSection(
     games: List<RatingRecentGame>,
     onGameClick: (String) -> Unit,
     onOpponentClick: (String) -> Unit = {}
@@ -77,7 +77,7 @@ internal fun RecentGamesSection(
     }
 }
 @Composable
-internal fun RecentGameItem(
+ fun RecentGameItem(
     game: RatingRecentGame,
     onClick: () -> Unit,
     onOpponentClick: () -> Unit = {}

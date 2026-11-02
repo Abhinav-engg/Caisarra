@@ -48,7 +48,7 @@ import java.util.Locale
 private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.US)
 
 @Composable
-internal fun RatingProgressionCard(
+ fun RatingProgressionCard(
     stats: ModeStatsData,
     selectedMode: GameMode,
     selectedRange: StatsRange,
@@ -188,7 +188,7 @@ internal fun RatingProgressionCard(
     }
 }
 @Composable
-internal fun RangeFilterChips(
+fun RangeFilterChips(
     selectedRange: StatsRange,
     onSelectRange: (StatsRange) -> Unit
 ) {

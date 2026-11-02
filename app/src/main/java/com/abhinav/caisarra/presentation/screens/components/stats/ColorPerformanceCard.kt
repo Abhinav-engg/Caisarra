@@ -23,6 +23,7 @@ import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
 import com.abhinav.caisarra.core.ui.theme.StatsCardItemSpacing
 import com.abhinav.caisarra.data.remote.dto.ColorStatsDto
+import com.abhinav.caisarra.presentation.screens.components.stats.StackedProgressBar
 import com.caisaara.ui.theme.StatsBarSlate
 import com.caisaara.ui.theme.StatsCardBg
 import com.caisaara.ui.theme.StatsCardBorder

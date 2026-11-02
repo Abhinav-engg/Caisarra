@@ -33,7 +33,7 @@ import java.util.Locale
 private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.US)
 
 @Composable
-internal fun ModeSelectorBar(
+fun ModeSelectorBar(
     selectedMode: GameMode,
     onSelectMode: (GameMode) -> Unit,
     modifier: Modifier = Modifier

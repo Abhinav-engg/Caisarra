@@ -11,21 +11,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Image
@@ -39,15 +34,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
-import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
@@ -72,7 +64,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -80,15 +71,16 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import com.abhinav.caisarra.presentation.components.CountryUtils
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
-import java.util.Locale
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import android.os.SystemClock
 import androidx.compose.runtime.mutableLongStateOf
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.abhinav.caisarra.presentation.screens.components.profile.EditProfileField
+import com.abhinav.caisarra.presentation.screens.components.profile.PhotoOptionRow
+import com.abhinav.caisarra.presentation.screens.components.profile.ReadOnlyProfileRow
 import com.yalantis.ucrop.UCrop
 
 private val EditBackground = Color(0xFF080D13)
@@ -101,7 +93,7 @@ private val EditMuted = Color(0xFF9BAABD)
 private val EditBorder = Color(0xFF29384A)
 private val EditError = Color(0xFFFF7777)
 
-private enum class AvatarSource(val label: String) {
+internal enum class AvatarSource(val label: String) {
     GALLERY("Gallery"),
     CAMERA("Camera"),
     URL("Avatar URL")
@@ -144,7 +136,6 @@ fun EditProfileScreen(
         mutableStateOf(AvatarSource.URL)
     }
 
-    // Receives the fixed 1:1 crop result. Only the cropped image is uploaded.
     val cropLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -822,27 +813,7 @@ fun EditProfileScreen(
     }
 }
 
-@Composable
-private fun PhotoOptionRow(
-    title: String,
-    icon: @Composable () -> Unit,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 16.dp, horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        icon()
-        Spacer(Modifier.size(14.dp))
-        Text(title, color = EditWhite, fontSize = 16.sp)
-    }
-}
-
-private fun validateEditProfile(
+internal fun validateEditProfile(
     displayName: String,
     bio: String,
     country: String,
@@ -858,109 +829,5 @@ private fun validateEditProfile(
         "Avatar URL must start with https://."
     avatarUrl.length > 500 -> "Avatar URL must be at most 500 characters."
     else -> null
-}
-
-@Composable
-private fun AvatarSourceButton(
-    modifier: Modifier = Modifier,
-    title: String,
-    subtitle: String,
-    icon: @Composable () -> Unit,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val borderColor = if (selected) EditCyan else EditBorder
-    val backgroundColor = if (selected) Color(0xFF10313C) else EditCardSecondary
-
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(backgroundColor)
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(5.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            androidx.compose.runtime.CompositionLocalProvider(
-                androidx.compose.material3.LocalContentColor provides
-                        if (selected) EditCyan else EditMuted,
-                content = icon
-            )
-        }
-        Text(
-            title,
-            color = if (selected) EditCyan else EditWhite,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(subtitle, color = EditMuted, fontSize = 9.sp)
-    }
-}
-
-@Composable
-private fun ReadOnlyProfileRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(EditCardSecondary)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(label, color = EditMuted, fontSize = 12.sp)
-        Text(
-            value.ifBlank { "Not available" },
-            color = EditWhite,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun EditProfileField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    singleLine: Boolean = false,
-    supportingText: String? = null,
-    capitalization: KeyboardCapitalization = KeyboardCapitalization.Sentences,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    minLines: Int = 1,
-    leadingIcon: (@Composable () -> Unit)? = null
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = singleLine,
-        minLines = minLines,
-        supportingText = supportingText?.let { text ->
-            { Text(text, color = EditMuted) }
-        },
-        leadingIcon = leadingIcon,
-        keyboardOptions = KeyboardOptions(
-            capitalization = capitalization,
-            keyboardType = keyboardType,
-            imeAction = if (singleLine) ImeAction.Next else ImeAction.Default
-        ),
-        shape = RoundedCornerShape(15.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = EditWhite,
-            unfocusedTextColor = EditWhite,
-            focusedBorderColor = EditCyan,
-            unfocusedBorderColor = EditBorder,
-            focusedLabelColor = EditCyan,
-            unfocusedLabelColor = EditMuted,
-            cursorColor = EditCyan,
-            focusedContainerColor = EditBackground,
-            unfocusedContainerColor = EditBackground
-        )
-    )
 }
 
