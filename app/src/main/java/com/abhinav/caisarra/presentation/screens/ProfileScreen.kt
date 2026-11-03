@@ -24,14 +24,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -82,6 +85,7 @@ fun ProfileScreen(
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
     var showChallengeDialog by remember { mutableStateOf(false) }
+    var showBlockDialog by remember { mutableStateOf(false) }
     var settingsExpanded by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
@@ -164,43 +168,55 @@ fun ProfileScreen(
                 } else if (
                     state.profile?.userId != null
                 ) {
-
-
-                    IconButton(
-                        onClick = {
-                            showChallengeDialog = true
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SportsEsports,
-                            contentDescription = "Challenge player",
-                            tint = ProfileCyan,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-
-
-                    if (onDirectMessage != null) {
+                    if (!state.isBlocked) {
                         IconButton(
                             onClick = {
-                                val uid = state.profile?.userId
-                                val username = state.profile?.username
-
-                                if (
-                                    uid != null &&
-                                    !username.isNullOrBlank()
-                                ) {
-                                    onDirectMessage(uid, username)
-                                }
+                                showChallengeDialog = true
                             }
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Chat,
-                                contentDescription = "Message player",
+                                imageVector = Icons.Default.SportsEsports,
+                                contentDescription = "Challenge player",
                                 tint = ProfileCyan,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
+
+                        if (onDirectMessage != null) {
+                            IconButton(
+                                onClick = {
+                                    val uid = state.profile?.userId
+                                    val username = state.profile?.username
+
+                                    if (
+                                        uid != null &&
+                                        !username.isNullOrBlank()
+                                    ) {
+                                        onDirectMessage(uid, username)
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Chat,
+                                    contentDescription = "Message player",
+                                    tint = ProfileCyan,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    IconButton(
+                        onClick = {
+                            showBlockDialog = true
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Block,
+                            contentDescription = if (state.isBlocked) "Unblock player" else "Block player",
+                            tint = if (state.isBlocked) ProfileCyan else ProfileError,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
             }
@@ -238,6 +254,52 @@ fun ProfileScreen(
                     onGameStarted = { gameId ->
                         showChallengeDialog = false
                         onEnterGame(gameId)
+                    }
+                )
+            }
+
+            if (showBlockDialog && profileToChallenge?.userId != null) {
+                val isBlocked = state.isBlocked
+                val targetUserId = profileToChallenge.userId
+                val targetName = profileToChallenge.displayName ?: profileToChallenge.username
+                AlertDialog(
+                    onDismissRequest = { showBlockDialog = false },
+                    containerColor = ProfileCard,
+                    title = {
+                        Text(
+                            text = if (isBlocked) "Unblock $targetName" else "Block $targetName",
+                            color = ProfileWhite,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = if (isBlocked) {
+                                "Unblock this player to allow challenges and messages?"
+                            } else {
+                                "Block this player? They will not be able to message you or challenge you."
+                            },
+                            color = ProfileMuted
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                if (isBlocked) viewModel.unblockUser(targetUserId) else viewModel.blockUser(targetUserId)
+                                showBlockDialog = false
+                            }
+                        ) {
+                            Text(
+                                text = if (isBlocked) "Unblock" else "Block",
+                                color = if (isBlocked) ProfileCyan else ProfileError,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showBlockDialog = false }) {
+                            Text("Cancel", color = ProfileMuted)
+                        }
                     }
                 )
             }

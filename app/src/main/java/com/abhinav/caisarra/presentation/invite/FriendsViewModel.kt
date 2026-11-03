@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.RetrofitInstance
+import com.abhinav.caisarra.data.remote.dto.BlockedUserDto
 import com.abhinav.caisarra.data.remote.dto.FriendDto
 import com.abhinav.caisarra.data.remote.dto.FriendRequestDto
 import com.abhinav.caisarra.data.remote.dto.FriendshipStatusData
@@ -43,6 +44,7 @@ data class FriendsUiState(
     val friends: List<FriendDto> = emptyList(),
     val incomingRequests: List<FriendRequestDto> = emptyList(),
     val sentRequests: List<FriendRequestDto> = emptyList(),
+    val blockedUsers: List<BlockedUserDto> = emptyList(),
     val searchQuery: String = "",
     val searchResults: List<PlayerSearchDto> = emptyList(),
     val friendshipStatuses: Map<String, FriendshipStatusData> = emptyMap(),
@@ -256,11 +258,13 @@ class FriendsViewModel(
             val friendsTask = async { repository.getFriends() }
             val incomingTask = async { repository.getIncomingRequests() }
             val sentTask = async { repository.getSentRequests() }
+            val blockedTask = async { repository.getBlockedUsers() }
             val profileTask = async { runCatching { profileRepository.getMyProfile() }.getOrNull() }
 
             val friendsResult = friendsTask.await()
             val incomingResult = incomingTask.await()
             val sentResult = sentTask.await()
+            val blockedResult = blockedTask.await()
             val profileResult = profileTask.await()
 
             _uiState.update { current ->
@@ -272,10 +276,13 @@ class FriendsViewModel(
                         ?: current.incomingRequests,
                     sentRequests = sentResult.getOrNull()
                         ?: current.sentRequests,
+                    blockedUsers = blockedResult.getOrNull()
+                        ?: current.blockedUsers,
                     error = listOf(
                         friendsResult.exceptionOrNull(),
                         incomingResult.exceptionOrNull(),
-                        sentResult.exceptionOrNull()
+                        sentResult.exceptionOrNull(),
+                        blockedResult.exceptionOrNull()
                     ).filterNotNull().firstOrNull()?.message
                 )
             }
@@ -345,6 +352,44 @@ class FriendsViewModel(
                     _uiState.update {
                         it.copy(error = error.message)
                     }
+                }
+        }
+    }
+
+    fun blockUser(userId: Long, username: String? = null) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(activeUsername = username, error = null, message = null) }
+            repository.blockUser(userId)
+                .onSuccess {
+                    _uiState.update { it.copy(activeUsername = null, message = "User blocked.", error = null) }
+                    if (!username.isNullOrBlank()) {
+                        repository.getFriendshipStatus(username).onSuccess { status ->
+                            _uiState.update { it.copy(friendshipStatuses = it.friendshipStatuses + (username to status)) }
+                        }
+                    }
+                    refresh()
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(activeUsername = null, error = error.message ?: "Could not block user.") }
+                }
+        }
+    }
+
+    fun unblockUser(userId: Long, username: String? = null) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(activeUsername = username, error = null, message = null) }
+            repository.unblockUser(userId)
+                .onSuccess {
+                    _uiState.update { it.copy(activeUsername = null, message = "User unblocked.", error = null) }
+                    if (!username.isNullOrBlank()) {
+                        repository.getFriendshipStatus(username).onSuccess { status ->
+                            _uiState.update { it.copy(friendshipStatuses = it.friendshipStatuses + (username to status)) }
+                        }
+                    }
+                    refresh()
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(activeUsername = null, error = error.message ?: "Could not unblock user.") }
                 }
         }
     }

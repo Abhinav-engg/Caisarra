@@ -6,6 +6,7 @@ import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.api.FriendsService
+import com.abhinav.caisarra.data.remote.dto.BlockedUserDto
 import com.abhinav.caisarra.data.remote.dto.FriendDto
 import com.abhinav.caisarra.data.remote.dto.FriendRequestDto
 import com.abhinav.caisarra.data.remote.dto.FriendshipStatusData
@@ -108,6 +109,22 @@ class FriendsRepository(context: Context) {
             val response = service.removeFriend(userId)
             checkSuccess(response.success, response.error, response.message)
         }
+
+    suspend fun getBlockedUsers(): Result<List<BlockedUserDto>> = execute {
+        val response = service.getBlockedUsers()
+        checkSuccess(response.success, response.error, response.message)
+        response.data?.blockedUsers.orEmpty()
+    }
+
+    suspend fun blockUser(userId: Long): Result<Unit> = execute {
+        val response = service.blockUser(userId)
+        checkSuccess(response.success, response.error, response.message)
+    }
+
+    suspend fun unblockUser(userId: Long): Result<Unit> = execute {
+        val response = service.unblockUser(userId)
+        checkSuccess(response.success, response.error, response.message)
+    }
 
     private fun checkSuccess(
         success: Boolean,

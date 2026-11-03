@@ -2,6 +2,7 @@
 package com.abhinav.caisarra.data.remote.api
 
 import com.abhinav.caisarra.data.remote.dto.ApiResponse
+import com.abhinav.caisarra.data.remote.dto.BlockedUsersData
 import com.abhinav.caisarra.data.remote.dto.FriendRequestsData
 import com.abhinav.caisarra.data.remote.dto.FriendshipStatusData
 import com.abhinav.caisarra.data.remote.dto.FriendsListData
@@ -63,6 +64,19 @@ interface FriendsService {
 
     @DELETE("api/friends/{userId}")
     suspend fun removeFriend(
+        @Path("userId") userId: Long
+    ): ApiResponse<Unit>
+
+    @GET("api/friends/blocks")
+    suspend fun getBlockedUsers(): ApiResponse<BlockedUsersData>
+
+    @POST("api/friends/blocks/{userId}")
+    suspend fun blockUser(
+        @Path("userId") userId: Long
+    ): ApiResponse<Unit>
+
+    @DELETE("api/friends/blocks/{userId}")
+    suspend fun unblockUser(
         @Path("userId") userId: Long
     ): ApiResponse<Unit>
 }

@@ -160,10 +160,12 @@ fun StatsScreen(
 
                         KeyMetricsGrid(stats = stats)
 
-                        ColorPerformanceCard(
-                            asWhite = stats.asWhite,
-                            asBlack = stats.asBlack
-                        )
+                        if (stats.asWhite != null || stats.asBlack != null) {
+                            ColorPerformanceCard(
+                                asWhite = stats.asWhite,
+                                asBlack = stats.asBlack
+                            )
+                        }
 
                         if (stats.recentGames.isNotEmpty()) {
                             RecentGamesSection(

@@ -6,9 +6,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PuzzleHistoryItemDto(
     val id: Long = 0L,
-    @SerialName("puzzle_id") val puzzleId: String,
+    @SerialName("puzzle_id") val puzzleId: String = "",
     val solved: Boolean = false,
     @SerialName("attempted_moves") val attemptedMoves: List<String> = emptyList(),
+    @SerialName("moves") val moves: String? = null,
     @SerialName("solution_moves") val solutionMoves: List<String> = emptyList(),
     @SerialName("user_rating_before") val userRatingBefore: Int? = null,
     @SerialName("user_rating_after") val userRatingAfter: Int? = null,

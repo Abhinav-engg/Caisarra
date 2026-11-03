@@ -165,6 +165,8 @@ import com.abhinav.caisarra.presentation.watch.WatchScreen
 import com.abhinav.caisarra.presentation.watch.WatchViewModel
 import com.caisaara.ui.theme.SplashBackground
 import kotlinx.coroutines.launch
+import com.abhinav.caisarra.presentation.puzzles.CustomTacticsViewModel
+import com.abhinav.caisarra.presentation.screens.CustomTacticsScreen
 
 object AppRoutes {
     const val SPLASH = "splash"
@@ -217,6 +219,7 @@ object AppRoutes {
     const val PUZZLES = "puzzles"
     const val DAILY_PUZZLE = "daily_puzzle"
     const val PUZZLE_RUSH = "puzzle_rush?mode={mode}"
+    const val CUSTOM_TACTICS = "custom_tactics"
     const val DIRECT_MESSAGE = "direct_message/{userId}/{username}?avatarUrl={avatarUrl}"
 
     fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
@@ -922,6 +925,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                             GameMode.BLITZ -> 3
                             GameMode.RAPID -> 10
                             GameMode.DAILY -> 1440
+                            else -> 10
                         }
                         requireAuth("Online matchmaking") {
                             navController.navigateOnce(AppRoutes.matchmaking(minutes, 0))
@@ -1934,8 +1938,16 @@ fun AppNavigation(authRepository: AuthRepository) {
                             }
                             launchSingleTop = true
                         }
+                    },
+                    onPlayCustomTactics = {
+                        navController.navigateOnce(AppRoutes.CUSTOM_TACTICS) {
+                            launchSingleTop = true
+                        }
                     }
+
+
                 )
+
             }
 
             composable(route = AppRoutes.DAILY_PUZZLE) {
@@ -1949,6 +1961,31 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
                 DailyPuzzleScreen(
                     viewModel = dailyViewModel,
+                    onBack = {
+                        navController.safeBack(AppRoutes.PUZZLES)
+                    }
+                )
+            }
+            // ---------------------------------------------------------
+// CUSTOM TACTICS
+// ---------------------------------------------------------
+
+            composable(route = AppRoutes.CUSTOM_TACTICS) {
+
+                val tokenManager = remember {
+                    TokenManager.get(context)
+                }
+
+                val customTacticsViewModel = screenViewModel {
+                    CustomTacticsViewModel(
+                        repository = PuzzleRepository(
+                            RetrofitInstance.createPuzzleService(tokenManager)
+                        )
+                    )
+                }
+
+                CustomTacticsScreen(
+                    viewModel = customTacticsViewModel,
                     onBack = {
                         navController.safeBack(AppRoutes.PUZZLES)
                     }
@@ -2107,6 +2144,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                         ),
                         profileRepository = ProfileRepository(
                             authRepository.createProfileService()
+                        ),
+                        puzzleRepository = PuzzleRepository(
+                            authRepository.createPuzzleService()
                         ),
                         initialUsername = usernameArg,
                         initialMode = modeArg

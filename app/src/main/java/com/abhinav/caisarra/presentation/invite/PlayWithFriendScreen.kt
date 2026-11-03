@@ -297,10 +297,11 @@ fun PlayWithFriendScreen(
                         item { Text("SEARCH RESULTS", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
                         items(state.searchResults) { player ->
                             val status = state.friendshipStatuses[player.username]
+                            val isBlocked = status?.status == "blocked" || state.blockedUsers.any { it.userId == player.userId }
                             val isFriend = status?.status == "friends" || state.friends.any { it.username == player.username }
                             PlayerSearchResultItem(
                                 player = player,
-                                status = if (isFriend) "friends" else status?.status,
+                                status = if (isBlocked) "blocked" else if (isFriend) "friends" else status?.status,
                                 isBusy = state.activeUsername == player.username,
                                 onPlayerClick = { onViewProfile(player.username) },
                                 onDirectMessage = { onDirectMessage(player.userId, player.username, player.avatarUrl) },
@@ -315,7 +316,8 @@ fun PlayWithFriendScreen(
                                 onAdd = { viewModel.addFriend(player.username) },
                                 onCancel = { status?.requestId?.let { viewModel.cancelRequest(it, player.username) } },
                                 onAccept = { status?.requestId?.let { viewModel.acceptRequest(it, player.username) } },
-                                onReject = { status?.requestId?.let { viewModel.rejectRequest(it, player.username) } }
+                                onReject = { status?.requestId?.let { viewModel.rejectRequest(it, player.username) } },
+                                onUnblock = { viewModel.unblockUser(player.userId, player.username) }
                             )
                         }
                     }

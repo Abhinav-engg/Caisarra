@@ -58,6 +58,7 @@ import com.abhinav.caisarra.data.local.BOARD_THEME_KEY
 import com.abhinav.caisarra.presentation.game.model.BoardTheme
 import com.abhinav.caisarra.presentation.game.model.BoardThemeId
 import com.abhinav.caisarra.presentation.game.model.BoardThemes
+import com.abhinav.caisarra.presentation.game.model.PieceTheme
 
 private const val MIN_MOVE_DURATION = 120
 private const val MAX_MOVE_DURATION = 320
@@ -74,6 +75,7 @@ fun ChessBoard(
     isBlackInCheck: Boolean,
     isFlipped: Boolean,
     boardTheme: BoardTheme? = null,
+    pieceTheme: PieceTheme? = null,
     moveAnimationEvent: PieceMoveAnimationEvent? = null,
     moveAnimationConsumedId: Long? = null,
     onMoveAnimationStarted: (Long) -> Unit = {},
@@ -245,7 +247,10 @@ fun ChessBoard(
 
                             val isMovingDestination = activeMove?.to == square
                             if (piece != null && !isMovingDestination) {
-                                PieceView(piece = piece)
+                                PieceView(
+                                    piece = piece,
+                                    pieceTheme = pieceTheme
+                                )
                             }
                             if (coordinatesEnabled &&displayColumn == 0) {
                                 Text(
@@ -348,7 +353,10 @@ fun ChessBoard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                PieceView(piece = move.piece)
+                PieceView(
+                    piece = move.piece,
+                    pieceTheme = pieceTheme
+                )
             }
         }
     }
