@@ -1684,6 +1684,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                         remoteGameRepository = RemoteGameRepository(
                             authRepository.createGamesService()
                         ),
+                        friendsRepository = FriendsRepository(context),
                         initialUsername = usernameArg
                     )
                 }

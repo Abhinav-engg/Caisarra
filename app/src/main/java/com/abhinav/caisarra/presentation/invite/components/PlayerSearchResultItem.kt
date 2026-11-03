@@ -53,6 +53,7 @@ fun PlayerSearchResultItem(
     onCancel: () -> Unit,
     onAccept: () -> Unit,
     onReject: () -> Unit,
+    onUnblock: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val name = player.displayName ?: player.username
@@ -133,6 +134,14 @@ fun PlayerSearchResultItem(
                 }
             }
             "self" -> Text("You", color = FriendsTextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            "blocked" -> {
+                Box(
+                    modifier = Modifier.clip(btnShape).background(FriendsButtonDark).border(1.dp, FriendsButtonDarkBorder, btnShape).clickable(enabled = !isBusy, onClick = onUnblock).padding(horizontal = 12.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Unblock", color = FriendsTextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
             else -> {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(

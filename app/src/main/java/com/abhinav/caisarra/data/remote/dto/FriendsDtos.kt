@@ -109,3 +109,19 @@ data class SendFriendRequestData(
     @SerialName("request_id")
     val requestId: Long
 )
+
+@Serializable
+data class BlockedUsersData(
+    @SerialName("blocked_users")
+    val blockedUsers: List<BlockedUserDto> = emptyList()
+)
+
+@Serializable
+data class BlockedUserDto(
+    @SerialName("user_id")
+    val userId: Long,
+    val username: String,
+    val rating: Int? = null,
+    @SerialName("blocked_at")
+    val blockedAt: String? = null
+)

@@ -10,6 +10,7 @@ import com.abhinav.caisarra.data.remote.api.DefaultAvatarItem
 import com.abhinav.caisarra.data.remote.dto.ModeRating
 import com.abhinav.caisarra.data.remote.dto.ProfileData
 import com.abhinav.caisarra.data.remote.dto.UpdateProfileRequest
+import com.abhinav.caisarra.data.repository.FriendsRepository
 import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.data.repository.RatingRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
@@ -27,13 +28,15 @@ data class ProfileUiState(
     val isOwnProfile: Boolean = true,
     val targetUsername: String? = null,
     val recentGames: List<GameEntity> = emptyList(),
-    val loadingGames: Boolean = false
+    val loadingGames: Boolean = false,
+    val isBlocked: Boolean = false
 )
 
 class ProfileViewModel(
     private val repository: ProfileRepository,
     private val ratingRepository: RatingRepository? = null,
     private val remoteGameRepository: RemoteGameRepository? = null,
+    private val friendsRepository: FriendsRepository? = null,
     private val initialUsername: String? = null
 ) : ViewModel() {
 
@@ -127,9 +130,12 @@ class ProfileViewModel(
             profile
         }
 
+        val isBlocked = friendsRepository?.getFriendshipStatus(targetUser)?.getOrNull()?.status == "blocked"
+
         _state.value = _state.value.copy(
             profile = finalProfile,
             isOwnProfile = false,
+            isBlocked = isBlocked,
             loading = false,
             loadingGames = true,
             error = null
@@ -317,6 +323,30 @@ class ProfileViewModel(
                     error = e.message ?: "Unable to update profile"
                 )
             }
+        }
+    }
+
+    fun blockUser(userId: Long) {
+        viewModelScope.launch {
+            friendsRepository?.blockUser(userId)
+                ?.onSuccess {
+                    _state.value = _state.value.copy(isBlocked = true, message = "User blocked.")
+                }
+                ?.onFailure { error ->
+                    _state.value = _state.value.copy(error = error.message ?: "Could not block user.")
+                }
+        }
+    }
+
+    fun unblockUser(userId: Long) {
+        viewModelScope.launch {
+            friendsRepository?.unblockUser(userId)
+                ?.onSuccess {
+                    _state.value = _state.value.copy(isBlocked = false, message = "User unblocked.")
+                }
+                ?.onFailure { error ->
+                    _state.value = _state.value.copy(error = error.message ?: "Could not unblock user.")
+                }
         }
     }
 }
