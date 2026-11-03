@@ -4,7 +4,8 @@ enum class GameMode(val label: String, val ratingKey: String) {
     BULLET("Bullet", "bullet"),
     BLITZ("Blitz", "blitz"),
     RAPID("Rapid", "rapid"),
-    DAILY("Daily", "daily")
+    DAILY("Daily", "daily"),
+    PUZZLE("Puzzle", "puzzle")
 }
 
 data class GameSetupUiState(

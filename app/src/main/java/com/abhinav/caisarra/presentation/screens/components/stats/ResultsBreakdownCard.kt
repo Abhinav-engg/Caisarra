@@ -44,6 +44,7 @@ fun ResultsCard(
     stats: ModeStatsData,
     modeName: String
 ) {
+    val isPuzzle = stats.mode.equals("puzzle", ignoreCase = true)
     val totalGames = stats.gamesPlayed
     val winPercent = if (totalGames > 0) (stats.wins * 100 / totalGames) else 0
     val drawPercent = if (totalGames > 0) (stats.draws * 100 / totalGames) else 0
@@ -74,7 +75,7 @@ fun ResultsCard(
                 )
 
                 Text(
-                    text = "$totalGames rated games",
+                    text = if (isPuzzle) "$totalGames puzzles" else "$totalGames rated games",
                     fontFamily = JetBrainsMono,
                     fontSize = TextSizeCaption,
                     color = StatsTextMuted
@@ -94,27 +95,29 @@ fun ResultsCard(
                         color = StatsCyan
                     )
                     Text(
-                        text = "Wins · $winPercent%",
+                        text = if (isPuzzle) "Solved · $winPercent%" else "Wins · $winPercent%",
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeCaption,
                         color = StatsTextMuted
                     )
                 }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${stats.draws}",
-                        fontFamily = JetBrainsMono,
-                        fontSize = TextSizeStat,
-                        fontWeight = FontWeight.Bold,
-                        color = StatsDivider
-                    )
-                    Text(
-                        text = "Draws · $drawPercent%",
-                        fontFamily = JetBrainsMono,
-                        fontSize = TextSizeCaption,
-                        color = StatsTextMuted
-                    )
+                if (!isPuzzle) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "${stats.draws}",
+                            fontFamily = JetBrainsMono,
+                            fontSize = TextSizeStat,
+                            fontWeight = FontWeight.Bold,
+                            color = StatsDivider
+                        )
+                        Text(
+                            text = "Draws · $drawPercent%",
+                            fontFamily = JetBrainsMono,
+                            fontSize = TextSizeCaption,
+                            color = StatsTextMuted
+                        )
+                    }
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -126,7 +129,7 @@ fun ResultsCard(
                         color = StatsRed
                     )
                     Text(
-                        text = "Losses · $lossPercent%",
+                        text = if (isPuzzle) "Failed · $lossPercent%" else "Losses · $lossPercent%",
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeCaption,
                         color = StatsTextMuted
@@ -143,9 +146,13 @@ fun ResultsCard(
 
             Text(
                 text = if (totalGames > 0) {
-                    "${stats.winPercent}% win rate across your rated $modeName games."
+                    if (isPuzzle) {
+                        "${stats.winPercent}% solve rate across your $totalGames puzzles."
+                    } else {
+                        "${stats.winPercent}% win rate across your rated $modeName games."
+                    }
                 } else {
-                    "No rated $modeName games played yet."
+                    if (isPuzzle) "No puzzles played yet." else "No rated $modeName games played yet."
                 },
                 fontFamily = JetBrainsMono,
                 fontSize = TextSizeCaption,

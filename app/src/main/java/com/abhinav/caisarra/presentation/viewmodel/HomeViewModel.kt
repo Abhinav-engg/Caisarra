@@ -7,6 +7,7 @@ import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.data.local.entity.RecordStatus
+import com.abhinav.caisarra.data.remote.dto.DailyStreakResponse
 import com.abhinav.caisarra.data.remote.dto.ModeRating
 import com.abhinav.caisarra.data.remote.dto.ProfileData
 import com.abhinav.caisarra.data.repository.AuthRepository
@@ -47,6 +48,8 @@ data class HomeUiState(
     val displayName: String? = null,
     val avatarUrl: String? = null,
     val streak: Int = 0,
+    val streakData: DailyStreakResponse? = null,
+    val puzzleStreak: Int = 0,
     val selectedMode: GameMode = GameMode.RAPID,
     val rating: Int? = null,
     val ratingChange: Int? = null,
@@ -172,16 +175,25 @@ class HomeViewModel(
                 )
             }
 
+            if (signedInUser) {
+                launch {
+                    val streakResult = remoteGameRepository.getDailyStreak().getOrNull()
+                    if (streakResult != null) {
+                        _state.update { it.copy(streak = streakResult.currentStreak, streakData = streakResult) }
+                    }
+                }
+            }
+
             if (puzzleRepository != null) {
                 launch {
-                    val streak = try {
+                    val pStreak = try {
                         val daily = puzzleRepository.getDailyPuzzle().getOrNull()
                         daily?.currentStreak
                             ?: if (signedInUser) puzzleRepository.getStats().getOrNull()?.currentStreak ?: 0 else 0
                     } catch (e: Exception) {
                         0
                     }
-                    _state.update { it.copy(streak = streak) }
+                    _state.update { it.copy(puzzleStreak = pStreak) }
                 }
             }
 

@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.remote.dto.ModeStatsData
 import com.abhinav.caisarra.data.remote.dto.ProfileData
+import com.abhinav.caisarra.data.remote.dto.RatingHistoryPoint
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.ProfileRepository
+import com.abhinav.caisarra.data.repository.PuzzleRepository
 import com.abhinav.caisarra.data.repository.RatingRepository
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +46,7 @@ class StatsViewModel(
     private val authRepository: AuthRepository,
     private val ratingRepository: RatingRepository,
     private val profileRepository: ProfileRepository,
+    private val puzzleRepository: PuzzleRepository? = null,
     private val initialUsername: String? = null,
     private val initialMode: String? = null
 ) : ViewModel() {
@@ -207,11 +211,62 @@ class StatsViewModel(
                     username
                 }
 
-                val stats = ratingRepository.getModeStats(
-                    username = targetUsername,
-                    mode = mode.ratingKey,
-                    range = range.key
-                )
+                val stats = if (mode == GameMode.PUZZLE) {
+                    val puzzleStats = puzzleRepository?.getStats()?.getOrNull()
+                    val history = puzzleRepository?.getHistory(limit = 100)?.getOrNull()
+                    if (puzzleStats == null && history == null) {
+                        throw IllegalStateException("Failed to load puzzle stats")
+                    }
+                    val attempts = history?.allAttempts.orEmpty()
+                    val currentRating = puzzleStats?.rating ?: 1500
+                    val historyPoints = if (attempts.isNotEmpty()) {
+                        val initialPoint = attempts.lastOrNull()?.let { oldest ->
+                            val beforeRating = oldest.userRatingBefore ?: 1500
+                            val date = oldest.createdAt ?: return@let null
+                            RatingHistoryPoint(date = date, rating = beforeRating)
+                        }
+                        val attemptPoints = attempts.reversed().mapNotNull { item ->
+                            val date = item.createdAt ?: return@mapNotNull null
+                            val r = item.userRatingAfter ?: return@mapNotNull null
+                            RatingHistoryPoint(date = date, rating = r)
+                        }
+                        if (initialPoint != null) listOf(initialPoint) + attemptPoints else attemptPoints
+                    } else if (currentRating > 0) {
+                        val today = java.time.LocalDate.now().toString()
+                        val yesterday = java.time.LocalDate.now().minusDays(1).toString()
+                        listOf(
+                            RatingHistoryPoint(date = yesterday, rating = 1500),
+                            RatingHistoryPoint(date = today, rating = currentRating)
+                        )
+                    } else {
+                        emptyList()
+                    }
+                    val startRating = historyPoints.firstOrNull()?.rating ?: 1500
+                    ModeStatsData(
+                        mode = "puzzle",
+                        range = range.key,
+                        rating = currentRating,
+                        provisional = false,
+                        bestRating = puzzleStats?.bestRating ?: currentRating,
+                        bestRatingAt = puzzleStats?.bestRatingAt,
+                        lowestRating = historyPoints.minOfOrNull { it.rating } ?: currentRating,
+                        startRating = startRating,
+                        gamesPlayed = (puzzleStats?.puzzlesSolved ?: 0) + (puzzleStats?.puzzlesFailed ?: 0),
+                        wins = puzzleStats?.puzzlesSolved ?: 0,
+                        losses = puzzleStats?.puzzlesFailed ?: 0,
+                        draws = 0,
+                        winPercent = puzzleStats?.winRate?.roundToInt() ?: 0,
+                        currentStreak = puzzleStats?.currentStreak ?: 0,
+                        bestStreak = puzzleStats?.maxStreak ?: 0,
+                        ratingHistory = historyPoints
+                    )
+                } else {
+                    ratingRepository.getModeStats(
+                        username = targetUsername,
+                        mode = mode.ratingKey,
+                        range = range.key
+                    )
+                }
                 _state.value = _state.value.copy(
                     stats = stats,
                     isLoading = false,

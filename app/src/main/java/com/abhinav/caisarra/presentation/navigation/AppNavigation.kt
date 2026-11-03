@@ -222,12 +222,12 @@ object AppRoutes {
     fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
     const val SOCIAL = "social"
     const val MENU = "menu"
-    const val STATS = "com/abhinav/caisarra/presentation/screens/components/stats"
+    const val STATS = "stats?username={username}&mode={mode}"
     fun stats(username: String? = null, mode: String? = null): String {
         val queryParts = mutableListOf<String>()
         if (!username.isNullOrBlank()) queryParts.add("username=${Uri.encode(username.trim())}")
         if (!mode.isNullOrBlank()) queryParts.add("mode=${Uri.encode(mode.trim())}")
-        return if (queryParts.isEmpty()) "com/abhinav/caisarra/presentation/screens/components/stats" else "stats?${queryParts.joinToString("&")}"
+        return if (queryParts.isEmpty()) "stats" else "stats?${queryParts.joinToString("&")}"
     }
     const val THEME = "theme"
     const val CLUBS = "clubs"
@@ -922,6 +922,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                             GameMode.BLITZ -> 3
                             GameMode.RAPID -> 10
                             GameMode.DAILY -> 1440
+                            else -> 10
                         }
                         requireAuth("Online matchmaking") {
                             navController.navigateOnce(AppRoutes.matchmaking(minutes, 0))
@@ -1934,6 +1935,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                             }
                             launchSingleTop = true
                         }
+                    },
+                    onStatsClick = {
+                        navController.navigateOnce(AppRoutes.stats(mode = "puzzle"))
                     }
                 )
             }
@@ -2107,6 +2111,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                         ),
                         profileRepository = ProfileRepository(
                             authRepository.createProfileService()
+                        ),
+                        puzzleRepository = PuzzleRepository(
+                            authRepository.createPuzzleService()
                         ),
                         initialUsername = usernameArg,
                         initialMode = modeArg

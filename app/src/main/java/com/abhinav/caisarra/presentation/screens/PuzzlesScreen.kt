@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -33,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -45,6 +48,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.components.MainTabTopBar
+import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.puzzles.PuzzlesHubViewModel
 import com.caisaara.ui.theme.PuzzleCardBorder
@@ -62,7 +66,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 fun PuzzlesScreen(
     viewModel: PuzzlesHubViewModel,
     onPlayDailyPuzzle: () -> Unit,
-    onPlayPuzzleRush: (String) -> Unit
+    onPlayPuzzleRush: (String) -> Unit,
+    onStatsClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -87,7 +92,10 @@ fun PuzzlesScreen(
             .background(StatsBg)
             .statusBarsPadding()
     ) {
-        PuzzlesHeader()
+        PuzzlesHeader(
+            streak = state.streak,
+            onStreakClick = onPlayDailyPuzzle
+        )
 
         if (isLandscape) {
             Row(
@@ -111,7 +119,8 @@ fun PuzzlesScreen(
                                 isLaunchingPuzzle = true
                                 onPlayDailyPuzzle()
                             }
-                        }
+                        },
+                        onStatsClick = onStatsClick
                     )
                 }
 
@@ -149,7 +158,8 @@ fun PuzzlesScreen(
                             isLaunchingPuzzle = true
                             onPlayDailyPuzzle()
                         }
-                    }
+                    },
+                    onStatsClick = onStatsClick
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 ModesSection(
@@ -169,10 +179,37 @@ fun PuzzlesScreen(
 }
 
 @Composable
-private fun PuzzlesHeader() {
+private fun PuzzlesHeader(
+    streak: Int = 0,
+    onStreakClick: () -> Unit = {}
+) {
     MainTabTopBar(
         title = "PUZZLES",
-        iconPainter = painterResource(id = R.drawable.ic_puzzle_piece)
+        iconPainter = painterResource(id = R.drawable.ic_puzzle_piece),
+        trailingContent = {
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .singleClickable(onClick = onStreakClick)
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.LocalFireDepartment,
+                    contentDescription = "Puzzle Streak",
+                    tint = Color(0xFFE28339),
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = streak.toString(),
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = JetBrainsMono
+                )
+            }
+        }
     )
 }
 
@@ -181,7 +218,8 @@ private fun DailyPuzzleCard(
     streak: Int,
     rating: Int,
     enabled: Boolean,
-    onPlayClick: () -> Unit
+    onPlayClick: () -> Unit,
+    onStatsClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -226,7 +264,8 @@ private fun DailyPuzzleCard(
             Text(
                 text = "Streak: $streak Days • $ratingText",
                 color = ThemeSlateAccent,
-                fontSize = TextSizeBadge
+                fontSize = TextSizeBadge,
+                modifier = Modifier.singleClickable { onStatsClick() }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
