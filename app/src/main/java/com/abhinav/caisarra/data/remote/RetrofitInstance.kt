@@ -24,6 +24,7 @@ import com.abhinav.caisarra.data.remote.api.ClubService
 import com.abhinav.caisarra.data.remote.api.LeaderboardService
 import com.abhinav.caisarra.data.remote.api.DirectMessageService
 import com.abhinav.caisarra.data.remote.api.NotificationService
+import com.abhinav.caisarra.data.remote.api.NewsService
 import com.abhinav.caisarra.data.remote.api.PrivacyService
 object RetrofitInstance {
     const val BASE_URL = "https://caisaara.app"
@@ -128,5 +129,7 @@ object RetrofitInstance {
     fun createPrivacyService(tokenManager: TokenManager): PrivacyService =
         authenticatedRetrofit(tokenManager).create()
     fun createNotificationService(tokenManager: TokenManager): NotificationService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createNewsService(tokenManager: TokenManager): NewsService =
         authenticatedRetrofit(tokenManager).create()
 }

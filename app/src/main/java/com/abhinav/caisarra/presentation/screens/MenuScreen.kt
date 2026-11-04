@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PersonOutline
@@ -97,6 +98,7 @@ fun MenuScreen(
     onPrivacyClick: () -> Unit = {},
     onDirectMessagesClick: () -> Unit = {},
     onWatchClick: () -> Unit = {},
+    onNewsClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
     profileName: String? = null,
     username: String? = null,
@@ -282,6 +284,8 @@ fun MenuScreen(
                 MenuItem(Icons.Default.EmojiEvents, GoldColor, MenuThemeIconBg, "Leaderboard", onClick = onLeaderboardClick)
                 ItemDivider()
                 MenuItem(Icons.Default.Visibility, StatsCyan, ThemeNeonDeep, "Watch", onClick = onWatchClick)
+                ItemDivider()
+                MenuItem(Icons.Default.Newspaper, MenuCyan, ThemeNeonDeep, "News", onClick = onNewsClick)
             }
 
             Spacer(Modifier.height(22.dp))

@@ -52,6 +52,7 @@ import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ClockBar
 import com.abhinav.caisarra.presentation.game.model.MoveUi
 import com.abhinav.caisarra.presentation.game.viewmodel.GameHistoryReviewViewModel
+import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 
 private val ScreenBg = Color(0xFF080D13)
@@ -222,6 +223,14 @@ fun GameHistoryScreen(
                 onBack = viewModel::previousMove,
                 onForward = viewModel::nextMove,
                 onLast = viewModel::lastMove,
+                modifier = Modifier.width(boardSize)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            GeneralButton(
+                text = "GAME ANALYSIS",
+                onClick = onAnalyze,
                 modifier = Modifier.width(boardSize)
             )
 

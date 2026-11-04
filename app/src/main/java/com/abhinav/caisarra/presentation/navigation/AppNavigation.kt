@@ -126,6 +126,7 @@ import com.abhinav.caisarra.presentation.screens.LeaderboardScreen
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.MenuScreen
 import com.abhinav.caisarra.presentation.screens.NearbyScreen
+import com.abhinav.caisarra.presentation.screens.NewsScreen
 import com.abhinav.caisarra.presentation.screens.OnboardingScreen
 import com.abhinav.caisarra.presentation.screens.PrivacySettingsScreen
 import com.abhinav.caisarra.presentation.screens.ProfileScreen
@@ -150,6 +151,7 @@ import com.abhinav.caisarra.presentation.viewmodel.DeleteAccountViewModel
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
+import com.abhinav.caisarra.presentation.viewmodel.NewsViewModel
 import com.abhinav.caisarra.presentation.viewmodel.PrivacySettingsViewModel
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import com.abhinav.caisarra.presentation.viewmodel.RatingViewModel
@@ -239,6 +241,7 @@ object AppRoutes {
     fun clubDetail(clubId: String): String =
         "club_detail/${Uri.encode(clubId)}"
     const val LEADERBOARD = "leaderboard"
+    const val NEWS = "news"
     const val DELETE_ACCOUNT = "delete_account"
     const val SETTINGS_DETAIL = "settings_detail"
     const val PRIVACY_SETTINGS = "privacy_settings"
@@ -1301,6 +1304,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 navController.safeBack(homeRoute(authRepository))
                             }
                         }
+                    },
+                    onAnalyze = {
+                        navController.navigate(AppRoutes.gameAnalysis(gameId))
                     }
                 )
             }
@@ -2094,6 +2100,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                             navController.navigateOnce(AppRoutes.WATCH)
                         }
                     },
+                    onNewsClick = {
+                        navController.navigateOnce(AppRoutes.NEWS)
+                    },
                     onDeleteAccountClick = {
                         navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)
                     },
@@ -2312,6 +2321,18 @@ fun AppNavigation(authRepository: AuthRepository) {
                     viewModel = leaderboardViewModel,
                     onPlayerClick = { username ->
                         navController.navigateOnce(AppRoutes.profile(username))
+                    }
+                )
+            }
+
+            composable(route = AppRoutes.NEWS) {
+                val tokenManager = remember(context) { TokenManager.get(context) }
+                val newsService = remember(tokenManager) { RetrofitInstance.createNewsService(tokenManager) }
+                val newsViewModel = screenViewModel { NewsViewModel(newsService) }
+                NewsScreen(
+                    viewModel = newsViewModel,
+                    onBack = {
+                        navController.safeBack(AppRoutes.MENU)
                     }
                 )
             }
