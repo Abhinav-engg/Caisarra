@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.data.remote.api
 
 import com.abhinav.caisarra.data.remote.dto.ActiveGameDto
+import com.abhinav.caisarra.data.remote.dto.DailyStreakResponse
 import com.abhinav.caisarra.data.remote.dto.GameHistoryDto
 import com.abhinav.caisarra.data.remote.dto.GameMoveDto
 import com.abhinav.caisarra.data.remote.dto.WatchInviteResponse
@@ -30,6 +31,9 @@ interface GamesService {
 
     @GET("api/games/active")
     suspend fun getActiveGames(): List<ActiveGameDto>
+
+    @GET("streak")
+    suspend fun getDailyStreak(): DailyStreakResponse
 
     @GET("players/{username}/games")
     suspend fun getPlayerGames(

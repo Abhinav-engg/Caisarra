@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -70,6 +71,13 @@ fun RushScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+
+    BackHandler {
+        if (state is RushUiState.Playing) {
+            viewModel.quitRush()
+        }
+        onBack()
+    }
 
     when (val uiState = state) {
         is RushUiState.Loading -> {

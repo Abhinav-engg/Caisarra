@@ -10,10 +10,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -22,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.abhinav.caisarra.core.ui.theme.FriendsAvatarRadius
 import com.abhinav.caisarra.core.ui.theme.FriendsAvatarSize
+import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.caisaara.ui.theme.FriendsAvatarBg
 import com.caisaara.ui.theme.FriendsCardBg
 import com.caisaara.ui.theme.FriendsTextWhite
@@ -32,9 +38,13 @@ fun FriendAvatar(
     avatarUrl: String?,
     modifier: Modifier = Modifier,
     size: Dp = FriendsAvatarSize,
+    shape: Shape = RoundedCornerShape(FriendsAvatarRadius),
     isOnline: Boolean? = null
 ) {
-    val shape = RoundedCornerShape(FriendsAvatarRadius)
+    val resolvedUrl = avatarUrl?.trim()?.takeIf { it.isNotBlank() }?.let { url ->
+        if (url.startsWith("/")) "${RetrofitInstance.BASE_URL}$url" else url
+    }
+    var imageLoadFailed by remember(resolvedUrl) { mutableStateOf(false) }
 
     Box(
         modifier = modifier.size(size)
@@ -46,11 +56,12 @@ fun FriendAvatar(
                 .background(FriendsAvatarBg),
             contentAlignment = Alignment.Center
         ) {
-            if (!avatarUrl.isNullOrBlank()) {
+            if (resolvedUrl != null && !imageLoadFailed) {
                 AsyncImage(
-                    model = avatarUrl,
+                    model = resolvedUrl,
                     contentDescription = name,
                     contentScale = ContentScale.Crop,
+                    onError = { imageLoadFailed = true },
                     modifier = Modifier
                         .size(size)
                         .clip(shape)

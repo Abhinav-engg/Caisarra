@@ -330,7 +330,7 @@ private fun EmptyNotificationsView() {
 private fun resolveNotificationIcon(type: String): ImageVector = when (type.lowercase()) {
     "friend_request", "friend_accepted" -> Icons.Outlined.PersonAdd
     "game_challenge", "challenge_declined" -> Icons.Outlined.SportsEsports
-    "tournament_round_started", "tournament_finished", "tournament_cancelled" -> Icons.Outlined.EmojiEvents
+    "tournament_round_started", "tournament_finished", "tournament_completed", "tournament_cancelled" -> Icons.Outlined.EmojiEvents
     "post_comment" -> Icons.Outlined.ChatBubbleOutline
     "post_reaction" -> Icons.Outlined.FavoriteBorder
     "club_promoted", "club_demoted", "club_new_owner", "club_kicked", "club_banned" -> Icons.Outlined.Groups

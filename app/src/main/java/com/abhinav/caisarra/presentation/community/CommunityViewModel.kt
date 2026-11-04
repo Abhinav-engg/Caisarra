@@ -376,6 +376,18 @@ class CommunityViewModel(
         }
     }
 
+    fun clearError(message: String? = null) {
+        _state.update {
+            if (message == null || it.error == message) it.copy(error = null) else it
+        }
+    }
+
+    fun clearInfo(message: String? = null) {
+        _state.update {
+            if (message == null || it.info == message) it.copy(info = null) else it
+        }
+    }
+
     fun clearMessages() {
         _state.update {
             it.copy(error = null, info = null)

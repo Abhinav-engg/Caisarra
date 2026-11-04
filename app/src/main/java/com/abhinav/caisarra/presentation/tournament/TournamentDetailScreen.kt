@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -189,6 +190,7 @@ fun TournamentDetailScreen(
                                 onLeave = viewModel::leave,
                                 onStart = viewModel::start,
                                 onEnd = viewModel::end,
+                                onCancel = viewModel::cancel,
                                 onOpenGame = onOpenGame
                             )
 
@@ -210,6 +212,7 @@ private fun OverviewTab(
     onLeave: () -> Unit,
     onStart: () -> Unit,
     onEnd: () -> Unit,
+    onCancel: () -> Unit,
     onOpenGame: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -317,31 +320,65 @@ private fun OverviewTab(
                     )
                 }
                 Spacer(Modifier.height(14.dp))
-                OutlinedButton(
-                    onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("tournament_invite_code", tournament.inviteCode))
-                        Toast.makeText(context, "Invite code copied", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, TournamentColors.CardBorder)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        Icons.Default.ContentCopy,
-                        contentDescription = null,
-                        tint = TournamentColors.Accent,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        "Copy Code",
-                        color = TournamentColors.Accent,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp
-                    )
+                    OutlinedButton(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("tournament_invite_code", tournament.inviteCode))
+                            Toast.makeText(context, "Invite code copied", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, TournamentColors.CardBorder)
+                    ) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            tint = TournamentColors.Accent,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Copy Code",
+                            color = TournamentColors.Accent,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            val link = tournament.link?.takeIf { it.isNotBlank() }
+                                ?: tournament.inviteLink.takeIf { it.isNotBlank() }
+                                ?: "https://caisaara.app/tournaments/invite/${tournament.inviteCode}"
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("tournament_link", link))
+                            Toast.makeText(context, "Tournament link copied", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, TournamentColors.CardBorder)
+                    ) {
+                        Icon(
+                            Icons.Default.Link,
+                            contentDescription = null,
+                            tint = TournamentColors.Accent,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Copy Link",
+                            color = TournamentColors.Accent,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
                 }
             }
         }
@@ -391,8 +428,10 @@ private fun OverviewTab(
 
         if (isCreator && tournament.status.equals("ongoing", ignoreCase = true)) {
             Spacer(Modifier.height(14.dp))
+            TournamentActionButton("End Tournament", onClick = onEnd)
+            Spacer(Modifier.height(12.dp))
             OutlinedButton(
-                onClick = onEnd,
+                onClick = onCancel,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),

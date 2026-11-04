@@ -108,16 +108,30 @@ fun CommunityScreen(
     var selectedPost by remember { mutableStateOf<CommunityPostDto?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.info, state.error) {
-        val message = state.info ?: state.error
-        if (!message.isNullOrBlank()) snackbarHostState.showSnackbar(message)
-    }
-
     LaunchedEffect(state.info) {
         if (publishingFromWriteScreen && state.info == "Post published successfully.") {
             publishingFromWriteScreen = false
             postText = ""
             showWritePost = false
+        }
+        val message = state.info?.takeIf { it.isNotBlank() }
+        if (message != null) {
+            try {
+                snackbarHostState.showSnackbar(message)
+            } finally {
+                viewModel.clearInfo(message)
+            }
+        }
+    }
+
+    LaunchedEffect(state.error) {
+        val message = state.error?.takeIf { it.isNotBlank() }
+        if (message != null) {
+            try {
+                snackbarHostState.showSnackbar(message)
+            } finally {
+                viewModel.clearError(message)
+            }
         }
     }
 

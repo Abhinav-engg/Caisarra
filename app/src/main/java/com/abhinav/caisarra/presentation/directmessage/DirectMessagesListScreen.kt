@@ -34,6 +34,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.caisaara.ui.theme.StatsBg
@@ -48,7 +51,7 @@ import com.caisaara.ui.theme.StatsTextWhite
 @Composable
 fun DirectMessagesListScreen(
     onBack: () -> Unit,
-    onOpenChat: (Long, String) -> Unit
+    onOpenChat: (Long, String, String?) -> Unit
 ) {
     val viewModel: DirectMessagesListViewModel = viewModel()
     val pullToRefreshState = rememberPullToRefreshState()
@@ -262,10 +265,12 @@ fun DirectMessagesListScreen(
                             subtitle = player.rating?.let {
                                 "Rating: $it"
                             } ?: "Player",
+                            avatarUrl = player.avatarUrl,
                             onClick = {
                                 onOpenChat(
                                     player.userId,
-                                    player.username
+                                    player.username,
+                                    player.avatarUrl
                                 )
                             }
                         )
@@ -326,11 +331,13 @@ fun DirectMessagesListScreen(
                         username = conversation.username,
                         subtitle = conversation.lastMessage
                             ?: "Start a conversation",
+                        avatarUrl = conversation.avatarUrl,
                         unreadCount = conversation.unreadCount,
                         onClick = {
                             onOpenChat(
                                 conversation.userId,
-                                conversation.username
+                                conversation.username,
+                                conversation.avatarUrl
                             )
                         }
                     )
@@ -362,6 +369,7 @@ private fun DirectPlayerRow(
     name: String,
     username: String,
     subtitle: String,
+    avatarUrl: String? = null,
     unreadCount: Int = 0,
     onClick: () -> Unit
 ) {
@@ -382,6 +390,11 @@ private fun DirectPlayerRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        val resolvedAvatar = avatarUrl?.trim()?.takeIf { it.isNotBlank() }?.let { url ->
+            if (url.startsWith("/")) "${RetrofitInstance.BASE_URL}$url" else url
+        }
+        var imageFailed by remember(resolvedAvatar) { mutableStateOf(false) }
+
         Box(
             modifier = Modifier
                 .size(48.dp)
@@ -394,15 +407,27 @@ private fun DirectPlayerRow(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = name
-                    .take(1)
-                    .uppercase(),
-                fontFamily = JetBrainsMono,
-                fontWeight = FontWeight.Bold,
-                color = StatsCyan,
-                fontSize = 20.sp
-            )
+            if (resolvedAvatar != null && !imageFailed) {
+                AsyncImage(
+                    model = resolvedAvatar,
+                    contentDescription = "$name's avatar",
+                    contentScale = ContentScale.Crop,
+                    onError = { imageFailed = true },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                )
+            } else {
+                Text(
+                    text = name
+                        .take(1)
+                        .uppercase(),
+                    fontFamily = JetBrainsMono,
+                    fontWeight = FontWeight.Bold,
+                    color = StatsCyan,
+                    fontSize = 20.sp
+                )
+            }
         }
 
         Column(

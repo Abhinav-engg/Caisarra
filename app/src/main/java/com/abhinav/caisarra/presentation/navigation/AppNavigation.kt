@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity
 import com.abhinav.caisarra.app.MainActivity
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.remote.dto.getStringData
@@ -16,9 +15,6 @@ import com.abhinav.caisarra.presentation.notifications.NotificationsViewModel
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -130,6 +126,7 @@ import com.abhinav.caisarra.presentation.screens.LeaderboardScreen
 import com.abhinav.caisarra.presentation.screens.LoginScreen
 import com.abhinav.caisarra.presentation.screens.MenuScreen
 import com.abhinav.caisarra.presentation.screens.NearbyScreen
+import com.abhinav.caisarra.presentation.screens.NewsScreen
 import com.abhinav.caisarra.presentation.screens.OnboardingScreen
 import com.abhinav.caisarra.presentation.screens.PrivacySettingsScreen
 import com.abhinav.caisarra.presentation.screens.ProfileScreen
@@ -154,6 +151,7 @@ import com.abhinav.caisarra.presentation.viewmodel.DeleteAccountViewModel
 import com.abhinav.caisarra.presentation.viewmodel.HomeViewModel
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
+import com.abhinav.caisarra.presentation.viewmodel.NewsViewModel
 import com.abhinav.caisarra.presentation.viewmodel.PrivacySettingsViewModel
 import com.abhinav.caisarra.presentation.viewmodel.ProfileViewModel
 import com.abhinav.caisarra.presentation.viewmodel.RatingViewModel
@@ -169,6 +167,8 @@ import com.abhinav.caisarra.presentation.watch.WatchScreen
 import com.abhinav.caisarra.presentation.watch.WatchViewModel
 import com.caisaara.ui.theme.SplashBackground
 import kotlinx.coroutines.launch
+import com.abhinav.caisarra.presentation.puzzles.CustomTacticsViewModel
+import com.abhinav.caisarra.presentation.screens.CustomTacticsScreen
 
 object AppRoutes {
     const val SPLASH = "splash"
@@ -201,9 +201,9 @@ object AppRoutes {
     const val JOIN_INVITE = "play/{code}"
     const val ONLINE_GAME = "online_game/{gameId}"
     const val ALL_GAME_HISTORY = "all_game_history"
-    const val PROFILE = "profile?username={username}"
+    const val PROFILE = "com/abhinav/caisarra/presentation/screens/components/profile"
     fun profile(username: String? = null): String =
-        if (username.isNullOrBlank()) "profile" else "profile?username=${Uri.encode(username.trim())}"
+        if (username.isNullOrBlank()) "com/abhinav/caisarra/presentation/screens/components/profile" else "profile?username=${Uri.encode(username.trim())}"
     const val EDIT_PROFILE = "edit_profile"
     const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
     const val GAME_ANALYSIS = "game_analysis/{gameId}"
@@ -221,17 +221,18 @@ object AppRoutes {
     const val PUZZLES = "puzzles"
     const val DAILY_PUZZLE = "daily_puzzle"
     const val PUZZLE_RUSH = "puzzle_rush?mode={mode}"
-    const val DIRECT_MESSAGE = "direct_message/{userId}/{username}"
+    const val CUSTOM_TACTICS = "custom_tactics"
+    const val DIRECT_MESSAGE = "direct_message/{userId}/{username}?avatarUrl={avatarUrl}"
 
     fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
     const val SOCIAL = "social"
     const val MENU = "menu"
-    const val STATS = "stats?username={username}&mode={mode}"
+    const val STATS = "com/abhinav/caisarra/presentation/screens/components/stats"
     fun stats(username: String? = null, mode: String? = null): String {
         val queryParts = mutableListOf<String>()
         if (!username.isNullOrBlank()) queryParts.add("username=${Uri.encode(username.trim())}")
         if (!mode.isNullOrBlank()) queryParts.add("mode=${Uri.encode(mode.trim())}")
-        return if (queryParts.isEmpty()) "stats" else "stats?${queryParts.joinToString("&")}"
+        return if (queryParts.isEmpty()) "com/abhinav/caisarra/presentation/screens/components/stats" else "stats?${queryParts.joinToString("&")}"
     }
     const val THEME = "theme"
     const val CLUBS = "clubs"
@@ -240,6 +241,7 @@ object AppRoutes {
     fun clubDetail(clubId: String): String =
         "club_detail/${Uri.encode(clubId)}"
     const val LEADERBOARD = "leaderboard"
+    const val NEWS = "news"
     const val DELETE_ACCOUNT = "delete_account"
     const val SETTINGS_DETAIL = "settings_detail"
     const val PRIVACY_SETTINGS = "privacy_settings"
@@ -283,8 +285,12 @@ object AppRoutes {
     fun gameAnalysis(gameId: String) = "game_analysis/${Uri.encode(gameId)}"
 
     const val NOTIFICATIONS = "notifications"
-    fun directMessage(userId: Long, username: String) =
-        "direct_message/$userId/${Uri.encode(username)}"
+    fun directMessage(userId: Long, username: String, avatarUrl: String? = null) =
+        if (avatarUrl.isNullOrBlank()) {
+            "direct_message/$userId/${Uri.encode(username)}"
+        } else {
+            "direct_message/$userId/${Uri.encode(username)}?avatarUrl=${Uri.encode(avatarUrl.trim())}"
+        }
 
 }
 
@@ -922,6 +928,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                             GameMode.BLITZ -> 3
                             GameMode.RAPID -> 10
                             GameMode.DAILY -> 1440
+                            else -> 10
                         }
                         requireAuth("Online matchmaking") {
                             navController.navigateOnce(AppRoutes.matchmaking(minutes, 0))
@@ -1137,6 +1144,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     },
                     navArgument("username") {
                         type = NavType.StringType
+                    },
+                    navArgument("avatarUrl") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
                     }
                 )
             ) { backStackEntry ->
@@ -1147,6 +1159,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                 val username = backStackEntry.arguments
                     ?.getString("username") ?: "Player"
 
+                val avatarUrl = backStackEntry.arguments
+                    ?.getString("avatarUrl")
 
                 var isLeavingScreen by remember(backStackEntry) {
                     mutableStateOf(false)
@@ -1155,6 +1169,10 @@ fun AppNavigation(authRepository: AuthRepository) {
                 DirectMessageScreen(
                     userId = userId,
                     username = username,
+                    initialAvatarUrl = avatarUrl,
+                    onViewProfile = { targetUsername ->
+                        navController.navigateOnce(AppRoutes.profile(targetUsername))
+                    },
                     onBack = {
                         if (!isLeavingScreen) {
                             isLeavingScreen = true
@@ -1208,9 +1226,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                             }
                         }
                     },
-                    onOpenChat = { userId, username ->
+                    onOpenChat = { userId, username, chatAvatarUrl ->
                         navController.navigate(
-                            "${AppRoutes.DIRECT_MESSAGE.substringBefore("/{")}/$userId/${Uri.encode(username)}"
+                            AppRoutes.directMessage(userId, username, chatAvatarUrl)
                         )
                     }
                 )
@@ -1286,6 +1304,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 navController.safeBack(homeRoute(authRepository))
                             }
                         }
+                    },
+                    onAnalyze = {
+                        navController.navigate(AppRoutes.gameAnalysis(gameId))
                     }
                 )
             }
@@ -1411,7 +1432,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     onBack = {
                         navController.safeBack(friendsBackRoute)
                     },
-                    onDirectMessage = { userId, username ->
+                    onDirectMessage = { userId: Long, username: String, friendAvatarUrl: String? ->
                         scope.launch {
                             val isGuest = authRepository.isGuest()
                             val isLoggedIn = authRepository.isLoggedIn()
@@ -1424,7 +1445,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 ).show()
                             } else {
                                 navController.navigate(
-                                    "direct_message/$userId/${Uri.encode(username)}"
+                                    AppRoutes.directMessage(userId, username, friendAvatarUrl)
                                 )
                             }
                         }
@@ -1679,7 +1700,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                 val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
                 val profileEntry = currentBackStackEntry
-                    ?.takeIf { it.destination.route?.startsWith("profile") == true }
+                    ?.takeIf { it.destination.route?.startsWith("com/abhinav/caisarra/presentation/screens/components/profile") == true }
 
                 val refreshRequested by (
                         profileEntry?.savedStateHandle
@@ -1735,7 +1756,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 ).show()
                             } else {
                                 navController.navigate(
-                                    "direct_message/$userId/${Uri.encode(username)}"
+                                    AppRoutes.directMessage(userId, username)
                                 )
                             }
                         }
@@ -1827,7 +1848,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                     onChat = { player ->
                         requireAuth("Direct messages") {
                             navController.navigate(
-                                "direct_message/${player.userId}/${Uri.encode(player.username)}"
+                                AppRoutes.directMessage(player.userId.toLong(), player.username)
                             )
                         }
                     },
@@ -1923,8 +1944,16 @@ fun AppNavigation(authRepository: AuthRepository) {
                             }
                             launchSingleTop = true
                         }
+                    },
+                    onPlayCustomTactics = {
+                        navController.navigateOnce(AppRoutes.CUSTOM_TACTICS) {
+                            launchSingleTop = true
+                        }
                     }
+
+
                 )
+
             }
 
             composable(route = AppRoutes.DAILY_PUZZLE) {
@@ -1938,6 +1967,31 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
                 DailyPuzzleScreen(
                     viewModel = dailyViewModel,
+                    onBack = {
+                        navController.safeBack(AppRoutes.PUZZLES)
+                    }
+                )
+            }
+            // ---------------------------------------------------------
+// CUSTOM TACTICS
+// ---------------------------------------------------------
+
+            composable(route = AppRoutes.CUSTOM_TACTICS) {
+
+                val tokenManager = remember {
+                    TokenManager.get(context)
+                }
+
+                val customTacticsViewModel = screenViewModel {
+                    CustomTacticsViewModel(
+                        repository = PuzzleRepository(
+                            RetrofitInstance.createPuzzleService(tokenManager)
+                        )
+                    )
+                }
+
+                CustomTacticsScreen(
+                    viewModel = customTacticsViewModel,
                     onBack = {
                         navController.safeBack(AppRoutes.PUZZLES)
                     }
@@ -2046,6 +2100,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                             navController.navigateOnce(AppRoutes.WATCH)
                         }
                     },
+                    onNewsClick = {
+                        navController.navigateOnce(AppRoutes.NEWS)
+                    },
                     onDeleteAccountClick = {
                         navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)
                     },
@@ -2096,6 +2153,9 @@ fun AppNavigation(authRepository: AuthRepository) {
                         ),
                         profileRepository = ProfileRepository(
                             authRepository.createProfileService()
+                        ),
+                        puzzleRepository = PuzzleRepository(
+                            authRepository.createPuzzleService()
                         ),
                         initialUsername = usernameArg,
                         initialMode = modeArg
@@ -2261,6 +2321,18 @@ fun AppNavigation(authRepository: AuthRepository) {
                     viewModel = leaderboardViewModel,
                     onPlayerClick = { username ->
                         navController.navigateOnce(AppRoutes.profile(username))
+                    }
+                )
+            }
+
+            composable(route = AppRoutes.NEWS) {
+                val tokenManager = remember(context) { TokenManager.get(context) }
+                val newsService = remember(tokenManager) { RetrofitInstance.createNewsService(tokenManager) }
+                val newsViewModel = screenViewModel { NewsViewModel(newsService) }
+                NewsScreen(
+                    viewModel = newsViewModel,
+                    onBack = {
+                        navController.safeBack(AppRoutes.MENU)
                     }
                 )
             }
@@ -2467,7 +2539,7 @@ private fun handleNotificationItemClick(
                 navController.navigateOnce(AppRoutes.TOURNAMENTS)
             }
         }
-        "tournament_finished" -> {
+        "tournament_finished", "tournament_completed" -> {
             val tournamentId = notification.getStringData("tournament_id")
             if (!tournamentId.isNullOrBlank()) {
                 navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))
@@ -2556,7 +2628,7 @@ private fun handleIntentNotificationNavigation(
                 navController.navigateOnce(AppRoutes.TOURNAMENTS)
             }
         }
-        "tournament_finished" -> {
+        "tournament_finished", "tournament_completed" -> {
             val tournamentId = intent.getStringExtra("tournament_id")
             if (!tournamentId.isNullOrBlank()) {
                 navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId))

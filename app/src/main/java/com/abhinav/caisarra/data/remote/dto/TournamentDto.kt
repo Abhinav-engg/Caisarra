@@ -16,11 +16,13 @@ data class TournamentDto(
     val visibility: String,
     @SerialName("invite_code") val inviteCode: String = "",
     @SerialName("invite_link") val inviteLink: String = "",
+    val link: String? = null,
     val status: String,
     @SerialName("current_round") val currentRound: Int = 0,
     @SerialName("total_rounds") val totalRounds: Int = 0,
     @SerialName("created_by") val createdBy: Long,
     @SerialName("start_at") val startAt: String? = null,
     @SerialName("created_at") val createdAt: String = "",
-    @SerialName("updated_at") val updatedAt: String = ""
+    @SerialName("updated_at") val updatedAt: String = "",
+    @SerialName("min_rating") val minRating: Int? = null
 )

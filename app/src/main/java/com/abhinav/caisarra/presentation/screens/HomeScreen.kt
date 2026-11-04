@@ -42,6 +42,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import com.abhinav.caisarra.data.repository.NotificationRepository
+import com.abhinav.caisarra.presentation.screens.components.DailyStreakDialog
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -117,9 +118,20 @@ fun HomeScreen(
     val state by viewModel.state.collectAsState()
     val notificationRepo = remember { NotificationRepository.get(context) }
     val unreadCount by notificationRepo.unreadCount.collectAsState()
+    var showStreakDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         notificationRepo.fetchUnreadCount()
+    }
+
+    if (showStreakDialog) {
+        DailyStreakDialog(
+            streakData = state.streakData,
+            currentStreak = state.streak,
+            puzzleStreak = state.puzzleStreak,
+            onDismiss = { showStreakDialog = false },
+            onOpenDailyPuzzle = onStreakClick
+        )
     }
 
     Box(
@@ -158,7 +170,7 @@ fun HomeScreen(
                     unreadNotificationsCount = unreadCount,
                     onNotificationsClick = onOpenNotifications,
                     onOpenProfile = onOpenProfile,
-                    onStreakClick = onStreakClick
+                    onStreakClick = { showStreakDialog = true }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 RatingCard(
@@ -181,6 +193,7 @@ fun HomeScreen(
                         GameMode.BLITZ -> "3 min • Blitz"
                         GameMode.RAPID -> "10 min • Rapid"
                         GameMode.DAILY -> "1 day • Daily"
+                        GameMode.PUZZLE -> "Puzzle"
                     },
                     onStartQuickPlay = { onStartQuickPlay(state.selectedMode) },
                     onOpenActiveGame = onOpenActiveGame,

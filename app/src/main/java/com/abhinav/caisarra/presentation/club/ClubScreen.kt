@@ -21,6 +21,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.CircleShape
+import com.abhinav.caisarra.presentation.screens.components.SkeletonBox
+import com.abhinav.caisarra.presentation.screens.components.rememberShimmerBrush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -234,8 +237,14 @@ fun ClubScreen(
                             )
                         },
                         trailingIcon = {
-                            TextButton(onClick = viewModel::submitSearch) {
-                                Text("Search", color = ClubGreen)
+                            TextButton(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    viewModel.submitSearch()
+                                },
+                                enabled = state.search.isNotBlank() && !state.isLoading
+                            ) {
+                                Text("Search", color = if (state.search.isNotBlank() && !state.isLoading) ClubGreen else ClubMuted)
                             }
                         },
                         singleLine = true,
@@ -302,19 +311,13 @@ fun ClubScreen(
                     }
                 }
 
+                val displayedClubs =
+                    if (state.tab == ClubTab.DISCOVER) state.clubs
+                    else state.myClubs
+
                 if (state.isLoading) {
-                    item {
-                        Box(
-                            Modifier.fillMaxWidth().padding(28.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = ClubGreen)
-                        }
-                    }
+                    items(4) { ClubCardSkeleton() }
                 } else {
-                    val displayedClubs =
-                        if (state.tab == ClubTab.DISCOVER) state.clubs
-                        else state.myClubs
 
                     if (displayedClubs.isEmpty()) {
                         item {
@@ -604,6 +607,31 @@ private fun ClubCard(
                 }
             } else {
                 Text("Tap to view club", color = ClubGreen, fontSize = 12.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClubCardSkeleton() {
+    val shimmer = rememberShimmerBrush()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = ClubCard)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SkeletonBox(Modifier.size(42.dp), shape = CircleShape, brush = shimmer)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SkeletonBox(Modifier.fillMaxWidth(0.62f).height(16.dp), brush = shimmer)
+                    SkeletonBox(Modifier.fillMaxWidth(0.9f).height(11.dp), brush = shimmer)
+                }
+            }
+            SkeletonBox(Modifier.fillMaxWidth(0.78f).height(11.dp), brush = shimmer)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                SkeletonBox(Modifier.width(92.dp).height(28.dp), shape = RoundedCornerShape(8.dp), brush = shimmer)
+                SkeletonBox(Modifier.width(78.dp).height(32.dp), shape = RoundedCornerShape(10.dp), brush = shimmer)
             }
         }
     }

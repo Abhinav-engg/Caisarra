@@ -5,6 +5,7 @@ import com.abhinav.caisarra.data.local.entity.RecordStatus
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.api.GamesService
 import com.abhinav.caisarra.data.remote.dto.ActiveGameDto
+import com.abhinav.caisarra.data.remote.dto.DailyStreakResponse
 import com.abhinav.caisarra.data.remote.dto.GameHistoryDto
 import com.abhinav.caisarra.data.remote.dto.GameMoveDto
 import com.abhinav.caisarra.data.remote.dto.WatchInviteResponse
@@ -21,6 +22,10 @@ class RemoteGameRepository(
 
     suspend fun getActiveGames(): Result<List<ActiveGameDto>> = withContext(Dispatchers.IO) {
         runCatching { gamesService.getActiveGames() }
+    }
+
+    suspend fun getDailyStreak(): Result<DailyStreakResponse> = withContext(Dispatchers.IO) {
+        runCatching { gamesService.getDailyStreak() }
     }
 
     suspend fun createWatchInvite(gameId: String): Result<WatchInviteResponse> = withContext(Dispatchers.IO) {
