@@ -67,6 +67,7 @@ fun PuzzlesScreen(
     viewModel: PuzzlesHubViewModel,
     onPlayDailyPuzzle: () -> Unit,
     onPlayPuzzleRush: (String) -> Unit,
+    onPlayCustomTactics: () -> Unit,
     onStatsClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -137,6 +138,12 @@ fun PuzzlesScreen(
                                 isLaunchingPuzzle = true
                                 onPlayPuzzleRush(mode)
                             }
+                        },
+                        onPlayCustomTactics = {
+                            if (!isLaunchingPuzzle) {
+                                isLaunchingPuzzle = true
+                                onPlayCustomTactics()
+                            }
                         }
                     )
                 }
@@ -169,6 +176,12 @@ fun PuzzlesScreen(
                         if (!isLaunchingPuzzle) {
                             isLaunchingPuzzle = true
                             onPlayPuzzleRush(mode)
+                        }
+                    },
+                    onPlayCustomTactics = {
+                        if (!isLaunchingPuzzle) {
+                            isLaunchingPuzzle = true
+                            onPlayCustomTactics()
                         }
                     }
                 )
@@ -283,11 +296,11 @@ private fun DailyPuzzleCard(
 private fun ModesSection(
     rushHighScore: Int,
     enabled: Boolean,
-    onPlayPuzzleRush: (String) -> Unit
+    onPlayPuzzleRush: (String) -> Unit,
+    onPlayCustomTactics: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = StatsSkeletonChartBg
@@ -318,6 +331,14 @@ private fun ModesSection(
                 onClick = {
                     onPlayPuzzleRush("survival")
                 }
+            )
+
+            ModeItem(
+                title = "Custom Tactics",
+                subtitle = "Train specific chess tactics",
+                iconRes = R.drawable.ic_puzzle_piece,
+                enabled = enabled,
+                onClick = onPlayCustomTactics
             )
         }
     }

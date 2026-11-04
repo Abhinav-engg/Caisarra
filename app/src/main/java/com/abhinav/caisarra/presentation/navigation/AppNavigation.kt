@@ -167,6 +167,8 @@ import com.abhinav.caisarra.presentation.watch.WatchScreen
 import com.abhinav.caisarra.presentation.watch.WatchViewModel
 import com.caisaara.ui.theme.SplashBackground
 import kotlinx.coroutines.launch
+import com.abhinav.caisarra.presentation.puzzles.CustomTacticsViewModel
+import com.abhinav.caisarra.presentation.screens.CustomTacticsScreen
 
 object AppRoutes {
     const val SPLASH = "splash"
@@ -219,17 +221,18 @@ object AppRoutes {
     const val PUZZLES = "puzzles"
     const val DAILY_PUZZLE = "daily_puzzle"
     const val PUZZLE_RUSH = "puzzle_rush?mode={mode}"
+    const val CUSTOM_TACTICS = "custom_tactics"
     const val DIRECT_MESSAGE = "direct_message/{userId}/{username}?avatarUrl={avatarUrl}"
 
     fun puzzleRush(mode: String = "3min") = "puzzle_rush?mode=$mode"
     const val SOCIAL = "social"
     const val MENU = "menu"
-    const val STATS = "stats?username={username}&mode={mode}"
+    const val STATS = "com/abhinav/caisarra/presentation/screens/components/stats"
     fun stats(username: String? = null, mode: String? = null): String {
         val queryParts = mutableListOf<String>()
         if (!username.isNullOrBlank()) queryParts.add("username=${Uri.encode(username.trim())}")
         if (!mode.isNullOrBlank()) queryParts.add("mode=${Uri.encode(mode.trim())}")
-        return if (queryParts.isEmpty()) "stats" else "stats?${queryParts.joinToString("&")}"
+        return if (queryParts.isEmpty()) "com/abhinav/caisarra/presentation/screens/components/stats" else "stats?${queryParts.joinToString("&")}"
     }
     const val THEME = "theme"
     const val CLUBS = "clubs"
@@ -1690,7 +1693,6 @@ fun AppNavigation(authRepository: AuthRepository) {
                         remoteGameRepository = RemoteGameRepository(
                             authRepository.createGamesService()
                         ),
-                        friendsRepository = FriendsRepository(context),
                         initialUsername = usernameArg
                     )
                 }
@@ -1943,10 +1945,15 @@ fun AppNavigation(authRepository: AuthRepository) {
                             launchSingleTop = true
                         }
                     },
-                    onStatsClick = {
-                        navController.navigateOnce(AppRoutes.stats(mode = "puzzle"))
+                    onPlayCustomTactics = {
+                        navController.navigateOnce(AppRoutes.CUSTOM_TACTICS) {
+                            launchSingleTop = true
+                        }
                     }
+
+
                 )
+
             }
 
             composable(route = AppRoutes.DAILY_PUZZLE) {
@@ -1960,6 +1967,31 @@ fun AppNavigation(authRepository: AuthRepository) {
                 }
                 DailyPuzzleScreen(
                     viewModel = dailyViewModel,
+                    onBack = {
+                        navController.safeBack(AppRoutes.PUZZLES)
+                    }
+                )
+            }
+            // ---------------------------------------------------------
+// CUSTOM TACTICS
+// ---------------------------------------------------------
+
+            composable(route = AppRoutes.CUSTOM_TACTICS) {
+
+                val tokenManager = remember {
+                    TokenManager.get(context)
+                }
+
+                val customTacticsViewModel = screenViewModel {
+                    CustomTacticsViewModel(
+                        repository = PuzzleRepository(
+                            RetrofitInstance.createPuzzleService(tokenManager)
+                        )
+                    )
+                }
+
+                CustomTacticsScreen(
+                    viewModel = customTacticsViewModel,
                     onBack = {
                         navController.safeBack(AppRoutes.PUZZLES)
                     }
