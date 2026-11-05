@@ -18,7 +18,7 @@ import com.abhinav.caisarra.presentation.navigation.AppNavigation
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-
+import androidx.activity.SystemBarStyle
 class MainActivity : ComponentActivity() {
 
     companion object {
@@ -43,7 +43,19 @@ class MainActivity : ComponentActivity() {
             splashScreenViewProvider.remove()
         }
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(
+                android.graphics.Color.rgb(8, 13, 19)
+            ),
+            navigationBarStyle = SystemBarStyle.dark(
+                android.graphics.Color.rgb(8, 13, 19)
+            )
+        )
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+            window.isStatusBarContrastEnforced = false
+        }
 
         pendingIntentFlow.value = intent
         requestNotificationPermission()
