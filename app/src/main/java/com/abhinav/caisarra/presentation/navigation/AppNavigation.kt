@@ -15,12 +15,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.fillMaxSize
 import com.abhinav.caisarra.data.local.OnboardingPreferencesStore
 import com.abhinav.caisarra.data.local.PendingInviteStore
 import com.abhinav.caisarra.data.local.PendingOtpStore
 import com.abhinav.caisarra.data.repository.AuthRepository
-
+import androidx.compose.foundation.layout.WindowInsets
 @Composable
 fun AppNavigation(
     authRepository: AuthRepository
@@ -72,6 +73,9 @@ fun AppNavigation(
         !isGuestUser && currentRoute in bottomNavigationRoutes
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = Color(0xFF080D13),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
                 AppBottomNavigationBar(
@@ -95,7 +99,10 @@ fun AppNavigation(
         NavHost(
             navController = navController,
             startDestination = AppRoutes.SPLASH,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
+                .padding(
+                    bottom = innerPadding.calculateBottomPadding()
+                )
         ) {
             authGraph(
                 navController = navController,
