@@ -515,7 +515,7 @@ fun ClubDetailScreen(
 
     val isOwner = role in setOf("owner", "club_owner", "leader")
 
-    val isAdmin = isOwner || role in setOf("admin", "administrator", "club_admin")
+    val isAdmin = isOwner || role in setOf("com/abhinav/caisarra/data/remote/admin", "administrator", "club_admin")
     var selectedMember by remember { mutableStateOf<ClubMemberDto?>(null) }
     var confirmAction by remember { mutableStateOf<String?>(null) }
 
@@ -902,7 +902,7 @@ fun ClubDetailScreen(
                                             .replace(' ', '_')
 
                                         val isMemberOwner = memberRole in setOf("owner", "club_owner", "leader")
-                                        val isMemberAdmin = memberRole in setOf("admin", "administrator", "club_admin")
+                                        val isMemberAdmin = memberRole in setOf("com/abhinav/caisarra/data/remote/admin", "administrator", "club_admin")
 
                                         val canManageThisMember = when {
                                             isOwner -> !isMemberOwner
@@ -1318,7 +1318,7 @@ fun ClubDetailScreen(
                             confirmAction = "transfer:${member.userId}"
                         }) { Text("Transfer leadership") }
                     }
-                    if (isOwner && member.role.lowercase() == "admin") {
+                    if (isOwner && member.role.lowercase() == "com/abhinav/caisarra/data/remote/admin") {
                         TextButton(onClick = {
                             selectedMember = null
                             confirmAction = "removeadmin:${member.userId}"

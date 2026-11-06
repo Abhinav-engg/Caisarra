@@ -3,11 +3,6 @@ package com.abhinav.caisarra.presentation.navigation
 import android.net.Uri
 import com.abhinav.caisarra.presentation.viewmodel.VerifyPurpose
 
-/**
- * Central routing contract for Caisarra application navigation.
- * Defines all route constants, path templates, and type-safe URI builder functions
- * used across navigation graphs and deep links.
- */
 object AppRoutes {
     const val SPLASH = "splash"
     const val ONBOARDING = "onboarding"
@@ -17,6 +12,7 @@ object AppRoutes {
     const val VERIFY = "verify/{purpose}/{email}"
     const val NEW_PASSWORD = "new_password"
     const val RATING = "rating"
+    const val ADMIN = "admin_panel"
 
     fun verify(email: String, purpose: VerifyPurpose): String {
         return "verify/${purpose.name}/${Uri.encode(email)}"
