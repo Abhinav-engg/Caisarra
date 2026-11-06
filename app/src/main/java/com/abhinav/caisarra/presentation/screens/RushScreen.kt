@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.R
+import com.abhinav.caisarra.core.ui.components.FullScreenError
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClickable
@@ -91,33 +92,7 @@ fun RushScreen(
             }
         }
 
-        is RushUiState.Error -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(StatsBg)
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = uiState.message,
-                        color = StatsRed,
-                        fontSize = TextSizeSubhead
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    GeneralButton(
-                        text = "Retry",
-                        onClick = { viewModel.startRush() }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    GeneralButton(
-                        text = "Go Back",
-                        onClick = onBack
-                    )
-                }
-            }
-        }
+        is RushUiState.Error -> FullScreenError(uiState.message, viewModel::startRush, onBack)
 
         is RushUiState.Playing -> {
             RushPlayingContent(

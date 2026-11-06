@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -166,6 +167,7 @@ fun DeleteAccountScreen(
                     value = state.password,
                     onValueChange = viewModel::onPasswordChange,
                     placeholder = "Enter your current password",
+                    imeAction = ImeAction.Done,
                     helperText = if (state.password.length > 72) {
                         "Password cannot exceed 72 characters."
                     } else {

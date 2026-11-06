@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.game
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import com.abhinav.caisarra.features.dailywidget.presentation.refreshDailyTurnsWidget
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
@@ -846,6 +847,7 @@ class OnlineGameViewModel(
     private suspend fun applyState(state: SocketIncoming.GameState) {
         val moveWasAwaitingServer = awaitingServer
         awaitingServer = false
+        if (state.timeControlMinutes >= 1440) refreshDailyTurnsWidget(getApplication())
 
         if (state.whitePlayerId != 0L) whitePlayerId = state.whitePlayerId
         if (state.blackPlayerId != 0L) blackPlayerId = state.blackPlayerId

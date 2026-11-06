@@ -6,6 +6,7 @@ import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.ChallengeManager
 import com.abhinav.caisarra.data.repository.NotificationRepository
+import com.abhinav.caisarra.features.dailywidget.presentation.refreshDailyTurnsWidget
 import com.abhinav.caisarra.presentation.invite.InviteCodeParser
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -31,6 +32,7 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
+        serviceScope.launch { refreshDailyTurnsWidget(applicationContext) }
         val data = remoteMessage.data.toMutableMap()
 
         val type = data["type"].orEmpty()

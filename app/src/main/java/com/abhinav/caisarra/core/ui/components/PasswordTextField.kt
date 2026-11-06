@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -51,6 +52,7 @@ fun PasswordTextField(
     modifier: Modifier = Modifier,
     placeholder: String = "",
     helperText: String? = null,
+    imeAction: ImeAction = ImeAction.Next,
     onFocusChange: (Boolean) -> Unit = {}
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -102,7 +104,7 @@ fun PasswordTextField(
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = TextColor),
                     cursorBrush = SolidColor(CyanLight),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = imeAction),
                     visualTransformation = if (visible) VisualTransformation.None
                     else PasswordVisualTransformation(),
                     modifier = Modifier

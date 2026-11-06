@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,7 +54,8 @@ fun SetNewPasswordScreen(
             value = state.confirmPassword,
             onValueChange = viewModel::onConfirmPasswordChange,
             placeholder = "Enter password",
-            helperText = state.confirmPasswordError
+            helperText = state.confirmPasswordError,
+            imeAction = ImeAction.Done
         )
         Spacer(modifier = Modifier.height(8.dp))
 

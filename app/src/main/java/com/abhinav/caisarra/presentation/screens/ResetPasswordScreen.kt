@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,7 +42,8 @@ fun ResetPasswordScreen(
             value = state.email,
             onValueChange = viewModel::onEmailChange,
             placeholder = "Enter your email",
-            helperText = state.emailError
+            helperText = state.emailError,
+            imeAction = ImeAction.Done
         )
         Spacer(modifier = Modifier.height(32.dp))
 
