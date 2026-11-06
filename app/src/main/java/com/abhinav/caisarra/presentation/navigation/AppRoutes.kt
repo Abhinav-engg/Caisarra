@@ -3,11 +3,6 @@ package com.abhinav.caisarra.presentation.navigation
 import android.net.Uri
 import com.abhinav.caisarra.presentation.viewmodel.VerifyPurpose
 
-/**
- * Central routing contract for Caisarra application navigation.
- * Defines all route constants, path templates, and type-safe URI builder functions
- * used across navigation graphs and deep links.
- */
 object AppRoutes {
     const val SPLASH = "splash"
     const val ONBOARDING = "onboarding"
@@ -17,20 +12,21 @@ object AppRoutes {
     const val VERIFY = "verify/{purpose}/{email}"
     const val NEW_PASSWORD = "new_password"
     const val RATING = "rating"
+    const val ADMIN = "admin_panel"
 
     fun verify(email: String, purpose: VerifyPurpose): String {
         return "verify/${purpose.name}/${Uri.encode(email)}"
     }
     const val HOME = "home"
     const val GUEST_HOME = "guest_options"
-    const val PROFILE = "com/abhinav/caisarra/presentation/screens/components/profile"
+    const val PROFILE = "profile?username={username}"
     const val EDIT_PROFILE = "edit_profile"
     const val ALL_GAME_HISTORY = "all_game_history"
-    const val STATS = "com/abhinav/caisarra/presentation/screens/components/stats"
+    const val STATS = "stats?username={username}&mode={mode}"
 
     fun profile(username: String? = null): String {
         return if (username.isNullOrBlank()) {
-            "com/abhinav/caisarra/presentation/screens/components/profile"
+            "profile"
         } else {
             "profile?username=${Uri.encode(username.trim())}"
         }
@@ -45,7 +41,7 @@ object AppRoutes {
             queryParts.add("mode=${Uri.encode(mode.trim())}")
         }
         return if (queryParts.isEmpty()) {
-            "com/abhinav/caisarra/presentation/screens/components/stats"
+            "stats"
         } else {
             "stats?${queryParts.joinToString("&")}"
         }
@@ -131,6 +127,7 @@ object AppRoutes {
     const val DAILY_PUZZLE = "daily_puzzle"
     const val PUZZLE_RUSH = "puzzle_rush?mode={mode}"
     const val CUSTOM_TACTICS = "custom_tactics"
+    const val MINI_MATES = "mini_mates"
 
     fun puzzleRush(mode: String = "3min"): String = "puzzle_rush?mode=$mode"
 

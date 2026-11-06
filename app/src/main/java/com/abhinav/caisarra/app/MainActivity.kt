@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
                 android.graphics.Color.rgb(8, 13, 19)
             )
         )
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
             window.isStatusBarContrastEnforced = false

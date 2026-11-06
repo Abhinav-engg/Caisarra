@@ -60,7 +60,7 @@ fun NavGraphBuilder.profileGraph(
 
         val currentBackStackEntry by navController.currentBackStackEntryAsState()
         val profileEntry = currentBackStackEntry
-            ?.takeIf { it.destination.route?.startsWith("com/abhinav/caisarra/presentation/screens/components/profile") == true }
+            ?.takeIf { it.destination.route?.startsWith("profile") == true }
 
         val refreshRequested by (
                 profileEntry?.savedStateHandle

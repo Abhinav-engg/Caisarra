@@ -26,6 +26,7 @@ import com.abhinav.caisarra.data.remote.api.DirectMessageService
 import com.abhinav.caisarra.data.remote.api.NotificationService
 import com.abhinav.caisarra.data.remote.api.NewsService
 import com.abhinav.caisarra.data.remote.api.PrivacyService
+import com.abhinav.caisarra.data.remote.admin.AdminService
 object RetrofitInstance {
     const val BASE_URL = "https://caisaara.app"
     val json = Json {
@@ -132,4 +133,6 @@ object RetrofitInstance {
         authenticatedRetrofit(tokenManager).create()
     fun createNewsService(tokenManager: TokenManager): NewsService =
         authenticatedRetrofit(tokenManager).create()
+    fun createAdminService(tokenManager: TokenManager): AdminService =
+        authenticatedRetrofit(tokenManager).create(AdminService::class.java)
 }

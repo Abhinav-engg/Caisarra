@@ -106,7 +106,9 @@ fun MenuScreen(
     blitzRating: Int? = null,
     activeThemeName: String = "Midnight Cyan",
     isGuest: Boolean = false,
-    hasUnreadMessages: Boolean = false
+    hasUnreadMessages: Boolean = false,
+    isAdmin: Boolean = false,
+    onAdminClick: () -> Unit = {}
 ) {
     BackHandler { onBack() }
 
@@ -250,6 +252,17 @@ fun MenuScreen(
             MenuCard {
                 MenuItem(Icons.Default.PersonOutline, StatsCyan, ThemeNeonDeep, "Profile", onClick = onProfileClick)
                 ItemDivider()
+                if (isAdmin && !isGuest) {
+                    MenuItem(
+                        icon = Icons.Default.Shield,
+                        iconTint = GoldColor,
+                        iconBg = ThemeNeonDeep,
+                        title = "Admin",
+                        onClick = onAdminClick
+                    )
+
+                    ItemDivider()
+                }
                 MenuItem(Icons.Default.History, StatsCyan, ThemeNeonDeep, "Game History", onClick = onGameHistoryClick)
                 ItemDivider()
                 MenuItem(Icons.Default.AutoGraph, StatsCyan, MenuStatsIconBg, "Stats", onClick = onStatsClick)

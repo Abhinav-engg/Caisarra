@@ -7,7 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-
+import androidx.datastore.preferences.core.booleanPreferencesKey
 private val Context.tokenDataStore by preferencesDataStore(name = "auth_tokens")
 
 class TokenManager private constructor(private val context: Context) {
@@ -18,6 +18,7 @@ class TokenManager private constructor(private val context: Context) {
         val GUEST_ID = stringPreferencesKey("guest_id")
         val USERNAME = stringPreferencesKey("username")
         val FCM_TOKEN = stringPreferencesKey("fcm_token")
+        val IS_ADMIN = booleanPreferencesKey("is_admin")
     }
 
     val fcmTokenFlow: Flow<String?> =
@@ -66,6 +67,26 @@ class TokenManager private constructor(private val context: Context) {
             prefs[Keys.ACCESS_TOKEN] = accessToken
             prefs[Keys.REFRESH_TOKEN] = refreshToken
             prefs.remove(Keys.GUEST_ID)
+            prefs.remove(Keys.IS_ADMIN)
+        }
+    }
+    val isAdminFlow: Flow<Boolean> =
+        context.tokenDataStore.data.map { preferences ->
+            preferences[Keys.IS_ADMIN] ?: false
+        }
+
+    suspend fun isAdmin(): Boolean =
+        isAdminFlow.first()
+
+    suspend fun saveAdminStatus(isAdmin: Boolean) {
+        context.tokenDataStore.edit { preferences ->
+            preferences[Keys.IS_ADMIN] = isAdmin
+        }
+    }
+
+    suspend fun clearAdminStatus() {
+        context.tokenDataStore.edit { preferences ->
+            preferences.remove(Keys.IS_ADMIN)
         }
     }
 

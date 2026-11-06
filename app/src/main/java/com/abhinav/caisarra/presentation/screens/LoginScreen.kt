@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -52,7 +53,8 @@ fun LoginScreen(
             label = "Password",
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
-            placeholder = "Enter your Password"
+            placeholder = "Enter your Password",
+            imeAction = ImeAction.Done
         )
         Spacer(modifier = Modifier.height(8.dp))
         Row(

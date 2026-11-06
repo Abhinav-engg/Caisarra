@@ -89,7 +89,7 @@ import com.abhinav.caisarra.presentation.game.components.GameResultDialog
 import com.abhinav.caisarra.presentation.game.components.MoveList
 import com.abhinav.caisarra.presentation.game.components.MoveTicker
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
-import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
+import com.abhinav.caisarra.presentation.game.components.rememberAutoQueenEnabled
 import com.abhinav.caisarra.presentation.game.model.GameIntent
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
@@ -144,7 +144,7 @@ fun OnlineGameScreen(
             )
         }
     }
-    val autoQueen = isAutoQueenEnabled(context)
+    val autoQueen by rememberAutoQueenEnabled()
 
     LaunchedEffect(state.promotionPending, autoQueen) {
         if (state.promotionPending != null && autoQueen) {

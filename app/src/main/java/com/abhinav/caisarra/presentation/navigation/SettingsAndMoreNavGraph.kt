@@ -44,9 +44,22 @@ import com.abhinav.caisarra.presentation.watch.SpectatorGameScreen
 import com.abhinav.caisarra.presentation.watch.SpectatorGameViewModel
 import com.abhinav.caisarra.presentation.watch.WatchScreen
 import com.abhinav.caisarra.presentation.watch.WatchViewModel
+import com.abhinav.caisarra.data.remote.admin.AdminService
+import com.abhinav.caisarra.data.repository.AdminRepository
+import com.abhinav.caisarra.presentation.screens.AdminScreen
+import com.abhinav.caisarra.presentation.viewmodel.AdminViewModel
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+
 
 fun NavGraphBuilder.settingsAndMoreGraph(
     navController: NavController,
@@ -68,6 +81,17 @@ fun NavGraphBuilder.settingsAndMoreGraph(
             isGuest = isGuestUser,
             refreshKey = currentRoute
         )
+        var isAdmin by remember {
+            mutableStateOf(false)
+        }
+
+        LaunchedEffect(isGuestUser) {
+            isAdmin = if (isGuestUser) {
+                false
+            } else {
+                authRepository.isAdmin()
+            }
+        }
 
         val currentThemeKey by remember(context) {
             context.settingsDataStore.data.map { preferences ->
@@ -81,6 +105,7 @@ fun NavGraphBuilder.settingsAndMoreGraph(
 
         MenuScreen(
             profileName = profile?.displayName,
+            isAdmin = isAdmin,
             username = profile?.username,
             avatarUrl = profile?.avatarUrl,
             isGuest = isGuestUser,
@@ -99,6 +124,21 @@ fun NavGraphBuilder.settingsAndMoreGraph(
             onStatsClick = {
                 navController.navigateOnce(AppRoutes.stats()) {
                     launchSingleTop = true
+                }
+            },
+            onAdminClick = {
+                scope.launch {
+                    val authorized = authRepository.isAdmin()
+
+                    if (authorized) {
+                        navController.navigateOnce(AppRoutes.ADMIN)
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Admin access denied",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             },
             onGameHistoryClick = {
@@ -176,6 +216,66 @@ fun NavGraphBuilder.settingsAndMoreGraph(
                 }
             }
         )
+    }
+    composable(route = AppRoutes.ADMIN) {
+
+        val tokenManager = remember(context) {
+            TokenManager.get(context)
+        }
+
+        val adminService = remember(tokenManager) {
+            RetrofitInstance.createAdminService(tokenManager)
+        }
+
+        val adminRepository = remember(adminService) {
+            AdminRepository(adminService)
+        }
+
+        val adminViewModel = screenViewModel {
+            AdminViewModel(adminRepository)
+        }
+
+        var authorized by remember {
+            mutableStateOf<Boolean?>(null)
+        }
+
+        LaunchedEffect(Unit) {
+            authorized = authRepository.isAdmin()
+        }
+
+        when (authorized) {
+            true -> {
+                AdminScreen(
+                    viewModel = adminViewModel,
+                    onBack = {
+                        navController.safeBack(AppRoutes.MENU)
+                    }
+                )
+            }
+
+            false -> {
+                LaunchedEffect(Unit) {
+                    Toast.makeText(
+                        context,
+                        "You don't have admin permission",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    navController.safeBack(AppRoutes.MENU)
+                }
+            }
+
+            null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF00D5E8)
+                    )
+                }
+            }
+        }
     }
 
     composable(route = AppRoutes.THEME) {

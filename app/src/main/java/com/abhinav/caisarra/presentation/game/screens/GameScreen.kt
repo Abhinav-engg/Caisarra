@@ -63,8 +63,7 @@ import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 import com.abhinav.caisarra.presentation.game.components.MoveTicker
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
-import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
+import com.abhinav.caisarra.presentation.game.components.rememberAutoQueenEnabled
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 
@@ -75,9 +74,8 @@ fun GameScreen(
     onNewGame: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    val context = LocalContext.current
 
-    val autoQueen = isAutoQueenEnabled(context)
+    val autoQueen by rememberAutoQueenEnabled()
 
     LaunchedEffect(state.promotionPending, autoQueen) {
         if (state.promotionPending != null && autoQueen) {
