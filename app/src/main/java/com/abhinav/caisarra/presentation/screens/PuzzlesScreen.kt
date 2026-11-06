@@ -68,6 +68,7 @@ fun PuzzlesScreen(
     onPlayDailyPuzzle: () -> Unit,
     onPlayPuzzleRush: (String) -> Unit,
     onPlayCustomTactics: () -> Unit,
+    onPlayMiniMates: () -> Unit,
     onStatsClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -144,7 +145,8 @@ fun PuzzlesScreen(
                                 isLaunchingPuzzle = true
                                 onPlayCustomTactics()
                             }
-                        }
+                        },
+                        onPlayMiniMates = onPlayMiniMates
                     )
                 }
             }
@@ -183,7 +185,8 @@ fun PuzzlesScreen(
                             isLaunchingPuzzle = true
                             onPlayCustomTactics()
                         }
-                    }
+                    },
+                    onPlayMiniMates = onPlayMiniMates
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -297,7 +300,8 @@ private fun ModesSection(
     rushHighScore: Int,
     enabled: Boolean,
     onPlayPuzzleRush: (String) -> Unit,
-    onPlayCustomTactics: () -> Unit
+    onPlayCustomTactics: () -> Unit,
+    onPlayMiniMates: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -340,12 +344,20 @@ private fun ModesSection(
                 enabled = enabled,
                 onClick = onPlayCustomTactics
             )
+
+            ModeItem(
+                title = "Mini Mates",
+                subtitle = "Tiny boards • Mate in 1 to 3",
+                iconRes = R.drawable.ic_puzzle_piece,
+                enabled = enabled,
+                onClick = onPlayMiniMates
+            )
         }
     }
 }
 
 @Composable
-private fun ModeItem(
+fun ModeItem(
     title: String,
     subtitle: String,
     iconRes: Int,

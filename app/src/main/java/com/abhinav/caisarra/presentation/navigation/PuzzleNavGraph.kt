@@ -54,6 +54,11 @@ fun NavGraphBuilder.puzzleGraph(
                 navController.navigateOnce(AppRoutes.CUSTOM_TACTICS) {
                     launchSingleTop = true
                 }
+            },
+            onPlayMiniMates = {
+                navController.navigateOnce(AppRoutes.MINI_MATES) {
+                    launchSingleTop = true
+                }
             }
         )
     }

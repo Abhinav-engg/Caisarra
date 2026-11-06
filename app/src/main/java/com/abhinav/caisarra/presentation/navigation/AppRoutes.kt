@@ -131,6 +131,7 @@ object AppRoutes {
     const val DAILY_PUZZLE = "daily_puzzle"
     const val PUZZLE_RUSH = "puzzle_rush?mode={mode}"
     const val CUSTOM_TACTICS = "custom_tactics"
+    const val MINI_MATES = "mini_mates"
 
     fun puzzleRush(mode: String = "3min"): String = "puzzle_rush?mode=$mode"
 
