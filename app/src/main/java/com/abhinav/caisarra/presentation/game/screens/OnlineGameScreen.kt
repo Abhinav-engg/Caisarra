@@ -79,6 +79,7 @@ import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
 import com.abhinav.caisarra.presentation.game.components.CapturedPieces
 import com.abhinav.caisarra.presentation.game.components.ChatPanel
+import com.abhinav.caisarra.presentation.game.components.GameOverReveal
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
 import com.abhinav.caisarra.presentation.game.components.ClockBar
@@ -620,7 +621,7 @@ fun OnlineGameScreen(
     if (showResultDialog) {
         state.gameResult?.let { result ->
             if (state.isRated) {
-                RatedGameResultScreen(
+                GameOverReveal {                 RatedGameResultScreen(
                     state = state,
                     result = result,
                     rematchBusy = rematchBusy,
@@ -661,7 +662,7 @@ fun OnlineGameScreen(
                     },
                     onSavePgn = { savePgn(context, viewModel.pgn()) },
                     analysisViewModel = analysisViewModel
-                )
+                ) }
             } else {
                 GameResultDialog(
                     result = result,
