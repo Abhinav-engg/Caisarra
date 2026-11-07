@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -99,7 +100,7 @@ fun VerifyScreen(
                 .fillMaxWidth()
                 .height(48.dp)
                 .focusRequester(focusRequester),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             textStyle = TextStyle(color = Color.Transparent),
             cursorBrush = SolidColor(Color.Transparent),
             singleLine = true,

@@ -104,6 +104,10 @@ class AuthRepository private constructor(private val context: Context) {
             if (!saveTokensFromCookies(response.headers())) {
                 return AuthResult.Error("Login failed. Please try again.")
             }
+            val loginData = response.body()?.data
+                ?: return AuthResult.Error("Login response is empty.")
+
+            tokenManager.saveAdminStatus(loginData.isAdmin)
             tokenManager.clearGuestId()
             val userToSave = response.body()?.data?.username?.takeIf { it.isNotBlank() }
                 ?: username.takeUnless { it.contains("@") }
@@ -117,6 +121,42 @@ class AuthRepository private constructor(private val context: Context) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
         }
     }
+    suspend fun isAdmin(): Boolean {
+        if (!isLoggedIn() || isGuest()) {
+            tokenManager.saveAdminStatus(false)
+            return false
+        }
+
+        return try {
+            val response = RetrofitInstance
+                .createAdminService(tokenManager)
+                .getStats()
+
+            val isAuthorized =
+                response.isSuccessful &&
+                        response.body()?.success == true
+
+            tokenManager.saveAdminStatus(isAuthorized)
+
+            android.util.Log.d(
+                "ADMIN_AUTH",
+                "Backend admin verification: $isAuthorized, HTTP ${response.code()}"
+            )
+
+            isAuthorized
+        } catch (e: Exception) {
+            android.util.Log.e(
+                "ADMIN_AUTH",
+                "Admin verification failed",
+                e
+            )
+
+            false
+        }
+    }
+
+    fun isAdminFlow(): Flow<Boolean> =
+        tokenManager.isAdminFlow
 
     suspend fun getValidAccessToken(): String? = refresher.getValidAccessToken()
 

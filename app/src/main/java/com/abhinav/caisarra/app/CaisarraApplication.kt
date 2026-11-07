@@ -1,12 +1,16 @@
 package com.abhinav.caisarra.app
 
 import android.app.Application
+import com.abhinav.caisarra.features.dailywidget.presentation.refreshDailyTurnsWidget
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 
 class CaisarraApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
         NotificationHelper.ensureChannels(this)
+        MainScope().launch { refreshDailyTurnsWidget(this@CaisarraApplication) }
     }
 
     companion object {

@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.abhinav.caisarra.core.ui.components.FullScreenError
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClick
@@ -63,8 +64,7 @@ import com.abhinav.caisarra.presentation.game.components.PromotionDialog
 import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
-import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
+import com.abhinav.caisarra.presentation.game.components.rememberAutoQueenEnabled
 private val ScreenBg = Color(0xFF080D13)
 private val Accent = Color(0xFF10B981)
 
@@ -104,8 +104,7 @@ fun BotGameScreen(
             onHome()
         }
     }
-    val context = LocalContext.current
-    val autoQueen = isAutoQueenEnabled(context)
+    val autoQueen by rememberAutoQueenEnabled()
 
     LaunchedEffect(state.promotionPending, autoQueen) {
         if (state.promotionPending != null && autoQueen) {
@@ -138,6 +137,11 @@ fun BotGameScreen(
                 Text(text = "Loading game...", color = Color.White, fontFamily = JetBrainsMono)
             }
         }
+        return
+    }
+
+    if (state.errorMessage != null && state.board.isEmpty()) {
+        FullScreenError(state.errorMessage, viewModel::loadGameFallback, onHome)
         return
     }
 

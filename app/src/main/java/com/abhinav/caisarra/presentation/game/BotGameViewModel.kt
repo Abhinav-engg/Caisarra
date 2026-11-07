@@ -113,7 +113,8 @@ class BotGameViewModel(
         }
     }
 
-    private fun loadGameFallback() {
+    fun loadGameFallback() {
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
             repository.getGame(gameId)
                 .onSuccess { game ->

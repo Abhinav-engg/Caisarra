@@ -15,7 +15,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +43,21 @@ fun isAutoQueenEnabled(context: Context): Boolean {
     return context.applicationContext
         .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         .getBoolean(AUTO_QUEEN_KEY, false)
+}
+
+@Composable
+fun rememberAutoQueenEnabled(): State<Boolean> {
+    val context = LocalContext.current
+    val state = remember { mutableStateOf(isAutoQueenEnabled(context)) }
+    DisposableEffect(context) {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == AUTO_QUEEN_KEY) state.value = isAutoQueenEnabled(context)
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    return state
 }
 
 fun setAutoQueenEnabled(context: Context, enabled: Boolean) {

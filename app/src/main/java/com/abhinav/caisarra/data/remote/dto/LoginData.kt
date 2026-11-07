@@ -6,5 +6,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class LoginData(
     val username: String,
-    @SerialName("needs_rating") val needsRating: Boolean
+    @SerialName("needs_rating")
+    val needsRating: Boolean,
+
+    @SerialName("is_admin")
+    val isAdmin: Boolean = false
 )

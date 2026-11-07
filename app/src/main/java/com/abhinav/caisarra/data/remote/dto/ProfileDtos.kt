@@ -8,6 +8,8 @@ import kotlinx.serialization.Serializable
 data class ProfileData(
     val username: String,
     val email: String = "",
+    @SerialName("is_admin")
+    val isAdmin: Boolean = false,
     @SerialName("display_name")
     val displayName: String? = null,
     val country: String? = null,

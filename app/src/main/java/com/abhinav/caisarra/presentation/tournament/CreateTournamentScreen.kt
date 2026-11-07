@@ -2,6 +2,7 @@
 
 package com.abhinav.caisarra.presentation.tournament
 
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -159,7 +160,7 @@ fun CreateTournamentScreen(
                             onValueChange = viewModel::onMinPlayersChange,
                             placeholder = "Enter value here",
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                             textAlignment = TextAlign.Center
                         )
                     }
@@ -180,7 +181,7 @@ fun CreateTournamentScreen(
                             onValueChange = viewModel::onMaxPlayersChange,
                             placeholder = "Enter value here",
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                             textAlignment = TextAlign.Center
                         )
                     }

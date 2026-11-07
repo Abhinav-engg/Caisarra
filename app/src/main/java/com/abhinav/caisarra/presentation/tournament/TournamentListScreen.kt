@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.tournament
 
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -130,7 +131,7 @@ fun TournamentListScreen(
                         onValueChange = viewModel::onCodeChange,
                         placeholder = "Enter your Invite code",
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters)
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, imeAction = ImeAction.Done)
                     )
 
                     state.error?.let {

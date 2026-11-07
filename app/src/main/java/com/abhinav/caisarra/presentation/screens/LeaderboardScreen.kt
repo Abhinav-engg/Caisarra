@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -248,7 +249,7 @@ fun LeaderboardScreen(
                                 singleLine = true,
                                 label = { Text("Club ID, Code, or Name", color = Color.LightGray, fontSize = 12.sp) },
                                 placeholder = { Text("e.g. 12 or SHARECODE", color = Color.Gray, fontSize = 12.sp) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Done),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White,
