@@ -100,6 +100,8 @@ fun AppNavigation(
         NavHost(
             navController = navController,
             startDestination = AppRoutes.SPLASH,
+            enterTransition = { menuEnterTransition() },
+            popExitTransition = { menuPopExitTransition() },
             modifier = Modifier.fillMaxSize()
                 .padding(
                     bottom = innerPadding.calculateBottomPadding()
