@@ -475,9 +475,6 @@ fun NavGraphBuilder.gameGraph(
         )
     }
 
-    // -------------------------------------------------------------------------
-    // Bot Game History Destination
-    // -------------------------------------------------------------------------
     composable(route = AppRoutes.BOT_HISTORY) {
         val botHistoryViewModel = screenViewModel {
             BotHistoryViewModel(context as Application)

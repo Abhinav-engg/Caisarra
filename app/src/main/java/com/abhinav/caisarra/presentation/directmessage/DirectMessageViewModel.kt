@@ -94,7 +94,6 @@ class DirectMessageViewModel(
                     _state.value = _state.value.copy(avatarUrl = profile.avatarUrl)
                 }
             } catch (_: Exception) {
-                // Ignore profile fetch failure
             }
         }
 

@@ -36,10 +36,6 @@ import com.caisaara.ui.theme.TextSizeCaption
 import com.caisaara.ui.theme.TextSizeSubhead
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-
-
-// Extracted UI components from the original screen during modular refactoring.
-
 private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.US)
 
 

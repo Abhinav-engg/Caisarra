@@ -193,7 +193,6 @@ fun AdminScreen(
                         stats = state.stats
                     )
 
-                    // USERS
                     1 -> {
                         Column(
                             modifier = Modifier.fillMaxSize()
@@ -579,7 +578,6 @@ fun AdminScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
 
-                    // USER INFORMATION
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
