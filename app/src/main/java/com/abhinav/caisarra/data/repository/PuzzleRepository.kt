@@ -13,6 +13,7 @@ import com.abhinav.caisarra.data.remote.dto.DailyPuzzleResponse
 import com.abhinav.caisarra.data.remote.dto.DailyPuzzleSolutionRequest
 import com.abhinav.caisarra.data.remote.dto.DailyPuzzleSolutionResponse
 import com.abhinav.caisarra.data.remote.dto.PuzzleDetailsResponse
+import com.abhinav.caisarra.data.remote.dto.PuzzleHistoryItemDto
 import com.abhinav.caisarra.data.remote.dto.PuzzleHistoryResponse
 import com.abhinav.caisarra.data.remote.dto.PuzzleStatsResponse
 import com.abhinav.caisarra.data.remote.dto.PuzzleThemesResponse
@@ -24,6 +25,7 @@ import com.abhinav.caisarra.data.remote.dto.RushStartRequest
 import com.abhinav.caisarra.data.remote.dto.RushStartResponse
 import com.abhinav.caisarra.data.remote.dto.RushStatsResponse
 
+import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 
@@ -87,6 +89,18 @@ class PuzzleRepository(
             limit = limit,
             offset = offset
         )
+    }
+
+    suspend fun getHistorySince(since: LocalDate?): Result<List<PuzzleHistoryItemDto>> = call {
+        val isInRange = { item: PuzzleHistoryItemDto ->
+            since == null || item.createdAt.orEmpty().take(10) >= since.toString()
+        }
+        buildList {
+            do {
+                val page = service.getHistory(limit = 100, offset = size).allAttempts
+                addAll(page.filter(isInRange))
+            } while (page.isNotEmpty() && page.all(isInRange) && size < 2000)
+        }
     }
 
     suspend fun startRush(
