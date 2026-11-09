@@ -12,7 +12,6 @@ object AppRoutes {
     const val VERIFY = "verify/{purpose}/{email}"
     const val NEW_PASSWORD = "new_password"
     const val RATING = "rating"
-    const val ADMIN_LOGIN = "admin_login"
     const val ADMIN = "admin_panel"
 
     fun verify(email: String, purpose: VerifyPurpose): String {

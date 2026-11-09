@@ -34,7 +34,6 @@ fun LoginScreen(
     onForgotPasswordClick: () -> Unit = {},
     onSignUpClick: () -> Unit = {},
     onContinueAsGuestClick: () -> Unit = {},
-    onAdminLoginClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -108,25 +107,5 @@ fun LoginScreen(
         AuthFooter("Don't have an account?", "Sign Up", onSignUpClick)
         Spacer(modifier = Modifier.height(12.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Administrator? ",
-                color = Color(0xFF8D9AAA),
-                fontSize = 13.sp
-            )
-
-            Text(
-                text = "Admin Login",
-                color = Color(0xFF00D5E9),
-                fontSize = 13.sp,
-                modifier = Modifier.clickable {
-                    onAdminLoginClick()
-                }
-            )
-        }
     }
 }

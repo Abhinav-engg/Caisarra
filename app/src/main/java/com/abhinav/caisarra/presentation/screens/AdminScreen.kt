@@ -2,7 +2,6 @@
 package com.abhinav.caisarra.presentation.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,6 +63,13 @@ fun AdminScreen(
     var forceLogoutUser by remember {
         mutableStateOf<AdminUser?>(null)
     }
+    var showAdminLogoutDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var confirmAdminLogout by remember {
+        mutableStateOf(false)
+    }
 
     var banReason by remember { mutableStateOf("") }
     var banDays by remember { mutableStateOf("7") }
@@ -89,9 +95,7 @@ fun AdminScreen(
     ) {
         CaisaaraTopBar(
             title = "MOSAIC ADMIN",
-            onBack = onLogout,
             titleColor = AdminCyan,
-            iconTint = AdminCyan,
             backgroundColor = AdminBg,
             height = 56.dp
         )
@@ -117,7 +121,12 @@ fun AdminScreen(
                 )
             }
 
-            TextButton(onClick = onLogout) {
+            TextButton(
+                onClick = {
+                    confirmAdminLogout = false
+                    showAdminLogoutDialog = true
+                }
+            ) {
                 Text("Logout", color = AdminRed)
             }
         }
@@ -756,6 +765,87 @@ fun AdminScreen(
                     }
                 ) {
                     Text("Cancel", color = AdminMuted)
+                }
+            }
+        )
+    }
+
+    if (showAdminLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showAdminLogoutDialog = false
+                confirmAdminLogout = false
+            },
+            containerColor = AdminSurface,
+            titleContentColor = AdminWhite,
+            textContentColor = AdminMuted,
+
+            title = {
+                Text(
+                    text = "Confirm Logout",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Are you sure you want to logout from the MOSAIC Admin Panel?"
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = confirmAdminLogout,
+                            onCheckedChange = {
+                                confirmAdminLogout = it
+                            },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = AdminCyan,
+                                uncheckedColor = AdminMuted,
+                                checkmarkColor = AdminBg
+                            )
+                        )
+
+                        Text(
+                            text = "Yes, I confirm that I want to logout",
+                            color = AdminWhite,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            },
+
+            confirmButton = {
+                TextButton(
+                    enabled = confirmAdminLogout,
+                    onClick = {
+                        showAdminLogoutDialog = false
+                        confirmAdminLogout = false
+                        onLogout()
+                    }
+                ) {
+                    Text(
+                        text = "Logout",
+                        color = if (confirmAdminLogout) AdminRed else AdminMuted
+                    )
+                }
+            },
+
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showAdminLogoutDialog = false
+                        confirmAdminLogout = false
+                    }
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = AdminMuted
+                    )
                 }
             }
         )

@@ -13,9 +13,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.AdminRepository
-import com.abhinav.caisarra.presentation.screens.AdminLoginScreen
 import com.abhinav.caisarra.presentation.screens.AdminScreen
-import com.abhinav.caisarra.presentation.viewmodel.AdminLoginViewModel
 import com.abhinav.caisarra.presentation.viewmodel.AdminViewModel
 import kotlinx.coroutines.launch
 
@@ -23,33 +21,6 @@ fun NavGraphBuilder.adminGraph(
     navController: NavController,
     authRepository: AuthRepository
 ) {
-    composable(AppRoutes.ADMIN_LOGIN) {
-
-        AdminLoginScreen(
-            viewModel = screenViewModel {
-                AdminLoginViewModel(authRepository)
-            },
-
-            onLoginSuccess = {
-                navController.navigate(AppRoutes.ADMIN) {
-                    popUpTo(navController.graph.id) {
-                        inclusive = true
-                    }
-                    launchSingleTop = true
-                }
-            },
-
-            onBackToUserLogin = {
-                navController.navigate(AppRoutes.LOGIN) {
-                    popUpTo(AppRoutes.ADMIN_LOGIN) {
-                        inclusive = true
-                    }
-                    launchSingleTop = true
-                }
-            }
-        )
-    }
-
     composable(AppRoutes.ADMIN) {
 
         var authorized by remember {
@@ -64,7 +35,7 @@ fun NavGraphBuilder.adminGraph(
             if (authorized == false) {
                 authRepository.logout()
 
-                navController.navigate(AppRoutes.ADMIN_LOGIN) {
+                navController.navigate(AppRoutes.LOGIN) {
                     popUpTo(AppRoutes.ADMIN) {
                         inclusive = true
                     }
@@ -84,11 +55,12 @@ fun NavGraphBuilder.adminGraph(
                             )
                         )
                     },
+
                     onLogout = {
                         scope.launch {
                             authRepository.logout()
 
-                            navController.navigate(AppRoutes.ADMIN_LOGIN) {
+                            navController.navigate(AppRoutes.LOGIN) {
                                 popUpTo(navController.graph.id) {
                                     inclusive = true
                                 }
