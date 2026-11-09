@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.core.ui.components.GeneralButton
@@ -49,29 +50,37 @@ fun MiniMatesPlayContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         CaisaaraTopBar(title = level.title.uppercase(), onBack = onBack)
-        Text(text = message, color = White, fontSize = TextSizeSubhead, fontWeight = FontWeight.SemiBold)
-        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).aspectRatio(viewport.cols / viewport.rows.toFloat())) {
-            ChessBoard(
-                board = state.board,
-                selectedSquare = state.selected,
-                legalMoves = state.targets,
-                lastMoveFrom = state.lastFrom,
-                lastMoveTo = state.lastTo,
-                isWhiteInCheck = state.whiteInCheck,
-                isBlackInCheck = state.blackInCheck,
-                isFlipped = level.playerColor == "black",
-                boardSize = viewport.rows,
-                columns = viewport.cols,
-                origin = Square(row = 8 - viewport.endRank, column = viewport.startFile.first() - 'a'),
-                onSquareClick = onSquareClick
-            )
+        Text(
+            text = message,
+            color = White,
+            fontSize = TextSizeSubhead,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.aspectRatio(viewport.cols / viewport.rows.toFloat())) {
+                ChessBoard(
+                    board = state.board,
+                    selectedSquare = state.selected,
+                    legalMoves = state.targets,
+                    lastMoveFrom = state.lastFrom,
+                    lastMoveTo = state.lastTo,
+                    isWhiteInCheck = state.whiteInCheck,
+                    isBlackInCheck = state.blackInCheck,
+                    isFlipped = level.playerColor == "black",
+                    boardSize = viewport.rows,
+                    columns = viewport.cols,
+                    origin = Square(row = 8 - viewport.endRank, column = viewport.startFile.first() - 'a'),
+                    onSquareClick = onSquareClick
+                )
+            }
         }
-        val buttonModifier = Modifier.padding(horizontal = 16.dp)
+        val buttonModifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         when (state.status) {
-            MiniMatesStatus.PLAYING -> GeneralButton(text = "Hint", onClick = onHint, modifier = buttonModifier)
+            MiniMatesStatus.PLAYING, MiniMatesStatus.THINKING -> GeneralButton(text = "Hint", onClick = onHint, modifier = buttonModifier, enabled = state.status == MiniMatesStatus.PLAYING)
             MiniMatesStatus.SOLVED -> GeneralButton(text = "Next Level", onClick = onNext, modifier = buttonModifier)
             MiniMatesStatus.FAILED -> GeneralButton(text = "Retry", onClick = onRetry, modifier = buttonModifier)
-            MiniMatesStatus.THINKING -> Unit
         }
     }
 }
