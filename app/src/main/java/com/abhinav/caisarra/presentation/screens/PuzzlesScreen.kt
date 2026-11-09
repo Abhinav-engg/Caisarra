@@ -297,7 +297,7 @@ private fun DailyPuzzleCard(
 
 @Composable
 private fun ModesSection(
-    rushHighScore: Int,
+    rushHighScore: Int?,
     enabled: Boolean,
     onPlayPuzzleRush: (String) -> Unit,
     onPlayCustomTactics: () -> Unit,
@@ -319,7 +319,7 @@ private fun ModesSection(
         ) {
             ModeItem(
                 title = "Puzzle Rush",
-                subtitle = "3 min • High Score: $rushHighScore",
+                subtitle = "3 min • High Score: ${rushHighScore ?: "--"}",
                 iconRes = R.drawable.ic_puzzle_piece,
                 enabled = enabled,
                 onClick = {
