@@ -6,7 +6,7 @@ import java.io.IOException
 
 object ApiErrorInterpreter {
 
-    fun toUserMessage(error: Throwable): String {
+    fun toUserMessage(error: Throwable, fallback: String? = null): String {
 
         if (error is java.net.SocketTimeoutException) {
             return "Server timed out. The server is taking too long to respond."
@@ -22,7 +22,7 @@ object ApiErrorInterpreter {
         }
         if (error is HttpException) {
 
-            val body = error.response()?.errorBody()?.string()
+            val body = runCatching { error.response()?.errorBody()?.string() }.getOrNull()
             if (body != null) {
                 try {
                     val apiError = RetrofitInstance.json.decodeFromString(ApiError.serializer(), body)
@@ -31,12 +31,13 @@ object ApiErrorInterpreter {
                 }
             }
             val code = error.code()
+            if (code == 429) return "Too many attempts. Please try again in a bit."
+            if (code >= 500) return "Server error. Please try again in a moment."
+            if (fallback != null) return fallback
             if (code == 400) return "That request wasn't valid. Please check your input."
             if (code == 401) return "Incorrect username or password."
             if (code == 409) return "That username or email is already taken."
-            if (code == 429) return "Too many attempts. Please try again in a bit."
-            if (code == 500) return "Server error. Please try again in a moment."
-            return "Something went wrong (code $code)."
+            return "Something went wrong. Please try again."
         }
         return "Something went wrong. Please try again."
     }

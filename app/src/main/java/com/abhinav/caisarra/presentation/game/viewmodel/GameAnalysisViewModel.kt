@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.game.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.AnalysisSummaryResponse
 import com.abhinav.caisarra.data.remote.dto.MoveAnalysisDto
 import com.abhinav.caisarra.data.repository.GameAnalysisRepository
@@ -61,7 +62,7 @@ class GameAnalysisViewModel(
         viewModelScope.launch {
             if (repository.summary(gameId).getOrNull() == null) {
                 repository.requestAnalysis(gameId).onFailure {
-                    fail(it.message)
+                    fail(it.userMessage())
                     return@launch
                 }
             }
@@ -74,7 +75,7 @@ class GameAnalysisViewModel(
         _state.value = GameAnalysisUiState()
         viewModelScope.launch {
             repository.retry(gameId).onFailure {
-                fail(it.message)
+                fail(it.userMessage())
                 return@launch
             }
             poll()
@@ -289,7 +290,7 @@ class GameAnalysisViewModel(
         repeat(MAX_POLLS) {
             val result = repository.summary(gameId)
             val summary = result.getOrNull()
-            lastError = result.exceptionOrNull()?.message
+            lastError = result.exceptionOrNull()?.userMessage()
             when (summary?.analysis?.status) {
                 "completed" -> {
                     val moves = repository.moves(gameId).getOrNull().orEmpty()

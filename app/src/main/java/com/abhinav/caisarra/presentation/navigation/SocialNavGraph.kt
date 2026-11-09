@@ -15,6 +15,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.local.PendingInviteStore
 import com.abhinav.caisarra.data.location.LocationProvider
 import com.abhinav.caisarra.data.repository.AuthRepository
@@ -300,7 +301,7 @@ fun NavGraphBuilder.socialGraph(
                         .onFailure { error ->
                             Toast.makeText(
                                 context,
-                                error.message ?: "Could not send friend request",
+                                error.userMessage("Could not send friend request"),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }

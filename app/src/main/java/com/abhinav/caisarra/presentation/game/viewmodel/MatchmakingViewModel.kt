@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.game.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.api.MatchmakingJoinRequest
 import com.abhinav.caisarra.data.remote.api.MatchmakingService
 import com.abhinav.caisarra.data.remote.api.TiltWarning
@@ -99,7 +100,7 @@ class MatchmakingViewModel(
                     )
                 }
             } catch (e: Exception) {
-                fail(e.message ?: "Could not start matchmaking.")
+                fail(e.userMessage("Could not start matchmaking."))
             }
         }
     }

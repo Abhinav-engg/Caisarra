@@ -74,6 +74,7 @@ import android.app.Activity
 import android.content.ContextWrapper
 import android.view.WindowManager
 import androidx.compose.runtime.DisposableEffect
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
@@ -651,7 +652,7 @@ fun OnlineGameScreen(
                                     rematchBusy = false
                                     Toast.makeText(
                                         context,
-                                        error.message ?: "Could not start a rematch with this opponent.",
+                                        error.userMessage("Could not start a rematch with this opponent."),
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }

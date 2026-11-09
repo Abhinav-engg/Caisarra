@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.puzzles
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.RushMoveResponse
 import com.abhinav.caisarra.data.remote.dto.RushPuzzleData
 import com.abhinav.caisarra.data.remote.dto.RushSummaryDto
@@ -73,8 +74,7 @@ class RushViewModel(
                     }
                     .onFailure { error ->
                         _state.value = RushUiState.Error(
-                            message = error.message
-                                ?: "Failed to start Puzzle Rush"
+                            message = error.userMessage("Failed to start Puzzle Rush")
                         )
                     }
             } finally {

@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.data.remote.api.DefaultAvatarItem
 import com.abhinav.caisarra.data.remote.dto.ModeRating
@@ -84,7 +85,7 @@ class ProfileViewModel(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     loading = false,
-                    error = e.message ?: "Unable to load profile"
+                    error = e.userMessage("Unable to load profile")
                 )
             }
         }
@@ -258,7 +259,7 @@ class ProfileViewModel(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     saving = false,
-                    error = e.message ?: "Unable to select avatar"
+                    error = e.userMessage("Unable to select avatar")
                 )
             }
         }
@@ -271,7 +272,7 @@ class ProfileViewModel(
                 val profile = repository.uploadAvatar(context, uri)
                 _state.value = _state.value.copy(profile = profile, saving = false, message = "Profile photo uploaded successfully")
             } catch (e: Exception) {
-                _state.value = _state.value.copy(saving = false, error = e.message ?: "Unable to upload photo")
+                _state.value = _state.value.copy(saving = false, error = e.userMessage("Unable to upload photo"))
             }
         }
     }
@@ -320,7 +321,7 @@ class ProfileViewModel(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     saving = false,
-                    error = e.message ?: "Unable to update profile"
+                    error = e.userMessage("Unable to update profile")
                 )
             }
         }
@@ -333,7 +334,7 @@ class ProfileViewModel(
                     _state.value = _state.value.copy(isBlocked = true, message = "User blocked.")
                 }
                 ?.onFailure { error ->
-                    _state.value = _state.value.copy(error = error.message ?: "Could not block user.")
+                    _state.value = _state.value.copy(error = error.userMessage("Could not block user."))
                 }
         }
     }
@@ -345,7 +346,7 @@ class ProfileViewModel(
                     _state.value = _state.value.copy(isBlocked = false, message = "User unblocked.")
                 }
                 ?.onFailure { error ->
-                    _state.value = _state.value.copy(error = error.message ?: "Could not unblock user.")
+                    _state.value = _state.value.copy(error = error.userMessage("Could not unblock user."))
                 }
         }
     }

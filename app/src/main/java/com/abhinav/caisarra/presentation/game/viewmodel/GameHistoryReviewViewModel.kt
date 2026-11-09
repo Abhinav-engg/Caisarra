@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.game.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.data.remote.dto.GameMoveDto
@@ -90,7 +91,7 @@ class GameHistoryReviewViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Unable to load game history."
+                        error = e.userMessage("Unable to load game history.")
                     )
                 }
             }
@@ -143,8 +144,7 @@ class GameHistoryReviewViewModel(
             _state.update {
                 it.copy(
                     isLoading = false,
-                    error = e.message
-                        ?: "Unable to load moves from the server."
+                    error = e.userMessage("Unable to load moves from the server.")
                 )
             }
             return
@@ -165,8 +165,7 @@ class GameHistoryReviewViewModel(
             onFailure = { error ->
                 _state.update {
                     it.copy(
-                        chatError = error.message
-                            ?: "Unable to load chat history."
+                        chatError = error.userMessage("Unable to load chat history.")
                     )
                 }
             }

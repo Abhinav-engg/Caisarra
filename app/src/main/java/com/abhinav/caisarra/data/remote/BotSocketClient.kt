@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.data.remote
 
+import com.abhinav.caisarra.core.network.userMessage
 import android.content.Context
 import com.abhinav.caisarra.data.local.SessionExpiredEvent
 import com.abhinav.caisarra.data.remote.dto.BotErrorMessage
@@ -130,7 +131,7 @@ class BotSocketClient(context: Context) {
                 if (response?.code == 401) {
                     SessionExpiredEvent.emit()
                 }
-                _incoming.tryEmit(BotErrorMessage(response?.message ?: t.message ?: "Connection failed"))
+                _incoming.tryEmit(BotErrorMessage(t.userMessage("Connection failed")))
             }
         }
     }
