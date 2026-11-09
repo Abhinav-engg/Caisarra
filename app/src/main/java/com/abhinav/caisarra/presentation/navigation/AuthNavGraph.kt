@@ -89,6 +89,7 @@ fun NavGraphBuilder.authGraph(
             viewModel = screenViewModel {
                 LoginViewModel(repository = authRepository)
             },
+
             onLoginSuccess = {
                 scope.launch {
                     if (authRepository.isAdmin()) {
@@ -105,15 +106,15 @@ fun NavGraphBuilder.authGraph(
                     }
                 }
             },
+
             onForgotPasswordClick = {
                 navController.navigateOnce(AppRoutes.RESET_PASSWORD)
             },
+
             onSignUpClick = {
                 navController.navigateOnce(AppRoutes.REGISTER)
             },
-            onAdminLoginClick = {
-                navController.navigateOnce(AppRoutes.ADMIN_LOGIN)
-            },
+
             onContinueAsGuestClick = {
                 scope.launch {
                     when (val result = authRepository.guestLogin()) {
@@ -125,6 +126,7 @@ fun NavGraphBuilder.authGraph(
                                 launchSingleTop = true
                             }
                         }
+
                         is AuthResult.Error -> {
                             Toast.makeText(
                                 context,
