@@ -46,7 +46,7 @@ import com.caisaara.ui.theme.ResignSecondaryBg
 import com.caisaara.ui.theme.ResignTextWhite
 import com.caisaara.ui.theme.SubtleText
 
-enum class GameDecision { OfferDraw, Resign, IncomingDraw }
+enum class GameDecision { OfferDraw, Resign, IncomingDraw, LeaveTournament }
 
 @Composable
 fun GameDecisionDialog(
@@ -56,29 +56,33 @@ fun GameDecisionDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val isResign = decision == GameDecision.Resign
+    val isDestructive = decision == GameDecision.Resign || decision == GameDecision.LeaveTournament
     val title = when (decision) {
         GameDecision.Resign -> "Resign this game?"
         GameDecision.OfferDraw -> "Offer a Draw?"
         GameDecision.IncomingDraw -> "$opponentName Offers a Draw"
+        GameDecision.LeaveTournament -> "Leave this tournament?"
     }
     val description = when (decision) {
         GameDecision.Resign -> "$opponentName will win this rated $gameMode game. This action cannot be undone."
         GameDecision.OfferDraw -> "Would you like to offer a draw to $opponentName?"
         GameDecision.IncomingDraw -> "$opponentName has offered a draw. Do you want to accept?"
+        GameDecision.LeaveTournament -> "You will be removed from this tournament and lose your spot."
     }
     val primaryLabel = when (decision) {
         GameDecision.Resign -> "Keep playing"
         GameDecision.OfferDraw -> "Offer Draw"
         GameDecision.IncomingDraw -> "Accept Draw"
+        GameDecision.LeaveTournament -> "Stay in tournament"
     }
     val secondaryLabel = when (decision) {
         GameDecision.Resign -> "Yes, resign"
         GameDecision.OfferDraw -> "Continue Game"
         GameDecision.IncomingDraw -> "Decline & Continue"
+        GameDecision.LeaveTournament -> "Yes, leave"
     }
-    val primaryAction = if (isResign) onDismiss else onConfirm
-    val secondaryAction = if (isResign) onConfirm else onDismiss
+    val primaryAction = if (isDestructive) onDismiss else onConfirm
+    val secondaryAction = if (isDestructive) onConfirm else onDismiss
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -96,7 +100,7 @@ fun GameDecisionDialog(
                 .padding(ResignDialogPadding),
             verticalArrangement = Arrangement.spacedBy(ResignDialogSpacing)
         ) {
-            if (isResign) {
+            if (isDestructive) {
                 Image(
                     painter = painterResource(R.drawable.ic_resign_flag),
                     contentDescription = null,
@@ -144,7 +148,7 @@ fun GameDecisionDialog(
                 ) {
                     Text(
                         text = secondaryLabel,
-                        color = if (isResign) ResignRed else SubtleText,
+                        color = if (isDestructive) ResignRed else SubtleText,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold
                     )

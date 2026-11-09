@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.data.remote.dto.PairingDto
 import com.abhinav.caisarra.data.remote.dto.StandingDto
 import com.abhinav.caisarra.data.remote.dto.TournamentDto
+import com.abhinav.caisarra.presentation.game.components.GameDecision
+import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 
 @Composable
 fun TournamentDetailScreen(
@@ -397,8 +399,9 @@ private fun OverviewTab(
             if (!state.hasJoined) {
                 TournamentActionButton("Join Tournament", onClick = onJoin)
             } else {
+                var showLeaveConfirm by rememberSaveable { mutableStateOf(false) }
                 OutlinedButton(
-                    onClick = onLeave,
+                    onClick = { showLeaveConfirm = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -408,6 +411,16 @@ private fun OverviewTab(
                         "Leave Tournament",
                         color = TournamentColors.Danger,
                         fontWeight = FontWeight.SemiBold
+                    )
+                }
+                if (showLeaveConfirm) {
+                    GameDecisionDialog(
+                        decision = GameDecision.LeaveTournament,
+                        onConfirm = {
+                            showLeaveConfirm = false
+                            onLeave()
+                        },
+                        onDismiss = { showLeaveConfirm = false }
                     )
                 }
             }
