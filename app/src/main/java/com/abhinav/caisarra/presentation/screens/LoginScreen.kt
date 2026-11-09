@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -32,7 +33,8 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {},
     onSignUpClick: () -> Unit = {},
-    onContinueAsGuestClick: () -> Unit = {}
+    onContinueAsGuestClick: () -> Unit = {},
+    onAdminLoginClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -104,5 +106,27 @@ fun LoginScreen(
         )
 
         AuthFooter("Don't have an account?", "Sign Up", onSignUpClick)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Administrator? ",
+                color = Color(0xFF8D9AAA),
+                fontSize = 13.sp
+            )
+
+            Text(
+                text = "Admin Login",
+                color = Color(0xFF00D5E9),
+                fontSize = 13.sp,
+                modifier = Modifier.clickable {
+                    onAdminLoginClick()
+                }
+            )
+        }
     }
 }

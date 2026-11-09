@@ -168,18 +168,22 @@ fun rememberCurrentUserProfile(
     return profileState
 }
 
+
 suspend fun resolveStartDestination(
     authRepository: AuthRepository,
     pendingOtpStore: PendingOtpStore,
     onboardingStore: OnboardingPreferencesStore
 ): String {
+
     if (!onboardingStore.hasSeenOnboarding()) {
         return AppRoutes.ONBOARDING
     }
+
     val pending = pendingOtpStore.getPendingVerification()
     val isGuest = authRepository.isGuest()
 
     return when {
+
         pending != null -> {
             val purpose = runCatching {
                 VerifyPurpose.valueOf(pending.purpose)
@@ -192,8 +196,18 @@ suspend fun resolveStartDestination(
                 AppRoutes.LOGIN
             }
         }
-        authRepository.isLoggedIn() -> AppRoutes.HOME
+
+        authRepository.isLoggedIn() -> {
+            if (authRepository.isAdmin()) {
+                AppRoutes.ADMIN
+            } else {
+                AppRoutes.HOME
+            }
+        }
+
         isGuest -> AppRoutes.GUEST_HOME
+
         else -> AppRoutes.LOGIN
     }
 }
+

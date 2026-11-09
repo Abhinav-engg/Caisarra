@@ -90,13 +90,29 @@ fun NavGraphBuilder.authGraph(
                 LoginViewModel(repository = authRepository)
             },
             onLoginSuccess = {
-                navController.goHomeThenPendingInvite(pendingInviteStore)
+                scope.launch {
+                    if (authRepository.isAdmin()) {
+                        navController.navigate(AppRoutes.ADMIN) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    } else {
+                        navController.goHomeThenPendingInvite(
+                            pendingInviteStore
+                        )
+                    }
+                }
             },
             onForgotPasswordClick = {
                 navController.navigateOnce(AppRoutes.RESET_PASSWORD)
             },
             onSignUpClick = {
                 navController.navigateOnce(AppRoutes.REGISTER)
+            },
+            onAdminLoginClick = {
+                navController.navigateOnce(AppRoutes.ADMIN_LOGIN)
             },
             onContinueAsGuestClick = {
                 scope.launch {
