@@ -97,31 +97,43 @@ class AuthRepository private constructor(private val context: Context) {
         }
     }
 
+
     suspend fun login(username: String, password: String): AuthResult {
         return try {
             val response = service.login(LoginRequest(username, password))
-            if (!response.isSuccessful) throw HttpException(response)
+            if (!response.isSuccessful) {
+                throw HttpException(response)
+            }
+
             if (!saveTokensFromCookies(response.headers())) {
                 return AuthResult.Error("Login failed. Please try again.")
             }
+
             val loginData = response.body()?.data
                 ?: return AuthResult.Error("Login response is empty.")
 
-            tokenManager.saveAdminStatus(loginData.isAdmin)
             tokenManager.clearGuestId()
-            val userToSave = response.body()?.data?.username?.takeIf { it.isNotBlank() }
+
+            val userToSave = loginData.username.takeIf { it.isNotBlank() }
                 ?: username.takeUnless { it.contains("@") }
+
             if (!userToSave.isNullOrBlank()) {
                 tokenManager.saveUsername(userToSave.trim())
             }
-            syncFcmToken()
 
+            val adminAccount = isAdmin()
+            if (!adminAccount) {
+                syncFcmToken()
+            }
             AuthResult.Success(response.body()?.message.orEmpty())
         } catch (e: Exception) {
             AuthResult.Error(ApiErrorInterpreter.toUserMessage(e))
         }
     }
+
+
     suspend fun isAdmin(): Boolean {
+
         if (!isLoggedIn() || isGuest()) {
             tokenManager.saveAdminStatus(false)
             return false
@@ -130,21 +142,20 @@ class AuthRepository private constructor(private val context: Context) {
         return try {
             val response = RetrofitInstance
                 .createAdminService(tokenManager)
-                .getStats()
+                .getMe()
 
-            val isAuthorized =
-                response.isSuccessful &&
-                        response.body()?.success == true
+            val authorized = response.isSuccessful &&
+                    response.body()?.success == true &&
+                    response.body()?.data?.isAdmin == true
 
-            tokenManager.saveAdminStatus(isAuthorized)
+            tokenManager.saveAdminStatus(authorized)
 
-            android.util.Log.d(
-                "ADMIN_AUTH",
-                "Backend admin verification: $isAuthorized, HTTP ${response.code()}"
-            )
+            authorized
 
-            isAuthorized
         } catch (e: Exception) {
+
+            tokenManager.saveAdminStatus(false)
+
             android.util.Log.e(
                 "ADMIN_AUTH",
                 "Admin verification failed",
@@ -154,6 +165,7 @@ class AuthRepository private constructor(private val context: Context) {
             false
         }
     }
+
 
     fun isAdminFlow(): Flow<Boolean> =
         tokenManager.isAdminFlow
@@ -389,4 +401,8 @@ class AuthRepository private constructor(private val context: Context) {
 
     fun createPuzzleService(): PuzzleApiService =
         RetrofitInstance.createPuzzleService(tokenManager)
+
+    fun createAdminService(): com.abhinav.caisarra.data.remote.admin.AdminService =
+        RetrofitInstance.createAdminService(tokenManager)
+
 }
