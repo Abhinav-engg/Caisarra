@@ -18,8 +18,6 @@ import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
-import com.abhinav.caisarra.features.minimates.domain.MiniMatesEngine
-import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.model.Square
 import com.caisaara.ui.theme.StatsBg
 import com.caisaara.ui.theme.TextSizeSubhead
@@ -29,15 +27,17 @@ import com.caisaara.ui.theme.White
 fun MiniMatesPlayContent(
     state: MiniMatesUiState,
     onSquareClick: (Square) -> Unit,
+    onHint: () -> Unit,
     onRetry: () -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit
 ) {
-    val position = state.position ?: return
+    val level = state.level ?: return
+    val viewport = level.viewport
     val message = when (state.status) {
-        MiniMatesStatus.PLAYING -> "White to mate in ${state.movesLeft}"
-        MiniMatesStatus.THINKING -> "Black is thinking…"
-        MiniMatesStatus.SOLVED -> "Checkmate! Solved"
+        MiniMatesStatus.PLAYING -> state.note ?: "Mate in ${level.targetMoves - state.moveIndex}"
+        MiniMatesStatus.THINKING -> "Checking…"
+        MiniMatesStatus.SOLVED -> "Checkmate! ${starsText(state.stars)}"
         MiniMatesStatus.FAILED -> "Not the mate. Try again"
     }
     Column(
@@ -48,26 +48,30 @@ fun MiniMatesPlayContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        CaisaaraTopBar(title = "LEVEL ${state.level?.number}", onBack = onBack)
+        CaisaaraTopBar(title = level.title.uppercase(), onBack = onBack)
         Text(text = message, color = White, fontSize = TextSizeSubhead, fontWeight = FontWeight.SemiBold)
-        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).aspectRatio(1f)) {
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).aspectRatio(viewport.cols / viewport.rows.toFloat())) {
             ChessBoard(
-                board = position.pieces,
+                board = state.board,
                 selectedSquare = state.selected,
                 legalMoves = state.targets,
-                lastMoveFrom = state.lastMove?.from,
-                lastMoveTo = state.lastMove?.to,
-                isWhiteInCheck = false,
-                isBlackInCheck = MiniMatesEngine.isInCheck(position, PieceColor.BLACK),
-                isFlipped = false,
-                boardSize = position.size,
+                lastMoveFrom = state.lastFrom,
+                lastMoveTo = state.lastTo,
+                isWhiteInCheck = state.whiteInCheck,
+                isBlackInCheck = state.blackInCheck,
+                isFlipped = level.playerColor == "black",
+                boardSize = viewport.rows,
+                columns = viewport.cols,
+                origin = Square(row = 8 - viewport.endRank, column = viewport.startFile.first() - 'a'),
                 onSquareClick = onSquareClick
             )
         }
+        val buttonModifier = Modifier.padding(horizontal = 16.dp)
         when (state.status) {
-            MiniMatesStatus.SOLVED -> GeneralButton(text = "Next Level", onClick = onNext, modifier = Modifier.padding(horizontal = 16.dp))
-            MiniMatesStatus.FAILED -> GeneralButton(text = "Retry", onClick = onRetry, modifier = Modifier.padding(horizontal = 16.dp))
-            else -> Unit
+            MiniMatesStatus.PLAYING -> GeneralButton(text = "Hint", onClick = onHint, modifier = buttonModifier)
+            MiniMatesStatus.SOLVED -> GeneralButton(text = "Next Level", onClick = onNext, modifier = buttonModifier)
+            MiniMatesStatus.FAILED -> GeneralButton(text = "Retry", onClick = onRetry, modifier = buttonModifier)
+            MiniMatesStatus.THINKING -> Unit
         }
     }
 }

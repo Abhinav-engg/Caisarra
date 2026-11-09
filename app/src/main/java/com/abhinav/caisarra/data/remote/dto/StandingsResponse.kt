@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class StandingsResponse(
     @SerialName("tournament_id") val tournamentId: String,
-    val standings: List<StandingDto> = emptyList()
+    val standings: List<StandingDto>? = null
 )

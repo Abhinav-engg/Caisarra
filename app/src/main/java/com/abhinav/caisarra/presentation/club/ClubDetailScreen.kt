@@ -1692,7 +1692,6 @@ private fun ClubDetailLoadingSkeleton() {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Club header skeleton
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),

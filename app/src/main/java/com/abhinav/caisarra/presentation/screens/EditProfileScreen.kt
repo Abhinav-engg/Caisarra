@@ -255,7 +255,6 @@ fun EditProfileScreen(
 
                 selectedSource = AvatarSource.CAMERA
 
-                // Open cropping instead of uploading the original image
                 launchImageCrop(Uri.fromFile(file))
 
             } catch (e: Exception) {
@@ -830,4 +829,3 @@ internal fun validateEditProfile(
     avatarUrl.length > 500 -> "Avatar URL must be at most 500 characters."
     else -> null
 }
-

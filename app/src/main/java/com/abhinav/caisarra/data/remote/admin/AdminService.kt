@@ -1,3 +1,4 @@
+
 package com.abhinav.caisarra.data.remote.admin
 
 import com.abhinav.caisarra.data.remote.dto.ApiResponse
@@ -5,10 +6,13 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface AdminService {
-
+    @GET("api/admin/me")
+    suspend fun getMe(): Response<ApiResponse<AdminMe>>
     @GET("api/admin/stats")
     suspend fun getStats(): Response<ApiResponse<AdminStats>>
 
+    @GET("api/admin/health")
+    suspend fun getHealth(): Response<ApiResponse<AdminHealth>>
     @GET("api/admin/users")
     suspend fun getUsers(
         @Query("q") query: String = "",
@@ -49,6 +53,27 @@ interface AdminService {
         @Path("id") id: Long,
         @Body request: CloseReportRequest
     ): Response<ApiResponse<Unit>>
+
+    @GET("api/admin/games")
+    suspend fun getGames(
+        @Query("limit") limit: Int = 20,
+        @Query("offset") offset: Int = 0
+    ): Response<ApiResponse<List<AdminGame>>>
+
+    @GET("api/admin/games/{gameID}")
+    suspend fun getGameDetails(
+        @Path("gameID") gameId: String
+    ): Response<ApiResponse<AdminGameDetailsResponse>>
+
+    @POST("api/admin/games/{gameID}/abort")
+    suspend fun abortGame(
+        @Path("gameID") gameId: String,
+        @Body request: AbortGameRequest
+    ): Response<ApiResponse<Unit>>
+
+    @GET("api/admin/matchmaking")
+    suspend fun getMatchmaking():
+            Response<ApiResponse<List<AdminMatchmakingQueue>>>
 
     @DELETE("api/admin/posts/{id}")
     suspend fun deletePost(

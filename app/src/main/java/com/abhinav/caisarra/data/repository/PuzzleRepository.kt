@@ -13,6 +13,7 @@ import com.abhinav.caisarra.data.remote.dto.DailyPuzzleResponse
 import com.abhinav.caisarra.data.remote.dto.DailyPuzzleSolutionRequest
 import com.abhinav.caisarra.data.remote.dto.DailyPuzzleSolutionResponse
 import com.abhinav.caisarra.data.remote.dto.PuzzleDetailsResponse
+import com.abhinav.caisarra.data.remote.dto.PuzzleHistoryItemDto
 import com.abhinav.caisarra.data.remote.dto.PuzzleHistoryResponse
 import com.abhinav.caisarra.data.remote.dto.PuzzleStatsResponse
 import com.abhinav.caisarra.data.remote.dto.PuzzleThemesResponse
@@ -24,16 +25,13 @@ import com.abhinav.caisarra.data.remote.dto.RushStartRequest
 import com.abhinav.caisarra.data.remote.dto.RushStartResponse
 import com.abhinav.caisarra.data.remote.dto.RushStatsResponse
 
+import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 
 class PuzzleRepository(
     private val service: PuzzleApiService
 ) {
-
-    // ---------------------------------------------------------
-    // DAILY PUZZLE
-    // ---------------------------------------------------------
 
     suspend fun getDailyPuzzle(): Result<DailyPuzzleResponse> = call {
         service.getDailyPuzzle()
@@ -73,10 +71,6 @@ class PuzzleRepository(
         )
     }
 
-    // ---------------------------------------------------------
-    // PUZZLE DETAILS
-    // ---------------------------------------------------------
-
     suspend fun getPuzzleById(
         puzzleId: String
     ): Result<PuzzleDetailsResponse> = call {
@@ -97,9 +91,17 @@ class PuzzleRepository(
         )
     }
 
-    // ---------------------------------------------------------
-    // PUZZLE RUSH
-    // ---------------------------------------------------------
+    suspend fun getHistorySince(since: LocalDate?): Result<List<PuzzleHistoryItemDto>> = call {
+        val isInRange = { item: PuzzleHistoryItemDto ->
+            since == null || item.createdAt.orEmpty().take(10) >= since.toString()
+        }
+        buildList {
+            do {
+                val page = service.getHistory(limit = 100, offset = size).allAttempts
+                addAll(page.filter(isInRange))
+            } while (page.isNotEmpty() && page.all(isInRange) && size < 2000)
+        }
+    }
 
     suspend fun startRush(
         mode: String
@@ -148,28 +150,10 @@ class PuzzleRepository(
         service.getRushStats()
     }
 
-    // ---------------------------------------------------------
-    // CUSTOM TACTICS
-    // ---------------------------------------------------------
-
-    /**
-     * Loads the available tactical themes.
-     */
     suspend fun getPuzzleThemes(): Result<PuzzleThemesResponse> = call {
         service.getPuzzleThemes()
     }
 
-    /**
-     * Fetches a custom puzzle.
-     *
-     * @param theme Single theme ID, if one theme is selected.
-     * @param themes Multiple selected theme IDs.
-     *              They are joined into a comma-separated string.
-     * @param minRating Minimum puzzle rating.
-     * @param maxRating Maximum puzzle rating.
-     * @param excludeSolved Whether already solved puzzles are skipped.
-     * @param reviewMistakes Whether to serve previously failed puzzles.
-     */
     suspend fun getCustomPuzzle(
         theme: String? = null,
         themes: List<String> = emptyList(),
@@ -194,9 +178,6 @@ class PuzzleRepository(
         )
     }
 
-    /**
-     * Submits a move for a custom tactics puzzle.
-     */
     suspend fun submitCustomPuzzleAttempt(
         puzzleId: String,
         move: String,
@@ -213,10 +194,6 @@ class PuzzleRepository(
             )
         )
     }
-
-    // ---------------------------------------------------------
-    // COMMON API RESULT HANDLER
-    // ---------------------------------------------------------
 
     private suspend fun <T> call(
         block: suspend () -> T

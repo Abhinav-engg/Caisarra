@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Refresh
 
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -85,20 +84,7 @@ fun DirectMessagesListScreen(
             backgroundColor = StatsBg,
             titleColor = StatsTextWhite,
             iconTint = StatsTextWhite,
-            titleFontSize = 16.sp,
-            actions = {
-                IconButton(
-                    onClick = {
-                        refreshConversations()
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh conversations",
-                        tint = StatsCyan
-                    )
-                }
-            }
+            titleFontSize = 16.sp
         )
 
         HorizontalDivider(

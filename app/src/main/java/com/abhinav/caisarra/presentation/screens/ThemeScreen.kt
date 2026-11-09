@@ -154,7 +154,6 @@ fun ThemeScreen(
             )
         }
 
-        // Tab Selector
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -418,7 +417,6 @@ private fun PieceThemeOptionCard(
                 lineHeight = TextSizeTitle
             )
 
-            // Piece Previews: Knight, King, Queen, Pawn
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),

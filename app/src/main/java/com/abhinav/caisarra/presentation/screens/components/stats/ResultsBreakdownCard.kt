@@ -101,20 +101,22 @@ fun ResultsCard(
                     )
                 }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${stats.draws}",
-                        fontFamily = JetBrainsMono,
-                        fontSize = TextSizeStat,
-                        fontWeight = FontWeight.Bold,
-                        color = StatsDivider
-                    )
-                    Text(
-                        text = "Draws · $drawPercent%",
-                        fontFamily = JetBrainsMono,
-                        fontSize = TextSizeCaption,
-                        color = StatsTextMuted
-                    )
+                if (stats.mode != "puzzle") {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "${stats.draws}",
+                            fontFamily = JetBrainsMono,
+                            fontSize = TextSizeStat,
+                            fontWeight = FontWeight.Bold,
+                            color = StatsDivider
+                        )
+                        Text(
+                            text = "Draws · $drawPercent%",
+                            fontFamily = JetBrainsMono,
+                            fontSize = TextSizeCaption,
+                            color = StatsTextMuted
+                        )
+                    }
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
