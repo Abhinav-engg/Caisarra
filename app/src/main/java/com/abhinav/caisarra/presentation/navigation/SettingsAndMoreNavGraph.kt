@@ -59,6 +59,8 @@ import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+
 
 
 fun NavGraphBuilder.settingsAndMoreGraph(
@@ -216,66 +218,6 @@ fun NavGraphBuilder.settingsAndMoreGraph(
                 }
             }
         )
-    }
-    composable(route = AppRoutes.ADMIN) {
-
-        val tokenManager = remember(context) {
-            TokenManager.get(context)
-        }
-
-        val adminService = remember(tokenManager) {
-            RetrofitInstance.createAdminService(tokenManager)
-        }
-
-        val adminRepository = remember(adminService) {
-            AdminRepository(adminService)
-        }
-
-        val adminViewModel = screenViewModel {
-            AdminViewModel(adminRepository)
-        }
-
-        var authorized by remember {
-            mutableStateOf<Boolean?>(null)
-        }
-
-        LaunchedEffect(Unit) {
-            authorized = authRepository.isAdmin()
-        }
-
-        when (authorized) {
-            true -> {
-                AdminScreen(
-                    viewModel = adminViewModel,
-                    onBack = {
-                        navController.safeBack(AppRoutes.MENU)
-                    }
-                )
-            }
-
-            false -> {
-                LaunchedEffect(Unit) {
-                    Toast.makeText(
-                        context,
-                        "You don't have admin permission",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    navController.safeBack(AppRoutes.MENU)
-                }
-            }
-
-            null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = Color(0xFF00D5E8)
-                    )
-                }
-            }
-        }
     }
 
     composable(route = AppRoutes.THEME) {

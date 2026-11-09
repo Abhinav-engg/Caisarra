@@ -24,6 +24,7 @@ import com.abhinav.caisarra.data.local.OnboardingPreferencesStore
 import com.abhinav.caisarra.data.local.PendingInviteStore
 import com.abhinav.caisarra.data.local.PendingOtpStore
 import com.abhinav.caisarra.data.repository.AuthRepository
+import com.abhinav.caisarra.presentation.navigation.adminGraph
 import androidx.compose.foundation.layout.WindowInsets
 @Composable
 fun AppNavigation(
@@ -117,6 +118,10 @@ fun AppNavigation(
                 pendingInviteStore = pendingInviteStore,
                 context = context,
                 scope = scope
+            )
+            adminGraph(
+                navController = navController,
+                authRepository = authRepository
             )
 
             homeGraph(
