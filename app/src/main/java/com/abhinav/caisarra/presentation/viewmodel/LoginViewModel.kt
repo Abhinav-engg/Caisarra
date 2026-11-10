@@ -46,4 +46,35 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
             }
         }
     }
+    fun guestLogin(onSuccess: () -> Unit) {
+        if (_state.value.isLoading) return
+
+        _state.update {
+            it.copy(
+                isLoading = true,
+                error = null
+            )
+        }
+
+        viewModelScope.launch {
+            when (val result = repository.guestLogin()) {
+
+                is AuthResult.Success -> {
+                    _state.update {
+                        it.copy(isLoading = false)
+                    }
+                    onSuccess()
+                }
+
+                is AuthResult.Error -> {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
