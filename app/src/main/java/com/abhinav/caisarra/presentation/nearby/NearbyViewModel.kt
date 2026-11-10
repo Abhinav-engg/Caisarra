@@ -47,6 +47,7 @@ class NearbyViewModel(
         if (!silent) {
             _state.update {
                 it.copy(
+                    lastOperation = NearbyOperation.Load,
                     loading = true,
                     error = null
                 )
@@ -81,13 +82,10 @@ class NearbyViewModel(
     }
 
     fun refresh(silent: Boolean = false) {
-        if (_state.value.guest) return
+        if (_state.value.guest || !_state.value.visible) return
         if (!locationProvider.hasPermission()) return
-        if (_state.value.visible) {
-            loadPlayers(silent)
-        } else {
-            enable()
-        }
+        if (operationJob?.isActive == true) return
+        loadPlayers(silent)
     }
 
     fun enable() {
@@ -101,6 +99,7 @@ class NearbyViewModel(
         operationJob = viewModelScope.launch {
             _state.update {
                 it.copy(
+                    lastOperation = NearbyOperation.Enable,
                     loading = true,
                     error = null
                 )
@@ -184,6 +183,7 @@ class NearbyViewModel(
         operationJob = viewModelScope.launch {
             _state.update {
                 it.copy(
+                    lastOperation = NearbyOperation.Disable,
                     loading = true,
                     error = null
                 )
@@ -225,6 +225,7 @@ class NearbyViewModel(
     fun permissionDenied() {
         _state.update {
             it.copy(
+                lastOperation = NearbyOperation.Enable,
                 loading = false,
                 error = "Location permission is needed to find players near you"
             )

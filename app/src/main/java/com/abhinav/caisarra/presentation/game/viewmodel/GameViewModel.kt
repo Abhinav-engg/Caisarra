@@ -61,7 +61,7 @@ class GameViewModel(
     private var viewedPly: Int? = null
     private var recordedGameResult: GameResult? = null
 
-    private val autoFlip = !resumeGame && newBoardFlipped
+    private var autoFlip = !resumeGame && newBoardFlipped
 
     init {
         loadGame()
@@ -245,6 +245,10 @@ class GameViewModel(
                             !it.isBoardFlipped
                     )
                 }
+            }
+            is GameIntent.SetAutoFlip -> {
+                autoFlip = intent.enabled
+                updateUiState()
             }
             GameIntent.DismissResult -> {
                 _state.update {
@@ -724,6 +728,7 @@ class GameViewModel(
                 capturedBlackPieces = capturedBlack,
                 moves = uiMoves,
                 gameResult = recordedGameResult ?: result,
+                autoFlip = autoFlip,
                 isBoardFlipped =
                     if (autoFlip) {
                         currentGame.turn == DomainPieceColor.Black

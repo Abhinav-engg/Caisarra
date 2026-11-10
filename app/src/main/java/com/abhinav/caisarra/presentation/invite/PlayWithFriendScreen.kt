@@ -647,7 +647,7 @@ private fun SentRequestItem(name: String, onProfileClick: (() -> Unit)? = null, 
 }
 
 @Composable
-private fun EmptyNotice(title: String, subtitle: String) {
+fun EmptyNotice(title: String, subtitle: String) {
     val shape = RoundedCornerShape(FriendsCardRadius)
     Column(
         modifier = Modifier.fillMaxWidth().clip(shape).background(FriendsCardBg).border(1.dp, FriendsCardBorder, shape).padding(32.dp),

@@ -145,6 +145,7 @@ object AppRoutes {
     const val SETTINGS_DETAIL = "settings_detail"
     const val PRIVACY_SETTINGS = "privacy_settings"
     const val NOTIFICATION_SETTINGS = "notification_settings"
+    const val BLOCKED_PLAYERS = "blocked_players"
     const val DELETE_ACCOUNT = "delete_account"
     const val WATCH = "watch"
     const val SPECTATE_GAME = "spectate/{watchCode}"

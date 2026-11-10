@@ -40,6 +40,7 @@ data class GameUiState(
     val moves: List<MoveUi> = emptyList(),
 
     val isBoardFlipped: Boolean = false,
+    val autoFlip: Boolean = false,
     val undoEnabled: Boolean = true,
     val promotionPending: Square? = null,
     val gameResult: GameResult? = null,

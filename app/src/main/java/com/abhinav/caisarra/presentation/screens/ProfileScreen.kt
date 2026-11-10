@@ -168,7 +168,7 @@ fun ProfileScreen(
                 } else if (
                     state.profile?.userId != null
                 ) {
-                    if (!state.isBlocked) {
+                    if (!state.isBlocked && !state.isUnavailable) {
                         IconButton(
                             onClick = {
                                 showChallengeDialog = true

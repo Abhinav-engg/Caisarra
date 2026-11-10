@@ -47,12 +47,12 @@ fun PlayerSearchResultItem(
     status: String?,
     isBusy: Boolean,
     onPlayerClick: () -> Unit = {},
-    onDirectMessage: () -> Unit,
-    onChallenge: () -> Unit,
-    onAdd: () -> Unit,
-    onCancel: () -> Unit,
-    onAccept: () -> Unit,
-    onReject: () -> Unit,
+    onDirectMessage: () -> Unit = {},
+    onChallenge: () -> Unit = {},
+    onAdd: () -> Unit = {},
+    onCancel: () -> Unit = {},
+    onAccept: () -> Unit = {},
+    onReject: () -> Unit = {},
     onUnblock: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -134,6 +134,7 @@ fun PlayerSearchResultItem(
                 }
             }
             "self" -> Text("You", color = FriendsTextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            "unavailable" -> Text("Unavailable", color = FriendsTextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             "blocked" -> {
                 Box(
                     modifier = Modifier.clip(btnShape).background(FriendsButtonDark).border(1.dp, FriendsButtonDarkBorder, btnShape).clickable(enabled = !isBusy, onClick = onUnblock).padding(horizontal = 12.dp, vertical = 8.dp),

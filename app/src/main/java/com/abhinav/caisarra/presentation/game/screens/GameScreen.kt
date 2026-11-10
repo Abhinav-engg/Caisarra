@@ -485,6 +485,8 @@ private fun GameActions(
         onRedo = { onIntent(GameIntent.Redo) },
         onOfferDraw = { onIntent(GameIntent.OfferDraw) },
         onResign = { onIntent(GameIntent.Resign) },
+        autoFlip = state.autoFlip,
+        onAutoFlipChange = { onIntent(GameIntent.SetAutoFlip(it)) },
         modifier = modifier
     )
 }

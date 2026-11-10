@@ -373,6 +373,16 @@ fun NavGraphBuilder.settingsAndMoreGraph(
                     navController.navigateOnce(AppRoutes.NOTIFICATION_SETTINGS)
                 }
             },
+            onBlockedPlayersClick = {
+                navController.requireAuth(
+                    context = context,
+                    authRepository = authRepository,
+                    scope = scope,
+                    featureName = "Blocked players"
+                ) {
+                    navController.navigateOnce(AppRoutes.BLOCKED_PLAYERS)
+                }
+            },
             isGuest = isGuestUser,
             onDeleteAccountClick = {
                 navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)

@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
@@ -65,6 +66,7 @@ fun SettingsDetailScreen(
     onBack: () -> Unit,
     onPrivacyClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {},
+    onBlockedPlayersClick: () -> Unit = {},
     isGuest: Boolean = false,
     onDeleteAccountClick: () -> Unit = {}
 ) {
@@ -178,6 +180,13 @@ fun SettingsDetailScreen(
                 title = "Privacy Settings",
                 subtitle = "Control messages, clubs, tournaments & invites",
                 onClick = onPrivacyClick
+            )
+
+            SettingsNavCard(
+                icon = Icons.Default.Block,
+                title = "Blocked Players",
+                subtitle = "View and unblock players",
+                onClick = onBlockedPlayersClick
             )
 
             if (!isGuest) {

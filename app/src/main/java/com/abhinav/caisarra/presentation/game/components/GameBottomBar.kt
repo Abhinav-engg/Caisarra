@@ -17,6 +17,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,13 +29,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.presentation.common.ClickGuard
 import com.caisaara.ui.theme.CardBackground
 import com.caisaara.ui.theme.CardBorderNavy
 import com.caisaara.ui.theme.PlaceholderColor
 import com.caisaara.ui.theme.RedNormal
+import com.caisaara.ui.theme.StatsCardBorder
+import com.caisaara.ui.theme.StatsCyan
 import com.caisaara.ui.theme.TextColor
+import com.caisaara.ui.theme.ThemeSlateAccent
 
 private enum class ConfirmAction { Draw, Resign }
 
@@ -52,8 +58,12 @@ fun GameBottomBar(
     showDraw: Boolean = true,
     showUndoRedo: Boolean = true,
     undoLabel: String = "Undo",
-    redoLabel: String = "Redo"
+    redoLabel: String = "Redo",
+    autoFlip: Boolean? = null,
+    onAutoFlipChange: (Boolean) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val autoQueen by rememberAutoQueenEnabled()
     var showOptions by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<ConfirmAction?>(null) }
 
@@ -81,6 +91,8 @@ fun GameBottomBar(
             onDismissRequest = { showOptions = false },
             containerColor = CardBackground
         ) {
+            autoFlip?.let { OptionToggleRow("Auto-flip board", it, onAutoFlipChange) }
+            OptionToggleRow("Auto-promote to Queen", autoQueen) { setAutoQueenEnabled(context, it) }
             if (showDraw) {
                 OptionRow("Offer draw", TextColor) {
                     if (ClickGuard.canClick()) {
@@ -128,6 +140,30 @@ private fun BottomBarItem(
     ) {
         Icon(imageVector = icon, contentDescription = label, tint = color)
         Text(text = label, color = color, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+@Composable
+private fun OptionToggleRow(text: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = text, color = TextColor, style = MaterialTheme.typography.bodyLarge)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = StatsCyan,
+                uncheckedThumbColor = ThemeSlateAccent,
+                uncheckedTrackColor = StatsCardBorder
+            )
+        )
     }
 }
 
