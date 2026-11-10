@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.admin.*
 import com.abhinav.caisarra.data.repository.AdminRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,7 +52,7 @@ class AdminViewModel(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     loading = false,
-                    error = e.message ?: "Something went wrong"
+                    error = e.userMessage("Something went wrong")
                 )
             }
         }

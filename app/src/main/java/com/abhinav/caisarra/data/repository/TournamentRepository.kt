@@ -49,7 +49,7 @@ class TournamentRepository private constructor(
             Result.failure(e)
         }
 
-    private fun errorMessage(e: HttpException): String {
+    private fun errorMessage(e: HttpException): String? {
         val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
         val parsed = body?.let {
             runCatching {
@@ -57,7 +57,7 @@ class TournamentRepository private constructor(
                 (obj["error"] ?: obj["message"])?.jsonPrimitive?.content
             }.getOrNull()
         }
-        return parsed?.takeIf { it.isNotBlank() } ?: e.message()
+        return parsed?.takeIf { it.isNotBlank() }
     }
 
     suspend fun createTournament(request: CreateTournamentRequest): Result<TournamentDto> =

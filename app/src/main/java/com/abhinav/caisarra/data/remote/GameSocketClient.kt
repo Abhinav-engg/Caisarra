@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.data.remote
 
+import com.abhinav.caisarra.core.network.userMessage
 import android.util.Log
 import android.content.Context
 import com.abhinav.caisarra.data.remote.dto.SocketIncoming
@@ -162,7 +163,7 @@ class GameSocketClient(context: Context) {
                     400 -> "You are playing this game; please open your active game."
                     410 -> "Game is already over."
                     503 -> "Watch service unavailable."
-                    else -> response?.message ?: t.localizedMessage ?: "Connection failed"
+                    else -> t.userMessage("Connection failed")
                 }
                 Log.e("GameSocketClient", "connection failed code=${response?.code}", t)
             }

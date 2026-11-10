@@ -1,9 +1,9 @@
 package com.abhinav.caisarra.data.repository
 
+import com.abhinav.caisarra.core.network.userMessage
 import android.content.Context
 import android.util.Log
 import com.abhinav.caisarra.data.local.TokenManager
-import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.api.NotificationService
 import com.abhinav.caisarra.data.remote.dto.DeleteDeviceRequest
@@ -172,8 +172,7 @@ class NotificationRepository private constructor(context: Context) {
             Log.e(TAG, "Notification operation failed", e)
             Result.failure(
                 Exception(
-                    e.message?.takeIf { it.isNotBlank() }
-                        ?: ApiErrorInterpreter.toUserMessage(e)
+                    e.userMessage()
                 )
             )
         }

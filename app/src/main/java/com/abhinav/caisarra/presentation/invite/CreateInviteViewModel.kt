@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.invite
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.repository.InviteRepository
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -163,7 +164,7 @@ class CreateInviteViewModel(application: Application) : AndroidViewModel(applica
                     }
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error.message) }
+                    _uiState.update { it.copy(isLoading = false, error = error.userMessage()) }
                 }
         }
     }

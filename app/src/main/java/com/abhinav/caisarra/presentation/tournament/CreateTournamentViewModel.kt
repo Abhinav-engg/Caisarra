@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.tournament
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.CreateTournamentRequest
 import com.abhinav.caisarra.data.repository.TournamentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,7 +82,7 @@ class CreateTournamentViewModel(application: Application) : AndroidViewModel(app
                 _state.update { it.copy(submitting = false, createdId = tournament.id) }
             }.onFailure { e ->
                 _state.update {
-                    it.copy(submitting = false, error = e.message ?: "Could not create tournament")
+                    it.copy(submitting = false, error = e.userMessage("Could not create tournament"))
                 }
             }
         }

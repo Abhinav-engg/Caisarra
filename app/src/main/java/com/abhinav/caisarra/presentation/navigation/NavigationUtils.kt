@@ -140,32 +140,60 @@ fun NavController.requireAuth(
     }
 }
 
+private object CurrentUserProfileCache {
+    val profileState = mutableStateOf<ProfileData?>(null)
+    var activeToken: String? = null
+    var loadedToken: String? = null
+    var loadingToken: String? = null
+}
+
 @Composable
 fun rememberCurrentUserProfile(
     tokenManager: TokenManager,
     isGuest: Boolean,
     refreshKey: Any? = null
 ): State<ProfileData?> {
-    val accessToken by tokenManager.accessTokenFlow.collectAsState(initial = null)
-    val profileState = remember {
-        mutableStateOf<ProfileData?>(null)
-    }
 
-    LaunchedEffect(accessToken, isGuest, refreshKey) {
-        if (accessToken.isNullOrBlank() || isGuest) {
-            profileState.value = null
+    val accessToken by tokenManager.accessTokenFlow.collectAsState(initial = null)
+
+    LaunchedEffect(accessToken, isGuest) {
+
+        if (isGuest || accessToken.isNullOrBlank()) {
             return@LaunchedEffect
         }
-        runCatching {
-            ProfileRepository(
+
+        val token = accessToken ?: return@LaunchedEffect
+        if (CurrentUserProfileCache.loadedToken == token ||
+            CurrentUserProfileCache.loadingToken == token
+        ) {
+            return@LaunchedEffect
+        }
+        if (CurrentUserProfileCache.activeToken != token) {
+            CurrentUserProfileCache.activeToken = token
+            CurrentUserProfileCache.profileState.value = null
+            CurrentUserProfileCache.loadedToken = null
+        }
+
+        CurrentUserProfileCache.loadingToken = token
+
+        try {
+            val profile = ProfileRepository(
                 service = RetrofitInstance.createProfileService(tokenManager)
             ).getMyProfile()
-        }.onSuccess { profile ->
-            profileState.value = profile
+            if (CurrentUserProfileCache.activeToken == token) {
+                CurrentUserProfileCache.profileState.value = profile
+                CurrentUserProfileCache.loadedToken = token
+            }
+
+        } catch (e: Exception) {
+        } finally {
+            if (CurrentUserProfileCache.loadingToken == token) {
+                CurrentUserProfileCache.loadingToken = null
+            }
         }
     }
 
-    return profileState
+    return CurrentUserProfileCache.profileState
 }
 
 

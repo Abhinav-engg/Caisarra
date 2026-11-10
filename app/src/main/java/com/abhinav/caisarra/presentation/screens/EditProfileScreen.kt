@@ -147,10 +147,9 @@ fun EditProfileScreen(
                 Toast.makeText(context, "Unable to crop this photo.", Toast.LENGTH_SHORT).show()
             }
         } else if (result.resultCode == UCrop.RESULT_ERROR) {
-            val error = result.data?.let { UCrop.getError(it) }
             Toast.makeText(
                 context,
-                error?.localizedMessage ?: "Unable to crop this photo.",
+                "Unable to crop this photo.",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -217,9 +216,7 @@ fun EditProfileScreen(
             )
             Toast.makeText(
                 context,
-                "Unable to open photo cropping: ${
-                    e.localizedMessage ?: "Unknown error"
-                }",
+                "Unable to open photo cropping. Please try again.",
                 Toast.LENGTH_LONG
             ).show()
         }

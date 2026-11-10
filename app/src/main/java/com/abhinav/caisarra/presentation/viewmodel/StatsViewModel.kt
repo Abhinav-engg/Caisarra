@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.viewmodel
 
+import com.abhinav.caisarra.core.network.userMessage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.remote.dto.ModeStatsData
@@ -331,7 +332,7 @@ class StatsViewModel(
                     return@launch
                 }
 
-                val msg = formatErrorMessage(e.message)
+                val msg = formatErrorMessage(e)
                 _state.value = _state.value.copy(
                     isLoading = false,
                     isRefreshing = false,
@@ -341,8 +342,8 @@ class StatsViewModel(
         }
     }
 
-    private fun formatErrorMessage(rawMessage: String?): String {
-        val msg = rawMessage.orEmpty()
+    private fun formatErrorMessage(e: Throwable): String {
+        val msg = e.message.orEmpty()
         return when {
             msg.contains("429", ignoreCase = true) || msg.contains("too many requests", ignoreCase = true) ->
                 "Rate limit exceeded. Please wait a moment and try again."
@@ -352,8 +353,7 @@ class StatsViewModel(
                 "Server error encountered while retrieving statistics. Please try again later."
             msg.contains("Unable to resolve host", ignoreCase = true) || msg.contains("timeout", ignoreCase = true) ->
                 "Network connection issue. Please check your internet connection."
-            msg.isNotBlank() -> msg
-            else -> "Failed to load player statistics"
+            else -> e.userMessage("Failed to load player statistics")
         }
     }
 

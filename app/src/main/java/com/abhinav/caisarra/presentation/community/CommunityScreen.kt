@@ -53,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.CommunityCommentDto
 import com.abhinav.caisarra.data.remote.dto.CommunityPostDto
 import kotlinx.coroutines.launch
@@ -592,7 +593,7 @@ private fun CommunityPostDetailScreen(
             comments = result.comments
             nextAfterId = result.nextAfterId
         } catch (e: Exception) {
-            error = e.message ?: "Unable to load comments."
+            error = e.userMessage("Unable to load comments.")
         } finally {
             isLoading = false
         }
@@ -731,7 +732,7 @@ private fun CommunityPostDetailScreen(
                                                     snackbarHostState.showSnackbar("Comment deleted")
                                                 } catch (e: Exception) {
                                                     snackbarHostState.showSnackbar(
-                                                        e.message ?: "Unable to delete comment"
+                                                        e.userMessage("Unable to delete comment")
                                                     )
                                                 }
                                             }
@@ -757,7 +758,7 @@ private fun CommunityPostDetailScreen(
                                     nextAfterId = result.nextAfterId
                                 } catch (e: Exception) {
                                     snackbarHostState.showSnackbar(
-                                        e.message ?: "Unable to load older comments"
+                                        e.userMessage("Unable to load older comments")
                                     )
                                 } finally {
                                     isLoadingOlder = false
@@ -815,7 +816,7 @@ private fun CommunityPostDetailScreen(
                                 viewModel.refresh()
                                 snackbarHostState.showSnackbar("Reply posted")
                             } catch (e: Exception) {
-                                snackbarHostState.showSnackbar(e.message ?: "Unable to post reply")
+                                snackbarHostState.showSnackbar(e.userMessage("Unable to post reply"))
                             } finally {
                                 isSending = false
                             }
@@ -1333,7 +1334,7 @@ fun CommunityCommentsDialog(
             comments = result.comments
             nextAfterId = result.nextAfterId
         } catch (e: Exception) {
-            error = e.message ?: "Unable to load comments."
+            error = e.userMessage("Unable to load comments.")
         } finally {
             isLoading = false
         }
@@ -1436,7 +1437,7 @@ fun CommunityCommentsDialog(
                                                                     comments = comments.filterNot { it.id == comment.id }
                                                                     viewModel.refresh()
                                                                 } catch (e: Exception) {
-                                                                    error = e.message ?: "Unable to delete comment."
+                                                                    error = e.userMessage("Unable to delete comment.")
                                                                 }
                                                             }
                                                         }
@@ -1459,7 +1460,7 @@ fun CommunityCommentsDialog(
                                                     comments = (comments + result.comments).distinctBy { it.id }
                                                     nextAfterId = result.nextAfterId
                                                 } catch (e: Exception) {
-                                                    error = e.message ?: "Unable to load older comments."
+                                                    error = e.userMessage("Unable to load older comments.")
                                                 } finally {
                                                     isLoadingOlder = false
                                                 }
@@ -1519,7 +1520,7 @@ fun CommunityCommentsDialog(
                                         commentText = ""
                                         viewModel.refresh()
                                     } catch (e: Exception) {
-                                        error = e.message ?: "Unable to add comment."
+                                        error = e.userMessage("Unable to add comment.")
                                     } finally {
                                         isSending = false
                                     }

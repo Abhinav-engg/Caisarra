@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.game.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.repository.ActiveGamesLimitException
 import com.abhinav.caisarra.data.repository.BotGameRepository
 import com.abhinav.caisarra.data.remote.dto.Bot
@@ -51,7 +52,7 @@ class BotSetupViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(isLoadingBots = false, errorMessage = error.message) }
+                    _state.update { it.copy(isLoadingBots = false, errorMessage = error.userMessage()) }
                 }
         }
     }
@@ -117,7 +118,7 @@ class BotSetupViewModel(application: Application) : AndroidViewModel(application
                     _state.update {
                         it.copy(
                             isStartingGame = false,
-                            errorMessage = error.message ?: "Failed to start game",
+                            errorMessage = error.userMessage("Failed to start game"),
                             hasActiveLimitReached = is409
                         )
                     }

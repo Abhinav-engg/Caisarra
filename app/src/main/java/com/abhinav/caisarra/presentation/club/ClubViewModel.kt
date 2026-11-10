@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.club
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.ClubDto
 import com.abhinav.caisarra.data.repository.ClubRepository
 import kotlinx.coroutines.CancellationException
@@ -66,7 +67,7 @@ class ClubViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Unable to load clubs."
+                        error = e.userMessage("Unable to load clubs.")
                     )
                 }
             }
@@ -116,7 +117,7 @@ class ClubViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Search failed."
+                        error = e.userMessage("Search failed.")
                     )
                 }
             }
@@ -292,7 +293,7 @@ class ClubViewModel(
             }
         }
 
-        return e.message ?: "Club operation failed. Please try again."
+        return e.userMessage("Club operation failed. Please try again.")
     }
 
     private fun submit(action: suspend () -> Unit) {

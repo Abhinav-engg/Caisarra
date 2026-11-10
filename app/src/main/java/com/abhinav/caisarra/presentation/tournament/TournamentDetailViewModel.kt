@@ -3,7 +3,7 @@ package com.abhinav.caisarra.presentation.tournament
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-//import com.abhinav.caisarra.core.network.userMessage
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.TournamentSocketClient
@@ -116,9 +116,9 @@ class TournamentDetailViewModel(
                     }
                     refreshAll(showLoading = false)
                 }
-//                .onFailure { e ->
-//                    _state.update { it.copy(message = e.userMessage("Something went wrong")) }
-//                }
+               .onFailure { e ->
+                   _state.update { it.copy(message = e.userMessage("Something went wrong")) }
+                }
             _state.update { it.copy(actionInProgress = false) }
         }
     }
@@ -153,9 +153,9 @@ class TournamentDetailViewModel(
                 standings = standings,
                 rounds = rounds,
                 hasJoined = joined,
-//                error = if (tournament == null) {
-//                    tournamentResult.exceptionOrNull()?.userMessage("Could not load tournament") ?: "Could not load tournament"
-//                } else null
+                error = if (tournament == null) {
+                    tournamentResult.exceptionOrNull()?.userMessage("Could not load tournament") ?: "Could not load tournament"
+                } else null
             )
         }
     }

@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.game.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.BotGame
 import com.abhinav.caisarra.data.repository.BotGameRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +37,7 @@ class BotHistoryViewModel(application: Application) : AndroidViewModel(applicati
                     _state.update { it.copy(isLoading = false, games = games) }
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(isLoading = false, errorMessage = error.message) }
+                    _state.update { it.copy(isLoading = false, errorMessage = error.userMessage()) }
                 }
         }
     }

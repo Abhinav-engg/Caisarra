@@ -305,6 +305,16 @@ fun NavGraphBuilder.settingsAndMoreGraph(
                     navController.navigateOnce(AppRoutes.PRIVACY_SETTINGS)
                 }
             },
+            onNotificationsClick = {
+                navController.requireAuth(
+                    context = context,
+                    authRepository = authRepository,
+                    scope = scope,
+                    featureName = "Notification settings"
+                ) {
+                    navController.navigateOnce(AppRoutes.NOTIFICATION_SETTINGS)
+                }
+            },
             isGuest = isGuestUser,
             onDeleteAccountClick = {
                 navController.navigateOnce(AppRoutes.DELETE_ACCOUNT)

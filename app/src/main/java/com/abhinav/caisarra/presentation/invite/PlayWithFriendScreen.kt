@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.core.ui.theme.FriendsCardRadius
 import com.abhinav.caisarra.core.ui.theme.FriendsScreenPadding
 import com.abhinav.caisarra.data.remote.dto.FriendDto
@@ -538,7 +539,7 @@ fun PlayWithFriendScreen(
                                                         onEnterGame(res.gameId.ifBlank { challenge.gameId })
                                                     }
                                                     .onFailure { err ->
-                                                        Toast.makeText(context, err.message ?: "Failed to accept challenge", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, err.userMessage("Failed to accept challenge"), Toast.LENGTH_SHORT).show()
                                                     }
                                             }
                                         },

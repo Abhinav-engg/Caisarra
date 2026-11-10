@@ -2,6 +2,7 @@
 package com.abhinav.caisarra.presentation.navigation
 
 import com.abhinav.caisarra.features.minimates.presentation.miniMatesGraph
+import com.abhinav.caisarra.features.notificationsettings.presentation.notificationSettingsGraph
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -150,6 +151,7 @@ fun AppNavigation(
                 context = context
             )
             miniMatesGraph(navController)
+            notificationSettingsGraph(navController)
             profileGraph(
                 navController = navController,
                 authRepository = authRepository,

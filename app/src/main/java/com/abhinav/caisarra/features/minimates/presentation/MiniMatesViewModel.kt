@@ -2,6 +2,7 @@ package com.abhinav.caisarra.features.minimates.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.domain.chess.engine.ChesslibEngine
 import com.abhinav.caisarra.domain.chess.game.mapper.toDomain
 import com.abhinav.caisarra.domain.chess.game.mapper.toUi
@@ -34,12 +35,12 @@ class MiniMatesViewModel(private val repository: MiniMatesRepository) : ViewMode
         _state.value = MiniMatesUiState()
         repository.overview()
             .onSuccess { overview -> _state.update { it.copy(loading = false, overview = overview) } }
-            .onFailure { e -> _state.update { it.copy(loading = false, error = e.message) } }
+            .onFailure { e -> _state.update { it.copy(loading = false, error = e.userMessage()) } }
     }
 
     fun openLevel(number: Int) = viewModelScope.launch {
         _state.update { it.copy(loading = true, error = null) }
-        repository.level(number).onFailure { e -> _state.update { it.copy(loading = false, error = e.message) } }
+        repository.level(number).onFailure { e -> _state.update { it.copy(loading = false, error = e.userMessage()) } }
             .onSuccess { level ->
                 engine.loadFen(level.initialFen ?: level.fen)
                 _state.value = MiniMatesUiState(loading = false, overview = _state.value.overview, level = level)
@@ -64,7 +65,7 @@ class MiniMatesViewModel(private val repository: MiniMatesRepository) : ViewMode
         val level = current.level ?: return@launch
         repository.hint(level.levelNumber, current.moveIndex)
             .onSuccess { hint -> _state.update { it.copy(note = hint.message, selected = hint.fromSquare?.let(::uciToSquare)) } }
-            .onFailure { e -> _state.update { it.copy(note = e.message) } }
+            .onFailure { e -> _state.update { it.copy(note = e.userMessage()) } }
     }
 
     fun onSquareClick(square: Square) {
@@ -88,7 +89,7 @@ class MiniMatesViewModel(private val repository: MiniMatesRepository) : ViewMode
             repository.move(level.levelNumber, request).onFailure { e ->
                 engine.undo()
                 refresh(status = MiniMatesStatus.PLAYING)
-                _state.update { it.copy(note = e.message) }
+                _state.update { it.copy(note = e.userMessage()) }
             }.onSuccess { result ->
                 val reply = result.nextMove?.takeIf { it.isNotBlank() }
                 when {

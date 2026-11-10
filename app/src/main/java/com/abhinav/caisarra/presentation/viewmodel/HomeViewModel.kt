@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.entity.GameEntity
@@ -328,7 +329,7 @@ class HomeViewModel(
                             activeGames = emptyList(),
                             activeDailyGames = emptyList(),
                             isLoadingHistory = false,
-                            error = e.message ?: "Unable to load server game history."
+                            error = e.userMessage("Unable to load server game history.")
                         )
                     }
 
@@ -366,7 +367,7 @@ class HomeViewModel(
                     _state.update {
                         it.copy(
                             isLoadingHistory = false,
-                            error = e.message ?: "Unable to load local game history."
+                            error = e.userMessage("Unable to load local game history.")
                         )
                     }
                 }
@@ -428,8 +429,7 @@ class HomeViewModel(
                 _state.update {
                     it.copy(
                         isLoggingOut = false,
-                        error = e.message
-                            ?: "Unable to log out."
+                        error = e.userMessage("Unable to log out.")
                     )
                 }
             }

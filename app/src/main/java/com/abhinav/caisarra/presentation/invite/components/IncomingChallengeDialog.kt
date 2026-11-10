@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.data.remote.ChallengeNotificationEvent
 import com.abhinav.caisarra.data.repository.ChallengeManager
@@ -204,7 +205,7 @@ fun IncomingChallengeDialog(
                                         }
                                         .onFailure { err ->
                                             isAccepting = false
-                                            errorMessage = err.message ?: "Failed to accept challenge"
+                                            errorMessage = err.userMessage("Failed to accept challenge")
                                         }
                                 }
                             },
