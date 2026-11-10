@@ -54,7 +54,6 @@ fun GuestHomeScreen(
             .fillMaxSize()
             .background(GuestBg)
     ) {
-        // Subtle background gradient
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -440,7 +439,7 @@ private fun PassAndPlayCard(
             )
 
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             Image(
                 painter = painterResource(
                     id = R.drawable.chess_board1

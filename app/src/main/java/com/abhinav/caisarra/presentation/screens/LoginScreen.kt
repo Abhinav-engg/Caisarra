@@ -26,6 +26,9 @@ import com.abhinav.caisarra.core.ui.components.SimpleTextField
 import com.abhinav.caisarra.presentation.viewmodel.LoginViewModel
 import com.abhinav.caisarra.core.ui.theme.LoginCardHeight
 import com.abhinav.caisarra.core.ui.theme.LoginCardVerticalBias
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 
 @Composable
 fun LoginScreen(
@@ -81,23 +84,39 @@ fun LoginScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    onContinueAsGuestClick()
+                .clickable(enabled = !state.isLoading) {
+                    viewModel.guestLogin(onContinueAsGuestClick)
                 },
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            if (state.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = Color(0xFF00D5E9),
+                    strokeWidth = 2.dp
+                )
 
-            Text(
-                text = "OR ",
-                color = Color(0xFF8D9AAA),
-                fontSize = 14.sp
-            )
+                Spacer(modifier = Modifier.width(8.dp))
 
-            Text(
-                text = "continue as guest",
-                color = Color(0xFF00D5E9),
-                fontSize = 14.sp
-            )
+                Text(
+                    text = "Please wait...",
+                    color = Color(0xFF00D5E9),
+                    fontSize = 14.sp
+                )
+            } else {
+                Text(
+                    text = "OR ",
+                    color = Color(0xFF8D9AAA),
+                    fontSize = 14.sp
+                )
+
+                Text(
+                    text = "continue as guest",
+                    color = Color(0xFF00D5E9),
+                    fontSize = 14.sp
+                )
+            }
         }
 
         Spacer(
