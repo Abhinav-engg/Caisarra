@@ -65,10 +65,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.abhinav.caisarra.data.remote.dto.NearbyPlayer
+import com.abhinav.caisarra.presentation.common.ClickGuard
 import com.abhinav.caisarra.presentation.common.singleClick
 import com.abhinav.caisarra.presentation.invite.components.DirectChallengeDialog
 import com.abhinav.caisarra.presentation.nearby.NearbyColors
 import com.abhinav.caisarra.presentation.nearby.NearbyMapState
+import com.abhinav.caisarra.presentation.nearby.NearbyOperation
 import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
 import com.abhinav.caisarra.presentation.nearby.components.NearbyMap
 import com.abhinav.caisarra.presentation.nearby.components.PlayerCard
@@ -148,7 +150,17 @@ fun NearbyScreen(
         else permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
     }
 
-    val refreshAction = onRefresh ?: turnOn
+    val refreshAction = onRefresh ?: {
+        if (state.visible) turnOn() else viewModel.loadPlayers()
+    }
+
+    val retryAction = onRefresh ?: {
+        when (state.lastOperation) {
+            NearbyOperation.Enable -> turnOn()
+            NearbyOperation.Disable -> viewModel.disable()
+            NearbyOperation.Load -> viewModel.loadPlayers()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -227,7 +239,11 @@ fun NearbyScreen(
                 Switch(
                     checked = state.visible,
                     enabled = !state.loading && !state.guest,
-                    onCheckedChange = { checked -> if (checked) turnOn() else viewModel.disable() },
+                    onCheckedChange = { checked ->
+                        if (ClickGuard.canClick()) {
+                            if (checked) turnOn() else viewModel.disable()
+                        }
+                    },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = NearbyColors.Background,
                         checkedTrackColor = CyanLight,
@@ -257,7 +273,7 @@ fun NearbyScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
-                    TextButton(onClick = singleClick(refreshAction)) {
+                    TextButton(onClick = singleClick(retryAction)) {
                         Text("Retry", color = NearbyColors.Accent)
                     }
                 }

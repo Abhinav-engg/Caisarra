@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.invite
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.dto.BlockedUserDto
@@ -238,8 +239,7 @@ class FriendsViewModel(
                             it.copy(
                                 isSearching = false,
                                 searchResults = emptyList(),
-                                error = error.message
-                                    ?: "Could not search players."
+                                error = error.userMessage("Could not search players.")
                             )
                         }
                     }
@@ -350,7 +350,7 @@ class FriendsViewModel(
                 }
                 .onFailure { error ->
                     _uiState.update {
-                        it.copy(error = error.message)
+                        it.copy(error = error.userMessage())
                     }
                 }
         }
@@ -370,7 +370,7 @@ class FriendsViewModel(
                     refresh()
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(activeUsername = null, error = error.message ?: "Could not block user.") }
+                    _uiState.update { it.copy(activeUsername = null, error = error.userMessage("Could not block user.")) }
                 }
         }
     }
@@ -389,7 +389,7 @@ class FriendsViewModel(
                     refresh()
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(activeUsername = null, error = error.message ?: "Could not unblock user.") }
+                    _uiState.update { it.copy(activeUsername = null, error = error.userMessage("Could not unblock user.")) }
                 }
         }
     }
@@ -436,8 +436,7 @@ class FriendsViewModel(
                     _uiState.update {
                         it.copy(
                             activeUsername = null,
-                            error = error.message
-                                ?: "Could not update friendship."
+                            error = error.userMessage("Could not update friendship.")
                         )
                     }
                 }

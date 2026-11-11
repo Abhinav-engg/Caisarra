@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.notifications
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.repository.NotificationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,7 +81,7 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
                         it.copy(
                             isLoading = false,
                             isRefreshing = false,
-                            error = err.message ?: "Failed to load notifications"
+                            error = err.userMessage("Failed to load notifications")
                         )
                     }
                 }

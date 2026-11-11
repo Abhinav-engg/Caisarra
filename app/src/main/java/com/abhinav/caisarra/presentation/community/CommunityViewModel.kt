@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.community
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.CommunityPostDto
 import com.abhinav.caisarra.data.remote.dto.GameHistoryDto
 import com.abhinav.caisarra.data.repository.CommunityRepository
@@ -74,8 +75,7 @@ class CommunityViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message
-                            ?: "Unable to load community feed."
+                        error = e.userMessage("Unable to load community feed.")
                     )
                 }
             }
@@ -112,8 +112,7 @@ class CommunityViewModel(
                 _state.update {
                     it.copy(
                         isLoadingGames = false,
-                        error = e.message
-                            ?: "Unable to load completed games."
+                        error = e.userMessage("Unable to load completed games.")
                     )
                 }
             }
@@ -151,8 +150,7 @@ class CommunityViewModel(
                 _state.update {
                     it.copy(
                         isPublishing = false,
-                        error = e.message
-                            ?: "Unable to publish post."
+                        error = e.userMessage("Unable to publish post.")
                     )
                 }
             }
@@ -193,8 +191,7 @@ class CommunityViewModel(
                 _state.update {
                     it.copy(
                         isPublishing = false,
-                        error = e.message
-                            ?: "Unable to share game."
+                        error = e.userMessage("Unable to share game.")
                     )
                 }
             }
@@ -247,8 +244,7 @@ class CommunityViewModel(
                 _state.update {
                     it.copy(
                         isLoadingMore = false,
-                        error = e.message
-                            ?: "Unable to load more posts."
+                        error = e.userMessage("Unable to load more posts.")
                     )
                 }
             }
@@ -273,8 +269,7 @@ class CommunityViewModel(
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        error = e.message
-                            ?: "Unable to delete post."
+                        error = e.userMessage("Unable to delete post.")
                     )
                 }
             }
@@ -318,8 +313,7 @@ class CommunityViewModel(
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        error = e.message
-                            ?: "Unable to save reaction."
+                        error = e.userMessage("Unable to save reaction.")
                     )
                 }
             }
@@ -343,7 +337,7 @@ class CommunityViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { it.copy(isLoadingBookmarks = false, error = e.message ?: "Unable to load saved posts.") }
+                _state.update { it.copy(isLoadingBookmarks = false, error = e.userMessage("Unable to load saved posts.")) }
             }
         }
     }
@@ -371,7 +365,7 @@ class CommunityViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: "Unable to update bookmark.") }
+                _state.update { it.copy(error = e.userMessage("Unable to update bookmark.")) }
             }
         }
     }

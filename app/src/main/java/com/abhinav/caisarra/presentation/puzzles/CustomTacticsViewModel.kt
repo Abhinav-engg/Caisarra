@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.puzzles
 import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.CustomPuzzleResponse
 import com.abhinav.caisarra.data.repository.PuzzleRepository
 import com.abhinav.caisarra.domain.chess.engine.ChesslibEngine
@@ -72,7 +73,7 @@ class CustomTacticsViewModel(
                         availableThemes = current?.availableThemes.orEmpty(),
                         filters = current?.filters ?: CustomTacticsFilters(),
                         isLoadingThemes = false,
-                        error = error.message ?: "Unable to load puzzle themes."
+                        error = error.userMessage("Unable to load puzzle themes.")
                     )
                 }
         }
@@ -168,7 +169,7 @@ class CustomTacticsViewModel(
                     availableThemes = current.availableThemes,
                     filters = current.filters,
                     isFetchingPuzzle = false,
-                    error = error.message ?: "Unable to load a custom puzzle."
+                    error = error.userMessage("Unable to load a custom puzzle.")
                 )
             }
         }
@@ -246,7 +247,7 @@ class CustomTacticsViewModel(
             )
         } catch (e: Exception) {
             _state.value = CustomTacticsUiState.Error(
-                e.message ?: "Unable to prepare the puzzle board."
+                e.userMessage("Unable to prepare the puzzle board.")
             )
         }
     }
@@ -468,7 +469,7 @@ class CustomTacticsViewModel(
                     selectedSquare = null,
                     legalMoves = emptyList(),
                     isAwaitingServer = false,
-                    message = error.message ?: "Unable to submit your move."
+                    message = error.userMessage("Unable to submit your move.")
                 )
             }
         }

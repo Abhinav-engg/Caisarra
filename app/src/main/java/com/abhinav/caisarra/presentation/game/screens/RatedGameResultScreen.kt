@@ -200,14 +200,8 @@ fun RatedGameResultScreen(
                     onClick = onNewOpponent
                 )
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp, top = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
+            Box(Modifier.fillMaxWidth().padding(bottom = 10.dp, top = 4.dp), contentAlignment = Alignment.Center) {
                 TextAction(Icons.Default.Download, "Save PGN", onSavePgn)
-                TextAction(Icons.Default.Share, "Share", onShare)
             }
         }
     }

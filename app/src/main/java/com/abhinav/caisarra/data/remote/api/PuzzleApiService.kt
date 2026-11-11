@@ -30,10 +30,6 @@ import retrofit2.http.Query
 
 interface PuzzleApiService {
 
-    // ---------------------------------------------------------
-    // DAILY PUZZLE
-    // ---------------------------------------------------------
-
     @GET("puzzles/daily")
     suspend fun getDailyPuzzle(): DailyPuzzleResponse
 
@@ -52,10 +48,6 @@ interface PuzzleApiService {
         @Body request: DailyPuzzleSolutionRequest
     ): DailyPuzzleSolutionResponse
 
-    // ---------------------------------------------------------
-    // PUZZLE DETAILS
-    // ---------------------------------------------------------
-
     @GET("puzzles/{puzzle_id}")
     suspend fun getPuzzleById(
         @Path("puzzle_id") puzzleId: String
@@ -69,10 +61,6 @@ interface PuzzleApiService {
         @Query("limit") limit: Int = 20,
         @Query("offset") offset: Int = 0
     ): PuzzleHistoryResponse
-
-    // ---------------------------------------------------------
-    // PUZZLE RUSH
-    // ---------------------------------------------------------
 
     @POST("puzzles/rush/start")
     suspend fun startRush(
@@ -97,26 +85,9 @@ interface PuzzleApiService {
     @GET("puzzles/rush/stats")
     suspend fun getRushStats(): RushStatsResponse
 
-    // ---------------------------------------------------------
-    // CUSTOM TACTICS
-    // ---------------------------------------------------------
-
-    /**
-     * Returns the available tactical themes.
-     *
-     * GET /puzzles/themes
-     */
     @GET("puzzles/themes")
     suspend fun getPuzzleThemes(): PuzzleThemesResponse
 
-    /**
-     * Fetches a custom puzzle using the selected filters.
-     *
-     * GET /puzzles/custom
-     *
-     * The backend expects `themes` as a comma-separated string,
-     * for example: themes=fork,pin
-     */
     @GET("puzzles/custom")
     suspend fun getCustomPuzzle(
         @Query("theme")
@@ -138,11 +109,6 @@ interface PuzzleApiService {
         reviewMistakes: Boolean = false
     ): CustomPuzzleResponse
 
-    /**
-     * Submits a move for a custom tactics puzzle.
-     *
-     * POST /puzzles/custom/attempt
-     */
     @POST("puzzles/custom/attempt")
     suspend fun submitCustomPuzzleAttempt(
         @Body request: CustomPuzzleAttemptRequest

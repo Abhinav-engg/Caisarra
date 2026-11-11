@@ -1,7 +1,9 @@
 
 package com.abhinav.caisarra.presentation.navigation
 
+import com.abhinav.caisarra.features.blockedplayers.presentation.blockedPlayersGraph
 import com.abhinav.caisarra.features.minimates.presentation.miniMatesGraph
+import com.abhinav.caisarra.features.notificationsettings.presentation.notificationSettingsGraph
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -22,6 +24,7 @@ import com.abhinav.caisarra.data.local.OnboardingPreferencesStore
 import com.abhinav.caisarra.data.local.PendingInviteStore
 import com.abhinav.caisarra.data.local.PendingOtpStore
 import com.abhinav.caisarra.data.repository.AuthRepository
+import com.abhinav.caisarra.presentation.navigation.adminGraph
 import androidx.compose.foundation.layout.WindowInsets
 @Composable
 fun AppNavigation(
@@ -100,6 +103,8 @@ fun AppNavigation(
         NavHost(
             navController = navController,
             startDestination = AppRoutes.SPLASH,
+            enterTransition = { menuEnterTransition() },
+            popExitTransition = { menuPopExitTransition() },
             modifier = Modifier.fillMaxSize()
                 .padding(
                     bottom = innerPadding.calculateBottomPadding()
@@ -113,6 +118,10 @@ fun AppNavigation(
                 pendingInviteStore = pendingInviteStore,
                 context = context,
                 scope = scope
+            )
+            adminGraph(
+                navController = navController,
+                authRepository = authRepository
             )
 
             homeGraph(
@@ -143,6 +152,8 @@ fun AppNavigation(
                 context = context
             )
             miniMatesGraph(navController)
+            notificationSettingsGraph(navController)
+            blockedPlayersGraph(navController)
             profileGraph(
                 navController = navController,
                 authRepository = authRepository,

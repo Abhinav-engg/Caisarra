@@ -20,6 +20,7 @@ import retrofit2.create
 import java.util.concurrent.TimeUnit
 import com.abhinav.caisarra.data.remote.api.CommunityService
 import com.abhinav.caisarra.data.remote.api.PuzzleApiService
+import com.abhinav.caisarra.features.minimates.data.MiniMatesService
 import com.abhinav.caisarra.data.remote.api.ClubService
 import com.abhinav.caisarra.data.remote.api.LeaderboardService
 import com.abhinav.caisarra.data.remote.api.DirectMessageService
@@ -122,6 +123,7 @@ object RetrofitInstance {
     fun createPuzzleService(tokenManager: TokenManager): PuzzleApiService =
         authenticatedRetrofit(tokenManager).create()
     fun createClubService(tokenManager: TokenManager): ClubService = authenticatedRetrofit(tokenManager).create()
+    fun createMiniMatesService(tokenManager: TokenManager): MiniMatesService = authenticatedRetrofit(tokenManager).create()
     fun createLeaderboardService(tokenManager: TokenManager): LeaderboardService =
         authenticatedRetrofit(tokenManager).create()
     fun createDirectMessageService(tokenManager: TokenManager): DirectMessageService { return authenticatedRetrofit(tokenManager)

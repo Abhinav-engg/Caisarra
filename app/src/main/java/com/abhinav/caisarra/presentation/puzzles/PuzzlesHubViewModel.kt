@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.puzzles
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.repository.PuzzleRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,7 +12,7 @@ data class PuzzlesHubUiState(
     val isLoading: Boolean = true,
     val streak: Int = 0,
     val puzzleRating: Int = 0,
-    val rushHighScore: Int = 24,
+    val rushHighScore: Int? = null,
     val isSolved: Boolean = false,
     val attemptsLeft: Int = 3,
     val error: String? = null
@@ -44,17 +45,13 @@ class PuzzlesHubViewModel(
                 .onFailure { err ->
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        error = err.message
+                        error = err.userMessage()
                     )
                 }
 
             puzzleRepository.getRushStats()
                 .onSuccess { stats ->
-                    if (stats.bestScore3min > 0) {
-                        _state.value = _state.value.copy(
-                            rushHighScore = stats.bestScore3min
-                        )
-                    }
+                    _state.value = _state.value.copy(rushHighScore = stats.bestScore3min)
                 }
         }
     }

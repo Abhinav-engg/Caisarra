@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.invite
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.InviteRepository
@@ -71,7 +72,7 @@ class JoinInviteViewModel(
                         needsLogin = !loggedIn
                     )
                 }
-                .onFailure { _state.value = JoinInviteState.Error(it.message.orEmpty()) }
+                .onFailure { _state.value = JoinInviteState.Error(it.userMessage()) }
         }
     }
 
@@ -82,7 +83,7 @@ class JoinInviteViewModel(
             _state.value = current.copy(joining = true)
             inviteRepository.joinInvite(code)
                 .onSuccess { _gameReady.send(it.gameId) }
-                .onFailure { _state.value = JoinInviteState.Error(it.message.orEmpty()) }
+                .onFailure { _state.value = JoinInviteState.Error(it.userMessage()) }
         }
     }
 }

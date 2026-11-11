@@ -1,6 +1,7 @@
 
 package com.abhinav.caisarra.data.repository
 
+import com.abhinav.caisarra.core.network.userMessage
 import android.content.Context
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
@@ -148,8 +149,7 @@ class FriendsRepository(context: Context) {
         } catch (e: Exception) {
             Result.failure(
                 Exception(
-                    e.message?.takeIf { it.isNotBlank() }
-                        ?: ApiErrorInterpreter.toUserMessage(e)
+                    e.userMessage()
                 )
             )
         }

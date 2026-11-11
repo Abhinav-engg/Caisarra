@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.data.repository.ChallengeManager
 import com.abhinav.caisarra.presentation.game.components.setup.SetupColors
@@ -615,7 +616,7 @@ fun DirectChallengeDialog(
                                     }
                                     .onFailure { error ->
                                         isSending = false
-                                        errorMessage = error.message ?: "Failed to send challenge"
+                                        errorMessage = error.userMessage("Failed to send challenge")
                                     }
                             }
                         }

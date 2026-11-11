@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.viewmodel
 
+import com.abhinav.caisarra.core.network.userMessage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.remote.dto.ModeStatsData
@@ -10,19 +11,18 @@ import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.data.repository.PuzzleRepository
 import com.abhinav.caisarra.data.repository.RatingRepository
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
-import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-enum class StatsRange(val key: String, val label: String) {
-    SEVEN_DAYS("7d", "7D"),
-    THIRTY_DAYS("30d", "30D"),
-    NINETY_DAYS("90d", "90D"),
-    ONE_YEAR("1y", "1Y"),
-    ALL("all", "ALL");
+enum class StatsRange(val key: String, val label: String, val days: Long?) {
+    SEVEN_DAYS("7d", "7D", 7),
+    THIRTY_DAYS("30d", "30D", 30),
+    NINETY_DAYS("90d", "90D", 90),
+    ONE_YEAR("1y", "1Y", 365),
+    ALL("all", "ALL", null);
 
     companion object {
         fun fromKey(key: String?): StatsRange {
@@ -213,11 +213,15 @@ class StatsViewModel(
 
                 val stats = if (mode == GameMode.PUZZLE) {
                     val puzzleStats = puzzleRepository?.getStats()?.getOrNull()
-                    val history = puzzleRepository?.getHistory(limit = 100)?.getOrNull()
+                    val since = range.days?.let { java.time.LocalDate.now().minusDays(it) }
+                    val history = puzzleRepository?.getHistorySince(since)?.getOrNull()
                     if (puzzleStats == null && history == null) {
                         throw IllegalStateException("Failed to load puzzle stats")
                     }
-                    val attempts = history?.allAttempts.orEmpty()
+                    val attempts = history.orEmpty()
+                    val allTimeStats = puzzleStats.takeIf { since == null }
+                    val solved = allTimeStats?.puzzlesSolved ?: attempts.count { it.solved }
+                    val failed = allTimeStats?.puzzlesFailed ?: attempts.count { !it.solved }
                     val currentRating = puzzleStats?.rating ?: 1500
                     val historyPoints = if (attempts.isNotEmpty()) {
                         val initialPoint = attempts.lastOrNull()?.let { oldest ->
@@ -231,7 +235,7 @@ class StatsViewModel(
                             RatingHistoryPoint(date = date, rating = r)
                         }
                         if (initialPoint != null) listOf(initialPoint) + attemptPoints else attemptPoints
-                    } else if (currentRating > 0) {
+                    } else if (since == null && currentRating > 0) {
                         val today = java.time.LocalDate.now().toString()
                         val yesterday = java.time.LocalDate.now().minusDays(1).toString()
                         listOf(
@@ -241,21 +245,21 @@ class StatsViewModel(
                     } else {
                         emptyList()
                     }
-                    val startRating = historyPoints.firstOrNull()?.rating ?: 1500
+                    val startRating = historyPoints.firstOrNull()?.rating ?: currentRating
                     ModeStatsData(
                         mode = "puzzle",
                         range = range.key,
                         rating = currentRating,
                         provisional = false,
-                        bestRating = puzzleStats?.bestRating ?: currentRating,
-                        bestRatingAt = puzzleStats?.bestRatingAt,
+                        bestRating = allTimeStats?.bestRating ?: historyPoints.maxOfOrNull { it.rating } ?: currentRating,
+                        bestRatingAt = allTimeStats?.bestRatingAt,
                         lowestRating = historyPoints.minOfOrNull { it.rating } ?: currentRating,
                         startRating = startRating,
-                        gamesPlayed = (puzzleStats?.puzzlesSolved ?: 0) + (puzzleStats?.puzzlesFailed ?: 0),
-                        wins = puzzleStats?.puzzlesSolved ?: 0,
-                        losses = puzzleStats?.puzzlesFailed ?: 0,
+                        gamesPlayed = solved + failed,
+                        wins = solved,
+                        losses = failed,
                         draws = 0,
-                        winPercent = puzzleStats?.winRate?.roundToInt() ?: 0,
+                        winPercent = if (solved + failed > 0) solved * 100 / (solved + failed) else 0,
                         currentStreak = puzzleStats?.currentStreak ?: 0,
                         bestStreak = puzzleStats?.maxStreak ?: 0,
                         ratingHistory = historyPoints
@@ -328,7 +332,7 @@ class StatsViewModel(
                     return@launch
                 }
 
-                val msg = formatErrorMessage(e.message)
+                val msg = formatErrorMessage(e)
                 _state.value = _state.value.copy(
                     isLoading = false,
                     isRefreshing = false,
@@ -338,8 +342,8 @@ class StatsViewModel(
         }
     }
 
-    private fun formatErrorMessage(rawMessage: String?): String {
-        val msg = rawMessage.orEmpty()
+    private fun formatErrorMessage(e: Throwable): String {
+        val msg = e.message.orEmpty()
         return when {
             msg.contains("429", ignoreCase = true) || msg.contains("too many requests", ignoreCase = true) ->
                 "Rate limit exceeded. Please wait a moment and try again."
@@ -349,8 +353,7 @@ class StatsViewModel(
                 "Server error encountered while retrieving statistics. Please try again later."
             msg.contains("Unable to resolve host", ignoreCase = true) || msg.contains("timeout", ignoreCase = true) ->
                 "Network connection issue. Please check your internet connection."
-            msg.isNotBlank() -> msg
-            else -> "Failed to load player statistics"
+            else -> e.userMessage("Failed to load player statistics")
         }
     }
 

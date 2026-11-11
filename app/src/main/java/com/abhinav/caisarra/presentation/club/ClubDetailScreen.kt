@@ -39,6 +39,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.*
 import com.abhinav.caisarra.data.repository.ClubRepository
 import kotlinx.coroutines.CancellationException
@@ -194,7 +195,7 @@ class ClubDetailViewModel(
             } catch (e: Exception) {
                 Log.e("ClubDetail", "Failed to join club", e)
                 state = state.copy(
-                    error = e.message ?: "Couldn't join this club. Please try again."
+                    error = e.userMessage("Couldn't join this club. Please try again.")
                 )
             } finally {
                 state = state.copy(busy = false)
@@ -411,7 +412,7 @@ class ClubDetailViewModel(
             } catch (e: Exception) {
                 Log.e("ClubDetail", "Club action failed", e)
                 state = state.copy(
-                    error = e.message ?: "Club action failed. Please try again."
+                    error = e.userMessage("Club action failed. Please try again.")
                 )
             } finally {
                 state = state.copy(busy = false)
@@ -1692,7 +1693,6 @@ private fun ClubDetailLoadingSkeleton() {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Club header skeleton
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),

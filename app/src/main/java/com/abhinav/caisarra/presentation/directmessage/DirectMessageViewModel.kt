@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.directmessage
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.DirectMessageSocket
 import com.abhinav.caisarra.data.remote.dto.DirectMessageDto
 import com.abhinav.caisarra.data.repository.DirectMessageBlockedException
@@ -94,7 +95,6 @@ class DirectMessageViewModel(
                     _state.value = _state.value.copy(avatarUrl = profile.avatarUrl)
                 }
             } catch (_: Exception) {
-                // Ignore profile fetch failure
             }
         }
 
@@ -228,7 +228,7 @@ class DirectMessageViewModel(
             _state.value = _state.value.copy(
                 loading = false,
                 blocked = e is DirectMessageBlockedException,
-                error = e.message ?: "Couldn't load chat history."
+                error = e.userMessage("Couldn't load chat history.")
             )
         }
     }
@@ -307,8 +307,7 @@ class DirectMessageViewModel(
                     _state.value = _state.value.copy(
                         sending = false,
                         blocked = e is DirectMessageBlockedException,
-                        error = e.message
-                            ?: "Message could not be sent."
+                        error = e.userMessage("Message could not be sent.")
                     )
                 }
             }

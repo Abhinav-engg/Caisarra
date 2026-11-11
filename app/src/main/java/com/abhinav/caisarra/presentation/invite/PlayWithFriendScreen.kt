@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.core.ui.theme.FriendsCardRadius
 import com.abhinav.caisarra.core.ui.theme.FriendsScreenPadding
 import com.abhinav.caisarra.data.remote.dto.FriendDto
@@ -538,7 +539,7 @@ fun PlayWithFriendScreen(
                                                         onEnterGame(res.gameId.ifBlank { challenge.gameId })
                                                     }
                                                     .onFailure { err ->
-                                                        Toast.makeText(context, err.message ?: "Failed to accept challenge", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, err.userMessage("Failed to accept challenge"), Toast.LENGTH_SHORT).show()
                                                     }
                                             }
                                         },
@@ -646,7 +647,7 @@ private fun SentRequestItem(name: String, onProfileClick: (() -> Unit)? = null, 
 }
 
 @Composable
-private fun EmptyNotice(title: String, subtitle: String) {
+fun EmptyNotice(title: String, subtitle: String) {
     val shape = RoundedCornerShape(FriendsCardRadius)
     Column(
         modifier = Modifier.fillMaxWidth().clip(shape).background(FriendsCardBg).border(1.dp, FriendsCardBorder, shape).padding(32.dp),

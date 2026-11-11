@@ -9,33 +9,26 @@ import com.abhinav.caisarra.data.local.settingsDataStore
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,32 +37,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.abhinav.caisarra.core.ui.components.PreferenceToggleRow
+import com.abhinav.caisarra.core.ui.components.SettingsCard
+import com.abhinav.caisarra.core.ui.components.SettingsNavCard
+import com.abhinav.caisarra.core.ui.components.SettingsSectionHeader
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
-import com.abhinav.caisarra.core.ui.theme.StatsCardCornerRadius
 import com.abhinav.caisarra.core.ui.theme.StatsScreenPadding
 import com.abhinav.caisarra.core.ui.theme.StatsSectionSpacing
 import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.SettingsDivider
 import com.caisaara.ui.theme.StatsBg
-import com.caisaara.ui.theme.StatsCardBg
-import com.caisaara.ui.theme.StatsCardBorder
 import com.caisaara.ui.theme.StatsCyan
 import com.caisaara.ui.theme.StatsTabBg
 import com.caisaara.ui.theme.StatsTabBorder
-import com.caisaara.ui.theme.StatsTextMuted
 import com.caisaara.ui.theme.StatsTextWhite
 import com.caisaara.ui.theme.TextSizeBadge
 import com.caisaara.ui.theme.TextSizeBody
-import com.caisaara.ui.theme.TextSizeCaption
 import com.caisaara.ui.theme.TextSizeHeading
-import com.caisaara.ui.theme.TextSizeTiny
-import com.caisaara.ui.theme.ThemeSlateAccent
 import com.abhinav.caisarra.data.local.SOUND_EFFECTS_KEY
 import com.abhinav.caisarra.data.local.BOARD_COORDINATES_KEY
 import com.abhinav.caisarra.presentation.game.components.isAutoQueenEnabled
@@ -79,6 +65,8 @@ import com.abhinav.caisarra.presentation.game.components.setAutoQueenEnabled
 fun SettingsDetailScreen(
     onBack: () -> Unit,
     onPrivacyClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {},
+    onBlockedPlayersClick: () -> Unit = {},
     isGuest: Boolean = false,
     onDeleteAccountClick: () -> Unit = {}
 ) {
@@ -120,22 +108,9 @@ fun SettingsDetailScreen(
                 .padding(StatsScreenPadding),
             verticalArrangement = Arrangement.spacedBy(StatsSectionSpacing)
         ) {
-            Text(
-                text = "GAMEPLAY & AUDIO",
-                fontFamily = JetBrainsMono,
-                fontSize = TextSizeCaption,
-                fontWeight = FontWeight.SemiBold,
-                color = StatsTextMuted
-            )
+            SettingsSectionHeader("GAMEPLAY & AUDIO")
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(StatsCardCornerRadius))
-                    .background(StatsCardBg)
-                    .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
+            SettingsCard(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
                 Column {
                     PreferenceToggleRow(
                         title = "Sound Effects",
@@ -188,148 +163,52 @@ fun SettingsDetailScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text = "PRIVACY & SECURITY",
-                fontFamily = JetBrainsMono,
-                fontSize = TextSizeCaption,
-                fontWeight = FontWeight.SemiBold,
-                color = StatsTextMuted
+            SettingsSectionHeader("NOTIFICATIONS")
+            SettingsNavCard(
+                icon = Icons.Default.Notifications,
+                title = "Notification Settings",
+                subtitle = "Choose which alerts you receive",
+                onClick = onNotificationsClick
             )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(StatsCardCornerRadius))
-                    .background(StatsCardBg)
-                    .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
-                    .clickable { onPrivacyClick() }
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = null,
-                            tint = StatsCyan,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Column {
-                            Text(
-                                text = "Privacy Settings",
-                                fontFamily = JetBrainsMono,
-                                fontWeight = FontWeight.Medium,
-                                fontSize = TextSizeBody,
-                                color = StatsTextWhite
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Control messages, clubs, tournaments & invites",
-                                fontFamily = JetBrainsMono,
-                                fontSize = TextSizeTiny,
-                                color = StatsTextMuted
-                            )
-                        }
-                    }
+            Spacer(modifier = Modifier.height(10.dp))
 
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Open",
-                        tint = StatsTextMuted,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            SettingsSectionHeader("PRIVACY & SECURITY")
+
+            SettingsNavCard(
+                icon = Icons.Default.Lock,
+                title = "Privacy Settings",
+                subtitle = "Control messages, clubs, tournaments & invites",
+                onClick = onPrivacyClick
+            )
+
+            SettingsNavCard(
+                icon = Icons.Default.Block,
+                title = "Blocked Players",
+                subtitle = "View and unblock players",
+                onClick = onBlockedPlayersClick
+            )
 
             if (!isGuest) {
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    text = "DANGER ZONE",
-                    fontFamily = JetBrainsMono,
-                    fontSize = TextSizeCaption,
-                    fontWeight = FontWeight.SemiBold,
-                    color = RedNormal
+                SettingsSectionHeader("DANGER ZONE", RedNormal)
+
+                SettingsNavCard(
+                    icon = Icons.Default.DeleteForever,
+                    title = "Delete Account",
+                    subtitle = "Permanently remove your account and all data",
+                    onClick = onDeleteAccountClick,
+                    iconTint = RedNormal,
+                    titleColor = RedNormal
                 )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(StatsCardCornerRadius))
-                        .background(StatsCardBg)
-                        .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
-                        .clickable { onDeleteAccountClick() }
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteForever,
-                                contentDescription = null,
-                                tint = RedNormal,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Column {
-                                Text(
-                                    text = "Delete Account",
-                                    fontFamily = JetBrainsMono,
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = TextSizeBody,
-                                    color = RedNormal
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Permanently remove your account and all data",
-                                    fontFamily = JetBrainsMono,
-                                    fontSize = TextSizeTiny,
-                                    color = StatsTextMuted
-                                )
-                            }
-                        }
-
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Open",
-                            tint = StatsTextMuted,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text = "ABOUT",
-                fontFamily = JetBrainsMono,
-                fontSize = TextSizeCaption,
-                fontWeight = FontWeight.SemiBold,
-                color = StatsTextMuted
-            )
+            SettingsSectionHeader("ABOUT")
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(StatsCardCornerRadius))
-                    .background(StatsCardBg)
-                    .border(1.dp, StatsCardBorder, RoundedCornerShape(StatsCardCornerRadius))
-                    .padding(16.dp)
-            ) {
+            SettingsCard {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -350,52 +229,5 @@ fun SettingsDetailScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PreferenceToggleRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                fontFamily = JetBrainsMono,
-                fontWeight = FontWeight.Medium,
-                fontSize = TextSizeBody,
-                color = StatsTextWhite
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = subtitle,
-                fontFamily = JetBrainsMono,
-                fontSize = TextSizeTiny,
-                color = StatsTextMuted,
-                lineHeight = 16.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = StatsCyan,
-                uncheckedThumbColor = ThemeSlateAccent,
-                uncheckedTrackColor = StatsCardBorder
-            )
-        )
     }
 }

@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.tournament
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.TournamentDto
 import com.abhinav.caisarra.data.repository.TournamentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +35,7 @@ class TournamentListViewModel(application: Application) : AndroidViewModel(appli
                 }
                 .onFailure { e ->
                     _state.update {
-                        it.copy(loading = false, error = e.message ?: "Could not load tournaments")
+                        it.copy(loading = false, error = e.userMessage("Could not load tournaments"))
                     }
                 }
         }
@@ -60,7 +61,7 @@ class TournamentListViewModel(application: Application) : AndroidViewModel(appli
                 }
                 .onFailure { e ->
                     _state.update {
-                        it.copy(lookingUp = false, error = e.message ?: "Invalid invite code")
+                        it.copy(lookingUp = false, error = e.userMessage("Invalid invite code"))
                     }
                 }
         }

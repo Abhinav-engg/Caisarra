@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.puzzles
 import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.DailyPuzzleResponse
 import com.abhinav.caisarra.data.repository.PuzzleRepository
 import com.abhinav.caisarra.domain.chess.engine.ChesslibEngine
@@ -44,7 +45,7 @@ class DailyPuzzleViewModel(
                 }
                 .onFailure { error ->
                     _state.value = DailyPuzzleUiState.Error(
-                        message = error.message ?: "Failed to load daily puzzle"
+                        message = error.userMessage("Failed to load daily puzzle")
                     )
                 }
         }
@@ -179,7 +180,7 @@ class DailyPuzzleViewModel(
                     val stateNow = _state.value
                     if (stateNow is DailyPuzzleUiState.Playing) {
                         _state.value = stateNow.copy(
-                            message = error.message ?: "Could not get hint"
+                            message = error.userMessage("Could not get hint")
                         )
                     }
                 }
@@ -227,7 +228,7 @@ class DailyPuzzleViewModel(
                     val stateNow = _state.value
                     if (stateNow is DailyPuzzleUiState.Playing) {
                         _state.value = stateNow.copy(
-                            message = error.message ?: "Could not load solution"
+                            message = error.userMessage("Could not load solution")
                         )
                     }
                 }
@@ -563,7 +564,7 @@ class DailyPuzzleViewModel(
             isWhiteInCheck = checkSquare != null && engine.turn() == DomainPieceColor.White,
             isBlackInCheck = checkSquare != null && engine.turn() == DomainPieceColor.Black,
             isAwaitingServer = false,
-            message = error.message ?: "Network error. Please try again."
+            message = error.userMessage("Network error. Please try again.")
         )
         moveStartTime = SystemClock.elapsedRealtime()
     }

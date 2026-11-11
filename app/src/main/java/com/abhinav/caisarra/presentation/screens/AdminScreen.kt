@@ -2,7 +2,6 @@
 package com.abhinav.caisarra.presentation.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,780 +22,830 @@ import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.data.remote.admin.*
 import com.abhinav.caisarra.presentation.viewmodel.AdminViewModel
 
-private val AdminBackground = Color(0xFF080D13)
-private val AdminCardSurface = Color(0xFF101923)
+private val AdminBg = Color(0xFF080D13)
+private val AdminSurface = Color(0xFF101923)
 private val AdminCyan = Color(0xFF00D5E8)
-private val AdminTextWhite = Color(0xFFFFFFFF)
-private val AdminTextSecondary = Color(0xFFB8C0CA)
+private val AdminWhite = Color.White
+private val AdminMuted = Color(0xFFB8C0CA)
 private val AdminBorder = Color(0xFF293440)
-private val AdminDanger = Color(0xFFFF5C65)
+private val AdminRed = Color(0xFFFF5C65)
 
-private val AdminTabs = listOf(
+private val adminTabs = listOf(
     "Dashboard",
     "Users",
     "Reports",
+    "Live Games",
+    "Content",
     "Activity"
 )
 
 @Composable
 fun AdminScreen(
     viewModel: AdminViewModel,
-    onBack: () -> Unit
+    onLogout: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var search by remember { mutableStateOf("") }
 
-    var selectedReport by remember {
-        mutableStateOf<AdminReport?>(null)
-    }
-
     var selectedUser by remember {
         mutableStateOf<AdminUser?>(null)
     }
 
+    var selectedReport by remember {
+        mutableStateOf<AdminReport?>(null)
+    }
+
+    var selectedGame by remember {
+        mutableStateOf<AdminGame?>(null)
+    }
+    var forceLogoutUser by remember {
+        mutableStateOf<AdminUser?>(null)
+    }
+    var showAdminLogoutDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var confirmAdminLogout by remember {
+        mutableStateOf(false)
+    }
+
     var banReason by remember { mutableStateOf("") }
     var banDays by remember { mutableStateOf("7") }
+    var reportNote by remember { mutableStateOf("") }
+    var abortReason by remember { mutableStateOf("") }
 
     LaunchedEffect(selectedTab) {
         when (selectedTab) {
             0 -> viewModel.loadDashboard()
             1 -> viewModel.loadUsers()
             2 -> viewModel.loadReports()
-            3 -> viewModel.loadActions()
+            3 -> viewModel.loadGames()
+            4 -> Unit
+            5 -> viewModel.loadActions()
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AdminBackground)
+            .background(AdminBg)
             .statusBarsPadding()
     ) {
-
         CaisaaraTopBar(
-            title = "ADMIN PANEL",
-            onBack = onBack,
+            title = "MOSAIC ADMIN",
             titleColor = AdminCyan,
-            iconTint = AdminCyan,
-            backgroundColor = AdminBackground,
+            backgroundColor = AdminBg,
             height = 56.dp
         )
 
-        Text(
-            text = "Manage MOSAIC",
-            color = AdminTextWhite,
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(
-                start = 20.dp,
-                end = 20.dp,
-                top = 8.dp,
-                bottom = 20.dp
-            )
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    "Administration",
+                    color = AdminWhite,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Platform control center",
+                    color = AdminMuted,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            TextButton(
+                onClick = {
+                    confirmAdminLogout = false
+                    showAdminLogoutDialog = true
+                }
+            ) {
+                Text("Logout", color = AdminRed)
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            AdminTabs.forEachIndexed { index, tab ->
+            adminTabs.forEachIndexed { index, title ->
+                val selected = selectedTab == index
 
-                val isSelected = selectedTab == index
-
-                Box(
-                    modifier = Modifier
-                        .background(
-                            color = if (isSelected) {
-                                AdminCardSurface
-                            } else {
-                                AdminBackground
-                            },
-                            shape = RoundedCornerShape(14.dp)
+                Surface(
+                    onClick = { selectedTab = index },
+                    color = if (selected) AdminSurface else AdminBg,
+                    shape = RoundedCornerShape(12.dp),
+                    border = if (selected) null else
+                        androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            AdminBorder
                         )
-                        .clickable {
-                            selectedTab = index
-                        }
-                        .padding(
-                            horizontal = 20.dp,
-                            vertical = 12.dp
-                        ),
-                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = tab,
-                        color = if (isSelected) {
-                            AdminCyan
-                        } else {
-                            AdminTextSecondary
-                        },
-                        fontWeight = if (isSelected) {
+                        text = title,
+                        modifier = Modifier.padding(
+                            horizontal = 16.dp,
+                            vertical = 11.dp
+                        ),
+                        color = if (selected) AdminCyan else AdminMuted,
+                        fontWeight = if (selected) {
                             FontWeight.Bold
                         } else {
                             FontWeight.Medium
                         },
-                        style = MaterialTheme.typography.titleSmall
+                        style = MaterialTheme.typography.labelLarge
                     )
                 }
             }
         }
 
-        Spacer(Modifier.height(20.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
+        Spacer(Modifier.height(12.dp))
 
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
+        state.error?.let {
+            Text(
+                it,
+                color = AdminRed,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
 
-                state.error?.let {
-                    Text(
-                        text = it,
-                        color = AdminDanger,
-                        modifier = Modifier.padding(
-                            horizontal = 4.dp,
-                            vertical = 6.dp
-                        )
+        state.message?.let {
+            Text(
+                it,
+                color = AdminCyan,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+
+        if (state.loading) {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                color = AdminCyan,
+                trackColor = AdminSurface
+            )
+        }
+
+        when (selectedTab) {
+
+            0 -> DashboardSection(state)
+
+            1 -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    OutlinedTextField(
+                        value = search,
+                        onValueChange = { search = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Search username or email") },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = adminFieldColors()
                     )
-                }
 
-                state.message?.let {
-                    Text(
-                        text = it,
-                        color = AdminCyan,
-                        modifier = Modifier.padding(
-                            horizontal = 4.dp,
-                            vertical = 6.dp
-                        )
-                    )
-                }
+                    Spacer(Modifier.height(10.dp))
 
-                if (state.loading) {
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
-                        color = AdminCyan,
-                        trackColor = AdminCardSurface
-                    )
-                }
-
-                when (selectedTab) {
-
-                    0 -> DashboardContent(
-                        stats = state.stats
+                    AdminButton(
+                        text = "Search Users",
+                        onClick = { viewModel.loadUsers(search.trim()) }
                     )
 
-                    // USERS
-                    1 -> {
-                        Column(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-
-                            OutlinedTextField(
-                                value = search,
-                                onValueChange = {
-                                    search = it
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = {
-                                    Text("Search username or email")
-                                },
-                                singleLine = true,
-                                shape = RoundedCornerShape(14.dp),
-                                colors = adminTextFieldColors()
-                            )
-
-                            Spacer(Modifier.height(10.dp))
-
-                            Button(
-                                onClick = {
-                                    viewModel.loadUsers(search)
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = AdminCardSurface,
-                                    contentColor = AdminCyan
-                                )
-                            ) {
-                                Text(
-                                    "Search Users",
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                items(
-                                    state.users,
-                                    key = { it.id }
-                                ) { user ->
-
-                                    AdminCard {
-
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(
-                                                modifier = Modifier.weight(1f),
-                                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Text(
-                                                    user.username,
-                                                    color = AdminTextWhite,
-                                                    fontWeight = FontWeight.Bold,
-                                                    style = MaterialTheme.typography.titleMedium
-                                                )
-
-                                                Text(
-                                                    user.email,
-                                                    color = AdminTextSecondary,
-                                                    style = MaterialTheme.typography.bodySmall
-                                                )
-                                            }
-
-                                            AdminStatusChip(
-                                                text = if (user.isBanned) {
-                                                    "BANNED"
-                                                } else {
-                                                    "ACTIVE"
-                                                },
-                                                isDanger = user.isBanned
-                                            )
-                                        }
-
-                                        HorizontalDivider(
-                                            color = AdminBorder.copy(alpha = 0.5f)
-                                        )
-
-                                        Text(
-                                            "Rating: ${user.rating}  •  Role: ${user.role}",
-                                            color = AdminTextSecondary,
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-
-                                        Spacer(Modifier.height(2.dp))
-
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                        ) {
-                                            OutlinedButton(
-                                                onClick = {
-                                                    selectedUser = user
-                                                },
-                                                modifier = Modifier.weight(1f),
-                                                shape = RoundedCornerShape(12.dp),
-                                                colors = ButtonDefaults.outlinedButtonColors(
-                                                    contentColor = AdminCyan
-                                                ),
-                                                border = androidx.compose.foundation.BorderStroke(
-                                                    1.dp,
-                                                    AdminCyan.copy(alpha = 0.6f)
-                                                )
-                                            ) {
-                                                Text("Manage")
-                                            }
-
-                                            OutlinedButton(
-                                                onClick = {
-                                                    viewModel.forceLogout(user.id)
-                                                },
-                                                modifier = Modifier.weight(1f),
-                                                shape = RoundedCornerShape(12.dp),
-                                                colors = ButtonDefaults.outlinedButtonColors(
-                                                    contentColor = AdminTextSecondary
-                                                ),
-                                                border = androidx.compose.foundation.BorderStroke(
-                                                    1.dp,
-                                                    AdminBorder
-                                                )
-                                            ) {
-                                                Text(
-                                                    "Force Logout",
-                                                    style = MaterialTheme.typography.labelMedium
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                item {
-                                    Spacer(Modifier.height(16.dp))
-                                }
-                            }
-                        }
-                    }
-                    2 -> {
-                        Column(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                listOf(
-                                    "pending",
-                                    "resolved",
-                                    "dismissed"
-                                ).forEach { status ->
-
-                                    val isSelected =
-                                        state.reportStatus == status
-
-                                    Box(
-                                        modifier = Modifier
-                                            .background(
-                                                if (isSelected) {
-                                                    AdminCardSurface
-                                                } else {
-                                                    AdminBackground
-                                                },
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                            .clickable {
-                                                viewModel.loadReports(status)
-                                            }
-                                            .padding(
-                                                horizontal = 16.dp,
-                                                vertical = 10.dp
-                                            )
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(vertical = 14.dp)
+                    ) {
+                        items(state.users, key = { it.id }) { user ->
+                            AdminCard {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Text(
-                                            status.replaceFirstChar {
-                                                it.uppercase()
-                                            },
-                                            color = if (isSelected) {
-                                                AdminCyan
-                                            } else {
-                                                AdminTextSecondary
-                                            },
-                                            fontWeight = FontWeight.Medium
+                                            user.username,
+                                            color = AdminWhite,
+                                            fontWeight = FontWeight.Bold
                                         )
-                                    }
-                                }
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                items(
-                                    state.reports,
-                                    key = { it.id }
-                                ) { report ->
-
-                                    AdminCard {
-
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                "Report #${report.id}",
-                                                color = AdminCyan,
-                                                fontWeight = FontWeight.Bold
-                                            )
-
-                                            AdminStatusChip(
-                                                text = report.status.uppercase(),
-                                                isDanger = report.status == "pending"
-                                            )
-                                        }
-
                                         Text(
-                                            "${report.reporterUsername} reported ${report.reportedUsername}",
-                                            color = AdminTextWhite,
-                                            fontWeight = FontWeight.Medium
-                                        )
-
-                                        Text(
-                                            "Reason: ${report.reason}",
-                                            color = AdminTextWhite
-                                        )
-
-                                        Text(
-                                            report.details,
-                                            color = AdminTextSecondary,
+                                            user.email.ifBlank { "No email" },
+                                            color = AdminMuted,
                                             style = MaterialTheme.typography.bodySmall
                                         )
-
-                                        if (report.status == "pending") {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                            ) {
-                                                Button(
-                                                    onClick = {
-                                                        selectedReport = report
-                                                    },
-                                                    modifier = Modifier.weight(1f),
-                                                    shape = RoundedCornerShape(12.dp),
-                                                    colors = ButtonDefaults.buttonColors(
-                                                        containerColor = AdminCardSurface,
-                                                        contentColor = AdminCyan
-                                                    )
-                                                ) {
-                                                    Text("Resolve")
-                                                }
-
-                                                OutlinedButton(
-                                                    onClick = {
-                                                        viewModel.closeReport(
-                                                            report.id,
-                                                            "dismissed"
-                                                        )
-                                                    },
-                                                    modifier = Modifier.weight(1f),
-                                                    shape = RoundedCornerShape(12.dp),
-                                                    colors = ButtonDefaults.outlinedButtonColors(
-                                                        contentColor = AdminDanger
-                                                    ),
-                                                    border = androidx.compose.foundation.BorderStroke(
-                                                        1.dp,
-                                                        AdminDanger.copy(alpha = 0.5f)
-                                                    )
-                                                ) {
-                                                    Text("Dismiss")
-                                                }
-                                            }
-                                        }
                                     }
+
+                                    StatusChip(
+                                        if (user.isBanned) "BANNED" else "ACTIVE",
+                                        user.isBanned
+                                    )
                                 }
 
-                                item {
-                                    Spacer(Modifier.height(16.dp))
+                                Text(
+                                    "ID: ${user.id}  •  Rating: ${user.rating}",
+                                    color = AdminMuted,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+
+                                Text(
+                                    "Role: ${user.role}",
+                                    color = AdminMuted
+                                )
+
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            selectedUser = user
+                                            viewModel.loadUserDetails(user.id)
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Manage", color = AdminCyan)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            forceLogoutUser = user
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        enabled = user.role != "admin"
+                                    ) {
+                                        Text("Force Logout", color = AdminMuted)
+                                    }
                                 }
                             }
                         }
                     }
-                    3 -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(
-                                state.actions,
-                                key = { it.id }
-                            ) { action ->
+                }
+            }
 
-                                AdminCard {
+            2 -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            "pending",
+                            "resolved",
+                            "dismissed"
+                        ).forEach { status ->
+                            FilterChip(
+                                selected = state.reportStatus == status,
+                                onClick = {
+                                    viewModel.loadReports(status)
+                                },
+                                label = {
+                                    Text(status.replaceFirstChar { it.uppercase() })
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = AdminSurface,
+                                    selectedLabelColor = AdminCyan
+                                )
+                            )
+                        }
+                    }
 
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(vertical = 12.dp)
+                    ) {
+                        items(state.reports, key = { it.id }) { report ->
+                            AdminCard {
+                                Row(
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
                                     Text(
-                                        action.action,
+                                        "Report #${report.id}",
                                         color = AdminCyan,
                                         fontWeight = FontWeight.Bold
                                     )
-
-                                    Text(
-                                        "Admin: ${action.adminUsername}",
-                                        color = AdminTextWhite
-                                    )
-
-                                    Text(
-                                        "Target: ${action.targetType} #${action.targetId}",
-                                        color = AdminTextWhite
-                                    )
-
-                                    Text(
-                                        action.details,
-                                        color = AdminTextSecondary
-                                    )
-
-                                    Text(
-                                        action.createdAt,
-                                        color = AdminTextSecondary,
-                                        style = MaterialTheme.typography.bodySmall
+                                    StatusChip(
+                                        report.status.uppercase(),
+                                        report.status == "pending"
                                     )
                                 }
-                            }
 
-                            item {
-                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    "${report.reporterUsername} reported ${report.reportedUsername}",
+                                    color = AdminWhite
+                                )
+
+                                Text(
+                                    "Reason: ${report.reason}",
+                                    color = AdminMuted
+                                )
+
+                                Text(
+                                    report.details.ifBlank { "No additional details" },
+                                    color = AdminMuted
+                                )
+
+                                if (report.status == "pending") {
+                                    OutlinedButton(
+                                        onClick = {
+                                            selectedReport = report
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Review Report", color = AdminCyan)
+                                    }
+                                }
                             }
+                        }
+                    }
+                }
+            }
+
+            3 -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    AdminButton(
+                        text = "Refresh Live Games",
+                        onClick = { viewModel.loadGames() }
+                    )
+
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(vertical = 12.dp)
+                    ) {
+                        items(state.games, key = { it.id }) { game ->
+                            AdminCard {
+                                Text(
+                                    "${game.whiteUsername} vs ${game.blackUsername}",
+                                    color = AdminWhite,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Text(
+                                    "Game ID: ${game.id}",
+                                    color = AdminMuted,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+
+                                Text(
+                                    "${game.timeControlMode} • ${game.timeControlMinutes} min • ${game.moveCount} moves",
+                                    color = AdminMuted
+                                )
+
+                                Text(
+                                    if (game.rated) "Rated Game" else "Unrated Game",
+                                    color = AdminCyan
+                                )
+
+                                OutlinedButton(
+                                    onClick = {
+                                        selectedGame = game
+                                        viewModel.loadGameDetails(game.id)
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("View Game Details", color = AdminCyan)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            4 -> ContentManagementSection(viewModel)
+
+            5 -> {
+                LazyColumn(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    items(state.actions, key = { it.id }) { action ->
+                        AdminCard {
+                            Text(
+                                action.action.replace("_", " ").uppercase(),
+                                color = AdminCyan,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Text(
+                                "Admin: ${action.adminUsername}",
+                                color = AdminWhite
+                            )
+
+                            Text(
+                                "Target: ${action.targetType} #${action.targetId}",
+                                color = AdminMuted
+                            )
+
+                            Text(
+                                action.details,
+                                color = AdminMuted
+                            )
+
+                            Text(
+                                action.createdAt,
+                                color = AdminMuted,
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                     }
                 }
             }
         }
     }
+
     selectedUser?.let { user ->
+        val details = state.selectedUserDetails
+            ?.takeIf { it.id == user.id }
+
+        var reason by remember(user.id) { mutableStateOf("") }
+        var days by remember(user.id) { mutableStateOf("7") }
 
         AlertDialog(
             onDismissRequest = {
                 selectedUser = null
-                banReason = ""
-                banDays = "7"
+                viewModel.clearSelectedUser()
             },
-            shape = RoundedCornerShape(24.dp),
-            containerColor = AdminCardSurface,
-            tonalElevation = 0.dp,
-            titleContentColor = AdminTextWhite,
-            textContentColor = AdminTextSecondary,
-
+            containerColor = AdminSurface,
+            titleContentColor = AdminWhite,
+            textContentColor = AdminMuted,
             title = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        "Manage User",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-                    Text(
-                        user.username,
-                        color = AdminCyan,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
+                Text("Manage ${user.username}")
             },
-
             text = {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-
-                    // USER INFORMATION
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                AdminBackground,
-                                RoundedCornerShape(14.dp)
-                            )
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    if (details == null) {
+                        CircularProgressIndicator(color = AdminCyan)
+                    } else {
+                        Text("Email: ${details.email}")
+                        Text("Rating: ${details.rating}")
+                        Text("Games played: ${details.gamesPlayed}")
+                        Text("Reports against: ${details.reportsAgainst}")
+                        Text("Email verified: ${details.emailVerified}")
                         Text(
-                            user.email,
-                            color = AdminTextWhite
+                            if (details.isBanned) "BANNED" else "ACTIVE",
+                            color = if (details.isBanned) AdminRed else AdminCyan
                         )
 
-                        Text(
-                            "Rating: ${user.rating}",
-                            color = AdminTextSecondary
-                        )
+                        if (details.isBanned) {
+                            Text("Reason: ${details.banReason}")
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                "Account Status",
-                                color = AdminTextSecondary
+                            if (!details.isPermanentBan) {
+                                Text("Banned until: ${details.bannedUntil}")
+                            }
+                        } else if (details.role != "admin") {
+                            OutlinedTextField(
+                                value = reason,
+                                onValueChange = {
+                                    if (it.length <= 500) reason = it
+                                },
+                                label = { Text("Ban reason") },
+                                minLines = 2,
+                                colors = adminFieldColors()
                             )
 
-                            AdminStatusChip(
-                                text = if (user.isBanned) "BANNED" else "ACTIVE",
-                                isDanger = user.isBanned
+                            OutlinedTextField(
+                                value = days,
+                                onValueChange = {
+                                    if (it.all(Char::isDigit)) days = it
+                                },
+                                label = { Text("Ban days (0 = permanent)") },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number
+                                ),
+                                colors = adminFieldColors()
                             )
                         }
                     }
-
-                    if (user.isBanned) {
-
-                        Text(
-                            "This user is currently banned. You can restore their account using the Unban action.",
-                            color = AdminTextSecondary,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
-                    } else {
-
-                        Text(
-                            "Ban User",
-                            color = AdminTextWhite,
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.titleSmall
-                        )
-
-                        OutlinedTextField(
-                            value = banReason,
-                            onValueChange = {
-                                banReason = it
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = {
-                                Text("Ban reason")
-                            },
-                            placeholder = {
-                                Text("Enter reason for banning")
-                            },
-                            minLines = 2,
-                            maxLines = 3,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = adminTextFieldColors()
-                        )
-
-                        OutlinedTextField(
-                            value = banDays,
-                            onValueChange = {
-                                if (it.all(Char::isDigit)) {
-                                    banDays = it
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = {
-                                Text("Ban duration")
-                            },
-                            placeholder = {
-                                Text("7")
-                            },
-                            supportingText = {
-                                Text("Enter 0 for permanent ban")
-                            },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number
-                            ),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = adminTextFieldColors()
-                        )
-                    }
                 }
             },
-
             confirmButton = {
-                Button(
-                    onClick = {
-                        if (user.isBanned) {
-                            viewModel.unbanUser(user.id)
-                            selectedUser = null
-                        } else {
-                            val days = banDays.toIntOrNull()
-
-                            when {
-                                banReason.isBlank() -> Unit
-
-                                banReason.length > 500 -> Unit
-
-                                days == null || days !in 0..365 -> Unit
-
-                                else -> {
+                if (details != null) {
+                    TextButton(
+                        enabled = details.role != "admin",
+                        onClick = {
+                            if (details.isBanned) {
+                                viewModel.unbanUser(user.id)
+                            } else {
+                                val duration = days.toIntOrNull()
+                                if (reason.isNotBlank() &&
+                                    duration != null &&
+                                    duration in 0..365
+                                ) {
                                     viewModel.banUser(
                                         user.id,
-                                        banReason.trim(),
-                                        days
+                                        reason.trim(),
+                                        duration
                                     )
-
-                                    selectedUser = null
-                                    banReason = ""
-                                    banDays = "7"
                                 }
                             }
+                            selectedUser = null
+                            viewModel.clearSelectedUser()
                         }
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (user.isBanned) {
-                            AdminCyan
-                        } else {
-                            AdminDanger
-                        },
-                        contentColor = AdminBackground
-                    )
-                ) {
-                    Text(
-                        if (user.isBanned) "Unban User" else "Ban User",
-                        fontWeight = FontWeight.Bold
-                    )
+                    ) {
+                        Text(
+                            if (details.isBanned) "Unban" else "Ban User",
+                            color = if (details.isBanned) AdminCyan else AdminRed
+                        )
+                    }
                 }
             },
-
             dismissButton = {
                 TextButton(
                     onClick = {
                         selectedUser = null
-                        banReason = ""
-                        banDays = "7"
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = AdminTextSecondary
-                    )
+                        viewModel.clearSelectedUser()
+                    }
                 ) {
-                    Text("Cancel")
+                    Text("Close", color = AdminMuted)
                 }
             }
         )
     }
 
-    selectedReport?.let { report ->
+    if (selectedUser != null &&
+        state.selectedUserDetails?.id != selectedUser?.id
+    ) {
+    }
 
+
+    selectedReport?.let { report ->
         AlertDialog(
             onDismissRequest = {
                 selectedReport = null
+                reportNote = ""
             },
-            shape = RoundedCornerShape(24.dp),
-            containerColor = AdminCardSurface,
-            tonalElevation = 0.dp,
-            titleContentColor = AdminTextWhite,
-            textContentColor = AdminTextSecondary,
+            containerColor = AdminSurface,
+            titleContentColor = AdminWhite,
+            textContentColor = AdminMuted,
+            title = {
+                Text("Resolve Report #${report.id}")
+            },
+            text = {
+                Column {
+                    Text("Reported user: ${report.reportedUsername}")
+                    Text("Reason: ${report.reason}")
+
+                    OutlinedTextField(
+                        value = reportNote,
+                        onValueChange = {
+                            if (it.length <= 500) reportNote = it
+                        },
+                        label = { Text("Admin note (optional)") },
+                        colors = adminFieldColors()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.closeReport(
+                            report.id,
+                            "resolved",
+                            reportNote.trim()
+                        )
+                        selectedReport = null
+                        reportNote = ""
+                    }
+                ) {
+                    Text("Resolve", color = AdminCyan)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.closeReport(
+                            report.id,
+                            "dismissed",
+                            reportNote.trim()
+                        )
+                        selectedReport = null
+                        reportNote = ""
+                    }
+                ) {
+                    Text("Dismiss", color = AdminRed)
+                }
+            }
+        )
+    }
+
+    selectedGame?.let { game ->
+        val details = state.selectedGame
+            ?.takeIf { it.game.id == game.id }
+
+        AlertDialog(
+            onDismissRequest = {
+                selectedGame = null
+                viewModel.clearSelectedGame()
+                abortReason = ""
+            },
+            containerColor = AdminSurface,
+            titleContentColor = AdminWhite,
+            textContentColor = AdminMuted,
+            title = {
+                Text("Game Details")
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (details == null) {
+                        CircularProgressIndicator(color = AdminCyan)
+                    } else {
+                        val gameData = details.game
+
+                        Text(
+                            "${gameData.whiteUsername ?: "White"} vs ${gameData.blackUsername ?: "Black"}",
+                            color = AdminWhite
+                        )
+                        Text("Status: ${gameData.status}")
+                        Text("Mode: ${gameData.timeControlMode}")
+                        Text("Moves: ${details.moves?.size ?: 0}")
+                        Text("Turn: ${gameData.currentTurn ?: "Unknown"}")
+
+                        OutlinedTextField(
+                            value = abortReason,
+                            onValueChange = {
+                                if (it.length <= 500) abortReason = it
+                            },
+                            label = { Text("Abort reason") },
+                            colors = adminFieldColors()
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (details?.game?.status == "active") {
+                    TextButton(
+                        onClick = {
+                            if (abortReason.isNotBlank()) {
+                                viewModel.abortGame(
+                                    game.id,
+                                    abortReason.trim()
+                                )
+                                selectedGame = null
+                                abortReason = ""
+                            }
+                        }
+                    ) {
+                        Text("Abort Game", color = AdminRed)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        selectedGame = null
+                        viewModel.clearSelectedGame()
+                        abortReason = ""
+                    }
+                ) {
+                    Text("Close", color = AdminMuted)
+                }
+            }
+        )
+    }
+    forceLogoutUser?.let { user ->
+        AlertDialog(
+            onDismissRequest = {
+                forceLogoutUser = null
+            },
+            containerColor = AdminSurface,
+            titleContentColor = AdminWhite,
+            textContentColor = AdminMuted,
+            title = {
+                Text("Force Logout")
+            },
+            text = {
+                Text(
+                    "Are you sure you want to log out ${user.username} " +
+                            "from all devices? This will invalidate their sessions."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.forceLogout(user.id)
+                        forceLogoutUser = null
+                    }
+                ) {
+                    Text("Confirm", color = AdminRed)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        forceLogoutUser = null
+                    }
+                ) {
+                    Text("Cancel", color = AdminMuted)
+                }
+            }
+        )
+    }
+
+    if (showAdminLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showAdminLogoutDialog = false
+                confirmAdminLogout = false
+            },
+            containerColor = AdminSurface,
+            titleContentColor = AdminWhite,
+            textContentColor = AdminMuted,
 
             title = {
                 Text(
-                    "Resolve Report #${report.id}",
+                    text = "Confirm Logout",
                     fontWeight = FontWeight.Bold
                 )
             },
 
             text = {
-                Text(
-                    "Are you sure you want to mark this report as resolved?"
-                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Are you sure you want to logout from the MOSAIC Admin Panel?"
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = confirmAdminLogout,
+                            onCheckedChange = {
+                                confirmAdminLogout = it
+                            },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = AdminCyan,
+                                uncheckedColor = AdminMuted,
+                                checkmarkColor = AdminBg
+                            )
+                        )
+
+                        Text(
+                            text = "Yes, I confirm that I want to logout",
+                            color = AdminWhite,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
             },
 
             confirmButton = {
-                Button(
+                TextButton(
+                    enabled = confirmAdminLogout,
                     onClick = {
-                        viewModel.closeReport(
-                            report.id,
-                            "resolved"
-                        )
-                        selectedReport = null
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AdminCyan,
-                        contentColor = AdminBackground
-                    )
+                        showAdminLogoutDialog = false
+                        confirmAdminLogout = false
+                        onLogout()
+                    }
                 ) {
-                    Text("Resolve")
+                    Text(
+                        text = "Logout",
+                        color = if (confirmAdminLogout) AdminRed else AdminMuted
+                    )
                 }
             },
 
             dismissButton = {
                 TextButton(
                     onClick = {
-                        selectedReport = null
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = AdminTextSecondary
-                    )
+                        showAdminLogoutDialog = false
+                        confirmAdminLogout = false
+                    }
                 ) {
-                    Text("Cancel")
+                    Text(
+                        text = "Cancel",
+                        color = AdminMuted
+                    )
                 }
             }
         )
@@ -804,108 +853,221 @@ fun AdminScreen(
 }
 
 @Composable
-private fun DashboardContent(
-    stats: AdminStats?
-) {
-    if (stats == null) return
-
+private fun DashboardSection(state: com.abhinav.caisarra.presentation.viewmodel.AdminUiState) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 24.dp)
     ) {
-
         item {
             Text(
-                text = "Platform Overview",
-                color = AdminTextWhite,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(
-                    top = 4.dp,
-                    bottom = 4.dp
-                )
+                "Platform Overview",
+                color = AdminWhite,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
             )
         }
 
+        val stats = state.stats
+
+        if (stats != null) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatCard("Total Users", stats.totalUsers)
+                    StatCard("New Today", stats.newUsersToday)
+                }
+            }
+
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatCard("Banned Users", stats.bannedUsers)
+                    StatCard("Active Games", stats.activeGames)
+                }
+            }
+
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatCard("Pending Reports", stats.pendingReports)
+                    StatCard("Tournaments", stats.ongoingTournaments)
+                }
+            }
+        }
+
         item {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(
-                    title = "Total Users",
-                    value = stats.totalUsers
+            AdminCard {
+                Text(
+                    "System Health",
+                    color = AdminWhite,
+                    fontWeight = FontWeight.Bold
                 )
 
-                StatCard(
-                    title = "New Today",
-                    value = stats.newUsersToday
+                Text(
+                    "Database: ${state.health?.database ?: "Loading"}",
+                    color = if (state.health?.database == "ok") AdminCyan else AdminRed
+                )
+
+                Text(
+                    "Redis: ${state.health?.redis ?: "Loading"}",
+                    color = if (state.health?.redis == "ok") AdminCyan else AdminRed
                 )
             }
         }
 
         item {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(
-                    title = "Banned Users",
-                    value = stats.bannedUsers
+            AdminCard {
+                Text(
+                    "Matchmaking Queues",
+                    color = AdminWhite,
+                    fontWeight = FontWeight.Bold
                 )
 
-                StatCard(
-                    title = "Active Games",
-                    value = stats.activeGames
-                )
+                if (state.matchmaking.isEmpty()) {
+                    Text("No players waiting", color = AdminMuted)
+                } else {
+                    state.matchmaking.forEach { queue ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(queue.queue, color = AdminMuted)
+                            Text(
+                                "${queue.players} players",
+                                color = AdminCyan,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
-        }
-
-        item {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(
-                    title = "Pending Reports",
-                    value = stats.pendingReports
-                )
-
-                StatCard(
-                    title = "Ongoing Tournaments",
-                    value = stats.ongoingTournaments
-                )
-            }
-        }
-
-        item {
-            Spacer(Modifier.height(12.dp))
         }
     }
 }
 
 @Composable
-private fun RowScope.StatCard(
-    title: String,
-    value: Int
+private fun ContentManagementSection(
+    viewModel: AdminViewModel
 ) {
-    Column(
-        modifier = Modifier
-            .weight(1f)
-            .background(
-                color = AdminCardSurface,
-                shape = RoundedCornerShape(22.dp)
-            )
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    var postId by remember { mutableStateOf("") }
+    var commentId by remember { mutableStateOf("") }
+    var clubId by remember { mutableStateOf("") }
+    var tournamentId by remember { mutableStateOf("") }
+
+    LazyColumn(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 24.dp)
     ) {
-        Text(
-            text = title,
-            color = AdminTextSecondary,
-            style = MaterialTheme.typography.titleMedium
+        item {
+            Text(
+                "Content Moderation",
+                color = AdminWhite,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Enter an existing ID to perform a moderation action.",
+                color = AdminMuted,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        item {
+            ContentActionCard(
+                title = "Delete Community Post",
+                description = "Permanently deletes a post and its dependent comments, reactions and bookmarks.",
+                value = postId,
+                onValueChange = { postId = it },
+                buttonText = "Delete Post"
+            ) {
+                postId.toLongOrNull()?.takeIf { it > 0 }?.let {
+                    viewModel.deletePost(it)
+                    postId = ""
+                }
+            }
+        }
+
+        item {
+            ContentActionCard(
+                title = "Delete Comment",
+                description = "Permanently deletes an individual comment.",
+                value = commentId,
+                onValueChange = { commentId = it },
+                buttonText = "Delete Comment"
+            ) {
+                commentId.toLongOrNull()?.takeIf { it > 0 }?.let {
+                    viewModel.deleteComment(it)
+                    commentId = ""
+                }
+            }
+        }
+
+        item {
+            ContentActionCard(
+                title = "Delete Club",
+                description = "Permanently deletes a club and its dependent records.",
+                value = clubId,
+                onValueChange = { clubId = it },
+                buttonText = "Delete Club",
+                numeric = false
+            ) {
+                if (clubId.isNotBlank()) {
+                    viewModel.deleteClub(clubId.trim())
+                    clubId = ""
+                }
+            }
+        }
+
+        item {
+            ContentActionCard(
+                title = "Cancel Tournament",
+                description = "Force-cancels an ongoing tournament and aborts its unfinished active games.",
+                value = tournamentId,
+                onValueChange = { tournamentId = it },
+                buttonText = "Cancel Tournament"
+            ) {
+                tournamentId.toLongOrNull()?.takeIf { it > 0 }?.let {
+                    viewModel.cancelTournament(it)
+                    tournamentId = ""
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContentActionCard(
+    title: String,
+    description: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    buttonText: String,
+    numeric: Boolean = true,
+    onAction: () -> Unit
+) {
+    AdminCard {
+        Text(title, color = AdminWhite, fontWeight = FontWeight.Bold)
+        Text(description, color = AdminMuted)
+
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(if (numeric) "Enter ID" else "Enter UUID") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = if (numeric) {
+                    KeyboardType.Number
+                } else {
+                    KeyboardType.Text
+                }
+            ),
+            colors = adminFieldColors()
         )
 
-        Text(
-            text = value.toString(),
-            color = AdminCyan,
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold
+        AdminButton(
+            text = buttonText,
+            onClick = onAction,
+            enabled = value.isNotBlank()
         )
     }
 }
@@ -917,10 +1079,7 @@ private fun AdminCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                color = AdminCardSurface,
-                shape = RoundedCornerShape(18.dp)
-            )
+            .background(AdminSurface, RoundedCornerShape(18.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         content = content
@@ -928,28 +1087,44 @@ private fun AdminCard(
 }
 
 @Composable
-private fun AdminStatusChip(
+private fun AdminButton(
     text: String,
-    isDanger: Boolean
+    onClick: () -> Unit,
+    enabled: Boolean = true
 ) {
-    Box(
+    Button(
+        onClick = onClick,
+        enabled = enabled,
         modifier = Modifier
-            .background(
-                color = if (isDanger) {
-                    AdminDanger.copy(alpha = 0.12f)
-                } else {
-                    AdminCyan.copy(alpha = 0.12f)
-                },
-                shape = RoundedCornerShape(50)
-            )
-            .padding(
-                horizontal = 10.dp,
-                vertical = 5.dp
-            )
+            .fillMaxWidth()
+            .height(48.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = AdminSurface,
+            contentColor = AdminCyan
+        )
+    ) {
+        Text(text, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun StatusChip(
+    text: String,
+    danger: Boolean
+) {
+    Surface(
+        color = if (danger) {
+            AdminRed.copy(alpha = 0.12f)
+        } else {
+            AdminCyan.copy(alpha = 0.12f)
+        },
+        shape = RoundedCornerShape(50)
     ) {
         Text(
-            text = text,
-            color = if (isDanger) AdminDanger else AdminCyan,
+            text,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            color = if (danger) AdminRed else AdminCyan,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold
         )
@@ -957,30 +1132,39 @@ private fun AdminStatusChip(
 }
 
 @Composable
-private fun adminTextFieldColors() =
+private fun RowScope.StatCard(
+    title: String,
+    value: Int
+) {
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .background(AdminSurface, RoundedCornerShape(18.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(title, color = AdminMuted)
+        Text(
+            value.toString(),
+            color = AdminCyan,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun adminFieldColors() =
     OutlinedTextFieldDefaults.colors(
-        focusedTextColor = AdminTextWhite,
-        unfocusedTextColor = AdminTextWhite,
-        disabledTextColor = AdminTextSecondary,
-
+        focusedTextColor = AdminWhite,
+        unfocusedTextColor = AdminWhite,
         cursorColor = AdminCyan,
-        errorCursorColor = AdminDanger,
-
-        focusedContainerColor = AdminBackground,
-        unfocusedContainerColor = AdminBackground,
-        disabledContainerColor = AdminBackground,
-        errorContainerColor = AdminBackground,
-
         focusedBorderColor = AdminCyan,
         unfocusedBorderColor = AdminBorder,
-        disabledBorderColor = AdminBorder,
-        errorBorderColor = AdminDanger,
-
         focusedLabelColor = AdminCyan,
-        unfocusedLabelColor = AdminTextSecondary,
-        disabledLabelColor = AdminTextSecondary,
-        errorLabelColor = AdminDanger,
-
-        focusedPlaceholderColor = AdminTextSecondary,
-        unfocusedPlaceholderColor = AdminTextSecondary
+        unfocusedLabelColor = AdminMuted,
+        focusedContainerColor = AdminBg,
+        unfocusedContainerColor = AdminBg,
+        focusedPlaceholderColor = AdminMuted,
+        unfocusedPlaceholderColor = AdminMuted
     )

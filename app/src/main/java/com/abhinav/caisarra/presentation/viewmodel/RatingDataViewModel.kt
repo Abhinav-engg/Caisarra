@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.ClubLeaderboardEntry
 import com.abhinav.caisarra.data.remote.dto.ModeStatsData
 import com.abhinav.caisarra.data.remote.dto.PlayerRatingProfile
@@ -69,7 +70,7 @@ class RatingDataViewModel(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = e.message ?: "Unable to load rating data"
+                    error = e.userMessage("Unable to load rating data")
                 )
             }
         }

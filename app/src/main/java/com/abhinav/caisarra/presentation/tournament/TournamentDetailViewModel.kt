@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.tournament
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.TournamentSocketClient
@@ -103,12 +104,20 @@ class TournamentDetailViewModel(
             block()
                 .onSuccess {
                     _state.update {
-                        it.copy(message = successMessage, hasJoined = joined ?: it.hasJoined)
+                        it.copy(
+                            message = successMessage,
+                            hasJoined = joined ?: it.hasJoined,
+                            standings = if (joined == false) {
+                                it.standings.filterNot { s -> s.playerId == it.myUserId }
+                            } else {
+                                it.standings
+                            }
+                        )
                     }
                     refreshAll(showLoading = false)
                 }
                 .onFailure { e ->
-                    _state.update { it.copy(message = e.message ?: "Something went wrong") }
+                    _state.update { it.copy(message = e.userMessage("Something went wrong")) }
                 }
             _state.update { it.copy(actionInProgress = false) }
         }
@@ -132,7 +141,7 @@ class TournamentDetailViewModel(
         myGamesResult: Result<TournamentGamesResponse>
     ) {
         _state.update { cur ->
-            val standings = standingsResult.getOrNull()?.standings ?: cur.standings
+            val standings = standingsResult.getOrNull()?.let { it.standings.orEmpty() } ?: cur.standings
             val rounds = roundsResult.getOrNull()?.rounds ?: cur.rounds
             val tournament = tournamentResult.getOrNull() ?: cur.tournament
             val joined = cur.hasJoined ||
@@ -145,7 +154,7 @@ class TournamentDetailViewModel(
                 rounds = rounds,
                 hasJoined = joined,
                 error = if (tournament == null) {
-                    tournamentResult.exceptionOrNull()?.message ?: "Could not load tournament"
+                    tournamentResult.exceptionOrNull()?.userMessage("Could not load tournament") ?: "Could not load tournament"
                 } else null
             )
         }

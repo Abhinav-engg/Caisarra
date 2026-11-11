@@ -75,6 +75,8 @@ fun ChessBoard(
     isBlackInCheck: Boolean,
     isFlipped: Boolean,
     boardSize: Int = 8,
+    columns: Int = boardSize,
+    origin: Square = Square(0, 0),
     boardTheme: BoardTheme? = null,
     pieceTheme: PieceTheme? = null,
     moveAnimationEvent: PieceMoveAnimationEvent? = null,
@@ -177,7 +179,7 @@ fun ChessBoard(
     ) {
         val density = LocalDensity.current
 
-        val cellWidth = maxWidth / boardSize
+        val cellWidth = maxWidth / columns
         val cellHeight = maxHeight / boardSize
 
         val cellWidthPx = with(density) { cellWidth.toPx() }
@@ -189,12 +191,12 @@ fun ChessBoard(
                     modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    repeat(boardSize) { displayColumn ->
+                    repeat(columns) { displayColumn ->
                         val actualRow = if (isFlipped) boardSize - 1 - displayRow else displayRow
-                        val actualColumn = if (isFlipped) boardSize - 1 - displayColumn else displayColumn
+                        val actualColumn = if (isFlipped) columns - 1 - displayColumn else displayColumn
                         val square = Square(
-                            row = actualRow,
-                            column = actualColumn
+                            row = origin.row + actualRow,
+                            column = origin.column + actualColumn
                         )
                         val piece = board[square]
                         val isDark = (actualRow + actualColumn) % 2 == 1
@@ -255,7 +257,7 @@ fun ChessBoard(
                             }
                             if (coordinatesEnabled &&displayColumn == 0) {
                                 Text(
-                                    text = (boardSize - actualRow).toString(),
+                                    text = (8 - square.row).toString(),
                                     modifier = Modifier
                                         .align(Alignment.TopStart)
                                         .padding(start = 3.dp, top = 1.dp),
@@ -271,7 +273,7 @@ fun ChessBoard(
                             }
                             if (coordinatesEnabled &&displayRow == boardSize - 1) {
                                 Text(
-                                    text = ('a' + actualColumn).toString(),
+                                    text = ('a' + square.column).toString(),
                                     modifier = Modifier
                                         .align(Alignment.BottomEnd)
                                         .padding(end = 3.dp, bottom = 1.dp),
@@ -328,11 +330,11 @@ fun ChessBoard(
         }
 
         activeMove?.let { move ->
-            val startRow = if (isFlipped) boardSize - 1 - move.from.row else move.from.row
-            val startColumn = if (isFlipped) boardSize - 1 - move.from.column else move.from.column
+            val startRow = (move.from.row - origin.row).let { if (isFlipped) boardSize - 1 - it else it }
+            val startColumn = (move.from.column - origin.column).let { if (isFlipped) columns - 1 - it else it }
 
-            val endRow = if (isFlipped) boardSize - 1 - move.to.row else move.to.row
-            val endColumn = if (isFlipped) boardSize - 1 - move.to.column else move.to.column
+            val endRow = (move.to.row - origin.row).let { if (isFlipped) boardSize - 1 - it else it }
+            val endColumn = (move.to.column - origin.column).let { if (isFlipped) columns - 1 - it else it }
 
             val progress = movementProgress.value
 

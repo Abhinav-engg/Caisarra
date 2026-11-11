@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.game
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.local.SessionExpiredEvent
 import com.abhinav.caisarra.data.remote.BotSocketClient
 import com.abhinav.caisarra.data.remote.dto.BotErrorMessage
@@ -121,7 +122,7 @@ class BotGameViewModel(
                     applyState(game)
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
+                    _uiState.update { it.copy(isLoading = false, errorMessage = error.userMessage()) }
                 }
         }
     }
@@ -307,7 +308,7 @@ class BotGameViewModel(
                 }
                 .onFailure { error ->
                     _isStartingNextBot.value = false
-                    _snackbarEvent.tryEmit(error.message ?: "Failed to start next game")
+                    _snackbarEvent.tryEmit(error.userMessage("Failed to start next game"))
                 }
         }
     }
