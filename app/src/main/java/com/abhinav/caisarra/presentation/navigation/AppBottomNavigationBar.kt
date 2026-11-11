@@ -1,17 +1,20 @@
 package com.abhinav.caisarra.presentation.navigation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,20 +33,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.ui.components.SlidingPillIndicator
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
-import com.caisaara.ui.theme.NavBackground
-import com.caisaara.ui.theme.NavPillSelected
+import com.abhinav.caisarra.core.ui.theme.GlassBorderWidth
+import com.abhinav.caisarra.core.ui.theme.NavCornerRadius
+import com.abhinav.caisarra.core.ui.theme.NavBarHeight
+import com.caisaara.ui.theme.GlassHighlight
+import com.caisaara.ui.theme.PuzzleDarkCard
 import com.caisaara.ui.theme.StatsCyan
 import com.caisaara.ui.theme.TextSizeMicro
 import com.caisaara.ui.theme.ThemeSlateAccent
-import com.caisaara.ui.theme.TopGlowColor
 
 enum class BottomNavItem(
     val route: String,
@@ -89,81 +95,73 @@ fun AppBottomNavigationBar(
     onNavigateTo: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    val selectedIndex = BottomNavItem.entries.indexOfFirst { item ->
+        when (item) {
+            BottomNavItem.HOME -> currentRoute in setOf(AppRoutes.HOME, AppRoutes.GUEST_HOME, AppRoutes.GAME_SETUP)
+            BottomNavItem.COMMUNITY -> currentRoute == AppRoutes.COMMUNITY || currentRoute == AppRoutes.SOCIAL
+            else -> currentRoute == item.route
+        }
+    }
+
+    val shape = RoundedCornerShape(topStart = NavCornerRadius, topEnd = NavCornerRadius)
+    val topBorder = Brush.verticalGradient(
+        colors = listOf(GlassHighlight, Color.Transparent),
+        endY = with(LocalDensity.current) { NavCornerRadius.toPx() }
+    )
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(NavBackground)
+            .background(PuzzleDarkCard, shape)
+            .border(GlassBorderWidth, topBorder, shape)
+            .navigationBarsPadding()
+            .height(NavBarHeight)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            NavBackground,
-                            TopGlowColor,
-                            StatsCyan.copy(alpha = 0.5f),
-                            TopGlowColor,
-                            NavBackground
-                        )
-                    )
-                )
-        )
+        if (selectedIndex >= 0) {
+            SlidingPillIndicator(
+                selectedIndex = selectedIndex,
+                itemCount = BottomNavItem.entries.size,
+                modifier = Modifier.matchParentSize(),
+                inset = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
+            )
+        }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .height(64.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
+            modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BottomNavItem.entries.forEach { item ->
-                val isSelected = when (item) {
-                    BottomNavItem.HOME -> currentRoute == AppRoutes.HOME || currentRoute == AppRoutes.GUEST_HOME
-                    BottomNavItem.COMMUNITY -> currentRoute == AppRoutes.COMMUNITY || currentRoute == AppRoutes.SOCIAL
-                    else -> currentRoute == item.route
-                }
+            BottomNavItem.entries.forEachIndexed { index, item ->
+                val isSelected = index == selectedIndex
                 val icon = if (isSelected) item.selectedIcon else item.unselectedIcon
                 val tint = if (isSelected) StatsCyan else ThemeSlateAccent
 
-                Box(
+                Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
-                    contentAlignment = Alignment.Center
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { onNavigateTo(item.route) }
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(if (isSelected) NavPillSelected else Color.Transparent)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = { onNavigateTo(item.route) }
-                            )
-                            .padding(vertical = 6.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = item.label,
-                            tint = tint,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Text(
-                            text = item.label,
-                            color = tint,
-                            fontFamily = JetBrainsMono,
-                            fontSize = TextSizeMicro,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = item.label,
+                        tint = tint,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = item.label,
+                        color = tint,
+                        fontFamily = JetBrainsMono,
+                        fontSize = TextSizeMicro,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        letterSpacing = 0.5.sp
+                    )
                 }
             }
         }

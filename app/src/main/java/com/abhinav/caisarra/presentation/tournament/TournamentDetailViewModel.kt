@@ -70,11 +70,15 @@ class TournamentDetailViewModel(
     fun clearMessage() = _state.update { it.copy(message = null) }
 
     fun join() {
-        val code = inviteCode
+        val code = inviteCode ?: _state.value.tournament?.inviteCode?.takeIf { it.isNotBlank() }
         perform("You joined the tournament", joined = true) {
             if (code != null) repository.joinByInvite(code)
             else repository.joinTournament(tournamentId)
         }
+    }
+
+    fun regenerateInvite() = perform("New invite code generated") {
+        repository.regenerateInvite(tournamentId)
     }
 
     fun leave() = perform("You left the tournament", joined = false) {

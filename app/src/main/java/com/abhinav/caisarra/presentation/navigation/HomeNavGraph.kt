@@ -208,6 +208,12 @@ fun NavGraphBuilder.homeGraph(
             onReviewGame = { gameId ->
                 navController.navigateOnce(AppRoutes.gameHistory(gameId))
             },
+            onOpenTactic = { tactic ->
+                navController.navigateOnce(tactic.route)
+            },
+            onOpenPuzzles = {
+                navController.navigateToTab(AppRoutes.PUZZLES)
+            },
             onLogoutSuccess = {
                 navController.goToLogin()
             },

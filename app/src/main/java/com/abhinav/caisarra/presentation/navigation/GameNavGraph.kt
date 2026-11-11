@@ -24,7 +24,7 @@ import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
 import com.abhinav.caisarra.presentation.game.screens.GameHistoryScreen
 import com.abhinav.caisarra.presentation.game.screens.GameScreen
-import com.abhinav.caisarra.presentation.game.screens.GameSetupScreen
+import com.abhinav.caisarra.features.newgame.presentation.NewGameScreen
 import com.abhinav.caisarra.presentation.game.screens.MatchmakingScreen
 import com.abhinav.caisarra.presentation.game.screens.OnlineGameScreen
 import com.abhinav.caisarra.presentation.game.screens.PassAndPlaySetupScreen
@@ -56,7 +56,7 @@ fun NavGraphBuilder.gameGraph(
         }
         val setupState by setupViewModel.state.collectAsState()
 
-        GameSetupScreen(
+        NewGameScreen(
             state = setupState,
             onOpenTimeControls = {
                 navController.navigateOnce(AppRoutes.TIME_CONTROLS)
@@ -226,7 +226,7 @@ fun NavGraphBuilder.gameGraph(
         }
 
         LaunchedEffect(matchmakingViewModel, minutes, increment) {
-            matchmakingViewModel.startMatch(
+            matchmakingViewModel.startMatchOnce(
                 minutes = minutes,
                 incrementSeconds = increment,
                 rated = true

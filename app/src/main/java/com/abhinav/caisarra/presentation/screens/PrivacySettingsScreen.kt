@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import com.abhinav.caisarra.core.ui.components.rememberToaster
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,20 +28,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -83,18 +82,18 @@ fun PrivacySettingsScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val toaster = rememberToaster()
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
-            snackbarHostState.showSnackbar(error)
+            toaster.show(error)
             viewModel.clearMessages()
         }
     }
 
     LaunchedEffect(uiState.successMessage) {
         uiState.successMessage?.let { msg ->
-            snackbarHostState.showSnackbar(msg)
+            toaster.show(msg)
             viewModel.clearMessages()
         }
     }
@@ -216,7 +215,7 @@ fun PrivacySettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Choose who is permitted to send you direct messages across Mosaic.",
+                                    text = "Choose who is permitted to send you direct messages and friend invites.",
                                     fontFamily = JetBrainsMono,
                                     fontSize = TextSizeTiny,
                                     color = StatsTextMuted,
@@ -237,17 +236,22 @@ fun PrivacySettingsScreen(
                         }
                     )
 
+                    PrivacySectionCard(
+                        section = PrivacySection.INVITE_FRIEND,
+                        icon = Icons.Default.PersonAdd,
+                        subtitle = "Who can send you friend invites",
+                        currentOption = uiState.settings.inviteFriendOption,
+                        options = listOf(PrivacyOption.EVERYONE, PrivacyOption.NOBODY),
+                        isUpdating = uiState.updatingSection == PrivacySection.INVITE_FRIEND,
+                        onOptionSelected = { option ->
+                            viewModel.updateSection(PrivacySection.INVITE_FRIEND, option)
+                        }
+                    )
+
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
-        )
     }
 }
 
@@ -257,6 +261,7 @@ private fun PrivacySectionCard(
     icon: ImageVector,
     subtitle: String,
     currentOption: PrivacyOption,
+    options: List<PrivacyOption> = PrivacyOption.entries,
     isUpdating: Boolean,
     onOptionSelected: (PrivacyOption) -> Unit
 ) {
@@ -343,7 +348,7 @@ private fun PrivacySectionCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                PrivacyOption.entries.forEach { option ->
+                options.forEach { option ->
                     val isSelected = currentOption == option
                     PrivacyOptionItem(
                         option = option,

@@ -121,6 +121,40 @@ fun NavGraphBuilder.communityAndClubGraph(
         )
     }
     composable(
+        route = AppRoutes.CLUB_SHARE_LINK,
+        arguments = listOf(
+            navArgument("code") {
+                type = NavType.StringType
+            }
+        ),
+        deepLinks = listOf(
+            navDeepLink { uriPattern = "https://caisaara.app/club/{code}" },
+            navDeepLink { uriPattern = "https://caisaara.duckdns.org/club/{code}" }
+        )
+    ) { entry ->
+        val code = entry.arguments?.getString("code").orEmpty()
+
+        LinkResolverScreen(
+            resolveRoute = {
+                val repository = ClubRepository(
+                    service = RetrofitInstance.createClubService(TokenManager.get(context))
+                )
+                val clubId = runCatching { repository.getClubByCode(code).effectiveId }
+                    .getOrNull()
+                    ?.takeIf { it.isNotBlank() }
+                    ?: code
+                AppRoutes.clubDetail(clubId)
+            },
+            onResolved = { route ->
+                navController.navigate(route) {
+                    popUpTo(AppRoutes.CLUB_SHARE_LINK) {
+                        inclusive = true
+                    }
+                }
+            }
+        )
+    }
+    composable(
         route = AppRoutes.CLUB_DETAIL,
         arguments = listOf(
             navArgument("clubId") {
@@ -128,9 +162,7 @@ fun NavGraphBuilder.communityAndClubGraph(
             }
         ),
         deepLinks = listOf(
-            navDeepLink { uriPattern = "caisarra://club/{clubId}" },
-            navDeepLink { uriPattern = "https://caisaara.app/club/{clubId}" },
-            navDeepLink { uriPattern = "https://caisaara.duckdns.org/club/{clubId}" }
+            navDeepLink { uriPattern = "caisarra://club/{clubId}" }
         )
     ) { backStackEntry ->
         val clubId = backStackEntry.arguments?.getString("clubId").orEmpty()

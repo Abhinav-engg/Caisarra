@@ -118,6 +118,7 @@ object AppRoutes {
     const val TOURNAMENTS = "tournaments"
     const val CREATE_TOURNAMENT = "create_tournament"
     const val TOURNAMENT_DETAIL = "tournament/{id}?code={code}"
+    const val TOURNAMENT_INVITE_LINK = "tournament_invite_link/{code}"
 
     fun tournamentDetail(id: String, inviteCode: String? = null): String {
         val queryParam = inviteCode?.let { "?code=${Uri.encode(it)}" } ?: ""
@@ -134,6 +135,7 @@ object AppRoutes {
     const val COMMUNITY = "community"
     const val CLUBS = "clubs"
     const val CLUB_DETAIL = "club_detail/{clubId}"
+    const val CLUB_SHARE_LINK = "club_share_link/{code}"
 
     fun clubDetail(clubId: String): String =
         "club_detail/${Uri.encode(clubId)}"

@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.club
 
+import com.abhinav.caisarra.core.ui.components.rememberToaster
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -45,6 +46,7 @@ import com.abhinav.caisarra.data.repository.ClubRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.core.ui.components.MessageText
 import com.abhinav.caisarra.data.remote.ClubChatSocket
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -485,18 +487,18 @@ fun ClubDetailScreen(
     )
 
     val state = vm.state
-    val snackbarHostState = remember { SnackbarHostState() }
+    val toaster = rememberToaster()
     LaunchedEffect(state.error) {
         val message = state.error?.takeIf { it.isNotBlank() }
         if (message != null) {
-            snackbarHostState.showSnackbar(clubUiError(message))
+            toaster.show(clubUiError(message))
             vm.clearError()
         }
     }
     LaunchedEffect(state.info) {
         val message = state.info?.takeIf { it.isNotBlank() }
         if (message != null) {
-            snackbarHostState.showSnackbar(message)
+            toaster.show(message)
             vm.clearInfo()
         }
     }
@@ -516,7 +518,7 @@ fun ClubDetailScreen(
 
     val isOwner = role in setOf("owner", "club_owner", "leader")
 
-    val isAdmin = isOwner || role in setOf("com/abhinav/caisarra/data/remote/admin", "administrator", "club_admin")
+    val isAdmin = isOwner || role in setOf("admin", "administrator", "club_admin")
     var selectedMember by remember { mutableStateOf<ClubMemberDto?>(null) }
     var confirmAction by remember { mutableStateOf<String?>(null) }
 
@@ -526,17 +528,6 @@ fun ClubDetailScreen(
             indication = null
         ) { focusManager.clearFocus() },
         containerColor = DetailBg,
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = DetailCard,
-                    contentColor = DetailText,
-                    actionColor = DetailGreen,
-                    shape = RoundedCornerShape(16.dp)
-                )
-            }
-        },
         topBar = {
             TopAppBar(
                 title = {
@@ -903,7 +894,7 @@ fun ClubDetailScreen(
                                             .replace(' ', '_')
 
                                         val isMemberOwner = memberRole in setOf("owner", "club_owner", "leader")
-                                        val isMemberAdmin = memberRole in setOf("com/abhinav/caisarra/data/remote/admin", "administrator", "club_admin")
+                                        val isMemberAdmin = memberRole in setOf("admin", "administrator", "club_admin")
 
                                         val canManageThisMember = when {
                                             isOwner -> !isMemberOwner
@@ -1222,7 +1213,7 @@ fun ClubDetailScreen(
                                             fontWeight = FontWeight.Bold
                                         )
                                         Spacer(Modifier.height(2.dp))
-                                        Text(
+                                        MessageText(
                                             text = message.message,
                                             color = Color(0xFFF5F5F5),
                                             style = MaterialTheme.typography.bodyLarge
@@ -1319,7 +1310,7 @@ fun ClubDetailScreen(
                             confirmAction = "transfer:${member.userId}"
                         }) { Text("Transfer leadership") }
                     }
-                    if (isOwner && member.role.lowercase() == "com/abhinav/caisarra/data/remote/admin") {
+                    if (isOwner && member.role.lowercase() in setOf("admin", "administrator", "club_admin")) {
                         TextButton(onClick = {
                             selectedMember = null
                             confirmAction = "removeadmin:${member.userId}"
@@ -1539,7 +1530,7 @@ private fun ClubChatContent(
 
                         Spacer(Modifier.height(4.dp))
 
-                        Text(
+                        MessageText(
                             text = message.message,
                             color = DetailText,
                             style = MaterialTheme.typography.bodyLarge

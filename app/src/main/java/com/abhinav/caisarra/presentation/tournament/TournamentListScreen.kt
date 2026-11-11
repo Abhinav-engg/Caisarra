@@ -20,12 +20,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.data.remote.dto.TournamentDto
@@ -55,6 +58,10 @@ fun TournamentListScreen(
     var showInviteCode by remember { mutableStateOf(false) }
     var isCreateActive by remember { mutableStateOf(false) }
     var selectedTournamentId by remember { mutableStateOf<String?>(null) }
+    var showFilters by remember { mutableStateOf(false) }
+    val visibleTournaments = remember(state.tournaments, state.filters, state.sort) {
+        state.tournaments.applyFiltersAndSort(state.filters, state.sort)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
@@ -156,12 +163,12 @@ fun TournamentListScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            Text(
-                text = "OPEN TOURNAMENTS",
-                color = TournamentColors.Muted,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.8.sp
+            TournamentFilterBar(
+                resultCount = visibleTournaments.size,
+                sort = state.sort,
+                activeFilterCount = state.filters.activeCount,
+                onSortChange = viewModel::onSortChange,
+                onOpenFilters = { showFilters = true }
             )
 
             Spacer(Modifier.height(12.dp))
@@ -194,12 +201,32 @@ fun TournamentListScreen(
                     }
                 }
 
+                visibleTournaments.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "No tournaments match your filters.",
+                            color = TournamentColors.Muted,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        TextButton(onClick = viewModel::clearFilters) {
+                            Text("Clear filters", color = TournamentColors.Accent)
+                        }
+                    }
+                }
+
                 else -> {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(state.tournaments, key = { it.id }) { tournament ->
+                        items(visibleTournaments, key = { it.id }) { tournament ->
                             TournamentCard(
                                 tournament = tournament,
                                 isSelected = selectedTournamentId == tournament.id,
@@ -213,6 +240,19 @@ fun TournamentListScreen(
                 }
             }
         }
+    }
+
+    if (showFilters) {
+        TournamentFilterSheet(
+            tournaments = state.tournaments,
+            initial = state.filters,
+            sort = state.sort,
+            onApply = {
+                viewModel.onFiltersChange(it)
+                showFilters = false
+            },
+            onDismiss = { showFilters = false }
+        )
     }
 }
 
@@ -271,7 +311,10 @@ private fun TournamentCard(
             text = tournament.name,
             color = Color.White,
             fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            lineHeight = 21.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
 
         Spacer(Modifier.height(4.dp))
@@ -292,8 +335,12 @@ private fun TournamentCard(
             Text(
                 text = "${tournament.players ?: 0}/${tournament.maxPlayers} players",
                 color = Color(0xFFC4D0DC),
-                fontSize = 13.sp
+                fontSize = 13.sp,
+                maxLines = 1,
+                modifier = Modifier.weight(1f, fill = false)
             )
+
+            Spacer(Modifier.width(12.dp))
 
             val (statusText, statusColor) = when {
                 tournament.status.equals("registration", ignoreCase = true) ->
@@ -308,7 +355,9 @@ private fun TournamentCard(
                 text = statusText,
                 color = statusColor,
                 fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

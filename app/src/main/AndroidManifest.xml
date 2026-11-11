@@ -68,20 +68,8 @@
                     android:pathPrefix="/club/" />
                 <data
                     android:scheme="https"
-                    android:host="caisaara.duckdns.org"
-                    android:pathPrefix="/play/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.duckdns.org"
-                    android:pathPrefix="/watch/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.duckdns.org"
-                    android:pathPrefix="/tournament/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.duckdns.org"
-                    android:pathPrefix="/club/" />
+                    android:host="caisaara.app"
+                    android:pathPrefix="/tournaments/invite/" />
             </intent-filter>
 
             <intent-filter>

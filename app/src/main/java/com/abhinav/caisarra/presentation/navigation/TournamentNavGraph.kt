@@ -2,12 +2,14 @@ package com.abhinav.caisarra.presentation.navigation
 
 import android.app.Application
 import android.content.Context
+import android.widget.Toast
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.abhinav.caisarra.data.repository.TournamentRepository
 import com.abhinav.caisarra.presentation.tournament.CreateTournamentScreen
 import com.abhinav.caisarra.presentation.tournament.CreateTournamentViewModel
 import com.abhinav.caisarra.presentation.tournament.TournamentDetailScreen
@@ -19,6 +21,44 @@ fun NavGraphBuilder.tournamentGraph(
     navController: NavController,
     context: Context
 ) {
+    composable(
+        route = AppRoutes.TOURNAMENT_INVITE_LINK,
+        arguments = listOf(
+            navArgument("code") {
+                type = NavType.StringType
+            }
+        ),
+        deepLinks = listOf(
+            navDeepLink { uriPattern = "https://caisaara.app/tournaments/invite/{code}" },
+            navDeepLink { uriPattern = "https://caisaara.duckdns.org/tournaments/invite/{code}" }
+        )
+    ) { entry ->
+        val code = entry.arguments?.getString("code").orEmpty()
+
+        LinkResolverScreen(
+            resolveRoute = {
+                TournamentRepository.get(context)
+                    .getTournamentByInvite(code)
+                    .fold(
+                        onSuccess = { tournament ->
+                            AppRoutes.tournamentDetail(tournament.id, code)
+                        },
+                        onFailure = {
+                            Toast.makeText(context, "Tournament link is invalid", Toast.LENGTH_SHORT).show()
+                            AppRoutes.TOURNAMENTS
+                        }
+                    )
+            },
+            onResolved = { route ->
+                navController.navigate(route) {
+                    popUpTo(AppRoutes.TOURNAMENT_INVITE_LINK) {
+                        inclusive = true
+                    }
+                }
+            }
+        )
+    }
+
     composable(route = AppRoutes.TOURNAMENTS) {
         val listViewModel = screenViewModel {
             TournamentListViewModel(context as Application)

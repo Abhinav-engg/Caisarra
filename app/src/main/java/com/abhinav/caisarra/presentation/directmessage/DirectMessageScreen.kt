@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import com.abhinav.caisarra.core.ui.components.MessageText
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.caisaara.ui.theme.StatsBg
@@ -349,9 +350,10 @@ fun DirectMessageScreen(
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                Text(
+                                MessageText(
                                     text = message.message,
                                     color = if (mine) StatsBg else StatsTextWhite,
+                                    linkColor = if (mine) StatsBg else StatsCyan,
                                     fontSize = 15.sp
                                 )
 
