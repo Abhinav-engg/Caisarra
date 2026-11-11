@@ -62,6 +62,14 @@ private val DetailMuted = Color(0xFFADB8C6)
 
 private enum class DetailTab { MEMBERS, LEADERBOARD, CHAT, MANAGE }
 
+private const val MAX_CLUB_MESSAGE_WORDS = 200
+
+private fun countWords(text: String): Int =
+    text.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
+
+private fun clubMessageTooLongText(wordCount: Int): String =
+    "Message too long: $wordCount words. The limit is $MAX_CLUB_MESSAGE_WORDS words. Please shorten it and try again."
+
 data class ClubDetailState(
     val club: ClubDto? = null,
     val currentUsername: String = "",
@@ -282,6 +290,15 @@ class ClubDetailViewModel(
         val text = state.chatInput.trim()
 
         if (text.isBlank() || state.busy || !state.isJoined) return
+
+        val wordCount = countWords(text)
+        if (wordCount > MAX_CLUB_MESSAGE_WORDS) {
+            state = state.copy(
+                error = clubMessageTooLongText(wordCount),
+                info = null
+            )
+            return
+        }
 
         viewModelScope.launch {
             state = state.copy(
@@ -1135,14 +1152,25 @@ fun ClubDetailScreen(
                                     }
                                 }
                             }
+                            if (countWords(state.chatInput) > MAX_CLUB_MESSAGE_WORDS) {
+                                item {
+                                    Text(
+                                        "Message too long: ${countWords(state.chatInput)} / $MAX_CLUB_MESSAGE_WORDS words. Please shorten it.",
+                                        color = Color(0xFFFF9999),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
                             item {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.Bottom) {
                                     OutlinedTextField(
                                         value = state.chatInput,
                                         onValueChange = vm::setChatInput,
                                         modifier = Modifier.weight(1f),
                                         label = { Text("Write a message") },
-                                        singleLine = true,
+                                        singleLine = false,
+                                        minLines = 1,
+                                        maxLines = 6,
                                         colors = OutlinedTextFieldDefaults.colors(
                                             focusedTextColor = DetailText,
                                             unfocusedTextColor = DetailText,
@@ -1558,11 +1586,21 @@ private fun ClubChatContent(
             }
         }
 
+        val chatWordCount = countWords(state.chatInput)
+        if (chatWordCount > MAX_CLUB_MESSAGE_WORDS) {
+            Text(
+                text = "Message too long: $chatWordCount / $MAX_CLUB_MESSAGE_WORDS words. Please shorten it.",
+                color = Color(0xFFFF9999),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+            )
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             OutlinedTextField(
@@ -1576,7 +1614,9 @@ private fun ClubChatContent(
                     )
                 },
                 shape = RoundedCornerShape(28.dp),
-                singleLine = true,
+                singleLine = false,
+                minLines = 1,
+                maxLines = 6,
                 enabled = !state.busy,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = DetailText,
@@ -1597,6 +1637,7 @@ private fun ClubChatContent(
                         !state.busy &&
                         state.chatInput.isNotBlank(),
                 modifier = Modifier
+                    .padding(bottom = 2.dp)
                     .size(52.dp)
                     .background(
                         color = if (
