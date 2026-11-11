@@ -12,6 +12,7 @@ data class GameUiState(
     val playerRating: Int? = null,
     val ratingChange: Int? = null,
     val opponentRating: Int? = null,
+    val opponentRatingChange: Int? = null,
     val whiteRating: Int? = null,
     val blackRating: Int? = null,
     val isRated: Boolean = false,

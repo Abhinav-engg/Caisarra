@@ -54,6 +54,7 @@ import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.core.ui.components.clearFocusOnTap
 import java.time.Instant
 import java.time.LocalDateTime
+import com.abhinav.caisarra.core.ui.components.MessageText
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -270,7 +271,7 @@ private fun ChatMessageItem(
                 .border(1.dp, if (isMine) Color(0xFF187A90) else Border, RoundedCornerShape(22.dp))
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Text(text = message.message, color = Color(0xFFDDE4EA), fontSize = 18.sp, lineHeight = 25.sp)
+            MessageText(text = message.message, color = Color(0xFFDDE4EA), fontSize = 18.sp, lineHeight = 25.sp)
         }
     }
 }

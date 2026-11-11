@@ -16,6 +16,7 @@ import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.PieceColor as UiPieceColor
 import com.abhinav.caisarra.presentation.game.model.PieceType as UiPieceType
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
 import com.abhinav.caisarra.presentation.game.model.Square as UiSquare
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -441,6 +442,7 @@ class RushViewModel(
                 puzzleId = current.currentPuzzle.puzzleId,
                 move = uciMove
             ).onSuccess { response ->
+                (_state.value as? RushUiState.Playing)?.let { _state.value = it.copy(moveFeedback = MoveFeedback(++animationId, to, response.correct)) }
                 handleMoveResponse(response, current)
             }.onFailure {
                 engine.undo()

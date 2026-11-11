@@ -54,6 +54,8 @@ data class HomeUiState(
     val selectedMode: GameMode = GameMode.RAPID,
     val rating: Int? = null,
     val ratingChange: Int? = null,
+    val ratingRollFrom: Int? = null,
+    val isRefreshing: Boolean = false,
     val provisional: Boolean = true,
     val modeRatings: Map<GameMode, Int?> = emptyMap(),
     val isLoggingOut: Boolean = false,
@@ -81,6 +83,7 @@ class HomeViewModel(
     private var signedInUser = false
     private var cachedProfile: ProfileData? = null
     private var hasStartedInitialLoad = false
+    private var loadJob: Job? = null
 
     init {
         if (!hasStartedInitialLoad) {
@@ -96,6 +99,26 @@ class HomeViewModel(
         loadHomeData()
     }
 
+    fun pullToRefresh() {
+        if (_state.value.isRefreshing) return
+        _state.update { it.copy(isRefreshing = true) }
+        loadHomeData(isRefresh = true)
+    }
+
+    fun markRatingShown(mode: GameMode, rating: Int) {
+        ratingPreferenceStore?.setLastShownRating(mode, rating)
+        _state.update {
+            if (it.selectedMode == mode && it.rating == rating) it.copy(ratingRollFrom = null) else it
+        }
+    }
+
+    private fun computeRollFrom(mode: GameMode, rating: Int?, change: Int?): Int? {
+        val store = ratingPreferenceStore ?: return null
+        if (rating == null) return null
+        val from = store.getLastShownRating(mode) ?: change?.let { rating - it }
+        return from?.takeIf { it != rating }
+    }
+
     fun selectMode(mode: GameMode) {
         ratingPreferenceStore?.setSelectedMode(mode)
         val rating = extractRating(cachedProfile, mode)
@@ -106,7 +129,8 @@ class HomeViewModel(
                 selectedMode = mode,
                 rating = rating,
                 provisional = provisional,
-                ratingChange = change
+                ratingChange = change,
+                ratingRollFrom = computeRollFrom(mode, rating, change)
             )
         }
     }
@@ -123,14 +147,17 @@ class HomeViewModel(
             ?: if (mode == GameMode.RAPID) profile.provisional else true
     }
 
-    private fun loadHomeData() {
-        viewModelScope.launch {
-            _state.update {
-                it.copy(
-                    isLoadingHistory = true,
-                    error = null,
-                    gameHistory = emptyList()
-                )
+    private fun loadHomeData(isRefresh: Boolean = false) {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            if (!isRefresh) {
+                _state.update {
+                    it.copy(
+                        isLoadingHistory = true,
+                        error = null,
+                        gameHistory = emptyList()
+                    )
+                }
             }
 
             val savedUsername = repository.getUsername()
@@ -172,6 +199,7 @@ class HomeViewModel(
                     rating = currentRating,
                     provisional = currentProvisional,
                     ratingChange = currentChange,
+                    ratingRollFrom = computeRollFrom(selectedMode, currentRating, currentChange),
                     modeRatings = modeRatings
                 )
             }
@@ -318,9 +346,12 @@ class HomeViewModel(
                     _state.update {
                         it.copy(
                             isLoadingHistory = false,
+                            isRefreshing = false,
                             error = null
                         )
                     }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     remoteHistory = emptyList()
 
@@ -329,6 +360,7 @@ class HomeViewModel(
                             activeGames = emptyList(),
                             activeDailyGames = emptyList(),
                             isLoadingHistory = false,
+                            isRefreshing = false,
                             error = e.userMessage("Unable to load server game history.")
                         )
                     }
@@ -340,7 +372,8 @@ class HomeViewModel(
                 _state.update {
                     it.copy(
                         activeGames = emptyList(),
-                        activeDailyGames = emptyList()
+                        activeDailyGames = emptyList(),
+                        isRefreshing = false
                     )
                 }
 
@@ -363,6 +396,8 @@ class HomeViewModel(
                                 )
                             }
                         }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     _state.update {
                         it.copy(

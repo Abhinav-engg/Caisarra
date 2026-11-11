@@ -7,16 +7,23 @@ import com.abhinav.caisarra.data.remote.api.MatchmakingJoinRequest
 import com.abhinav.caisarra.data.remote.api.MatchmakingService
 import com.abhinav.caisarra.data.remote.api.TiltWarning
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
 data class MatchmakingUiState(
     val isSearching: Boolean = false,
+    val isCancelling: Boolean = false,
     val message: String = "",
     val error: String? = null,
     val matchedGameId: String? = null,
@@ -32,6 +39,21 @@ class MatchmakingViewModel(
 
     private var searchJob: Job? = null
     private var statusJob: Job? = null
+    private var cancelJob: Job? = null
+
+    @Volatile
+    private var possiblyQueued = false
+    private var autoStarted = false
+
+    fun startMatchOnce(
+        minutes: Int,
+        incrementSeconds: Int,
+        rated: Boolean = true
+    ) {
+        if (autoStarted) return
+        autoStarted = true
+        startMatch(minutes, incrementSeconds, rated)
+    }
 
     fun startMatch(
         minutes: Int,
@@ -39,14 +61,20 @@ class MatchmakingViewModel(
         rated: Boolean = true,
         ignoreTilt: Boolean = false
     ) {
-        if (_state.value.isSearching) return
+        if (_state.value.isSearching || cancelJob?.isActive == true) return
         searchJob?.cancel()
         statusJob?.cancel()
+        _state.value = MatchmakingUiState(
+            isSearching = true,
+            message = "Joining matchmaking queue..."
+        )
         searchJob = viewModelScope.launch {
-            _state.value = MatchmakingUiState(isSearching = true,
-                message = "Joining matchmaking queue..."
-            )
             try {
+                if (possiblyQueued) {
+                    runCatching { service.cancelQueue() }
+                        .onFailure { if (it is CancellationException) throw it }
+                }
+                possiblyQueued = true
                 val response = service.joinQueue(
                     MatchmakingJoinRequest(
                         timeControlMinutes = minutes,
@@ -76,9 +104,10 @@ class MatchmakingViewModel(
                 val errorBody = e.response()
                     ?.errorBody()
                     ?.string()
+                val isTiltWarning = e.code() == 409 && errorBody?.contains("tilt_warning") == true
+                possiblyQueued = e.code() == 409 && !isTiltWarning
 
-                if (e.code() == 409 &&errorBody?.contains("tilt_warning") == true
-                ) {
+                if (isTiltWarning) {
                     _state.update {
                         it.copy(
                             isSearching = false,
@@ -126,6 +155,7 @@ class MatchmakingViewModel(
                         "matched" -> {
                             val gameId = response.gameId
                             if (gameId.isNullOrBlank()) {
+                                possiblyQueued = false
                                 fail("Matched response did not contain a game ID.")
                             } else {
                                 matched(gameId)
@@ -133,6 +163,7 @@ class MatchmakingViewModel(
                             return@launch
                         }
                         "idle" -> {
+                            possiblyQueued = false
                             fail(
                                 "Matchmaking expired. Please try again."
                             )
@@ -176,45 +207,60 @@ class MatchmakingViewModel(
     }
 
     fun cancelMatch() {
-        if (!_state.value.isSearching) return
-        searchJob?.cancel()
+        if (!_state.value.isSearching || cancelJob?.isActive == true) return
+        val pendingSearch = searchJob
+        val pendingStatus = statusJob
         searchJob = null
-        statusJob?.cancel()
         statusJob = null
 
-        viewModelScope.launch {
-            _state.update {
-                it.copy(message = "Cancelling search...")
-            }
+        _state.update {
+            it.copy(isCancelling = true, message = "Cancelling search...")
+        }
+
+        cancelJob = viewModelScope.launch {
+            pendingSearch?.cancelAndJoin()
+            pendingStatus?.cancelAndJoin()
 
             try {
-                service.cancelQueue()
-                _state.value = MatchmakingUiState()
+                val response = service.cancelQueue()
+                if (response.state == "matched" && !response.gameId.isNullOrBlank()) {
+                    matched(response.gameId)
+                } else {
+                    possiblyQueued = false
+                    _state.value = MatchmakingUiState()
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: HttpException) {
                 if (e.code() == 404) {
-                    try {
-                        val response = service.getStatus()
-
-                        if (
-                            response.state == "matched" &&
-                            !response.gameId.isNullOrBlank()
-                        ) {
-                            matched(response.gameId)
-                            return@launch
-                        }
-                    } catch (_: Exception) {
-
-                    }
+                    resolveAfterMissingQueueEntry()
+                } else {
+                    fail("Could not cancel search. Check your connection and retry.")
                 }
-
-                fail("Could not cancel search. Check your connection and retry.")
             } catch (e: Exception) {
                 fail("Could not cancel search. Check your connection and retry.")
             }
         }
     }
 
+    private suspend fun resolveAfterMissingQueueEntry() {
+        try {
+            val response = service.getStatus()
+            if (response.state == "matched" && !response.gameId.isNullOrBlank()) {
+                matched(response.gameId)
+            } else {
+                possiblyQueued = false
+                _state.value = MatchmakingUiState()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            fail("Could not confirm cancellation. Check your connection and retry.")
+        }
+    }
+
     private fun matched(gameId: String) {
+        possiblyQueued = false
         searchJob?.cancel()
         statusJob?.cancel()
 
@@ -239,6 +285,19 @@ class MatchmakingViewModel(
     override fun onCleared() {
         searchJob?.cancel()
         statusJob?.cancel()
+        cancelJob?.cancel()
+        if (possiblyQueued) {
+            possiblyQueued = false
+            cleanupScope.launch {
+                withContext(NonCancellable) {
+                    runCatching { service.cancelQueue() }
+                }
+            }
+        }
         super.onCleared()
+    }
+
+    private companion object {
+        val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 }

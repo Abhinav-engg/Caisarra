@@ -7,6 +7,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -28,7 +33,11 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +60,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.abhinav.caisarra.presentation.common.singleClick
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -61,6 +71,10 @@ import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.backgrounds.ChallengeCardBackground
 import com.abhinav.caisarra.core.ui.backgrounds.DailyRatingBackground
 import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.PageIndicatorDots
+import com.abhinav.caisarra.core.ui.components.responsiveContentWidth
+import com.abhinav.caisarra.features.dailytactics.presentation.DailyTactic
+import com.abhinav.caisarra.features.dailytactics.presentation.DailyTacticsSection
 import com.abhinav.caisarra.core.ui.backgrounds.HomeBackground
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -96,6 +110,7 @@ private val DashboardColor = Color(0xFF151F2B)
 private val DashboardBorder = Color(0xFF304154)
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -111,7 +126,9 @@ fun HomeScreen(
     onOpenCommunity: () -> Unit = {},
     onOpenNotifications: () -> Unit = {},
     onStatsClick: (GameMode) -> Unit = {},
-    onStreakClick: () -> Unit = {}
+    onStreakClick: () -> Unit = {},
+    onOpenTactic: (DailyTactic) -> Unit = {},
+    onOpenPuzzles: () -> Unit = {}
 ) {
 
     val context = LocalContext.current
@@ -140,27 +157,33 @@ fun HomeScreen(
             .background(BackgroundColor)
     ) {
         HomeBackground(modifier = Modifier.fillMaxSize())
+        val pullToRefreshState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = viewModel::pullToRefresh,
+            state = pullToRefreshState,
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
+                ),
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullToRefreshState,
+                    isRefreshing = state.isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    color = Green,
+                    containerColor = DashboardColor
+                )
+            }
+        ) {
         BoxWithConstraints(
             modifier = Modifier.fillMaxSize()
         ) {
-            val contentWidth = minOf(
-                maxWidth - 32.dp,
-                420.dp
-            )
+            val twoPane = maxWidth > maxHeight && maxWidth >= 600.dp
+            val contentWidth = responsiveContentWidth(maxWidth, if (twoPane) 2 else 1)
 
-            Column(modifier = Modifier
-                .width(contentWidth)
-                .align(Alignment.TopCenter)
-                .safeDrawingPadding()
-                .verticalScroll(
-                    rememberScrollState()
-                )
-                .padding(
-                    top = 16.dp,
-                    bottom = 100.dp
-                ),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            val topBar: @Composable () -> Unit = {
                 HomeTopBar(
                     title = "Mosaic",
                     streak = state.streak,
@@ -172,22 +195,24 @@ fun HomeScreen(
                     onOpenProfile = onOpenProfile,
                     onStreakClick = { showStreakDialog = true }
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+            }
+            val ratingCard: @Composable () -> Unit = {
                 RatingCard(
                     selectedMode = state.selectedMode,
                     rating = state.rating,
+                    ratingRollFrom = state.ratingRollFrom,
                     ratingChange = state.ratingChange,
                     provisional = state.provisional,
+                    onRatingShown = viewModel::markRatingShown,
                     modeRatings = state.modeRatings,
                     onSelectMode = viewModel::selectMode,
                     onStatsClick = singleClick { onStatsClick(state.selectedMode) }
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
+            }
+            val quickPlay: @Composable (Dp) -> Unit = { width ->
                 QuickPlayAndActiveGamesSection(
                     activeGames = state.activeGames,
-                    contentWidth = contentWidth,
+                    contentWidth = width,
                     timeControlLabel = when (state.selectedMode) {
                         GameMode.BULLET -> "1 min • Bullet"
                         GameMode.BLITZ -> "3 min • Blitz"
@@ -199,8 +224,14 @@ fun HomeScreen(
                     onOpenActiveGame = onOpenActiveGame,
                     onGameExpired = viewModel::removeExpiredGame
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-
+            }
+            val tactics: @Composable () -> Unit = {
+                DailyTacticsSection(
+                    onTacticClick = onOpenTactic,
+                    onViewAll = onOpenPuzzles
+                )
+            }
+            val history: @Composable () -> Unit = {
                 GameHistorySection(
                     games = state.gameHistory,
                     onReviewGame = onReviewGame,
@@ -210,29 +241,115 @@ fun HomeScreen(
                 )
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                BackgroundColor.copy(alpha = 0.88f),
-                                BackgroundColor
-                            )
+            if (twoPane) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .width(contentWidth)
+                        .fillMaxHeight(),
+                    horizontalArrangement = Arrangement.spacedBy(HomePaneSpacing)
+                ) {
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    ) {
+                        val paneWidth = maxWidth
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(top = 8.dp, bottom = PlayGameBarReservedHeight)
+                        ) {
+                            topBar()
+                            Spacer(modifier = Modifier.height(12.dp))
+                            ratingCard()
+                            Spacer(modifier = Modifier.height(12.dp))
+                            quickPlay(paneWidth)
+                        }
+                        PlayGameBar(
+                            onClick = onStartChallenge,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                            horizontalPadding = 0.dp
                         )
-                    )
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                GeneralButton(
-                    text = "PLAY GAME",
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState())
+                            .padding(top = 26.dp, bottom = 16.dp)
+                    ) {
+                        tactics()
+                        Spacer(modifier = Modifier.height(24.dp))
+                        history()
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .width(contentWidth)
+                        .align(Alignment.TopCenter)
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 16.dp, bottom = PlayGameBarReservedHeight + 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    topBar()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ratingCard()
+                    Spacer(modifier = Modifier.height(12.dp))
+                    quickPlay(contentWidth)
+                    Spacer(modifier = Modifier.height(24.dp))
+                    tactics()
+                    Spacer(modifier = Modifier.height(24.dp))
+                    history()
+                }
+
+                PlayGameBar(
                     onClick = onStartChallenge,
-                    modifier = Modifier.width(contentWidth)
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                    buttonWidth = contentWidth
                 )
             }
         }
+        }
+    }
+}
+
+private val HomePaneSpacing = 20.dp
+private val PlayGameBarReservedHeight = 72.dp
+private const val RatingRollStepMillis = 100L
+
+@Composable
+private fun PlayGameBar(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    buttonWidth: Dp? = null,
+    horizontalPadding: Dp = 16.dp
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        BackgroundColor.copy(alpha = 0.88f),
+                        BackgroundColor
+                    )
+                )
+            )
+            .padding(horizontal = horizontalPadding, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        GeneralButton(
+            text = "PLAY GAME",
+            onClick = onClick,
+            modifier = if (buttonWidth != null) Modifier.width(buttonWidth) else Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -383,13 +500,33 @@ private fun HomeTopBar(
 private fun RatingCard(
     selectedMode: GameMode,
     rating: Int?,
+    ratingRollFrom: Int?,
     ratingChange: Int?,
     provisional: Boolean,
+    onRatingShown: (GameMode, Int) -> Unit,
     modeRatings: Map<GameMode, Int?> = emptyMap(),
     onSelectMode: (GameMode) -> Unit = {},
     onStatsClick: () -> Unit = {}
 ) {
     var dropdownExpanded by remember { mutableStateOf(false) }
+    var displayedRating by remember(selectedMode, rating) { mutableStateOf(ratingRollFrom ?: rating) }
+
+    LaunchedEffect(selectedMode, rating) {
+        val target = rating ?: return@LaunchedEffect
+        val start = ratingRollFrom
+        if (start != null && start != target) {
+            val step = if (target > start) 1 else -1
+            var current = start
+            displayedRating = current
+            while (current != target) {
+                delay(RatingRollStepMillis)
+                current += step
+                displayedRating = current
+            }
+        }
+        displayedRating = target
+        onRatingShown(selectedMode, target)
+    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -497,7 +634,7 @@ private fun RatingCard(
             }
 
             Text(
-                text = rating?.toString() ?: "—",
+                text = displayedRating?.toString() ?: "—",
                 color = White,
                 fontFamily = JetBrainsMono,
                 fontSize = 48.sp,
@@ -646,7 +783,9 @@ private fun QuickPlayCard(
                     color = SecondaryText,
                     fontFamily = JetBrainsMono,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Normal
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -713,24 +852,10 @@ private fun QuickPlayAndActiveGamesSection(
             Spacer(modifier = Modifier.height(8.dp))
 
             val totalItems = 1 + activeGames.size
-            val currentIndex = listState.firstVisibleItemIndex.coerceIn(0, totalItems - 1)
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                repeat(totalItems) { index ->
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 3.dp)
-                            .size(if (index == currentIndex) 7.dp else 4.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (index == currentIndex) Color(0xFF00E5FF)
-                                else Color(0xFF304154)
-                            )
-                    )
-                }
-            }
+            PageIndicatorDots(
+                count = totalItems,
+                selectedIndex = listState.firstVisibleItemIndex.coerceIn(0, totalItems - 1)
+            )
         }
     }
 }

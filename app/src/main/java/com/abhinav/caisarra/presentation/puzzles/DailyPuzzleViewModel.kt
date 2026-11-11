@@ -15,6 +15,7 @@ import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.PieceColor as UiPieceColor
 import com.abhinav.caisarra.presentation.game.model.PieceType as UiPieceType
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
 import com.abhinav.caisarra.presentation.game.model.Square as UiSquare
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -452,7 +453,9 @@ class DailyPuzzleViewModel(
                 move = uciMove,
                 timeTakenMs = timeTaken
             ).onSuccess { response ->
-                handleAttemptSuccess(response, current)
+                val feedback = MoveFeedback(++animationId, to, response.correct == true)
+                (_state.value as? DailyPuzzleUiState.Playing)?.let { _state.value = it.copy(moveFeedback = feedback) }
+                handleAttemptSuccess(response, current.copy(moveFeedback = feedback))
             }.onFailure { error ->
                 handleAttemptFailure(error, current)
             }

@@ -59,6 +59,12 @@ import com.abhinav.caisarra.presentation.game.model.BoardTheme
 import com.abhinav.caisarra.presentation.game.model.BoardThemeId
 import com.abhinav.caisarra.presentation.game.model.BoardThemes
 import com.abhinav.caisarra.presentation.game.model.PieceTheme
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
+import com.abhinav.caisarra.core.ui.components.AnimatedTickMark
+import androidx.compose.animation.core.spring
+import com.caisaara.ui.theme.StatsGreen
+import com.caisaara.ui.theme.StatsRed
+import kotlinx.coroutines.launch
 
 private const val MIN_MOVE_DURATION = 120
 private const val MAX_MOVE_DURATION = 320
@@ -82,6 +88,7 @@ fun ChessBoard(
     moveAnimationEvent: PieceMoveAnimationEvent? = null,
     moveAnimationConsumedId: Long? = null,
     onMoveAnimationStarted: (Long) -> Unit = {},
+    moveFeedback: MoveFeedback? = null,
     onSquareClick: (Square) -> Unit
 ) {
     val context = LocalContext.current
@@ -167,6 +174,19 @@ fun ChessBoard(
             }
         }
     }
+    val shakeOffset = remember { Animatable(0f) }
+    val feedbackAlpha = remember { Animatable(0f) }
+    LaunchedEffect(moveFeedback?.id) {
+        val feedback = moveFeedback ?: return@LaunchedEffect
+        if (hapticsEnabled) {
+            haptic.performHapticFeedback(if (feedback.isCorrect) HapticFeedbackType.Confirm else HapticFeedbackType.Reject)
+        }
+        feedbackAlpha.snapTo(0.6f)
+        launch { feedbackAlpha.animateTo(0f, tween(500)) }
+        if (!feedback.isCorrect) {
+            shakeOffset.animateTo(0f, spring(dampingRatio = 0.2f, stiffness = 1500f), initialVelocity = 3000f)
+        }
+    }
     val activeMove = movingPiece ?: moveAnimationEvent?.takeIf { event ->
         event.id != moveAnimationConsumedId &&
                 event.id != handledMoveId &&
@@ -175,6 +195,7 @@ fun ChessBoard(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
+            .offset { IntOffset(shakeOffset.value.roundToInt(), 0) }
             .clipToBounds()
     ) {
         val density = LocalDensity.current
@@ -216,6 +237,9 @@ fun ChessBoard(
                                 .then(
                                     if (isLastMove) Modifier.background(theme.lastMoveColor) else Modifier
                                 )
+                                .then(
+                                    if (moveFeedback?.square == square) Modifier.background((if (moveFeedback?.isCorrect == true) StatsGreen else StatsRed).copy(alpha = feedbackAlpha.value)) else Modifier
+                                )
                                 .border(
                                     width = 0.5.dp,
                                     color = Color.Black.copy(alpha = 0.15f)
@@ -254,6 +278,9 @@ fun ChessBoard(
                                     piece = piece,
                                     pieceTheme = pieceTheme
                                 )
+                            }
+                            if (moveFeedback?.isCorrect == true && moveFeedback.square == square) {
+                                AnimatedTickMark(key = moveFeedback.id, color = StatsGreen, modifier = Modifier.align(Alignment.TopEnd).fillMaxSize(0.38f))
                             }
                             if (coordinatesEnabled &&displayColumn == 0) {
                                 Text(

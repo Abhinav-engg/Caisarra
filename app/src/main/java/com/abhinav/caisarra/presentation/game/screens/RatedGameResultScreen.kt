@@ -51,6 +51,7 @@ import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
+import kotlin.math.abs
 
 private val ScreenBg = Color(0xFF0B1218)
 private val Card = Color(0xFF121A22)
@@ -101,7 +102,7 @@ fun RatedGameResultScreen(
     }
     val iAmWhite = state.myColor != PieceColor.BLACK
     val myChange = state.ratingChange
-    val opponentChange = myChange?.let { -it }
+    val opponentChange = state.opponentRatingChange
 
     Column(
         modifier = Modifier
@@ -225,7 +226,7 @@ private fun EloPill(change: Int?, current: Int?, previous: Int?, accent: Color) 
     val changeText = when {
         change == null -> "Rated"
         change > 0 -> "↑ +$change Elo"
-        change < 0 -> "↓ $change Elo"
+        change < 0 -> "↓ ${abs(change)} Elo"
         else -> "Elo unchanged"
     }
     Row(
@@ -323,7 +324,8 @@ private fun PlayerCard(
                 when {
                     change == null -> Unit
                     change > 0 -> append(" (+$change)")
-                    else -> append(" ($change)")
+                    change < 0 -> append(" ($change)")
+                    else -> append(" (±0)")
                 }
             },
             color = if (highlight) accent else Muted,

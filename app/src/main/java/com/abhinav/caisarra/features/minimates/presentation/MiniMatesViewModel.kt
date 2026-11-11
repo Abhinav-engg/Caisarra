@@ -14,6 +14,8 @@ import com.abhinav.caisarra.domain.chess.model.PieceType
 import com.abhinav.caisarra.domain.chess.model.toMove
 import com.abhinav.caisarra.features.minimates.data.MiniMatesMoveRequest
 import com.abhinav.caisarra.features.minimates.data.MiniMatesRepository
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
+import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 import com.abhinav.caisarra.presentation.game.model.Square
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +28,7 @@ class MiniMatesViewModel(private val repository: MiniMatesRepository) : ViewMode
     val state = _state.asStateFlow()
     private val engine = ChesslibEngine()
     private var startedAt = 0L
+    private var eventId = 0L
 
     init {
         loadOverview()
@@ -34,13 +37,16 @@ class MiniMatesViewModel(private val repository: MiniMatesRepository) : ViewMode
     fun loadOverview() = viewModelScope.launch {
         _state.value = MiniMatesUiState()
         repository.overview()
-            .onSuccess { overview -> _state.update { it.copy(loading = false, overview = overview) } }
+            .onSuccess { overview ->
+                _state.update { it.copy(overview = overview) }
+                overview.chapters.flatMap { it.levels }.firstOrNull { it.unlocked && !it.completed }?.let { openLevel(it.levelNumber) }
+                    ?: _state.update { it.copy(loading = false) }
+            }
             .onFailure { e -> _state.update { it.copy(loading = false, error = e.userMessage()) } }
     }
 
     fun openLevel(number: Int) = viewModelScope.launch {
-        _state.update { it.copy(loading = true, error = null) }
-        repository.level(number).onFailure { e -> _state.update { it.copy(loading = false, error = e.userMessage()) } }
+        repository.level(number).onFailure { e -> _state.update { it.copy(loading = false, level = null, error = e.userMessage()) } }
             .onSuccess { level ->
                 engine.loadFen(level.fen)
                 _state.value = MiniMatesUiState(loading = false, overview = _state.value.overview, level = level)
@@ -51,15 +57,24 @@ class MiniMatesViewModel(private val repository: MiniMatesRepository) : ViewMode
 
     fun retry() = _state.value.level?.let { openLevel(it.levelNumber) } ?: loadOverview()
 
-    fun nextLevel() = _state.value.nextLevel?.let(::openLevel) ?: loadOverview()
+    fun nextLevel() = _state.value.nextLevel?.let(::openLevel) ?: showLevels(true)
 
-    fun closeLevel() = loadOverview()
+    fun showLevels(show: Boolean) = _state.update { it.copy(showLevels = show) }
+
+    fun onMoveAnimationStarted(id: Long) = _state.update { if (it.moveAnimation?.id == id) it.copy(moveAnimationConsumedId = id) else it }
+
+    private fun refreshOverview() = viewModelScope.launch {
+        repository.overview().onSuccess { overview -> _state.update { it.copy(overview = overview) } }
+    }
 
     fun hint() = viewModelScope.launch {
         val current = _state.value
         val level = current.level ?: return@launch
         repository.hint(level.levelNumber, current.moveIndex)
-            .onSuccess { hint -> _state.update { it.copy(note = hint.message, selected = hint.fromSquare?.let(::uciToSquare)) } }
+            .onSuccess { hint ->
+                _state.update { it.copy(note = hint.message) }
+                hint.fromSquare?.let(::uciToSquare)?.let(::onSquareClick)
+            }
             .onFailure { e -> _state.update { it.copy(note = e.userMessage()) } }
     }
 
@@ -87,13 +102,15 @@ class MiniMatesViewModel(private val repository: MiniMatesRepository) : ViewMode
                 _state.update { it.copy(note = e.userMessage()) }
             }.onSuccess { result ->
                 val reply = result.nextMove?.takeIf { it.isNotBlank() }
+                _state.update { it.copy(moveFeedback = MoveFeedback(++eventId, to, result.correct)) }
                 when {
                     !result.correct -> _state.update { it.copy(status = MiniMatesStatus.FAILED) }
-                    result.isCheckmate || reply == null -> _state.update {
-                        it.copy(status = MiniMatesStatus.SOLVED, stars = result.stars, nextLevel = result.nextUnlockedLevel)
+                    result.isCheckmate || reply == null -> {
+                        _state.update { it.copy(status = MiniMatesStatus.SOLVED, stars = result.stars, nextLevel = result.nextUnlockedLevel) }
+                        refreshOverview()
                     }
                     else -> {
-                        delay(400)
+                        delay(600)
                         engine.play(reply.toMove())
                         refresh(reply.toMove(), MiniMatesStatus.PLAYING)
                         _state.update { it.copy(moveIndex = it.moveIndex + 1) }
@@ -113,6 +130,7 @@ class MiniMatesViewModel(private val repository: MiniMatesRepository) : ViewMode
                 note = null,
                 lastFrom = move?.from?.toUi() ?: it.lastFrom,
                 lastTo = move?.to?.toUi() ?: it.lastTo,
+                moveAnimation = move?.let { m -> it.board[m.from.toUi()]?.let { p -> PieceMoveAnimationEvent(++eventId, p, m.from.toUi(), m.to.toUi()) } } ?: it.moveAnimation,
                 whiteInCheck = check && engine.turn() == PieceColor.White,
                 blackInCheck = check && engine.turn() == PieceColor.Black,
                 status = status ?: it.status

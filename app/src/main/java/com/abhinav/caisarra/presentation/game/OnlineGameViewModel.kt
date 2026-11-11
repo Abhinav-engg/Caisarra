@@ -1096,14 +1096,15 @@ class OnlineGameViewModel(
         }
         if (finished && _uiState.value.isRated && !ratingWasRefreshed) {
             ratingWasRefreshed = true
+            val opponentRatingBefore = _uiState.value.opponentRating
             viewModelScope.launch {
                 refreshRating(captureChange = true)
-                lastOpponentUsername?.let { loadOpponentProfile(it) }
+                lastOpponentUsername?.let { loadOpponentProfile(it, ratingBefore = opponentRatingBefore) }
             }
         }
     }
 
-    private suspend fun loadOpponentProfile(username: String) {
+    private suspend fun loadOpponentProfile(username: String, ratingBefore: Int? = null) {
         if (username.isBlank() || username.equals("You", true) || username.equals("Opponent", true) || username.equals("Your opponent", true)) return
         lastOpponentUsername = username
         _opponentName.value = username
@@ -1113,7 +1114,15 @@ class OnlineGameViewModel(
             val currentMode = mode ?: resolveMode(_uiState.value.timeControlMinutes)
             val rating = profile.ratings?.get(currentMode)?.rating ?: profile.rating
             _uiState.update { current ->
-                current.copy(opponentRating = rating ?: current.opponentRating).withSideRatings()
+                val change = if (ratingBefore != null && rating != null) {
+                    rating - ratingBefore
+                } else {
+                    current.opponentRatingChange
+                }
+                current.copy(
+                    opponentRating = rating ?: current.opponentRating,
+                    opponentRatingChange = change
+                ).withSideRatings()
             }
             if (!profile.avatarUrl.isNullOrBlank()) {
                 _opponentAvatarUrl.value = profile.avatarUrl
