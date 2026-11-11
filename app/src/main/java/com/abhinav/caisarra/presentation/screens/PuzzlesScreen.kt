@@ -254,7 +254,7 @@ private fun DailyPuzzleCard(
         ) {
             Image(
                 painter = painterResource(
-                    id = R.drawable.daily_puzzle_graphic
+                    id = R.drawable.ic_daily_puzzle_graphic
                 ),
                 contentDescription = "Daily Puzzle",
                 modifier = Modifier

@@ -37,8 +37,6 @@ data class MiniMatesLevelDto(
     @SerialName("target_moves") val targetMoves: Int = 1,
     val title: String = "",
     val fen: String,
-    @SerialName("initial_fen") val initialFen: String? = null,
-    @SerialName("setup_move") val setupMove: String? = null,
     @SerialName("player_color") val playerColor: String = "white",
     val viewport: MiniMatesViewportDto
 )

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -46,6 +47,7 @@ fun MainTabTopBar(
                 color = PuzzleCardBorder,
                 shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
             )
+            .statusBarsPadding()
             .padding(vertical = 14.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -64,8 +66,8 @@ fun MainTabTopBar(
                 Icon(
                     painter = iconPainter,
                     contentDescription = null,
-                    tint = StatsCyan,
-                    modifier = Modifier.size(20.dp)
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(24.dp)
                 )
             }
             Text(

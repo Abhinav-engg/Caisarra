@@ -1,6 +1,7 @@
 
 package com.abhinav.caisarra.presentation.navigation
 
+import com.abhinav.caisarra.features.blockedplayers.presentation.blockedPlayersGraph
 import com.abhinav.caisarra.features.minimates.presentation.miniMatesGraph
 import com.abhinav.caisarra.features.notificationsettings.presentation.notificationSettingsGraph
 import androidx.compose.foundation.layout.padding
@@ -152,6 +153,7 @@ fun AppNavigation(
             )
             miniMatesGraph(navController)
             notificationSettingsGraph(navController)
+            blockedPlayersGraph(navController)
             profileGraph(
                 navController = navController,
                 authRepository = authRepository,

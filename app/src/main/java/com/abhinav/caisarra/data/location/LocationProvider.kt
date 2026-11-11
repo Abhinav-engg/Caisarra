@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -28,33 +29,25 @@ class LocationProvider(context: Context) {
         suspendCancellableCoroutine { continuation ->
             val cts = CancellationTokenSource()
             continuation.invokeOnCancellation { cts.cancel() }
+
+            fun finish(location: Location?) {
+                if (continuation.isActive) {
+                    continuation.resume(location?.let { it.latitude to it.longitude })
+                }
+            }
+
+            fun requestCurrentLocation() {
+                if (!continuation.isActive) return
+                client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
+                    .addOnSuccessListener { location -> finish(location) }
+                    .addOnFailureListener { finish(null) }
+            }
+
             client.lastLocation
                 .addOnSuccessListener { last ->
-                    if (last != null && continuation.isActive) {
-                        continuation.resume(last.latitude to last.longitude)
-                    } else {
-                        client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
-                            .addOnSuccessListener { location ->
-                                if (continuation.isActive) {
-                                    continuation.resume(location?.let { it.latitude to it.longitude })
-                                }
-                            }
-                            .addOnFailureListener {
-                                if (continuation.isActive) continuation.resume(null)
-                            }
-                    }
+                    if (last != null) finish(last) else requestCurrentLocation()
                 }
-                .addOnFailureListener {
-                    client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
-                        .addOnSuccessListener { location ->
-                            if (continuation.isActive) {
-                                continuation.resume(location?.let { it.latitude to it.longitude })
-                            }
-                        }
-                        .addOnFailureListener {
-                            if (continuation.isActive) continuation.resume(null)
-                        }
-                }
+                .addOnFailureListener { requestCurrentLocation() }
         }
     }
 }

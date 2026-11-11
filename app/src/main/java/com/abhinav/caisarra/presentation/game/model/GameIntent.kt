@@ -18,6 +18,8 @@ sealed interface GameIntent {
 
     data object FlipBoard : GameIntent
 
+    data class SetAutoFlip(val enabled: Boolean) : GameIntent
+
     data object DismissResult : GameIntent
     data object Redo : GameIntent
 }

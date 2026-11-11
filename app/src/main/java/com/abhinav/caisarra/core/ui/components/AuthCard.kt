@@ -1,7 +1,6 @@
 package com.abhinav.caisarra.core.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -28,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -39,8 +37,6 @@ import com.abhinav.caisarra.core.ui.theme.AuthCardHorizontalPadding
 import com.abhinav.caisarra.core.ui.theme.AuthCardMaxWidth
 import com.abhinav.caisarra.core.ui.backgrounds.LoginBackground
 import com.caisaara.ui.theme.CardBackground
-import com.caisaara.ui.theme.CardBorderNavy
-import com.caisaara.ui.theme.CyanLight
 import com.caisaara.ui.theme.LinkText
 import com.caisaara.ui.theme.SubtleText
 import com.caisaara.ui.theme.White
@@ -89,15 +85,7 @@ fun AuthCard(
                     .height(height)
                     .clip(shape)
                     .background(CardBackground.copy(alpha = 0.60f))
-                    .border(
-                        width = 1.5.dp,
-                        brush = Brush.verticalGradient(
-                            0.0f to CyanLight.copy(alpha = 0.60f),
-                            0.5f to CardBorderNavy.copy(alpha = 0.20f),
-                            1.0f to White.copy(alpha = 0.10f)
-                        ),
-                        shape = shape
-                    )
+                    .glassBorder(shape)
                     .verticalScroll(rememberScrollState())
                     .padding(
                         top = 20.dp,

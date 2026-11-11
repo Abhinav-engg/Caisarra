@@ -70,11 +70,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.app.Activity
-import android.content.ContextWrapper
-import android.view.WindowManager
-import androidx.compose.runtime.DisposableEffect
 import com.abhinav.caisarra.core.network.userMessage
+import com.abhinav.caisarra.core.ui.security.SecureScreen
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
@@ -98,13 +95,6 @@ import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 import kotlinx.coroutines.launch
-private tailrec fun Context.findActivity(): Activity? {
-    return when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }
-}
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
@@ -129,23 +119,8 @@ fun OnlineGameScreen(
         moveTo = state.moveAnimationEvent?.to
     )
     val context = LocalContext.current
-    val activity = remember(context) {
-        context.findActivity()
-    }
 
-    DisposableEffect(activity) {
-
-        activity?.window?.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
-
-        onDispose {
-            activity?.window?.clearFlags(
-                WindowManager.LayoutParams.FLAG_SECURE
-            )
-        }
-    }
+    SecureScreen()
     val autoQueen by rememberAutoQueenEnabled()
 
     LaunchedEffect(state.promotionPending, autoQueen) {

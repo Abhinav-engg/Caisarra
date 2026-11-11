@@ -42,14 +42,9 @@ class MiniMatesViewModel(private val repository: MiniMatesRepository) : ViewMode
         _state.update { it.copy(loading = true, error = null) }
         repository.level(number).onFailure { e -> _state.update { it.copy(loading = false, error = e.userMessage()) } }
             .onSuccess { level ->
-                engine.loadFen(level.initialFen ?: level.fen)
+                engine.loadFen(level.fen)
                 _state.value = MiniMatesUiState(loading = false, overview = _state.value.overview, level = level)
                 refresh()
-                level.setupMove?.takeIf { level.initialFen != null }?.let {
-                    delay(500)
-                    if (!engine.play(it.toMove())) engine.loadFen(level.fen)
-                    refresh(it.toMove())
-                }
                 startedAt = System.currentTimeMillis()
             }
     }

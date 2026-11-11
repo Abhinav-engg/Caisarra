@@ -30,7 +30,8 @@ data class ProfileUiState(
     val targetUsername: String? = null,
     val recentGames: List<GameEntity> = emptyList(),
     val loadingGames: Boolean = false,
-    val isBlocked: Boolean = false
+    val isBlocked: Boolean = false,
+    val isUnavailable: Boolean = false
 )
 
 class ProfileViewModel(
@@ -131,12 +132,13 @@ class ProfileViewModel(
             profile
         }
 
-        val isBlocked = friendsRepository?.getFriendshipStatus(targetUser)?.getOrNull()?.status == "blocked"
+        val friendshipStatus = friendsRepository?.getFriendshipStatus(targetUser)?.getOrNull()?.status
 
         _state.value = _state.value.copy(
             profile = finalProfile,
             isOwnProfile = false,
-            isBlocked = isBlocked,
+            isBlocked = friendshipStatus == "blocked",
+            isUnavailable = friendshipStatus == "unavailable",
             loading = false,
             loadingGames = true,
             error = null

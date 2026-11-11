@@ -59,3 +59,11 @@ val OnboardingDotSize = 8.dp
 val OnboardingDotSpacing = 8.dp
 val OnboardingTopPadding = 16.dp
 val OnboardingTextSpacing = 12.dp
+
+val NavBarHeight = 66.dp
+val NavCornerRadius = 12.dp
+val GlassShadowElevation = 4.dp
+val GlassBorderWidth = 1.dp
+
+val ScreenHorizontalPadding = 20.dp
+val ScreenContentMaxWidth = 420.dp
