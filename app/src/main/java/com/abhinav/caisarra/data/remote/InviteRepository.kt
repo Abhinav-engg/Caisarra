@@ -22,7 +22,8 @@ class InviteRepository private constructor(context: Context) {
         incrementSeconds: Int,
         color: String,
         rated: Boolean,
-        opponentId: Long? = null
+        opponentId: Long? = null,
+        publicSpectators: Boolean = false
     ): Result<CreateInviteResponse> =
         call {
             val req = CreateInviteRequest(
@@ -30,7 +31,8 @@ class InviteRepository private constructor(context: Context) {
                 incrementSeconds = incrementSeconds,
                 color = color,
                 opponentId = if (opponentId != null && opponentId > 0) opponentId else null,
-                rated = rated
+                rated = rated,
+                publicSpectators = publicSpectators
             )
             try {
                 service.createInvite(req)

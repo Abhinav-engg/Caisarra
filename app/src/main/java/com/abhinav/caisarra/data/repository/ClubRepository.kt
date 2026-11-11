@@ -99,6 +99,9 @@ class ClubRepository(
 
     suspend fun getClub(id: String): ClubDto = service.getClub(id)
 
+    suspend fun getClubByCode(code: String): ClubDto =
+        decodeJoinedClub(service.getClubByCode(code.trim()))
+
     suspend fun joinClub(clubId: String): ClubDto {
         require(clubId.isNotBlank()) { "Invalid club ID." }
         return decodeJoinedClub(service.joinClub(clubId))
