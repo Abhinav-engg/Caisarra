@@ -55,6 +55,13 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.Brush
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.first
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 
 private val DetailBg = Color(0xFF080D13)
 private val DetailCard = Color(0xFF101923)
@@ -64,8 +71,6 @@ private val DetailMuted = Color(0xFFADB8C6)
 
 private enum class DetailTab { MEMBERS, LEADERBOARD, CHAT, MANAGE }
 
-// The server (POST /api/clubs/{id}/messages) rejects anything over 500 characters
-// with: 400 {"error":"message must be at most 500 characters"}
 private const val MAX_CLUB_MESSAGE_CHARS = 500
 
 private fun countChars(text: String): Int =
@@ -75,11 +80,6 @@ private fun capToLimit(text: String): String =
     if (text.codePointCount(0, text.length) <= MAX_CLUB_MESSAGE_CHARS) text
     else text.substring(0, text.offsetByCodePoints(0, MAX_CLUB_MESSAGE_CHARS))
 
-/**
- * Turns a failed "send club message" call into something useful.
- * Logs the real HTTP status + server body (previously swallowed), and shows
- * the server's own reason when it gives one (e.g. "message too long").
- */
 private fun describeSendFailure(e: Exception, chars: Int, words: Int): String {
     val fallback = "Couldn't send your message. Please try again."
 
@@ -132,6 +132,7 @@ data class ClubDetailState(
     val loading: Boolean = true,
     val busy: Boolean = false,
     val chatConnected: Boolean = false,
+    val chatReconnecting: Boolean = false,
     val error: String? = null,
     val info: String? = null,
     val clubRemoved: Boolean = false,
@@ -150,6 +151,19 @@ class ClubDetailViewModel(
         private set
 
     private var chatCollectorsStarted = false
+    private var reconnectJob: Job? = null
+    private var connectRun = 0
+    private var autoReconnectAttempts = 0
+    private var wasConnected = false
+
+    private val maxAutoReconnectAttempts = 6
+    private val connectTimeoutMs = 8_000L
+    private val reconnectDelaysMs = longArrayOf(1_000, 2_000, 4_000, 8_000, 15_000, 15_000)
+
+    private fun isAuthChatError(message: String): Boolean =
+        message.startsWith("Chat authentication failed") ||
+                message.startsWith("Sign in with") ||
+                message.startsWith("Your session has expired")
 
     init {
         load()
@@ -299,6 +313,16 @@ class ClubDetailViewModel(
                 launch {
                     chatSocket.connected.collect { connected ->
                         state = state.copy(chatConnected = connected)
+
+                        if (connected) {
+                            wasConnected = true
+                        } else if (wasConnected) {
+                            // Connection dropped on its own -> reconnect automatically
+                            wasConnected = false
+                            if (state.isJoined && !state.chatReconnecting) {
+                                startChatConnect(resetAttempts = true)
+                            }
+                        }
                     }
                 }
                 launch {
@@ -315,23 +339,85 @@ class ClubDetailViewModel(
                 }
                 launch {
                     chatSocket.errors.collect { message ->
-                        if (state.isJoined) {
+                        if (!state.isJoined) return@collect
+
+                        if (isAuthChatError(message)) {
+                            // Retrying can't fix an auth problem - stop and tell the user
+                            reconnectJob?.cancel()
                             state = state.copy(error = clubUiError(message))
+                            return@collect
                         }
+
+                        // Don't spam "Chat disconnected" toasts while auto-retrying
+                        if (state.chatReconnecting) return@collect
+
+                        state = state.copy(error = clubUiError(message))
                     }
                 }
             }
         }
 
-        viewModelScope.launch {
-            chatSocket.connect(clubId)
+        if (!chatSocket.connected.value) {
+            startChatConnect(resetAttempts = true)
         }
     }
 
+    /** Manual button (kept as a fallback if automatic retries run out). */
     fun reconnectChat() {
         if (!state.isJoined) return
-        viewModelScope.launch {
-            chatSocket.connect(clubId)
+        startChatConnect(resetAttempts = true)
+    }
+
+    /** Called when the screen resumes or the Chat tab is opened. */
+    fun ensureChatConnected() {
+        if (!state.isJoined || state.loading) return
+        if (state.chatConnected || state.chatReconnecting) return
+        startChatConnect(resetAttempts = true)
+    }
+
+    private fun startChatConnect(resetAttempts: Boolean) {
+        if (!state.isJoined) return
+        if (resetAttempts) autoReconnectAttempts = 0
+
+        reconnectJob?.cancel()
+        val myRun = ++connectRun
+        state = state.copy(chatReconnecting = true)
+
+        reconnectJob = viewModelScope.launch {
+            try {
+                while (state.isJoined && autoReconnectAttempts < maxAutoReconnectAttempts) {
+                    chatSocket.connect(clubId)
+
+                    val connected = withTimeoutOrNull(connectTimeoutMs) {
+                        chatSocket.connected.first { it }
+                    } != null
+
+                    if (connected) {
+                        autoReconnectAttempts = 0
+                        return@launch
+                    }
+
+                    autoReconnectAttempts++
+                    if (autoReconnectAttempts < maxAutoReconnectAttempts) {
+                        delay(
+                            reconnectDelaysMs[
+                                (autoReconnectAttempts - 1)
+                                    .coerceIn(0, reconnectDelaysMs.lastIndex)
+                            ]
+                        )
+                    }
+                }
+
+                if (state.isJoined && !chatSocket.connected.value) {
+                    state = state.copy(
+                        error = "Couldn't reconnect to chat. Tap \"Reconnect chat\" to try again."
+                    )
+                }
+            } finally {
+                if (myRun == connectRun) {
+                    state = state.copy(chatReconnecting = false)
+                }
+            }
         }
     }
 
@@ -487,6 +573,7 @@ class ClubDetailViewModel(
 
 
     override fun onCleared() {
+        reconnectJob?.cancel()
         chatSocket.close()
         super.onCleared()
     }
@@ -566,6 +653,20 @@ fun ClubDetailScreen(
     }
     BackHandler(enabled = state.selectedTab == "CHAT") {
         vm.selectTab("MEMBERS")
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, vm) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) vm.ensureChatConnected()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(state.selectedTab, state.isJoined, state.loading) {
+        if (state.selectedTab == "CHAT" && state.isJoined && !state.loading) {
+            vm.ensureChatConnected()
+        }
     }
     LaunchedEffect(state.clubRemoved) {
         if (state.clubRemoved) onBack()
@@ -1171,14 +1272,18 @@ fun ClubDetailScreen(
                                             )
                                         )
                                         Text(
-                                            if (state.chatConnected) "Live" else "Reconnecting required",
+                                            when {
+                                                state.chatConnected -> "Live"
+                                                state.chatReconnecting -> "Reconnecting..."
+                                                else -> "Disconnected"
+                                            },
                                             color = if (state.chatConnected) DetailGreen else Color(0xFFFF9999),
                                             style = MaterialTheme.typography.labelMedium
                                         )
                                     }
                                 }
                             }
-                            if (!state.chatConnected) {
+                            if (!state.chatConnected&& !state.chatReconnecting) {
                                 item {
                                     OutlinedButton(
                                         onClick = vm::reconnectChat,
@@ -1498,8 +1603,11 @@ private fun ClubChatContent(
                 )
 
                 Text(
-                    text = if (state.chatConnected) "Live conversation"
-                    else "Reconnecting...",
+                    text = when {
+                        state.chatConnected -> "Live conversation"
+                        state.chatReconnecting -> "Reconnecting..."
+                        else -> "Disconnected"
+                    },
                     color = if (state.chatConnected) DetailGreen
                     else Color(0xFFFF9999),
                     style = MaterialTheme.typography.bodySmall
@@ -1707,7 +1815,7 @@ private fun ClubChatContent(
             }
         }
 
-        if (!state.chatConnected) {
+        if (!state.chatConnected && !state.chatReconnecting) {
             TextButton(
                 onClick = onReconnect,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
