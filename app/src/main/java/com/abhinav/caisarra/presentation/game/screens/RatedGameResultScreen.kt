@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import com.abhinav.caisarra.core.ui.components.rememberCountUp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -51,6 +52,7 @@ import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
+import kotlin.math.abs
 
 private val ScreenBg = Color(0xFF0B1218)
 private val Card = Color(0xFF121A22)
@@ -101,7 +103,7 @@ fun RatedGameResultScreen(
     }
     val iAmWhite = state.myColor != PieceColor.BLACK
     val myChange = state.ratingChange
-    val opponentChange = myChange?.let { -it }
+    val opponentChange = state.opponentRatingChange
 
     Column(
         modifier = Modifier
@@ -220,12 +222,20 @@ private fun CircleIconButton(icon: ImageVector, label: String, onClick: () -> Un
     }
 }
 
+private const val RATING_COUNT_DELAY_MS = 900L
+
 @Composable
 private fun EloPill(change: Int?, current: Int?, previous: Int?, accent: Color) {
+    val shownChange = change?.let { rememberCountUp(target = it, delayMillis = RATING_COUNT_DELAY_MS) }
+    val shownCurrent = if (current != null && previous != null) {
+        rememberCountUp(target = current, from = previous, delayMillis = RATING_COUNT_DELAY_MS)
+    } else {
+        current
+    }
     val changeText = when {
-        change == null -> "Rated"
-        change > 0 -> "↑ +$change Elo"
-        change < 0 -> "↓ $change Elo"
+        change == null || shownChange == null -> "Rated"
+        change > 0 -> "↑ +$shownChange Elo"
+        change < 0 -> "↓ ${abs(shownChange)} Elo"
         else -> "Elo unchanged"
     }
     Row(
@@ -238,7 +248,7 @@ private fun EloPill(change: Int?, current: Int?, previous: Int?, accent: Color) 
     ) {
         Text(changeText, color = accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Box(Modifier.size(width = 1.dp, height = 12.dp).background(Border))
-        Text(current?.toString() ?: "—", color = TextMain, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(shownCurrent?.toString() ?: "—", color = TextMain, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         if (previous != null && previous != current) {
             Text(
                 previous.toString(),
@@ -323,7 +333,8 @@ private fun PlayerCard(
                 when {
                     change == null -> Unit
                     change > 0 -> append(" (+$change)")
-                    else -> append(" ($change)")
+                    change < 0 -> append(" ($change)")
+                    else -> append(" (±0)")
                 }
             },
             color = if (highlight) accent else Muted,

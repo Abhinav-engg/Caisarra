@@ -1,30 +1,67 @@
 
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.abhinav.caisarra.core.ui.components.OpponentFoundBurst
+import com.caisaara.ui.theme.StatsGreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.R
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.abhinav.caisarra.core.ui.components.EyebrowCard
 import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.SearchPulse
+import com.abhinav.caisarra.core.ui.components.SecondaryButton
+import com.abhinav.caisarra.core.ui.components.responsiveContentWidth
+import com.abhinav.caisarra.core.ui.theme.StatsScreenPadding
 import com.abhinav.caisarra.presentation.game.viewmodel.MatchmakingViewModel
+import com.abhinav.caisarra.presentation.game.viewmodel.gameModeFor
+import com.caisaara.ui.theme.StatsBg
+import com.caisaara.ui.theme.StatsRed
+import com.caisaara.ui.theme.StatsTextMuted
+import com.caisaara.ui.theme.StatsTextWhite
+import kotlinx.coroutines.delay
+
+private const val OPPONENT_FOUND_HOLD_MS = 900L
+
+private enum class MatchPhase { SEARCHING, FOUND, ENDED }
 
 private fun formatTimeControl(
     minutes: Int,
@@ -37,7 +74,7 @@ private fun formatTimeControl(
         7200 -> "5 days"
         10080 -> "7 days"
         20160 -> "14 days"
-        else -> "$minutes min"
+        else -> return "$minutes + $incrementSeconds"
     }
     return if (incrementSeconds > 0) {
         "$duration + ${incrementSeconds}s"
@@ -56,98 +93,128 @@ fun MatchmakingScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
+    val haptic = LocalHapticFeedback.current
     LaunchedEffect(state.matchedGameId) {
         state.matchedGameId?.let { gameId ->
+            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+            delay(OPPONENT_FOUND_HOLD_MS)
             viewModel.clearMatchedGame()
             onMatched(gameId)
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF080D13))
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "MOSAIC",
-            color = Color.White,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
-        )
+    var elapsed by remember { mutableIntStateOf(0) }
+    LaunchedEffect(state.isSearching) {
+        elapsed = 0
+        while (state.isSearching) {
+            delay(1000)
+            elapsed++
+        }
+    }
 
-        Spacer(Modifier.height(42.dp))
+    Column(Modifier.fillMaxSize().background(StatsBg).statusBarsPadding()) {
+        CaisaaraTopBar(title = "FINDING YOUR MATCH", onBack = onBack, titleFontSize = 18.sp)
+        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            val contentWidth = responsiveContentWidth(maxWidth)
+            Column(
+                modifier = Modifier
+                    .width(contentWidth)
+                    .fillMaxHeight()
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = StatsScreenPadding)
+                    .navigationBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                EyebrowCard(
+                    eyebrow = "RATED ${gameModeFor(minutes.toFloat()).label.uppercase()} · ${formatTimeControl(minutes, incrementSeconds)}",
+                    title = "A worthy opponent awaits.",
+                    subtitle = "Matching you with a player near your rating."
+                )
+                val phase = when {
+                    state.isMatched -> MatchPhase.FOUND
+                    state.isSearching -> MatchPhase.SEARCHING
+                    else -> MatchPhase.ENDED
+                }
+                val pulseSize = (contentWidth * 0.5f).coerceIn(140.dp, 220.dp)
+                AnimatedContent(
+                    targetState = phase,
+                    transitionSpec = {
+                        (fadeIn(tween(260)) + scaleIn(tween(260), initialScale = 0.92f)) togetherWith
+                                fadeOut(tween(160))
+                    },
+                    contentAlignment = Alignment.TopCenter,
+                    label = "matchPhase"
+                ) { target ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        when (target) {
+                            MatchPhase.SEARCHING -> {
+                                SearchPulse(
+                                    icon = painterResource(R.drawable.ic_swords),
+                                    size = pulseSize,
+                                    modifier = Modifier.padding(vertical = 32.dp)
+                                )
+                                Text(
+                                    text = "Searching · %02d:%02d".format(elapsed / 60, elapsed % 60),
+                                    color = StatsTextWhite,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "Usually connects in under 15 seconds",
+                                    color = StatsTextMuted,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(Modifier.height(24.dp))
+                                SecondaryButton(
+                                    text = if (state.isCancelling) "Cancelling..." else "Cancel search",
+                                    onClick = viewModel::cancelMatch,
+                                    enabled = !state.isCancelling
+                                )
+                            }
 
-        if (state.isSearching) {
-            CircularProgressIndicator(
-                color = Color(0xFF10B981),
-                strokeWidth = 4.dp
-            )
+                            MatchPhase.FOUND -> {
+                                OpponentFoundBurst(
+                                    icon = painterResource(R.drawable.ic_swords),
+                                    size = pulseSize,
+                                    modifier = Modifier.padding(vertical = 32.dp)
+                                )
+                                Text(
+                                    text = "Opponent found!",
+                                    color = StatsGreen,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Setting up the board...",
+                                    color = StatsTextMuted,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
 
-            Spacer(Modifier.height(28.dp))
-
-            Text(
-                text = state.message.ifBlank {
-                    "Finding opponent..."
-                },
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            Text(
-                text = "Looking for a player with a similar rating",
-                color = Color(0xFFB8C2CC),
-                fontSize = 14.sp
-            )
-
-            Spacer(Modifier.height(20.dp))
-
-            Text(
-                text = formatTimeControl(minutes, incrementSeconds),
-                color = Color(0xFF10B981),
-                fontSize = 16.sp
-            )
-
-            Spacer(Modifier.height(36.dp))
-
-            GeneralButton(
-                text = "CANCEL SEARCH",
-                onClick = viewModel::cancelMatch,
-                modifier = Modifier.fillMaxWidth()
-            )
-        } else {
-            Text(
-                text = state.error ?: "Search ended",
-                color = if (state.error != null) {
-                    Color(0xFFFF7777)
-                } else {
-                    Color.White
-                },
-                fontSize = 17.sp
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            GeneralButton(
-                text = "TRY AGAIN",
-                onClick = {
-                    viewModel.startMatch(
-                        minutes = minutes,
-                        incrementSeconds = incrementSeconds
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            TextButton(onClick = onBack) {
-                Text("BACK", color = Color.White)
+                            MatchPhase.ENDED -> {
+                                Text(
+                                    text = state.error ?: "Search ended",
+                                    color = if (state.error != null) StatsRed else StatsTextWhite,
+                                    fontSize = 17.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 24.dp)
+                                )
+                                GeneralButton(
+                                    text = "TRY AGAIN",
+                                    onClick = { viewModel.startMatch(minutes = minutes, incrementSeconds = incrementSeconds) }
+                                )
+                                SecondaryButton(text = "Back", onClick = onBack)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

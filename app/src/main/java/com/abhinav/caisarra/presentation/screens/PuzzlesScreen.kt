@@ -1,21 +1,28 @@
 
 package com.abhinav.caisarra.presentation.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,20 +55,19 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.components.MainTabTopBar
+import com.abhinav.caisarra.core.ui.components.responsiveContentWidth
+import com.abhinav.caisarra.core.ui.components.GlassBorderStroke
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.puzzles.PuzzlesHubViewModel
-import com.caisaara.ui.theme.PuzzleCardBorder
 import com.caisaara.ui.theme.PuzzleItemBg
 import com.caisaara.ui.theme.PuzzleItemBorder
 import com.caisaara.ui.theme.StatsBg
-import com.caisaara.ui.theme.StatsCyan
 import com.caisaara.ui.theme.StatsSkeletonChartBg
 import com.caisaara.ui.theme.TextSizeBadge
 import com.caisaara.ui.theme.TextSizeCaption
 import com.caisaara.ui.theme.TextSizeSubhead
 import com.caisaara.ui.theme.ThemeSlateAccent
-import androidx.compose.ui.platform.LocalConfiguration
 @Composable
 fun PuzzlesScreen(
     viewModel: PuzzlesHubViewModel,
@@ -73,8 +79,6 @@ fun PuzzlesScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
 
     var isLaunchingPuzzle by remember { mutableStateOf(false) }
 
@@ -92,19 +96,27 @@ fun PuzzlesScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(StatsBg)
-            .statusBarsPadding()
     ) {
         PuzzlesHeader(
             streak = state.streak,
             onStreakClick = onPlayDailyPuzzle
         )
 
-        if (isLandscape) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+        ) {
+        val twoPane = maxWidth > maxHeight
+        val contentWidth = responsiveContentWidth(maxWidth, if (twoPane) 2 else 1)
+        if (twoPane) {
             Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .align(Alignment.TopCenter)
+                    .width(contentWidth)
+                    .fillMaxHeight()
+                    .padding(vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.Top
             ) {
                 Box(
@@ -153,7 +165,9 @@ fun PuzzlesScreen(
         } else {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .align(Alignment.TopCenter)
+                    .width(contentWidth)
+                    .fillMaxHeight()
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -191,6 +205,7 @@ fun PuzzlesScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+        }
     }
 }
 
@@ -201,7 +216,7 @@ private fun PuzzlesHeader(
 ) {
     MainTabTopBar(
         title = "PUZZLES",
-        iconPainter = painterResource(id = R.drawable.ic_puzzle_piece),
+        iconPainter = painterResource(id = R.drawable.ic_tactic_puzzle_rush),
         trailingContent = {
             Row(
                 modifier = Modifier
@@ -244,7 +259,7 @@ private fun DailyPuzzleCard(
         colors = CardDefaults.cardColors(
             containerColor = StatsSkeletonChartBg
         ),
-        border = BorderStroke(1.dp, PuzzleCardBorder)
+        border = GlassBorderStroke
     ) {
         Column(
             modifier = Modifier
@@ -258,8 +273,9 @@ private fun DailyPuzzleCard(
                 ),
                 contentDescription = "Daily Puzzle",
                 modifier = Modifier
-                    .width(187.dp)
-                    .height(185.dp),
+                    .widthIn(max = 187.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(197f / 191f),
                 contentScale = ContentScale.Fit
             )
 
@@ -309,7 +325,7 @@ private fun ModesSection(
         colors = CardDefaults.cardColors(
             containerColor = StatsSkeletonChartBg
         ),
-        border = BorderStroke(1.dp, PuzzleCardBorder)
+        border = GlassBorderStroke
     ) {
         Column(
             modifier = Modifier
@@ -320,7 +336,7 @@ private fun ModesSection(
             ModeItem(
                 title = "Puzzle Rush",
                 subtitle = "3 min • High Score: ${rushHighScore ?: "--"}",
-                iconRes = R.drawable.ic_puzzle_piece,
+                iconRes = R.drawable.ic_tactic_puzzle_rush,
                 enabled = enabled,
                 onClick = {
                     onPlayPuzzleRush("3min")
@@ -330,7 +346,7 @@ private fun ModesSection(
             ModeItem(
                 title = "Puzzle Survival",
                 subtitle = "3 Lives • No Time Limit",
-                iconRes = R.drawable.ic_puzzle_shield,
+                iconRes = R.drawable.ic_tactic_survival,
                 enabled = enabled,
                 onClick = {
                     onPlayPuzzleRush("survival")
@@ -340,7 +356,7 @@ private fun ModesSection(
             ModeItem(
                 title = "Custom Tactics",
                 subtitle = "Train specific chess tactics",
-                iconRes = R.drawable.ic_puzzle_piece,
+                iconRes = R.drawable.ic_tactic_custom,
                 enabled = enabled,
                 onClick = onPlayCustomTactics
             )
@@ -348,7 +364,7 @@ private fun ModesSection(
             ModeItem(
                 title = "Mini Mates",
                 subtitle = "Tiny boards • Mate in 1 to 3",
-                iconRes = R.drawable.ic_puzzle_piece,
+                iconRes = R.drawable.ic_tactic_mini_mates,
                 enabled = enabled,
                 onClick = onPlayMiniMates
             )
@@ -388,11 +404,11 @@ fun ModeItem(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
+            Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = title,
-                tint = StatsCyan.copy(alpha = itemAlpha),
-                modifier = Modifier.size(26.dp)
+                alpha = itemAlpha,
+                modifier = Modifier.size(28.dp)
             )
 
             Spacer(modifier = Modifier.width(16.dp))

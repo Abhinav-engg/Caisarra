@@ -1,7 +1,9 @@
 package com.abhinav.caisarra.data.repository
 
 import android.content.Context
+import com.abhinav.caisarra.data.local.PUSH_NOTIFICATIONS_KEY
 import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.data.local.settingsDataStore
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.data.remote.TokenRefresher
@@ -29,6 +31,7 @@ import okhttp3.Headers
 import retrofit2.HttpException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class AuthRepository private constructor(private val context: Context) {
@@ -360,6 +363,7 @@ class AuthRepository private constructor(private val context: Context) {
             android.util.Log.d("FCM_DEBUG", "syncFcmToken skipped: isLoggedIn=${isLoggedIn()}, isGuest=${isGuest()}")
             return
         }
+        if (context.settingsDataStore.data.first()[PUSH_NOTIFICATIONS_KEY] == false) return
         try {
             val res = NotificationRepository.get(context).registerDevice(fcmToken)
             android.util.Log.i("FCM_DEBUG", "syncFcmToken registerDevice result: $res")

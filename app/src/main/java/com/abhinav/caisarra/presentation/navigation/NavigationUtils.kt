@@ -56,6 +56,17 @@ fun NavController.navigateOnce(
     }
 }
 
+fun NavController.navigateToTab(route: String) {
+    if (currentDestination?.route == route) return
+    navigate(route) {
+        popUpTo(AppRoutes.HOME) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
 fun NavController.safeBack(fallbackRoute: String) {
     if (!isResumed()) return
     if (currentDestination?.route == fallbackRoute) return

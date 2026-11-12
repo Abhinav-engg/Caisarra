@@ -20,7 +20,7 @@ class GameSetupViewModel : ViewModel() {
                         event.minutes,
                         current.bonusSeconds
                     ),
-                    mode = modeFor(event.minutes)
+                    mode = gameModeFor(event.minutes)
                 )
 
                 is GameSetupEvent.BonusChanged -> current.copy(
@@ -39,13 +39,6 @@ class GameSetupViewModel : ViewModel() {
                 )
             }
         }
-    }
-
-    private fun modeFor(minutes: Float): GameMode = when {
-        minutes >= 1440f -> GameMode.DAILY
-        minutes < 3f -> GameMode.BULLET
-        minutes < 10f -> GameMode.BLITZ
-        else -> GameMode.RAPID
     }
 
     private fun timeLabel(

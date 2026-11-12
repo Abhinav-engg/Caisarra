@@ -182,6 +182,7 @@ class PuzzleRepository(
         puzzleId: String,
         move: String,
         timeTakenMs: Long,
+        moveIndex: Int? = null,
         rated: Boolean = false
     ): Result<CustomPuzzleAttemptResponse> = call {
 
@@ -190,6 +191,7 @@ class PuzzleRepository(
                 puzzleId = puzzleId,
                 move = move,
                 timeTakenMs = timeTakenMs,
+                moveIndex = moveIndex,
                 rated = rated
             )
         )

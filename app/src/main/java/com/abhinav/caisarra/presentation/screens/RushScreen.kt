@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.components.FullScreenError
 import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.RollingNumber
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
@@ -178,6 +179,7 @@ private fun RushLandscapeContent(
                         moveAnimationEvent = state.moveAnimationEvent,
                         moveAnimationConsumedId = state.moveAnimationConsumedId,
                         onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                        moveFeedback = state.moveFeedback,
                         onSquareClick = { square -> viewModel.onSquareClicked(square) }
                     )
                 }
@@ -197,7 +199,7 @@ private fun RushLandscapeContent(
                         Box(modifier = Modifier.size(32.dp).background(SilverColor, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
                             Icon(painter = painterResource(id = R.drawable.black_pawn), contentDescription = null, tint = SlateNormal, modifier = Modifier.size(22.dp))
                         }
-                        Text("${state.score}", color = White, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+                        RollingNumber(state.score, 20.sp)
                     }
 
                     val timerText = if (state.secondsRemaining != null) {
@@ -392,13 +394,7 @@ private fun RushPortraitContent(
                         modifier = Modifier.size(24.dp)
                     )
                 }
-                Text(
-                    text = "${state.score}",
-                    color = White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = JetBrainsMono
-                )
+                RollingNumber(state.score, 22.sp)
             }
 
             Row(
@@ -479,6 +475,7 @@ private fun RushPortraitContent(
                     moveAnimationEvent = state.moveAnimationEvent,
                     moveAnimationConsumedId = state.moveAnimationConsumedId,
                     onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                    moveFeedback = state.moveFeedback,
                     onSquareClick = { square ->
                         viewModel.onSquareClicked(square)
                     }

@@ -34,8 +34,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import android.Manifest
 import android.app.Activity
@@ -107,7 +105,6 @@ fun EditProfileScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var showPhotoOptions by remember { mutableStateOf(false) }
@@ -744,11 +741,6 @@ fun EditProfileScreen(
                 Spacer(Modifier.height(8.dp))
             }
         }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
-        )
     }
 
     if (showPhotoOptions) {

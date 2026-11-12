@@ -93,6 +93,31 @@ fun CreateTournamentScreen(
 
                 Spacer(Modifier.height(16.dp))
 
+                FieldLabel("Visibility")
+                TournamentVisibilityToggle(
+                    visibility = state.visibility,
+                    onVisibilityChange = viewModel::onVisibilityChange
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                FieldLabel("Game Type")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(true to "Rated", false to "Unrated").forEach { (value, label) ->
+                        PillButton(
+                            text = label,
+                            isSelected = state.rated == value,
+                            onClick = { viewModel.onRatedChange(value) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
                 FieldLabel("Format")
                 Row(
                     modifier = Modifier.fillMaxWidth(),

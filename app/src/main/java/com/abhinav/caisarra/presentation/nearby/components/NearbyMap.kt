@@ -28,7 +28,6 @@ import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Polygon
-import org.osmdroid.views.overlay.TilesOverlay
 import java.io.File
 
 private var osmdroidConfigured = false
@@ -80,7 +79,6 @@ fun NearbyMap(
                     setTileSource(TileSourceFactory.MAPNIK)
                     setMultiTouchControls(true)
                     zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
-                    overlayManager.tilesOverlay.setColorFilter(TilesOverlay.INVERT_COLORS)
                     minZoomLevel = 3.0
                     maxZoomLevel = 19.0
                     isHorizontalMapRepetitionEnabled = false
@@ -128,7 +126,7 @@ fun NearbyMap(
                         val poly = Polygon(view).apply {
                             points = Polygon.pointsAsCircle(center, km * 1000.0)
                             fillPaint.color = android.graphics.Color.TRANSPARENT
-                            outlinePaint.color = 0x1FFFFFFF.toInt()
+                            outlinePaint.color = 0x40000000
                             outlinePaint.strokeWidth = 2f
                             outlinePaint.style = android.graphics.Paint.Style.STROKE
                             infoWindow = null

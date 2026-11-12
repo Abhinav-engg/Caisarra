@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import com.abhinav.caisarra.presentation.game.components.GameOverReveal
+import com.abhinav.caisarra.core.ui.components.rememberToaster
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.clickable
@@ -28,8 +30,6 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -80,12 +80,12 @@ fun BotGameScreen(
     val endReason by viewModel.endReason.collectAsState()
     val isStartingNextBot by viewModel.isStartingNextBot.collectAsState()
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    val toaster = rememberToaster()
     var showHomeResignDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.snackbarEvent.collect { message ->
-            snackbarHostState.showSnackbar(message)
+            toaster.show(message)
         }
     }
 
@@ -256,13 +256,6 @@ fun BotGameScreen(
                 }
             }
         }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp)
-        )
     }
 
     if (!autoQueen) {
@@ -503,6 +496,7 @@ private fun BotResultDialog(
     onDismiss: () -> Unit = {}
 ) {
     Dialog(onDismissRequest = onDismiss) {
+        GameOverReveal(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -567,6 +561,7 @@ private fun BotResultDialog(
             TextButton(onClick = onHome) {
                 Text(text = "BACK TO HOME", color = Color(0xFFAAB7C6), fontFamily = JetBrainsMono)
             }
+        }
         }
     }
 }

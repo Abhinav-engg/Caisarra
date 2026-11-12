@@ -26,6 +26,21 @@ import com.abhinav.caisarra.data.local.PendingOtpStore
 import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.presentation.navigation.adminGraph
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.runtime.collectAsState
+import com.abhinav.caisarra.app.MainActivity
+import com.abhinav.caisarra.data.repository.NotificationRepository
+
+private val preAuthRoutes = setOf(
+    AppRoutes.SPLASH,
+    AppRoutes.ONBOARDING,
+    AppRoutes.LOGIN,
+    AppRoutes.REGISTER,
+    AppRoutes.RESET_PASSWORD,
+    AppRoutes.VERIFY,
+    AppRoutes.NEW_PASSWORD,
+    AppRoutes.GUEST_HOME
+)
+
 @Composable
 fun AppNavigation(
     authRepository: AuthRepository
@@ -62,9 +77,25 @@ fun AppNavigation(
     LaunchedEffect(currentRoute) {
         isGuestUser = authRepository.isGuest()
     }
+    val pendingNotificationIntent by MainActivity.pendingIntentFlow.collectAsState()
+    LaunchedEffect(pendingNotificationIntent, currentRoute) {
+        val intent = pendingNotificationIntent ?: return@LaunchedEffect
+        val notifType = intent.getStringExtra("notification_type")?.takeIf { it.isNotBlank() }
+            ?: intent.getStringExtra("type")
+        val notifId = intent.getStringExtra("notification_id")?.toLongOrNull()
+        if (notifType.isNullOrBlank() && notifId == null) return@LaunchedEffect
+        if (currentRoute == null || currentRoute in preAuthRoutes) return@LaunchedEffect
+        if (!authRepository.isLoggedIn()) return@LaunchedEffect
+        MainActivity.pendingIntentFlow.value = null
+        handleIntentNotificationNavigation(intent, notifType, navController)
+        if (notifId != null && notifId > 0) {
+            NotificationRepository.get(context).markAsRead(notifId)
+        }
+    }
     val bottomNavigationRoutes = remember {
         setOf(
             AppRoutes.HOME,
+            AppRoutes.GAME_SETUP,
             AppRoutes.PUZZLES,
             AppRoutes.NEARBY,
             AppRoutes.COMMUNITY,
@@ -85,15 +116,8 @@ fun AppNavigation(
                 AppBottomNavigationBar(
                     currentRoute = currentRoute,
                     onNavigateTo = { route ->
-                        if (currentRoute != route) {
-                            navController.navigate(route) {
-                                popUpTo(AppRoutes.HOME) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+                        if (currentRoute == AppRoutes.GAME_SETUP) navController.popBackStack(AppRoutes.HOME, false)
+                        navController.navigateToTab(route)
                     }
                 )
             }

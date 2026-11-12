@@ -4,6 +4,7 @@ import com.abhinav.caisarra.data.remote.dto.DailyPuzzleResponse
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
 import com.abhinav.caisarra.presentation.game.model.Square
 
 sealed interface DailyPuzzleUiState {
@@ -34,7 +35,8 @@ sealed interface DailyPuzzleUiState {
         val solutionRevealed: Boolean = false,
         val isPlayingSolution: Boolean = false,
         val hintAvailable: Boolean = true,
-        val canViewSolution: Boolean = false
+        val canViewSolution: Boolean = false,
+        val moveFeedback: MoveFeedback? = null
     ) : DailyPuzzleUiState
 
     data class Solved(

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -24,9 +25,12 @@ import com.caisaara.ui.theme.White
 @Composable
 fun MiniMatesLevelList(
     overview: MiniMatesOverviewDto,
+    currentLevel: Int?,
     onBack: () -> Unit,
     onLevelClick: (Int) -> Unit
 ) {
+    val levels = overview.chapters.flatMap { chapter -> listOf(null) + chapter.levels.map { it.levelNumber } }
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = levels.indexOf(currentLevel ?: overview.currentLevel).coerceAtLeast(0))
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -35,6 +39,7 @@ fun MiniMatesLevelList(
     ) {
         CaisaaraTopBar(title = "MINI MATES", onBack = onBack)
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -45,7 +50,7 @@ fun MiniMatesLevelList(
                     ModeItem(
                         title = level.title,
                         subtitle = "Mate in ${level.targetMoves} • ${starsText(level.stars)}",
-                        iconRes = R.drawable.ic_puzzle_piece,
+                        iconRes = R.drawable.ic_tactic_mini_mates,
                         enabled = level.unlocked,
                         onClick = { if (level.unlocked) onLevelClick(level.levelNumber) }
                     )

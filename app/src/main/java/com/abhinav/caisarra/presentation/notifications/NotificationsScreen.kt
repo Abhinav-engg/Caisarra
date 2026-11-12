@@ -56,6 +56,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.abhinav.caisarra.core.ui.components.ListSkeleton
+import com.abhinav.caisarra.core.ui.components.fadeInOnAppear
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import java.time.Duration
@@ -139,12 +141,7 @@ fun NotificationsScreen(
         ) {
             when {
                 state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = AccentCyan)
-                    }
+                    ListSkeleton(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp))
                 }
 
                 state.notifications.isEmpty() -> {
@@ -154,7 +151,7 @@ fun NotificationsScreen(
                 else -> {
                     LazyColumn(
                         state = listState,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().fadeInOnAppear(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {

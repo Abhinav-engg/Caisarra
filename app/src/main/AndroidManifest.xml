@@ -68,20 +68,8 @@
                     android:pathPrefix="/club/" />
                 <data
                     android:scheme="https"
-                    android:host="caisaara.duckdns.org"
-                    android:pathPrefix="/play/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.duckdns.org"
-                    android:pathPrefix="/watch/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.duckdns.org"
-                    android:pathPrefix="/tournament/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.duckdns.org"
-                    android:pathPrefix="/club/" />
+                    android:host="caisaara.app"
+                    android:pathPrefix="/tournaments/invite/" />
             </intent-filter>
 
             <intent-filter>
@@ -94,6 +82,7 @@
 
         <receiver
             android:name=".features.dailywidget.presentation.DailyTurnsWidgetReceiver"
+            android:label="Daily Games"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -101,6 +90,41 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/daily_turns_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".features.streakwidget.presentation.StreakWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/streak_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".features.quickplaywidget.presentation.QuickPlayWidgetReceiver"
+            android:label="Quick Play"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/daily_turns_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".features.minimateswidget.presentation.MiniMatesWidgetReceiver"
+            android:label="Mini Mates"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/streak_widget_info" />
         </receiver>
 
         <service

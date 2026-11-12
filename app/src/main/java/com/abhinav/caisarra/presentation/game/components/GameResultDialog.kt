@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.game.components
 
+import com.abhinav.caisarra.core.ui.components.rememberCountUp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -85,11 +86,11 @@ fun GameResultDialog(
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         BoxWithConstraints(Modifier.fillMaxWidth().padding(20.dp)) {
+            GameOverReveal(modifier = Modifier.align(Alignment.Center)) {
             Column(
                 modifier = Modifier
                     .widthIn(max = 520.dp)
                     .fillMaxWidth()
-                    .align(Alignment.Center)
                     .verticalScroll(rememberScrollState())
                     .background(ResultSurface, RoundedCornerShape(28.dp))
                     .border(1.dp, ResultBorder, RoundedCornerShape(28.dp))
@@ -143,6 +144,7 @@ fun GameResultDialog(
                     modifier = Modifier.clickable(onClick = onHome).padding(12.dp)
                 )
             }
+            }
         }
     }
 }
@@ -179,6 +181,12 @@ private fun ResultPlayer(name: String, color: String, won: Boolean, highlight: C
 
 @Composable
 private fun RatingSummary(rating: Int, change: Int?, rated: Boolean, color: Color) {
+    val shownChange = if (rated && change != null) rememberCountUp(target = change, delayMillis = RATING_COUNT_DELAY_MS) else change
+    val shownRating = if (rated && change != null) {
+        rememberCountUp(target = rating, from = rating - change, delayMillis = RATING_COUNT_DELAY_MS)
+    } else {
+        rating
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -190,14 +198,14 @@ private fun RatingSummary(rating: Int, change: Int?, rated: Boolean, color: Colo
     ) {
         Column {
             Text("CURRENT RATING", color = ResultMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Text("$rating", color = Color(0xFFF4F7FB), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text("$shownRating", color = Color(0xFFF4F7FB), fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
         Text(
             text = when {
                 !rated -> "UNRATED"
-                change == null -> "RATED"
-                change > 0 -> "+$change"
-                else -> change.toString()
+                change == null || shownChange == null -> "RATED"
+                change > 0 -> "+$shownChange"
+                else -> shownChange.toString()
             },
             color = if (rated && change != null) color else ResultMuted,
             fontSize = 18.sp,
@@ -205,6 +213,8 @@ private fun RatingSummary(rating: Int, change: Int?, rated: Boolean, color: Colo
         )
     }
 }
+
+private const val RATING_COUNT_DELAY_MS = 900L
 
 private enum class ResultOutcome { VICTORY, DEFEAT, DRAW }
 

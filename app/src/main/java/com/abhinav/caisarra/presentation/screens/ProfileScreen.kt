@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,7 +29,6 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -54,6 +54,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.abhinav.caisarra.core.ui.components.ListSkeleton
+import com.abhinav.caisarra.core.ui.components.fadeInOnAppear
 import com.abhinav.caisarra.presentation.components.CountryUtils
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
 import com.abhinav.caisarra.presentation.game.viewmodel.GameMode
@@ -226,6 +228,7 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .fadeInOnAppear(state.profile == null)
                 .verticalScroll(rememberScrollState())
                 .pointerInput(Unit) {
                     detectTapGestures(
@@ -305,16 +308,7 @@ fun ProfileScreen(
             }
 
             if (state.loading && state.profile == null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 48.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = ProfileCyan
-                    )
-                }
+                ListSkeleton(rows = 4, showHeader = true, contentPadding = PaddingValues())
             }
 
             state.error?.let { message ->

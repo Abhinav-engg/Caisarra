@@ -4,6 +4,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import androidx.navigation.navDeepLink
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.features.minimates.data.MiniMatesRepository
@@ -12,7 +13,7 @@ import com.abhinav.caisarra.presentation.navigation.safeBack
 import com.abhinav.caisarra.presentation.navigation.screenViewModel
 
 fun NavGraphBuilder.miniMatesGraph(navController: NavController) {
-    composable(route = AppRoutes.MINI_MATES) {
+    composable(route = AppRoutes.MINI_MATES, deepLinks = listOf(navDeepLink { uriPattern = "caisarra://minimates" })) {
         val context = LocalContext.current
         MiniMatesScreen(
             viewModel = screenViewModel {

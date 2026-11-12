@@ -258,7 +258,10 @@ fun OnlineGameScreen(
             ) {
                 OutlinedButton(
                     onClick = {
-                        viewModel.cancelWaitingChallenge(onDone = onHome)
+                        viewModel.cancelWaitingChallenge(
+                            onDone = onHome,
+                            onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+                        )
                     },
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     border = BorderStroke(1.dp, Color(0x33FFFFFF))

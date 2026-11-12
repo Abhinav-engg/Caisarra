@@ -368,8 +368,13 @@ fun DirectChallengeDialog(
                                     sentCode?.let { code ->
                                         scope.launch {
                                             challengeManager.cancelChallenge(code)
-                                            challengeManager.clearOutgoingChallenge()
-                                            onDismiss()
+                                                .onSuccess {
+                                                    challengeManager.clearOutgoingChallenge()
+                                                    onDismiss()
+                                                }
+                                                .onFailure { error ->
+                                                    Toast.makeText(context, error.userMessage("Failed to cancel challenge"), Toast.LENGTH_SHORT).show()
+                                                }
                                         }
                                     }
                                 },

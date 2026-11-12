@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.club
 
+import com.abhinav.caisarra.core.ui.components.rememberToaster
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -45,6 +46,7 @@ import com.abhinav.caisarra.data.repository.ClubRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.core.ui.components.MessageText
 import com.abhinav.caisarra.data.remote.ClubChatSocket
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -62,13 +64,60 @@ private val DetailMuted = Color(0xFFADB8C6)
 
 private enum class DetailTab { MEMBERS, LEADERBOARD, CHAT, MANAGE }
 
-private const val MAX_CLUB_MESSAGE_WORDS = 200
+// The server (POST /api/clubs/{id}/messages) rejects anything over 500 characters
+// with: 400 {"error":"message must be at most 500 characters"}
+private const val MAX_CLUB_MESSAGE_CHARS = 500
 
-private fun countWords(text: String): Int =
-    text.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
+private fun countChars(text: String): Int =
+    text.trim().let { it.codePointCount(0, it.length) }
 
-private fun clubMessageTooLongText(wordCount: Int): String =
-    "Message too long: $wordCount words. The limit is $MAX_CLUB_MESSAGE_WORDS words. Please shorten it and try again."
+private fun capToLimit(text: String): String =
+    if (text.codePointCount(0, text.length) <= MAX_CLUB_MESSAGE_CHARS) text
+    else text.substring(0, text.offsetByCodePoints(0, MAX_CLUB_MESSAGE_CHARS))
+
+/**
+ * Turns a failed "send club message" call into something useful.
+ * Logs the real HTTP status + server body (previously swallowed), and shows
+ * the server's own reason when it gives one (e.g. "message too long").
+ */
+private fun describeSendFailure(e: Exception, chars: Int, words: Int): String {
+    val fallback = "Couldn't send your message. Please try again."
+
+    if (e is retrofit2.HttpException) {
+        val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+        Log.e(
+            "ClubDetail",
+            "Send failed: HTTP ${e.code()} chars=$chars words=$words body=$body",
+            e
+        )
+
+        val serverReason = body?.let {
+            runCatching {
+                val obj = kotlinx.serialization.json.Json.parseToJsonElement(it)
+                        as kotlinx.serialization.json.JsonObject
+                listOf("error", "message", "detail").firstNotNullOfOrNull { key ->
+                    (obj[key] as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.content?.takeIf { v -> v.isNotBlank() }
+                }
+            }.getOrNull()
+        }
+
+        return when {
+            serverReason != null -> serverReason
+            e.code() == 413 || e.code() == 400 ->
+                "Message is too long for the server ($chars characters). Please shorten it and try again."
+            e.code() == 429 -> "You're sending messages too fast. Please wait a moment."
+            e.code() >= 500 -> "Server error. Please try again in a moment."
+            else -> fallback
+        }
+    }
+
+    Log.e("ClubDetail", "Failed to send club message (chars=$chars words=$words)", e)
+    return if (e is java.io.IOException) e.userMessage(fallback) else fallback
+}
+
+private fun clubMessageTooLongText(charCount: Int): String =
+    "Message too long: $charCount characters. The limit is $MAX_CLUB_MESSAGE_CHARS characters. Please shorten it and try again."
 
 data class ClubDetailState(
     val club: ClubDto? = null,
@@ -229,7 +278,7 @@ class ClubDetailViewModel(
     }
 
     fun setChatInput(value: String) {
-        state = state.copy(chatInput = value)
+        state = state.copy(chatInput = capToLimit(value))
     }
 
     fun changeLeaderboardMode(mode: String) {
@@ -291,10 +340,10 @@ class ClubDetailViewModel(
 
         if (text.isBlank() || state.busy || !state.isJoined) return
 
-        val wordCount = countWords(text)
-        if (wordCount > MAX_CLUB_MESSAGE_WORDS) {
+        val charCount = countChars(text)
+        if (charCount > MAX_CLUB_MESSAGE_CHARS) {
             state = state.copy(
-                error = clubMessageTooLongText(wordCount),
+                error = clubMessageTooLongText(charCount),
                 info = null
             )
             return
@@ -337,10 +386,8 @@ class ClubDetailViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e("ClubDetail", "Failed to send club message", e)
-
                 state = state.copy(
-                    error = "Couldn't send your message. Please try again."
+                    error = describeSendFailure(e, text.length, text.trim().split(Regex("\\s+")).size)
                 )
             } finally {
                 state = state.copy(busy = false)
@@ -502,18 +549,18 @@ fun ClubDetailScreen(
     )
 
     val state = vm.state
-    val snackbarHostState = remember { SnackbarHostState() }
+    val toaster = rememberToaster()
     LaunchedEffect(state.error) {
         val message = state.error?.takeIf { it.isNotBlank() }
         if (message != null) {
-            snackbarHostState.showSnackbar(clubUiError(message))
+            toaster.show(clubUiError(message))
             vm.clearError()
         }
     }
     LaunchedEffect(state.info) {
         val message = state.info?.takeIf { it.isNotBlank() }
         if (message != null) {
-            snackbarHostState.showSnackbar(message)
+            toaster.show(message)
             vm.clearInfo()
         }
     }
@@ -533,7 +580,7 @@ fun ClubDetailScreen(
 
     val isOwner = role in setOf("owner", "club_owner", "leader")
 
-    val isAdmin = isOwner || role in setOf("com/abhinav/caisarra/data/remote/admin", "administrator", "club_admin")
+    val isAdmin = isOwner || role in setOf("admin", "administrator", "club_admin")
     var selectedMember by remember { mutableStateOf<ClubMemberDto?>(null) }
     var confirmAction by remember { mutableStateOf<String?>(null) }
 
@@ -543,17 +590,6 @@ fun ClubDetailScreen(
             indication = null
         ) { focusManager.clearFocus() },
         containerColor = DetailBg,
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = DetailCard,
-                    contentColor = DetailText,
-                    actionColor = DetailGreen,
-                    shape = RoundedCornerShape(16.dp)
-                )
-            }
-        },
         topBar = {
             TopAppBar(
                 title = {
@@ -920,7 +956,7 @@ fun ClubDetailScreen(
                                             .replace(' ', '_')
 
                                         val isMemberOwner = memberRole in setOf("owner", "club_owner", "leader")
-                                        val isMemberAdmin = memberRole in setOf("com/abhinav/caisarra/data/remote/admin", "administrator", "club_admin")
+                                        val isMemberAdmin = memberRole in setOf("admin", "administrator", "club_admin")
 
                                         val canManageThisMember = when {
                                             isOwner -> !isMemberOwner
@@ -1152,11 +1188,11 @@ fun ClubDetailScreen(
                                     }
                                 }
                             }
-                            if (countWords(state.chatInput) > MAX_CLUB_MESSAGE_WORDS) {
+                            if (countChars(state.chatInput) >= MAX_CLUB_MESSAGE_CHARS - 100) {
                                 item {
                                     Text(
-                                        "Message too long: ${countWords(state.chatInput)} / $MAX_CLUB_MESSAGE_WORDS words. Please shorten it.",
-                                        color = Color(0xFFFF9999),
+                                        "${countChars(state.chatInput)} / $MAX_CLUB_MESSAGE_CHARS characters",
+                                        color = if (countChars(state.chatInput) >= MAX_CLUB_MESSAGE_CHARS) Color(0xFFFF9999) else DetailMuted,
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }
@@ -1250,7 +1286,7 @@ fun ClubDetailScreen(
                                             fontWeight = FontWeight.Bold
                                         )
                                         Spacer(Modifier.height(2.dp))
-                                        Text(
+                                        MessageText(
                                             text = message.message,
                                             color = Color(0xFFF5F5F5),
                                             style = MaterialTheme.typography.bodyLarge
@@ -1347,7 +1383,7 @@ fun ClubDetailScreen(
                             confirmAction = "transfer:${member.userId}"
                         }) { Text("Transfer leadership") }
                     }
-                    if (isOwner && member.role.lowercase() == "com/abhinav/caisarra/data/remote/admin") {
+                    if (isOwner && member.role.lowercase() in setOf("admin", "administrator", "club_admin")) {
                         TextButton(onClick = {
                             selectedMember = null
                             confirmAction = "removeadmin:${member.userId}"
@@ -1567,7 +1603,7 @@ private fun ClubChatContent(
 
                         Spacer(Modifier.height(4.dp))
 
-                        Text(
+                        MessageText(
                             text = message.message,
                             color = DetailText,
                             style = MaterialTheme.typography.bodyLarge
@@ -1586,11 +1622,11 @@ private fun ClubChatContent(
             }
         }
 
-        val chatWordCount = countWords(state.chatInput)
-        if (chatWordCount > MAX_CLUB_MESSAGE_WORDS) {
+        val chatCharCount = countChars(state.chatInput)
+        if (chatCharCount >= MAX_CLUB_MESSAGE_CHARS - 100) {
             Text(
-                text = "Message too long: $chatWordCount / $MAX_CLUB_MESSAGE_WORDS words. Please shorten it.",
-                color = Color(0xFFFF9999),
+                text = "$chatCharCount / $MAX_CLUB_MESSAGE_CHARS characters",
+                color = if (chatCharCount >= MAX_CLUB_MESSAGE_CHARS) Color(0xFFFF9999) else DetailMuted,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(start = 8.dp, top = 4.dp)
             )

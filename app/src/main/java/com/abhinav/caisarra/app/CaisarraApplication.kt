@@ -2,6 +2,8 @@ package com.abhinav.caisarra.app
 
 import android.app.Application
 import com.abhinav.caisarra.features.dailywidget.presentation.refreshDailyTurnsWidget
+import com.abhinav.caisarra.features.minimateswidget.presentation.refreshMiniMatesWidget
+import com.abhinav.caisarra.features.streakwidget.presentation.refreshStreakWidget
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
@@ -11,6 +13,8 @@ class CaisarraApplication : Application() {
         super.onCreate()
         NotificationHelper.ensureChannels(this)
         MainScope().launch { refreshDailyTurnsWidget(this@CaisarraApplication) }
+        MainScope().launch { refreshStreakWidget(this@CaisarraApplication) }
+        MainScope().launch { refreshMiniMatesWidget(this@CaisarraApplication) }
     }
 
     companion object {

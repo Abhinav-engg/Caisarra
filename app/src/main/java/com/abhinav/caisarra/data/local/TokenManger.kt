@@ -97,7 +97,11 @@ class TokenManager private constructor(private val context: Context) {
     }
 
     suspend fun clearTokens() {
-        context.tokenDataStore.edit { it.clear() }
+        context.tokenDataStore.edit { prefs ->
+            val fcmToken = prefs[Keys.FCM_TOKEN]
+            prefs.clear()
+            fcmToken?.let { prefs[Keys.FCM_TOKEN] = it }
+        }
     }
 
     companion object {

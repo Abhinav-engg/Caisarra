@@ -268,10 +268,11 @@ class ProfileViewModel(
     }
 
     fun uploadAvatar(context: Context, uri: Uri) {
+        val appContext = context.applicationContext
         viewModelScope.launch {
             _state.value = _state.value.copy(saving = true, error = null, message = null)
             try {
-                val profile = repository.uploadAvatar(context, uri)
+                val profile = repository.uploadAvatar(appContext, uri)
                 _state.value = _state.value.copy(profile = profile, saving = false, message = "Profile photo uploaded successfully")
             } catch (e: Exception) {
                 _state.value = _state.value.copy(saving = false, error = e.userMessage("Unable to upload photo"))

@@ -563,6 +563,9 @@ fun PlayWithFriendScreen(
                                         onCancel = {
                                             scope.launch {
                                                 challengeManager.cancelChallenge(challenge.code)
+                                                    .onFailure { err ->
+                                                        Toast.makeText(context, err.userMessage("Failed to cancel challenge"), Toast.LENGTH_SHORT).show()
+                                                    }
                                             }
                                         },
                                         onProfileClick = { onViewProfile(challenge.opponentUsername) }

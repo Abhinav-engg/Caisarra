@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.abhinav.caisarra.core.ui.components.ListSkeleton
+import com.abhinav.caisarra.core.ui.components.fadeInOnAppear
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardType
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
@@ -322,12 +324,7 @@ fun LeaderboardScreen(
             }
         ) {
             if (state.isLoading && !state.isRefreshing) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = BoardCyan)
-                }
+                ListSkeleton()
             } else if (state.error != null && !state.isRefreshing) {
                 Column(
                     modifier = Modifier
@@ -360,7 +357,7 @@ fun LeaderboardScreen(
                             )
                         } else {
                             LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier.fillMaxSize().fadeInOnAppear(),
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -423,7 +420,7 @@ fun LeaderboardScreen(
                             )
                         } else {
                             LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier.fillMaxSize().fadeInOnAppear(),
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -458,7 +455,7 @@ fun LeaderboardScreen(
                             )
                         } else {
                             LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier.fillMaxSize().fadeInOnAppear(),
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {

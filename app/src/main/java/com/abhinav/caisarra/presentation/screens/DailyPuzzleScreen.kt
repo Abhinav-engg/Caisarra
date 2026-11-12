@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.RollingNumber
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
@@ -209,6 +210,7 @@ private fun DailyPuzzleLandscapeContent(
                         moveAnimationEvent = state.moveAnimationEvent,
                         moveAnimationConsumedId = state.moveAnimationConsumedId,
                         onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                        moveFeedback = state.moveFeedback,
                         onSquareClick = { square -> viewModel.onSquareClicked(square) }
                     )
                 }
@@ -234,7 +236,7 @@ private fun DailyPuzzleLandscapeContent(
                         ) {
                             Icon(painter = painterResource(id = R.drawable.black_pawn), contentDescription = null, tint = SlateNormal, modifier = Modifier.size(22.dp))
                         }
-                        Text("${state.streak}", color = White, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+                        RollingNumber(state.streak, 20.sp)
                     }
                     Text("DAILY", color = White, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
                 }
@@ -459,13 +461,7 @@ private fun DailyPuzzlePortraitContent(
                         modifier = Modifier.size(24.dp)
                     )
                 }
-                Text(
-                    text = "${state.streak}",
-                    color = White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = JetBrainsMono
-                )
+                RollingNumber(state.streak, 22.sp)
             }
 
             Row(
@@ -538,6 +534,7 @@ private fun DailyPuzzlePortraitContent(
                     moveAnimationEvent = state.moveAnimationEvent,
                     moveAnimationConsumedId = state.moveAnimationConsumedId,
                     onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                    moveFeedback = state.moveFeedback,
                     onSquareClick = { square ->
                         viewModel.onSquareClicked(square)
                     }

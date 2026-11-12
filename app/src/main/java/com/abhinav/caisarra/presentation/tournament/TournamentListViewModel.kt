@@ -16,7 +16,9 @@ data class TournamentListUiState(
     val tournaments: List<TournamentDto> = emptyList(),
     val error: String? = null,
     val code: String = "",
-    val lookingUp: Boolean = false
+    val lookingUp: Boolean = false,
+    val sort: TournamentSort = TournamentSort.Newest,
+    val filters: TournamentFilters = TournamentFilters()
 )
 
 class TournamentListViewModel(application: Application) : AndroidViewModel(application) {
@@ -40,6 +42,12 @@ class TournamentListViewModel(application: Application) : AndroidViewModel(appli
                 }
         }
     }
+
+    fun onSortChange(sort: TournamentSort) = _state.update { it.copy(sort = sort) }
+
+    fun onFiltersChange(filters: TournamentFilters) = _state.update { it.copy(filters = filters) }
+
+    fun clearFilters() = _state.update { it.copy(filters = TournamentFilters()) }
 
     fun onCodeChange(value: String) {
         _state.update { it.copy(code = value.trim().uppercase().take(6), error = null) }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,7 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -37,6 +38,7 @@ import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,6 +55,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.core.ui.components.ListSkeleton
+import com.abhinav.caisarra.core.ui.components.fadeInOnAppear
 import com.abhinav.caisarra.data.remote.dto.PairingDto
 import com.abhinav.caisarra.data.remote.dto.StandingDto
 import com.abhinav.caisarra.data.remote.dto.TournamentDto
@@ -100,12 +104,7 @@ fun TournamentDetailScreen(
 
             when {
                 tournament == null && state.loading -> {
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = TournamentColors.Accent)
-                    }
+                    ListSkeleton(rows = 4, showHeader = true, contentPadding = PaddingValues(vertical = 12.dp))
                 }
 
                 tournament == null -> {
@@ -132,21 +131,17 @@ fun TournamentDetailScreen(
                 else -> {
                     Spacer(Modifier.height(12.dp))
 
-                    Text(
-                        text = tournament.name,
-                        color = Color.White,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
+                    TournamentTitle(
+                        name = tournament.name,
+                        isPrivate = tournament.visibility == "private",
+                        modifier = Modifier.fadeInOnAppear()
                     )
 
                     Spacer(Modifier.height(18.dp))
 
                     SecondaryTabRow(
                         selectedTabIndex = tab,
+                        modifier = Modifier.fadeInOnAppear(),
                         containerColor = Color.Transparent,
                         contentColor = Color.White,
                         indicator = {
@@ -183,7 +178,7 @@ fun TournamentDetailScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    Box(Modifier.weight(1f)) {
+                    Box(Modifier.weight(1f).fadeInOnAppear()) {
                         when (tab) {
                             0 -> OverviewTab(
                                 tournament = tournament,
@@ -193,6 +188,7 @@ fun TournamentDetailScreen(
                                 onStart = viewModel::start,
                                 onEnd = viewModel::end,
                                 onCancel = viewModel::cancel,
+                                onRegenerateInvite = viewModel::regenerateInvite,
                                 onOpenGame = onOpenGame
                             )
 
@@ -215,6 +211,7 @@ private fun OverviewTab(
     onStart: () -> Unit,
     onEnd: () -> Unit,
     onCancel: () -> Unit,
+    onRegenerateInvite: () -> Unit,
     onOpenGame: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -250,6 +247,11 @@ private fun OverviewTab(
 
         InfoRow("Format", formatLabel(tournament.format))
         InfoRow("Time Control", timeControlDisplay(tournament.timeControl))
+        InfoRow(
+            "Game Type",
+            if (tournament.rated) "Rated" else "Unrated",
+            valueColor = if (tournament.rated) TournamentColors.Accent else Color.White
+        )
 
         val (statusText, statusColor) = when {
             tournament.status.equals("registration", ignoreCase = true) ->
@@ -312,7 +314,9 @@ private fun OverviewTab(
                         color = Color.White,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 4.sp
+                        letterSpacing = 4.sp,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     Icon(
                         Icons.Default.ContentCopy,
@@ -378,6 +382,27 @@ private fun OverviewTab(
                             "Copy Link",
                             color = TournamentColors.Accent,
                             fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+                if (isCreator && registration && tournament.visibility == "private") {
+                    Spacer(Modifier.height(10.dp))
+                    TextButton(
+                        onClick = onRegenerateInvite,
+                        enabled = !state.actionInProgress,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = null,
+                            tint = TournamentColors.Muted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Generate new code",
+                            color = TournamentColors.Muted,
                             fontSize = 13.sp
                         )
                     }

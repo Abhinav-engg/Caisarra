@@ -1,6 +1,7 @@
 
 package com.abhinav.caisarra.presentation.club
 
+import com.abhinav.caisarra.core.ui.components.rememberToaster
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -53,19 +54,19 @@ fun ClubScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     val focusManager = LocalFocusManager.current
-    val snackbarHostState = remember { SnackbarHostState() }
+    val toaster = rememberToaster()
 
     LaunchedEffect(state.error) {
         val message = state.error?.takeIf { it.isNotBlank() }
         if (message != null) {
-            snackbarHostState.showSnackbar(message)
+            toaster.show(message)
             viewModel.clearError()
         }
     }
     LaunchedEffect(state.info) {
         val message = state.info?.takeIf { it.isNotBlank() }
         if (message != null) {
-            snackbarHostState.showSnackbar(message)
+            toaster.show(message)
             viewModel.clearInfo()
         }
     }
@@ -90,17 +91,6 @@ fun ClubScreen(
             indication = null
         ) { focusManager.clearFocus() },
         containerColor = ClubBg,
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = ClubCard,
-                    contentColor = ClubText,
-                    actionColor = ClubGreen,
-                    shape = RoundedCornerShape(16.dp)
-                )
-            }
-        },
         topBar = {
             TopAppBar(
                 title = {

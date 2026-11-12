@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import com.abhinav.caisarra.core.ui.components.ListRowSkeleton
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
@@ -282,18 +283,7 @@ fun DirectMessagesListScreen(
                 }
 
                 if (loadingConversations) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(28.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = StatsCyan
-                            )
-                        }
-                    }
+                    items(5) { ListRowSkeleton(Modifier.animateItem()) }
                 } else if (conversations.isEmpty()) {
                     item {
                         Text(
