@@ -27,6 +27,7 @@ data class MatchmakingUiState(
     val message: String = "",
     val error: String? = null,
     val matchedGameId: String? = null,
+    val isMatched: Boolean = false,
     val tiltWarning: TiltWarning? = null
 )
 
@@ -267,7 +268,8 @@ class MatchmakingViewModel(
         _state.value = MatchmakingUiState(
             isSearching = false,
             message = "Opponent found!",
-            matchedGameId = gameId
+            matchedGameId = gameId,
+            isMatched = true
         )
     }
     private fun fail(message: String) {

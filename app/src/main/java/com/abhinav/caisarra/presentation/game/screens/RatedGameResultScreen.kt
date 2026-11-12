@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import com.abhinav.caisarra.core.ui.components.rememberCountUp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -221,12 +222,20 @@ private fun CircleIconButton(icon: ImageVector, label: String, onClick: () -> Un
     }
 }
 
+private const val RATING_COUNT_DELAY_MS = 900L
+
 @Composable
 private fun EloPill(change: Int?, current: Int?, previous: Int?, accent: Color) {
+    val shownChange = change?.let { rememberCountUp(target = it, delayMillis = RATING_COUNT_DELAY_MS) }
+    val shownCurrent = if (current != null && previous != null) {
+        rememberCountUp(target = current, from = previous, delayMillis = RATING_COUNT_DELAY_MS)
+    } else {
+        current
+    }
     val changeText = when {
-        change == null -> "Rated"
-        change > 0 -> "↑ +$change Elo"
-        change < 0 -> "↓ ${abs(change)} Elo"
+        change == null || shownChange == null -> "Rated"
+        change > 0 -> "↑ +$shownChange Elo"
+        change < 0 -> "↓ ${abs(shownChange)} Elo"
         else -> "Elo unchanged"
     }
     Row(
@@ -239,7 +248,7 @@ private fun EloPill(change: Int?, current: Int?, previous: Int?, accent: Color) 
     ) {
         Text(changeText, color = accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Box(Modifier.size(width = 1.dp, height = 12.dp).background(Border))
-        Text(current?.toString() ?: "—", color = TextMain, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(shownCurrent?.toString() ?: "—", color = TextMain, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         if (previous != null && previous != current) {
             Text(
                 previous.toString(),

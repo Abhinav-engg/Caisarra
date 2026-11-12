@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import com.abhinav.caisarra.presentation.game.components.GameOverReveal
 import com.abhinav.caisarra.core.ui.components.rememberToaster
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
@@ -495,6 +496,7 @@ private fun BotResultDialog(
     onDismiss: () -> Unit = {}
 ) {
     Dialog(onDismissRequest = onDismiss) {
+        GameOverReveal(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -559,6 +561,7 @@ private fun BotResultDialog(
             TextButton(onClick = onHome) {
                 Text(text = "BACK TO HOME", color = Color(0xFFAAB7C6), fontFamily = JetBrainsMono)
             }
+        }
         }
     }
 }

@@ -426,13 +426,13 @@ class OnlineGameViewModel(
         return res
     }
 
-    fun cancelWaitingChallenge(onDone: () -> Unit = {}) {
+    fun cancelWaitingChallenge(onDone: () -> Unit = {}, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val challengeManager = ChallengeManager.get(getApplication())
-            val outgoing = challengeManager.outgoingChallenge.value
-            val code = if (outgoing?.gameId == gameId) outgoing.code else null
-            if (!code.isNullOrBlank()) {
-                challengeManager.cancelChallenge(code)
+            val result = challengeManager.cancelChallengeForGame(gameId)
+            if (result != null && result.isFailure) {
+                onError(result.exceptionOrNull()?.message ?: "Failed to cancel challenge")
+                return@launch
             }
             challengeManager.clearOutgoingChallenge()
             _waitingForOpponent.value = false

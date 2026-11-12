@@ -1,6 +1,17 @@
 
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.abhinav.caisarra.core.ui.components.OpponentFoundBurst
+import com.caisaara.ui.theme.StatsGreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -48,6 +59,10 @@ import com.caisaara.ui.theme.StatsTextMuted
 import com.caisaara.ui.theme.StatsTextWhite
 import kotlinx.coroutines.delay
 
+private const val OPPONENT_FOUND_HOLD_MS = 900L
+
+private enum class MatchPhase { SEARCHING, FOUND, ENDED }
+
 private fun formatTimeControl(
     minutes: Int,
     incrementSeconds: Int
@@ -78,8 +93,11 @@ fun MatchmakingScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
+    val haptic = LocalHapticFeedback.current
     LaunchedEffect(state.matchedGameId) {
         state.matchedGameId?.let { gameId ->
+            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+            delay(OPPONENT_FOUND_HOLD_MS)
             viewModel.clearMatchedGame()
             onMatched(gameId)
         }
@@ -113,43 +131,89 @@ fun MatchmakingScreen(
                     title = "A worthy opponent awaits.",
                     subtitle = "Matching you with a player near your rating."
                 )
-                if (state.isSearching) {
-                    SearchPulse(
-                        icon = painterResource(R.drawable.ic_swords),
-                        size = (contentWidth * 0.5f).coerceIn(140.dp, 220.dp),
-                        modifier = Modifier.padding(vertical = 32.dp)
-                    )
-                    Text(
-                        text = "Searching · %02d:%02d".format(elapsed / 60, elapsed % 60),
-                        color = StatsTextWhite,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "Usually connects in under 15 seconds",
-                        color = StatsTextMuted,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    SecondaryButton(
-                        text = if (state.isCancelling) "Cancelling..." else "Cancel search",
-                        onClick = viewModel::cancelMatch,
-                        enabled = !state.isCancelling
-                    )
-                } else {
-                    Text(
-                        text = state.error ?: "Search ended",
-                        color = if (state.error != null) StatsRed else StatsTextWhite,
-                        fontSize = 17.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(vertical = 24.dp)
-                    )
-                    GeneralButton(
-                        text = "TRY AGAIN",
-                        onClick = { viewModel.startMatch(minutes = minutes, incrementSeconds = incrementSeconds) }
-                    )
-                    SecondaryButton(text = "Back", onClick = onBack)
+                val phase = when {
+                    state.isMatched -> MatchPhase.FOUND
+                    state.isSearching -> MatchPhase.SEARCHING
+                    else -> MatchPhase.ENDED
+                }
+                val pulseSize = (contentWidth * 0.5f).coerceIn(140.dp, 220.dp)
+                AnimatedContent(
+                    targetState = phase,
+                    transitionSpec = {
+                        (fadeIn(tween(260)) + scaleIn(tween(260), initialScale = 0.92f)) togetherWith
+                                fadeOut(tween(160))
+                    },
+                    contentAlignment = Alignment.TopCenter,
+                    label = "matchPhase"
+                ) { target ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        when (target) {
+                            MatchPhase.SEARCHING -> {
+                                SearchPulse(
+                                    icon = painterResource(R.drawable.ic_swords),
+                                    size = pulseSize,
+                                    modifier = Modifier.padding(vertical = 32.dp)
+                                )
+                                Text(
+                                    text = "Searching · %02d:%02d".format(elapsed / 60, elapsed % 60),
+                                    color = StatsTextWhite,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "Usually connects in under 15 seconds",
+                                    color = StatsTextMuted,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(Modifier.height(24.dp))
+                                SecondaryButton(
+                                    text = if (state.isCancelling) "Cancelling..." else "Cancel search",
+                                    onClick = viewModel::cancelMatch,
+                                    enabled = !state.isCancelling
+                                )
+                            }
+
+                            MatchPhase.FOUND -> {
+                                OpponentFoundBurst(
+                                    icon = painterResource(R.drawable.ic_swords),
+                                    size = pulseSize,
+                                    modifier = Modifier.padding(vertical = 32.dp)
+                                )
+                                Text(
+                                    text = "Opponent found!",
+                                    color = StatsGreen,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Setting up the board...",
+                                    color = StatsTextMuted,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+
+                            MatchPhase.ENDED -> {
+                                Text(
+                                    text = state.error ?: "Search ended",
+                                    color = if (state.error != null) StatsRed else StatsTextWhite,
+                                    fontSize = 17.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 24.dp)
+                                )
+                                GeneralButton(
+                                    text = "TRY AGAIN",
+                                    onClick = { viewModel.startMatch(minutes = minutes, incrementSeconds = incrementSeconds) }
+                                )
+                                SecondaryButton(text = "Back", onClick = onBack)
+                            }
+                        }
+                    }
                 }
             }
         }

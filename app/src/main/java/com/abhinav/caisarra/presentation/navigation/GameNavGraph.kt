@@ -216,7 +216,8 @@ fun NavGraphBuilder.gameGraph(
             navArgument("incrementSeconds") {
                 type = NavType.IntType
             }
-        )
+        ),
+        deepLinks = listOf(navDeepLink { uriPattern = "caisarra://play/{minutes}/{incrementSeconds}" })
     ) { entry ->
         val minutes = entry.arguments?.getInt("minutes") ?: 10
         val increment = entry.arguments?.getInt("incrementSeconds") ?: 0
