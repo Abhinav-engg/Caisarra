@@ -64,13 +64,60 @@ private val DetailMuted = Color(0xFFADB8C6)
 
 private enum class DetailTab { MEMBERS, LEADERBOARD, CHAT, MANAGE }
 
-private const val MAX_CLUB_MESSAGE_WORDS = 200
+// The server (POST /api/clubs/{id}/messages) rejects anything over 500 characters
+// with: 400 {"error":"message must be at most 500 characters"}
+private const val MAX_CLUB_MESSAGE_CHARS = 500
 
-private fun countWords(text: String): Int =
-    text.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
+private fun countChars(text: String): Int =
+    text.trim().let { it.codePointCount(0, it.length) }
 
-private fun clubMessageTooLongText(wordCount: Int): String =
-    "Message too long: $wordCount words. The limit is $MAX_CLUB_MESSAGE_WORDS words. Please shorten it and try again."
+private fun capToLimit(text: String): String =
+    if (text.codePointCount(0, text.length) <= MAX_CLUB_MESSAGE_CHARS) text
+    else text.substring(0, text.offsetByCodePoints(0, MAX_CLUB_MESSAGE_CHARS))
+
+/**
+ * Turns a failed "send club message" call into something useful.
+ * Logs the real HTTP status + server body (previously swallowed), and shows
+ * the server's own reason when it gives one (e.g. "message too long").
+ */
+private fun describeSendFailure(e: Exception, chars: Int, words: Int): String {
+    val fallback = "Couldn't send your message. Please try again."
+
+    if (e is retrofit2.HttpException) {
+        val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+        Log.e(
+            "ClubDetail",
+            "Send failed: HTTP ${e.code()} chars=$chars words=$words body=$body",
+            e
+        )
+
+        val serverReason = body?.let {
+            runCatching {
+                val obj = kotlinx.serialization.json.Json.parseToJsonElement(it)
+                        as kotlinx.serialization.json.JsonObject
+                listOf("error", "message", "detail").firstNotNullOfOrNull { key ->
+                    (obj[key] as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.content?.takeIf { v -> v.isNotBlank() }
+                }
+            }.getOrNull()
+        }
+
+        return when {
+            serverReason != null -> serverReason
+            e.code() == 413 || e.code() == 400 ->
+                "Message is too long for the server ($chars characters). Please shorten it and try again."
+            e.code() == 429 -> "You're sending messages too fast. Please wait a moment."
+            e.code() >= 500 -> "Server error. Please try again in a moment."
+            else -> fallback
+        }
+    }
+
+    Log.e("ClubDetail", "Failed to send club message (chars=$chars words=$words)", e)
+    return if (e is java.io.IOException) e.userMessage(fallback) else fallback
+}
+
+private fun clubMessageTooLongText(charCount: Int): String =
+    "Message too long: $charCount characters. The limit is $MAX_CLUB_MESSAGE_CHARS characters. Please shorten it and try again."
 
 data class ClubDetailState(
     val club: ClubDto? = null,
@@ -231,7 +278,7 @@ class ClubDetailViewModel(
     }
 
     fun setChatInput(value: String) {
-        state = state.copy(chatInput = value)
+        state = state.copy(chatInput = capToLimit(value))
     }
 
     fun changeLeaderboardMode(mode: String) {
@@ -293,10 +340,10 @@ class ClubDetailViewModel(
 
         if (text.isBlank() || state.busy || !state.isJoined) return
 
-        val wordCount = countWords(text)
-        if (wordCount > MAX_CLUB_MESSAGE_WORDS) {
+        val charCount = countChars(text)
+        if (charCount > MAX_CLUB_MESSAGE_CHARS) {
             state = state.copy(
-                error = clubMessageTooLongText(wordCount),
+                error = clubMessageTooLongText(charCount),
                 info = null
             )
             return
@@ -339,10 +386,8 @@ class ClubDetailViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e("ClubDetail", "Failed to send club message", e)
-
                 state = state.copy(
-                    error = "Couldn't send your message. Please try again."
+                    error = describeSendFailure(e, text.length, text.trim().split(Regex("\\s+")).size)
                 )
             } finally {
                 state = state.copy(busy = false)
@@ -1143,11 +1188,11 @@ fun ClubDetailScreen(
                                     }
                                 }
                             }
-                            if (countWords(state.chatInput) > MAX_CLUB_MESSAGE_WORDS) {
+                            if (countChars(state.chatInput) >= MAX_CLUB_MESSAGE_CHARS - 100) {
                                 item {
                                     Text(
-                                        "Message too long: ${countWords(state.chatInput)} / $MAX_CLUB_MESSAGE_WORDS words. Please shorten it.",
-                                        color = Color(0xFFFF9999),
+                                        "${countChars(state.chatInput)} / $MAX_CLUB_MESSAGE_CHARS characters",
+                                        color = if (countChars(state.chatInput) >= MAX_CLUB_MESSAGE_CHARS) Color(0xFFFF9999) else DetailMuted,
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }
@@ -1577,11 +1622,11 @@ private fun ClubChatContent(
             }
         }
 
-        val chatWordCount = countWords(state.chatInput)
-        if (chatWordCount > MAX_CLUB_MESSAGE_WORDS) {
+        val chatCharCount = countChars(state.chatInput)
+        if (chatCharCount >= MAX_CLUB_MESSAGE_CHARS - 100) {
             Text(
-                text = "Message too long: $chatWordCount / $MAX_CLUB_MESSAGE_WORDS words. Please shorten it.",
-                color = Color(0xFFFF9999),
+                text = "$chatCharCount / $MAX_CLUB_MESSAGE_CHARS characters",
+                color = if (chatCharCount >= MAX_CLUB_MESSAGE_CHARS) Color(0xFFFF9999) else DetailMuted,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(start = 8.dp, top = 4.dp)
             )

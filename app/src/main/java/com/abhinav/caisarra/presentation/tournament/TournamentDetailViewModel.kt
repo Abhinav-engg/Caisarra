@@ -120,8 +120,8 @@ class TournamentDetailViewModel(
                     }
                     refreshAll(showLoading = false)
                 }
-                .onFailure { e ->
-                    _state.update { it.copy(message = e.userMessage("Something went wrong")) }
+               .onFailure { e ->
+                   _state.update { it.copy(message = e.userMessage("Something went wrong")) }
                 }
             _state.update { it.copy(actionInProgress = false) }
         }
