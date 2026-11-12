@@ -70,14 +70,11 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.withStyle
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import com.abhinav.caisarra.R
-
+import androidx.activity.compose.BackHandler
 private val CommunityBackground = Color(0xFF080D13)
 private val CommunityCard = Color(0xFF101923)
 private val CommunityText = Color(0xFFF4F6FA)
@@ -110,7 +107,24 @@ fun CommunityScreen(
     var selectedPost by remember { mutableStateOf<CommunityPostDto?>(null) }
     val toaster = rememberToaster()
     val isWriteScreenVisible = selectedPost == null && showWritePost && isRegisteredUser
+    BackHandler(
+        enabled = selectedPost != null ||
+                (showWritePost && isRegisteredUser) ||
+                state.showingBookmarks
+    ) {
+        when {
+            selectedPost != null -> selectedPost = null
 
+            showWritePost && isRegisteredUser -> {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+                viewModel.clearError()
+                showWritePost = false
+            }
+
+            state.showingBookmarks -> viewModel.showFeed()
+        }
+    }
     LaunchedEffect(state.info) {
         val message = state.info ?: return@LaunchedEffect
         if (publishingFromWriteScreen && message == "Post published successfully.") {
