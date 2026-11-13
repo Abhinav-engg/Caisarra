@@ -566,45 +566,6 @@ fun ProfileScreen(
                         lineHeight = 19.sp
                     )
 
-                    if (profile.provisional) {
-                        Spacer(Modifier.height(2.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "RATING CALIBRATION",
-                                color = ProfileMuted,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 0.7.sp
-                            )
-                            Text(
-                                text = "Play rated games",
-                                color = ProfileCyan,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(ProfileCardSecondary)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(0.22f)
-                                    .height(4.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(
-                                        Brush.horizontalGradient(listOf(ProfileCyan, ProfileTeal))
-                                    )
-                            )
-                        }
-                    }
                 }
 
                 Column(
