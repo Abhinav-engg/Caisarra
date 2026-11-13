@@ -63,13 +63,30 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
             ?: data["opponentUsername"]
             ?: ""
 
-        val defaultTitle = if (isChallenge) "Game Challenge" else getString(R.string.app_name)
-        val defaultBody = if (isChallenge && challengerUsername.isNotBlank()) {
-            "$challengerUsername challenged you to a game"
-        } else if (isChallenge) {
-            "You have a new game challenge"
-        } else {
-            ""
+        val isClubMessage = type.equals("club_message", ignoreCase = true) ||
+                type.equals("club_chat_message", ignoreCase = true)
+        val clubId = data["club_id"] ?: data["clubId"].orEmpty()
+        val clubName = data["club_name"] ?: data["clubName"].orEmpty()
+        val senderName = data["sender_username"]
+            ?: data["senderUsername"]
+            ?: data["sender"]
+            ?: data["username"]
+            ?: ""
+        val clubText = data["message"] ?: data["text"] ?: data["body"].orEmpty()
+
+        val defaultTitle = when {
+            isClubMessage && clubName.isNotBlank() -> clubName
+            isChallenge -> "Game Challenge"
+            else -> getString(R.string.app_name)
+        }
+        val defaultBody = when {
+            isClubMessage && senderName.isNotBlank() && clubText.isNotBlank() ->
+                "$senderName: $clubText"
+            isClubMessage && clubText.isNotBlank() -> clubText
+            isChallenge && challengerUsername.isNotBlank() ->
+                "$challengerUsername challenged you to a game"
+            isChallenge -> "You have a new game challenge"
+            else -> ""
         }
 
         val title = remoteMessage.notification?.title
@@ -82,7 +99,11 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
             ?: defaultBody
 
         val notificationIdStr = data["notification_id"]
-        val notificationId = notificationIdStr?.toIntOrNull() ?: (System.currentTimeMillis() % 100000).toInt()
+        val notificationId = if (isClubMessage && clubId.isNotBlank()) {
+            ("club_chat_$clubId").hashCode()
+        } else {
+            notificationIdStr?.toIntOrNull() ?: (System.currentTimeMillis() % 100000).toInt()
+        }
 
         val channelId = remoteMessage.notification?.channelId
             ?: data["channel_id"]?.takeIf { it.isNotBlank() }

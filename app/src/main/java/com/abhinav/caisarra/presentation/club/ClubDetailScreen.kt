@@ -54,6 +54,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.Brush
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -362,13 +363,11 @@ class ClubDetailViewModel(
         }
     }
 
-    /** Manual button (kept as a fallback if automatic retries run out). */
     fun reconnectChat() {
         if (!state.isJoined) return
         startChatConnect(resetAttempts = true)
     }
 
-    /** Called when the screen resumes or the Chat tab is opened. */
     fun ensureChatConnected() {
         if (!state.isJoined || state.loading) return
         if (state.chatConnected || state.chatReconnecting) return
@@ -616,7 +615,8 @@ private fun formatClubMessageTime(timestamp: String?): String {
 fun ClubDetailScreen(
     clubId: String,
     repository: ClubRepository,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    openChat: Boolean = false
 ) {
 
     val context = LocalContext.current
@@ -651,6 +651,15 @@ fun ClubDetailScreen(
             vm.clearInfo()
         }
     }
+
+    var openChatHandled by rememberSaveable(clubId, openChat) { mutableStateOf(false) }
+    LaunchedEffect(openChat, state.isJoined, state.loading) {
+        if (openChat && !openChatHandled && state.isJoined && !state.loading) {
+            vm.selectTab("CHAT")
+            openChatHandled = true
+        }
+    }
+
     BackHandler(enabled = state.selectedTab == "CHAT") {
         vm.selectTab("MEMBERS")
     }

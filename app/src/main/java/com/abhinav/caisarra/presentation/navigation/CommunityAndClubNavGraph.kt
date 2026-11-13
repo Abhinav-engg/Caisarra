@@ -159,6 +159,10 @@ fun NavGraphBuilder.communityAndClubGraph(
         arguments = listOf(
             navArgument("clubId") {
                 type = NavType.StringType
+            },
+            navArgument("openChat") {
+                type = NavType.BoolType
+                defaultValue = false
             }
         ),
         deepLinks = listOf(
@@ -166,6 +170,8 @@ fun NavGraphBuilder.communityAndClubGraph(
         )
     ) { backStackEntry ->
         val clubId = backStackEntry.arguments?.getString("clubId").orEmpty()
+        val openChat = backStackEntry.arguments?.getBoolean("openChat") ?: false
+
         val tokenManager = remember(context) {
             TokenManager.get(context)
         }
@@ -184,6 +190,7 @@ fun NavGraphBuilder.communityAndClubGraph(
             ClubDetailScreen(
                 clubId = clubId,
                 repository = clubRepository,
+                openChat = openChat,
                 onBack = {
                     navController.safeBack(AppRoutes.CLUBS)
                 }

@@ -134,11 +134,14 @@ object AppRoutes {
 
     const val COMMUNITY = "community"
     const val CLUBS = "clubs"
-    const val CLUB_DETAIL = "club_detail/{clubId}"
+    const val CLUB_DETAIL = "club_detail/{clubId}?openChat={openChat}"
     const val CLUB_SHARE_LINK = "club_share_link/{code}"
 
     fun clubDetail(clubId: String): String =
         "club_detail/${Uri.encode(clubId)}"
+
+    fun clubChat(clubId: String): String =
+        "club_detail/${Uri.encode(clubId)}?openChat=true"
 
     const val MENU = "menu"
     const val THEME = "theme"

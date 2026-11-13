@@ -93,6 +93,16 @@ fun handleNotificationItemClick(
                 navController.navigateOnce(AppRoutes.DIRECT_MESSAGES_LIST)
             }
         }
+
+        "club_message",
+        "club_chat_message" -> {
+            val clubId = notification.getStringData("club_id")
+            if (!clubId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.clubChat(clubId))
+            } else {
+                navController.navigateOnce(AppRoutes.CLUBS)
+            }
+        }
         else -> {
         }
     }
@@ -195,6 +205,15 @@ fun handleIntentNotificationNavigation(
                 navController.navigateOnce(AppRoutes.directMessage(userId, username))
             } else {
                 navController.navigateOnce(AppRoutes.DIRECT_MESSAGES_LIST)
+            }
+        }
+        "club_message",
+        "club_chat_message" -> {
+            val clubId = intent.getStringExtra("club_id")
+            if (!clubId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.clubChat(clubId))
+            } else {
+                navController.navigateOnce(AppRoutes.CLUBS)
             }
         }
         else -> {
