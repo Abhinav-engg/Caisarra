@@ -1,6 +1,9 @@
 package com.abhinav.caisarra.presentation.game.model
 
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import com.abhinav.caisarra.R
 import com.caisaara.ui.theme.StatsBg
 import com.caisaara.ui.theme.StatsCyan
 import com.caisaara.ui.theme.ThemeNeonDeep
@@ -13,7 +16,8 @@ enum class BoardThemeId(val storageKey: String) {
     OCEAN_SLATE("ocean_slate"),
     CHARCOAL_DARK("charcoal_dark"),
     SYNTHWAVE_NEON("synthwave_neon"),
-    DESERT_SAND("desert_sand");
+    DESERT_SAND("desert_sand"),
+    GLACIER("glacier");
 
     companion object {
         fun fromStorageKey(key: String?): BoardThemeId {
@@ -35,7 +39,13 @@ data class BoardTheme(
     val legalMoveOverlay: Color,
     val checkColor: Color = Color(0xFFF04452),
     val showLegalMoveDotBorder: Boolean = true,
-    val palette: List<Color>
+    val palette: List<Color>,
+    @DrawableRes val lightSquareTexture: Int? = null,
+    @DrawableRes val darkSquareTexture: Int? = null,
+    val lightSquareGradient: List<Color> = emptyList(),
+    val darkSquareGradient: List<Color> = emptyList(),
+    val squareBorder: Color = Color(0x26000000),
+    val squareInnerShadows: List<InnerShadow> = emptyList()
 )
 
 object BoardThemes {
@@ -61,21 +71,20 @@ object BoardThemes {
 
     val EmeraldClassic = BoardTheme(
         id = BoardThemeId.EMERALD_CLASSIC,
-        name = "Emerald Classic",
-        description = "Classic tournament green with championship gold accents",
-        lightSquare = Color(0xFFC3EDE1),
+        name = "Emerald Gold",
+        description = "Rich green. Warm gold.",
+        lightSquare = Color(0x99AFF0D7).compositeOver(Color.White),
         darkSquare = Color(0xFF1D5757),
         selectedColor = Color(0x99FF9933),
         lastMoveColor = Color(0x33FCBF49),
-        legalMoveDot = Color(0xFFA57F41),
-        legalMoveRing = Color(0xFFA57F41),
+        legalMoveDot = Color(0x99FF9933),
+        legalMoveRing = Color(0x99FF9933),
         legalMoveOverlay = Color(0x33FCBF49),
         showLegalMoveDotBorder = false,
         palette = listOf(
+            Color(0x99AFF0D7).compositeOver(Color.White),
             Color(0xFF1D5757),
-            Color(0xFFC3EDE1),
-            Color(0xFFFF9933),
-            Color(0xFFFCBF49)
+            Color(0x99FF9933).compositeOver(Color(0xFF1D5757))
         )
     )
 
@@ -86,17 +95,19 @@ object BoardThemes {
         lightSquare = Color(0xFFF0D9B5),
         darkSquare = Color(0xFFB58863),
         selectedColor = Color(0x99F6D060),
-        lastMoveColor = Color(0x4DD4A373),
-        legalMoveDot = Color(0xFF9E7047),
-        legalMoveRing = Color(0xFF9E7047),
+        lastMoveColor = Color(0x47D3AD6D),
+        legalMoveDot = Color(0xFFD3AD6D),
+        legalMoveRing = Color(0xFFD3AD6D),
         legalMoveOverlay = Color(0x33D4A373),
-        showLegalMoveDotBorder = true,
+        showLegalMoveDotBorder = false,
         palette = listOf(
             Color(0xFFB58863),
             Color(0xFFF0D9B5),
             Color(0xFF9E7047),
             Color(0xFFF6D060)
-        )
+        ),
+        lightSquareTexture = R.drawable.wood_maple,
+        darkSquareTexture = R.drawable.wood_walnut
     )
 
     val OceanSlate = BoardTheme(
@@ -179,6 +190,27 @@ object BoardThemes {
         )
     )
 
+    private val GlacierBase = Color(0xFF9FB8C4)
+
+    val Glacier = BoardTheme(
+        id = BoardThemeId.GLACIER,
+        name = "Glacier",
+        description = "Frosted ice. Deep arctic blue.",
+        lightSquare = Color(0xDAF3FFFF).compositeOver(GlacierBase),
+        darkSquare = Color(0xDA6CA9BF).compositeOver(GlacierBase),
+        selectedColor = Color(0x9E174256),
+        lastMoveColor = Color(0x9E174256),
+        legalMoveDot = Color(0xFF174256),
+        legalMoveRing = Color(0xFF174256),
+        legalMoveOverlay = Color.Transparent,
+        showLegalMoveDotBorder = false,
+        palette = listOf(Color(0xDAF3FFFF).compositeOver(GlacierBase), Color(0xDA6CA9BF).compositeOver(GlacierBase), Color(0xFF174256)),
+        lightSquareGradient = listOf(Color(0xDAF3FFFF), Color(0xA8C3DFE6)).map { it.compositeOver(GlacierBase) },
+        darkSquareGradient = listOf(Color(0xDA6CA9BF), Color(0xB8316078)).map { it.compositeOver(GlacierBase) },
+        squareBorder = Color(0x66F1FFFF),
+        squareInnerShadows = listOf(InnerShadow(Color(0x75FFFFFF), 1f, 2f), InnerShadow(Color(0x45153C5A), -2f, 3f))
+    )
+
     val allThemes: List<BoardTheme> = listOf(
         MidnightCyan,
         EmeraldClassic,
@@ -186,7 +218,8 @@ object BoardThemes {
         OceanSlate,
         CharcoalDark,
         SynthwaveNeon,
-        DesertSand
+        DesertSand,
+        Glacier
     )
 
     fun getById(id: BoardThemeId): BoardTheme = when (id) {
@@ -197,6 +230,7 @@ object BoardThemes {
         BoardThemeId.CHARCOAL_DARK -> CharcoalDark
         BoardThemeId.SYNTHWAVE_NEON -> SynthwaveNeon
         BoardThemeId.DESERT_SAND -> DesertSand
+        BoardThemeId.GLACIER -> Glacier
     }
 
     fun getByStorageKey(key: String?): BoardTheme {

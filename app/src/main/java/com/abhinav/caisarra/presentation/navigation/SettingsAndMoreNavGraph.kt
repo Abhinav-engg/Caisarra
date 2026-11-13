@@ -35,7 +35,7 @@ import com.abhinav.caisarra.presentation.screens.MenuScreen
 import com.abhinav.caisarra.presentation.screens.NewsScreen
 import com.abhinav.caisarra.presentation.screens.PrivacySettingsScreen
 import com.abhinav.caisarra.presentation.screens.SettingsDetailScreen
-import com.abhinav.caisarra.presentation.screens.ThemeScreen
+import com.abhinav.caisarra.features.themecustomization.presentation.ThemeCustomizationScreen
 import com.abhinav.caisarra.presentation.viewmodel.DeleteAccountViewModel
 import com.abhinav.caisarra.presentation.viewmodel.LeaderboardViewModel
 import com.abhinav.caisarra.presentation.viewmodel.NewsViewModel
@@ -225,7 +225,7 @@ fun NavGraphBuilder.settingsAndMoreGraph(
             navController.safeBack(AppRoutes.MENU)
         }
 
-        ThemeScreen(
+        ThemeCustomizationScreen(
             onBack = {
                 navController.safeBack(AppRoutes.MENU)
             }
