@@ -982,6 +982,7 @@ private fun TopClock(
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedBlackPieces,
             advantage = state.whiteAdvantage,
+            countryCode = state.whiteCountry,
             modifier = modifier
         )
     } else {
@@ -993,6 +994,7 @@ private fun TopClock(
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedWhitePieces,
             advantage = state.blackAdvantage,
+            countryCode = state.blackCountry,
             modifier = modifier
         )
     }
@@ -1012,6 +1014,7 @@ private fun BottomClock(
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedWhitePieces,
             advantage = state.blackAdvantage,
+            countryCode = state.blackCountry,
             modifier = modifier
         )
     } else {
@@ -1023,6 +1026,7 @@ private fun BottomClock(
             isDailyMode = state.isDailyMode,
             capturedPieces = state.capturedBlackPieces,
             advantage = state.whiteAdvantage,
+            countryCode = state.whiteCountry,
             modifier = modifier
         )
     }
