@@ -1,4 +1,3 @@
-
 package com.abhinav.caisarra.presentation.game.model
 
 data class GameUiState(
@@ -52,8 +51,26 @@ data class GameUiState(
     val moveAnimationConsumedId: Long? = null,
     val spectatorCount: Int = 0,
     val watchCode: String? = null,
-    val watchLink: String? = null
+    val watchLink: String? = null,
+
+    val myCountry: String? = null,
+    val opponentCountry: String? = null
 ) {
+
+    val whiteCountry: String?
+        get() = when (myColor) {
+            PieceColor.WHITE -> myCountry
+            PieceColor.BLACK -> opponentCountry
+            null -> if (whitePlayerName == "You") myCountry else opponentCountry
+        }
+
+    val blackCountry: String?
+        get() = when (myColor) {
+            PieceColor.BLACK -> myCountry
+            PieceColor.WHITE -> opponentCountry
+            null -> if (blackPlayerName == "You") myCountry else opponentCountry
+        }
+
     val whiteAdvantage: Int
         get() {
             if (board.isNotEmpty()) {

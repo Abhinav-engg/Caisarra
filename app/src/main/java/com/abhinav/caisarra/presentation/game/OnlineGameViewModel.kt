@@ -148,6 +148,7 @@ class OnlineGameViewModel(
             _myUsername.value = tokenManager.getUsername()
             runCatching { profileRepository.getMyProfile() }.getOrNull()?.let { profile ->
                 _myAvatarUrl.value = profile.avatarUrl
+                _uiState.update { it.copy(myCountry = profile.country) }
                 if (_myUsername.value.isNullOrBlank() && profile.username.isNotBlank()) {
                     _myUsername.value = profile.username
                 }
@@ -1121,7 +1122,8 @@ class OnlineGameViewModel(
                 }
                 current.copy(
                     opponentRating = rating ?: current.opponentRating,
-                    opponentRatingChange = change
+                    opponentRatingChange = change,
+                    opponentCountry = profile.country ?: current.opponentCountry
                 ).withSideRatings()
             }
             if (!profile.avatarUrl.isNullOrBlank()) {
