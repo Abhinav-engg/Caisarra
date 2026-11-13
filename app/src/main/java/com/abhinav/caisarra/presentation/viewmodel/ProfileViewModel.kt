@@ -18,7 +18,7 @@ import com.abhinav.caisarra.data.repository.RemoteGameRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
+import com.abhinav.caisarra.data.repository.PuzzleRepository
 data class ProfileUiState(
     val profile: ProfileData? = null,
     val loading: Boolean = true,
@@ -39,7 +39,8 @@ class ProfileViewModel(
     private val ratingRepository: RatingRepository? = null,
     private val remoteGameRepository: RemoteGameRepository? = null,
     private val friendsRepository: FriendsRepository? = null,
-    private val initialUsername: String? = null
+    private val initialUsername: String? = null,
+    private val puzzleRepository: PuzzleRepository? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -208,6 +209,21 @@ class ProfileViewModel(
                         provisional = dailyStats.provisional
                     )
                 }
+            }
+        }
+
+        if (!isGuest) {
+            val puzzleStats = puzzleRepository?.getStats()?.getOrNull()
+            if (puzzleStats != null && puzzleStats.rating > 0) {
+                enrichedRatings.keys
+                    .filter { it.equals("puzzle", ignoreCase = true) }
+                    .forEach { enrichedRatings.remove(it) }
+                enrichedRatings["puzzle"] = ModeRating(
+                    rating = puzzleStats.rating,
+                    provisional = false,
+                    wins = puzzleStats.puzzlesSolved,
+                    losses = puzzleStats.puzzlesFailed
+                )
             }
         }
 

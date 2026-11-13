@@ -54,6 +54,9 @@ fun NavGraphBuilder.profileGraph(
                 remoteGameRepository = RemoteGameRepository(
                     gamesService = authRepository.createGamesService()
                 ),
+                puzzleRepository = PuzzleRepository(
+                    service = authRepository.createPuzzleService()
+                ),
                 initialUsername = usernameArg
             )
         }
