@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
@@ -86,9 +88,9 @@ fun CreateInviteScreen(
                 onBack = onBack
             )
             Spacer(Modifier.height(32.dp))
-            Text("Bring your people.", color = StatsTextWhite, fontSize = TextSizeLarge, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.bring_your_people), color = StatsTextWhite, fontSize = TextSizeLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
-            Text("Search for a username to find your next rival.", color = StatsTextMuted, fontSize = TextSizeBody)
+            Text(stringResource(R.string.search_for_a_username_to_find), color = StatsTextMuted, fontSize = TextSizeBody)
             Spacer(Modifier.height(24.dp))
             SettingsNavCard(
                 icon = Icons.Default.Schedule,

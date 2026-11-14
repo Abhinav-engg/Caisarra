@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.directmessage
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -157,7 +159,7 @@ fun DirectMessageScreen(
                 )
 
                 Text(
-                    text = "Direct message",
+                    text = stringResource(R.string.direct_message),
                     color = StatsTextMuted,
                     fontSize = 12.sp
                 )
@@ -221,7 +223,7 @@ fun DirectMessageScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Start the conversation",
+                                text = stringResource(R.string.start_the_conversation),
                                 color = StatsTextWhite,
                                 fontFamily = JetBrainsMono,
                                 fontWeight = FontWeight.Bold,
@@ -231,7 +233,7 @@ fun DirectMessageScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "Send a message to $username.",
+                                text = stringResource(R.string.send_a_message_to, username),
                                 color = StatsTextMuted,
                                 fontSize = 14.sp
                             )
@@ -403,7 +405,7 @@ fun DirectMessageScreen(
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = "Write a message...",
+                        text = stringResource(R.string.write_a_message_2),
                         color = StatsTextMuted,
                         fontSize = 14.sp,
                         maxLines = 1

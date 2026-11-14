@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -99,7 +100,7 @@ fun GuestHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "YOUR LOCAL GAMES",
+                    text = stringResource(R.string.your_local_games),
                     color = GuestWhite,
                     fontFamily = JetBrainsMono,
                     fontSize = 15.sp,
@@ -122,7 +123,7 @@ fun GuestHomeScreen(
                         )
                 ) {
                     Text(
-                        text = "GUEST MODE",
+                        text = stringResource(R.string.guest_mode),
                         color = GuestCyan,
                         fontFamily = JetBrainsMono,
                         fontSize = 9.sp,
@@ -171,7 +172,7 @@ fun GuestHomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Want to keep your progress across devices?",
+                text = stringResource(R.string.want_to_keep_your_progress_across),
                 color = GuestMuted,
                 fontFamily = JetBrainsMono,
                 fontSize = 11.sp,
@@ -228,7 +229,7 @@ private fun GuestBrandHeader() {
         )
 
         Text(
-            text = "MOSAIC",
+            text = stringResource(R.string.mosaic),
             color = GuestWhite,
             fontSize = 27.sp,
             fontWeight = FontWeight.ExtraBold,
@@ -246,7 +247,7 @@ private fun GuestBrandHeader() {
             )
 
             Text(
-                text = "  C H E S S  ",
+                text = stringResource(R.string.c_h_e_s_s),
                 color = GuestCyan,
                 fontFamily = JetBrainsMono,
                 fontSize = 10.sp,
@@ -313,7 +314,7 @@ private fun GuestWelcomePanel(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = "PLAY AS GUEST",
+                text = stringResource(R.string.play_as_guest),
                 color = GuestCyan,
                 fontFamily = JetBrainsMono,
                 fontSize = 10.sp,
@@ -333,7 +334,7 @@ private fun GuestWelcomePanel(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "CHESS PLAYER",
+                text = stringResource(R.string.chess_player),
                 color = GuestWhite,
                 fontFamily = JetBrainsMono,
                 fontSize = 21.sp,
@@ -343,7 +344,7 @@ private fun GuestWelcomePanel(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "GUEST ID",
+                text = stringResource(R.string.guest_id),
                 color = GuestMuted,
                 fontFamily = JetBrainsMono,
                 fontSize = 9.sp,
@@ -404,7 +405,7 @@ private fun PassAndPlayCard(
     ) {
 
         Text(
-            text = "LOCAL MULTIPLAYER",
+            text = stringResource(R.string.local_multiplayer),
             color = GuestCyan,
             fontFamily = JetBrainsMono,
             fontSize = 10.sp,
@@ -415,7 +416,7 @@ private fun PassAndPlayCard(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "PASS & PLAY",
+            text = stringResource(R.string.pass_play),
             color = GuestWhite,
             fontFamily = JetBrainsMono,
             fontSize = 25.sp,
@@ -430,7 +431,7 @@ private fun PassAndPlayCard(
         ) {
 
             Text(
-                text = "One device. Two players.\nTake turns moving the pieces\nand enjoy a face-to-face match.",
+                text = stringResource(R.string.one_device_two_players_take_turns),
                 modifier = Modifier.weight(1f),
                 color = GuestMuted,
                 fontFamily = JetBrainsMono,

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -266,7 +268,7 @@ fun DirectChallengeDialog(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = "Direct Challenge",
+                            text = stringResource(R.string.direct_challenge),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextWhite
@@ -305,13 +307,13 @@ fun DirectChallengeDialog(
                         )
                         if (opponentRating != null) {
                             Text(
-                                text = "$opponentRating Rapid",
+                                text = stringResource(R.string.rapid_2, opponentRating),
                                 color = TextMuted,
                                 fontSize = 13.sp
                             )
                         } else {
                             Text(
-                                text = "Ready to play",
+                                text = stringResource(R.string.ready_to_play_2),
                                 color = TextMuted,
                                 fontSize = 13.sp
                             )
@@ -335,14 +337,14 @@ fun DirectChallengeDialog(
                         )
                         Spacer(Modifier.height(18.dp))
                         Text(
-                            text = "Challenge sent to $opponentUsername!",
+                            text = stringResource(R.string.challenge_sent_to, opponentUsername),
                             color = TextWhite,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            text = "Waiting for response...",
+                            text = stringResource(R.string.waiting_for_response_3),
                             color = TextMuted,
                             fontSize = 13.sp
                         )
@@ -381,7 +383,7 @@ fun DirectChallengeDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "CANCEL CHALLENGE",
+                                text = stringResource(R.string.cancel_challenge),
                                 color = Color(0xFFEF4444),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
@@ -396,7 +398,7 @@ fun DirectChallengeDialog(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "$opponentUsername declined the challenge",
+                            text = stringResource(R.string.declined_the_challenge, opponentUsername),
                             color = Color(0xFFEF4444),
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
@@ -418,7 +420,7 @@ fun DirectChallengeDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "TIME CONTROL",
+                            text = stringResource(R.string.time_control),
                             color = TextMuted,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -489,7 +491,7 @@ fun DirectChallengeDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "More",
+                                text = stringResource(R.string.more),
                                 color = if (isMoreSelected) AccentCyan else TextWhite,
                                 fontSize = 12.sp,
                                 fontWeight = if (isMoreSelected) FontWeight.Bold else FontWeight.Medium,
@@ -502,7 +504,7 @@ fun DirectChallengeDialog(
                     Spacer(Modifier.height(18.dp))
 
                     Text(
-                        text = "YOUR PIECES",
+                        text = stringResource(R.string.your_pieces),
                         color = TextMuted,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,

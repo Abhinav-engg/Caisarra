@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.puzzles.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,7 +72,7 @@ fun PuzzleResultSheet(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "RATING",
+                        text = stringResource(R.string.rating_4),
                         fontSize = 11.sp,
                         fontFamily = JetBrainsMono,
                         color = Color(0xFF64748B)
@@ -114,14 +116,14 @@ fun PuzzleResultSheet(
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "STREAK",
+                        text = stringResource(R.string.streak),
                         fontSize = 11.sp,
                         fontFamily = JetBrainsMono,
                         color = Color(0xFF64748B)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "$streak days",
+                        text = stringResource(R.string.days, streak),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFBBF24)

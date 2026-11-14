@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -507,7 +509,7 @@ fun EditProfileScreen(
                                 modifier = Modifier.weight(1f).padding(start = 10.dp)
                             ) {
                                 Text(
-                                    text = "Profile Picture",
+                                    text = stringResource(R.string.profile_picture),
                                     color = EditWhite,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium
@@ -531,7 +533,7 @@ fun EditProfileScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "PLAYER INFORMATION",
+                                stringResource(R.string.player_information),
                                 color = EditCyan,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -570,7 +572,7 @@ fun EditProfileScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "COUNTRY",
+                                text = stringResource(R.string.country),
                                 color = EditMuted,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -658,13 +660,13 @@ fun EditProfileScreen(
                                 modifier = Modifier.weight(1f).padding(start = 12.dp)
                             ) {
                                 Text(
-                                    text = "Default Chess Avatars",
+                                    text = stringResource(R.string.default_chess_avatars_2),
                                     color = EditWhite,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = "Choose from the available chess avatars",
+                                    text = stringResource(R.string.choose_from_the_available_chess_avatars),
                                     color = EditMuted,
                                     fontSize = 11.sp
                                 )
@@ -707,10 +709,10 @@ fun EditProfileScreen(
                                 strokeWidth = 2.dp
                             )
                             Spacer(Modifier.size(10.dp))
-                            Text("SAVING...", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.saving), fontWeight = FontWeight.Bold)
                         } else {
                             Text(
-                                "SAVE CHANGES",
+                                stringResource(R.string.save_changes),
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = 0.6.sp
                             )
@@ -725,7 +727,7 @@ fun EditProfileScreen(
                             contentColor = EditMuted
                         )
                     ) {
-                        Text("CANCEL", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.cancel_2), fontWeight = FontWeight.Bold)
                     }
                 } else {
                     Text(
@@ -734,7 +736,7 @@ fun EditProfileScreen(
                         fontSize = 14.sp
                     )
                     OutlinedButton(onClick = { viewModel.loadProfile() }) {
-                        Text("RETRY", color = EditCyan)
+                        Text(stringResource(R.string.retry_2), color = EditCyan)
                     }
                 }
 
@@ -748,7 +750,7 @@ fun EditProfileScreen(
             onDismissRequest = { showPhotoOptions = false },
             containerColor = Color(0xFF25231F),
             title = {
-                Text("Profile Picture", color = EditWhite, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.profile_picture), color = EditWhite, fontWeight = FontWeight.Bold)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -792,7 +794,7 @@ fun EditProfileScreen(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showPhotoOptions = false }) {
-                    Text("Cancel", color = EditCyan)
+                    Text(stringResource(R.string.cancel), color = EditCyan)
                 }
             }
 

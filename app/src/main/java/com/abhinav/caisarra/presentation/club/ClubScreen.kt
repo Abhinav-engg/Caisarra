@@ -1,6 +1,8 @@
 
 package com.abhinav.caisarra.presentation.club
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.components.rememberToaster
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -96,12 +98,12 @@ fun ClubScreen(
                 title = {
                     Column {
                         Text(
-                            "Chess Clubs",
+                            stringResource(R.string.chess_clubs),
                             color = ClubText,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "Find your people. Play together.",
+                            stringResource(R.string.find_your_people_play_together),
                             color = ClubMuted,
                             fontSize = 12.sp
                         )
@@ -187,13 +189,12 @@ fun ClubScreen(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    "Clubs are for registered players",
+                                    stringResource(R.string.clubs_are_for_registered_players),
                                     color = ClubText,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    "Sign in to create clubs, join communities, " +
-                                            "and access club features.",
+                                    stringResource(R.string.sign_in_to_create_clubs),
                                     color = ClubMuted,
                                     fontSize = 13.sp
                                 )
@@ -204,7 +205,7 @@ fun ClubScreen(
                                         contentColor = ClubBg
                                     )
                                 ) {
-                                    Text("Sign in")
+                                    Text(stringResource(R.string.sign_in))
                                 }
                             }
                         }
@@ -217,7 +218,7 @@ fun ClubScreen(
                         onValueChange = viewModel::search,
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
-                            Text("Search clubs...", color = ClubMuted)
+                            Text(stringResource(R.string.search_clubs), color = ClubMuted)
                         },
                         leadingIcon = {
                             Icon(
@@ -234,7 +235,7 @@ fun ClubScreen(
                                 },
                                 enabled = state.search.isNotBlank() && !state.isLoading
                             ) {
-                                Text("Search", color = if (state.search.isNotBlank() && !state.isLoading) ClubGreen else ClubMuted)
+                                Text(stringResource(R.string.search), color = if (state.search.isNotBlank() && !state.isLoading) ClubGreen else ClubMuted)
                             }
                         },
                         singleLine = true,
@@ -350,13 +351,13 @@ fun ClubScreen(
         AlertDialog(
             onDismissRequest = { showCreate = false },
             containerColor = ClubCard,
-            title = { Text("Create a club", color = ClubText) },
+            title = { Text(stringResource(R.string.create_a_club), color = ClubText) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = clubName,
                         onValueChange = { clubName = it },
-                        label = { Text("Club name") },
+                        label = { Text(stringResource(R.string.club_name)) },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = ClubText,
@@ -371,7 +372,7 @@ fun ClubScreen(
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        label = { Text("Description") },
+                        label = { Text(stringResource(R.string.description)) },
                         minLines = 2,
                         maxLines = 4,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -396,12 +397,12 @@ fun ClubScreen(
                         description = ""
                     }
                 ) {
-                    Text("Create", color = ClubGreen)
+                    Text(stringResource(R.string.create), color = ClubGreen)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCreate = false }) {
-                    Text("Cancel", color = ClubMuted)
+                    Text(stringResource(R.string.cancel), color = ClubMuted)
                 }
             }
         )
@@ -411,12 +412,12 @@ fun ClubScreen(
         AlertDialog(
             onDismissRequest = { showJoin = false },
             containerColor = ClubCard,
-            title = { Text("Join with a code", color = ClubText) },
+            title = { Text(stringResource(R.string.join_with_a_code), color = ClubText) },
             text = {
                 OutlinedTextField(
                     value = joinCode,
                     onValueChange = { joinCode = it },
-                    label = { Text("Club share code") },
+                    label = { Text(stringResource(R.string.club_share_code)) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = ClubText,
@@ -438,12 +439,12 @@ fun ClubScreen(
                         joinCode = ""
                     }
                 ) {
-                    Text("Join club", color = ClubGreen)
+                    Text(stringResource(R.string.join_club), color = ClubGreen)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showJoin = false }) {
-                    Text("Cancel", color = ClubMuted)
+                    Text(stringResource(R.string.cancel), color = ClubMuted)
                 }
             }
         )
@@ -471,14 +472,14 @@ private fun ClubHero(
                 modifier = Modifier.size(34.dp)
             )
             Text(
-                "Your next move starts here.",
+                stringResource(R.string.your_next_move_starts_here),
                 color = Color.White,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 lineHeight = 30.sp
             )
             Text(
-                "$clubCount clubs in your collection",
+                stringResource(R.string.clubs_in_your_collection, clubCount),
                 color = ClubMuted,
                 fontSize = 13.sp
             )
@@ -490,7 +491,7 @@ private fun ClubHero(
             ) {
                 Icon(Icons.Default.Key, null)
                 Spacer(Modifier.width(8.dp))
-                Text("Join with code")
+                Text(stringResource(R.string.join_with_code))
             }
         }
     }
@@ -542,7 +543,7 @@ private fun ClubCard(
                         fontSize = 17.sp
                     )
                     Text(
-                        "$memberCount members",
+                        stringResource(R.string.members, memberCount),
                         color = ClubMuted,
                         fontSize = 12.sp
                     )
@@ -553,7 +554,7 @@ private fun ClubCard(
                         shape = RoundedCornerShape(50)
                     ) {
                         Text(
-                            "JOINED",
+                            stringResource(R.string.joined),
                             modifier = Modifier.padding(
                                 horizontal = 9.dp,
                                 vertical = 5.dp
@@ -577,7 +578,7 @@ private fun ClubCard(
 
             if (!shareCode.isNullOrBlank()) {
                 Text(
-                    "Share code: $shareCode",
+                    stringResource(R.string.share_code_2, shareCode),
                     color = ClubGreen,
                     fontSize = 12.sp
                 )
@@ -593,10 +594,10 @@ private fun ClubCard(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Join club", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.join_club), fontWeight = FontWeight.Bold)
                 }
             } else {
-                Text("Tap to view club", color = ClubGreen, fontSize = 12.sp)
+                Text(stringResource(R.string.tap_to_view_club), color = ClubGreen, fontSize = 12.sp)
             }
         }
     }

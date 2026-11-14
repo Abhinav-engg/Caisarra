@@ -1,6 +1,7 @@
 
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -282,7 +283,7 @@ private fun DailyPuzzleCard(
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Daily Puzzle",
+                text = stringResource(R.string.daily_puzzle),
                 color = Color.White,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold
@@ -294,7 +295,7 @@ private fun DailyPuzzleCard(
                 if (rating > 0) "#$rating Rated" else "Unrated"
 
             Text(
-                text = "Streak: $streak Days • $ratingText",
+                text = stringResource(R.string.streak_days, streak, ratingText),
                 color = ThemeSlateAccent,
                 fontSize = TextSizeBadge,
                 modifier = Modifier.singleClickable { onStatsClick() }

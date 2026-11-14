@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens.components.analysis
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -96,7 +98,7 @@ fun AnalysisNavigationControls(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "STOP",
+                    stringResource(R.string.stop),
                     color = ScreenBg,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
@@ -111,7 +113,7 @@ fun AnalysisNavigationControls(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "KEY MOVE",
+                    stringResource(R.string.key_move),
                     color = ScreenBg,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,

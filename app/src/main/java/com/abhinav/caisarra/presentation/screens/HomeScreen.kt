@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -557,7 +558,7 @@ private fun RatingCard(
                         .padding(vertical = 2.dp)
                 ) {
                     Text(
-                        text = "${selectedMode.label.uppercase()} RATING",
+                        text = stringResource(R.string.rating_2, selectedMode.label.uppercase()),
                         color = SecondaryText,
                         fontFamily = JetBrainsMono,
                         fontSize = 13.sp,
@@ -731,7 +732,7 @@ private fun QuickPlayCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "READY TO PLAY?",
+                        text = stringResource(R.string.ready_to_play),
                         color = Color(0xFF00E5FF),
                         fontFamily = JetBrainsMono,
                         fontSize = 12.sp,

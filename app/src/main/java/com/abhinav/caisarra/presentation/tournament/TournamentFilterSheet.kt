@@ -2,6 +2,8 @@
 
 package com.abhinav.caisarra.presentation.tournament
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -72,7 +74,7 @@ fun TournamentFilterSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Filter tournaments",
+                    stringResource(R.string.filter_tournaments),
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
@@ -83,7 +85,7 @@ fun TournamentFilterSheet(
                     enabled = draft.activeCount > 0
                 ) {
                     Text(
-                        "Reset",
+                        stringResource(R.string.reset),
                         color = if (draft.activeCount > 0) TournamentColors.Accent else TournamentColors.Subtitle
                     )
                 }
@@ -148,8 +150,8 @@ fun TournamentFilterSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Open spots only", color = Color.White, fontSize = 14.5.sp, fontWeight = FontWeight.Medium)
-                        Text("Hide tournaments that are already full", color = TournamentColors.Muted, fontSize = 12.5.sp)
+                        Text(stringResource(R.string.open_spots_only), color = Color.White, fontSize = 14.5.sp, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.hide_tournaments_that_are_already_full), color = TournamentColors.Muted, fontSize = 12.5.sp)
                     }
                     Switch(
                         checked = draft.openSpotsOnly,

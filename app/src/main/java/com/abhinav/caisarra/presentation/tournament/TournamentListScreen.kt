@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.tournament
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -125,7 +127,7 @@ fun TournamentListScreen(
                         .padding(20.dp)
                 ) {
                     Text(
-                        text = "Invite Code",
+                        text = stringResource(R.string.invite_code_2),
                         color = Color.White,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold
@@ -193,7 +195,7 @@ fun TournamentListScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No open tournaments right now.\nCreate one or join with an invite code.",
+                            text = stringResource(R.string.no_open_tournaments_right_now_create),
                             color = TournamentColors.Muted,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center
@@ -210,13 +212,13 @@ fun TournamentListScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "No tournaments match your filters.",
+                            text = stringResource(R.string.no_tournaments_match_your_filters),
                             color = TournamentColors.Muted,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center
                         )
                         TextButton(onClick = viewModel::clearFilters) {
-                            Text("Clear filters", color = TournamentColors.Accent)
+                            Text(stringResource(R.string.clear_filters), color = TournamentColors.Accent)
                         }
                     }
                 }
@@ -320,7 +322,7 @@ private fun TournamentCard(
         Spacer(Modifier.height(4.dp))
 
         Text(
-            text = "Format: ${formatLabel(tournament.format)} | Control: ${tournament.timeControl} | Round: ${tournament.currentRound} of ${tournament.totalRounds}",
+            text = stringResource(R.string.format_control_round_of, formatLabel(tournament.format), tournament.timeControl, tournament.currentRound, tournament.totalRounds),
             color = TournamentColors.Muted,
             fontSize = 12.5.sp
         )
@@ -333,7 +335,7 @@ private fun TournamentCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "${tournament.players ?: 0}/${tournament.maxPlayers} players",
+                text = stringResource(R.string.players, tournament.players ?: 0, tournament.maxPlayers),
                 color = Color(0xFFC4D0DC),
                 fontSize = 13.sp,
                 maxLines = 1,

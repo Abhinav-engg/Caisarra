@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.features.gameplay.presentation
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -20,6 +22,6 @@ fun ThinkingIndicator(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         CircularProgressIndicator(color = StatsCyan, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
-        Text(text = "Thinking...", color = StatsCyan, fontSize = 13.sp)
+        Text(text = stringResource(R.string.thinking), color = StatsCyan, fontSize = 13.sp)
     }
 }

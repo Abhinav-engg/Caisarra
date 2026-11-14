@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -311,7 +313,7 @@ private fun CameraScannerView(
             }
 
             Text(
-                text = "SCAN QR TO JOIN",
+                text = stringResource(R.string.scan_qr_to_join),
                 color = Color.White,
                 fontFamily = JetBrainsMono,
                 fontSize = 15.sp,
@@ -346,7 +348,7 @@ private fun CameraScannerView(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Point camera at a game invite QR code",
+                text = stringResource(R.string.point_camera_at_a_game_invite),
                 color = Color.White,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
@@ -375,7 +377,7 @@ private fun CameraScannerView(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "CHOOSE FROM PHOTOS",
+                    text = stringResource(R.string.choose_from_photos),
                     fontFamily = JetBrainsMono,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -556,7 +558,7 @@ private fun PermissionRequestView(
             }
 
             Text(
-                text = "CAMERA PERMISSION",
+                text = stringResource(R.string.camera_permission),
                 color = Color.White,
                 fontFamily = JetBrainsMono,
                 fontSize = 18.sp,
@@ -565,7 +567,7 @@ private fun PermissionRequestView(
             )
 
             Text(
-                text = "Camera access is needed to scan game invite QR codes directly from another phone.",
+                text = stringResource(R.string.camera_access_is_needed_to_scan),
                 color = ScannerMuted,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
@@ -583,7 +585,7 @@ private fun PermissionRequestView(
                 colors = ButtonDefaults.buttonColors(containerColor = ScannerCyan)
             ) {
                 Text(
-                    text = "ALLOW CAMERA",
+                    text = stringResource(R.string.allow_camera),
                     color = Color.Black,
                     fontWeight = FontWeight.Bold,
                     fontFamily = JetBrainsMono,
@@ -608,7 +610,7 @@ private fun PermissionRequestView(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "CHOOSE FROM PHOTOS",
+                    text = stringResource(R.string.choose_from_photos),
                     fontFamily = JetBrainsMono,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold

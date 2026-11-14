@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens.components.analysis
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -90,11 +92,11 @@ fun AccuracyCard(label: String, accuracy: Double, rating: Int, modifier: Modifie
             .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("$label ACCURACY", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
+        Text(stringResource(R.string.accuracy, label), color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
         Spacer(Modifier.height(4.dp))
         Text("%.1f%%".format(accuracy), color = Win, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(2.dp))
-        Text("Rating $rating", color = Muted, fontSize = 11.sp)
+        Text(stringResource(R.string.rating, rating), color = Muted, fontSize = 11.sp)
     }
 }
 @Composable

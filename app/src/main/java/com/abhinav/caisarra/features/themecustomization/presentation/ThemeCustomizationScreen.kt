@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.features.themecustomization.presentation
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -67,8 +68,8 @@ fun ThemeCustomizationScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Board & Theme Customization", color = StatsTextWhite, fontSize = TextSizeHeading, fontWeight = FontWeight.Bold)
-                Text("Your board. Your playing style.", color = StatsTextMuted, fontSize = TextSizeBody)
+                Text(stringResource(R.string.board_theme_customization), color = StatsTextWhite, fontSize = TextSizeHeading, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.your_board_your_playing_style), color = StatsTextMuted, fontSize = TextSizeBody)
             }
             Column(modifier = Modifier.padding(horizontal = 16.dp)) { ThemePreviewCard(selectedTheme, selectedPieces) }
             CustomizationSection("Choose your theme", "themes", BoardThemes.allThemes, key = { it.id }) { theme, modifier ->

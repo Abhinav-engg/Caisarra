@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -215,13 +217,13 @@ fun SettingsDetailScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "App Version",
+                        text = stringResource(R.string.app_version),
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeBody,
                         color = StatsTextWhite
                     )
                     Text(
-                        text = "1.0.0 (Build 1)",
+                        text = stringResource(R.string.s_1_0_0_build_1),
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeBadge,
                         color = StatsCyan

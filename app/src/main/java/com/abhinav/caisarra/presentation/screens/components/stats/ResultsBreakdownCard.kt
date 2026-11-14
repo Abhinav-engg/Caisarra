@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens.components.stats
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -66,7 +68,7 @@ fun ResultsCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Results",
+                    text = stringResource(R.string.results),
                     fontFamily = JetBrainsMono,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
@@ -74,7 +76,7 @@ fun ResultsCard(
                 )
 
                 Text(
-                    text = "$totalGames rated games",
+                    text = stringResource(R.string.rated_games, totalGames),
                     fontFamily = JetBrainsMono,
                     fontSize = TextSizeCaption,
                     color = StatsTextMuted
@@ -94,7 +96,7 @@ fun ResultsCard(
                         color = StatsCyan
                     )
                     Text(
-                        text = "Wins · $winPercent%",
+                        text = stringResource(R.string.wins, winPercent),
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeCaption,
                         color = StatsTextMuted
@@ -111,7 +113,7 @@ fun ResultsCard(
                             color = StatsDivider
                         )
                         Text(
-                            text = "Draws · $drawPercent%",
+                            text = stringResource(R.string.draws, drawPercent),
                             fontFamily = JetBrainsMono,
                             fontSize = TextSizeCaption,
                             color = StatsTextMuted
@@ -128,7 +130,7 @@ fun ResultsCard(
                         color = StatsRed
                     )
                     Text(
-                        text = "Losses · $lossPercent%",
+                        text = stringResource(R.string.losses, lossPercent),
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeCaption,
                         color = StatsTextMuted

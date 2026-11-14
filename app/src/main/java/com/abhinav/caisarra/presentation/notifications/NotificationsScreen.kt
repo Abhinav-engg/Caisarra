@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.notifications
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -305,7 +307,7 @@ private fun EmptyNotificationsView() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "No Notifications",
+            text = stringResource(R.string.no_notifications),
             color = TextPrimary,
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Bold,
@@ -315,7 +317,7 @@ private fun EmptyNotificationsView() {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "You're all caught up! Game challenges, friend requests, and updates will show up here.",
+            text = stringResource(R.string.you_re_all_caught_up_game),
             color = TextSecondary,
             fontFamily = JetBrainsMono,
             fontSize = 13.sp,

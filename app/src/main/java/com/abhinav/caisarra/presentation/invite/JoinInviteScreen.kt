@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -89,13 +91,13 @@ fun JoinInviteScreen(
                 is JoinInviteState.Preview -> {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "GAME INVITE",
+                            text = stringResource(R.string.game_invite),
                             color = Color.White,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${current.inviterName} invited you to play",
+                            text = stringResource(R.string.invited_you_to_play, current.inviterName),
                             color = JoinColors.TextSecondary,
                             fontSize = 14.sp
                         )
@@ -125,7 +127,7 @@ fun JoinInviteScreen(
 
                     if (current.needsLogin) {
                         Text(
-                            text = "Log in to join this game.",
+                            text = stringResource(R.string.log_in_to_join_this_game),
                             color = JoinColors.TextSecondary,
                             fontSize = 13.sp
                         )

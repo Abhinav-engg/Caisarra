@@ -1,6 +1,7 @@
 
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -159,13 +160,13 @@ fun MatchmakingScreen(
                                     modifier = Modifier.padding(vertical = 32.dp)
                                 )
                                 Text(
-                                    text = "Searching · %02d:%02d".format(elapsed / 60, elapsed % 60),
+                                    text = stringResource(R.string.searching_elapsed, elapsed / 60, elapsed % 60),
                                     color = StatsTextWhite,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = "Usually connects in under 15 seconds",
+                                    text = stringResource(R.string.usually_connects_in_under_15_seconds),
                                     color = StatsTextMuted,
                                     fontSize = 14.sp,
                                     textAlign = TextAlign.Center
@@ -185,13 +186,13 @@ fun MatchmakingScreen(
                                     modifier = Modifier.padding(vertical = 32.dp)
                                 )
                                 Text(
-                                    text = "Opponent found!",
+                                    text = stringResource(R.string.opponent_found),
                                     color = StatsGreen,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Setting up the board...",
+                                    text = stringResource(R.string.setting_up_the_board),
                                     color = StatsTextMuted,
                                     fontSize = 14.sp,
                                     textAlign = TextAlign.Center
@@ -223,12 +224,11 @@ fun MatchmakingScreen(
         AlertDialog(
             onDismissRequest = viewModel::dismissTiltWarning,
             title = {
-                Text("Take a short break?")
+                Text(stringResource(R.string.take_a_short_break))
             },
             text = {
                 Text(
-                    "The server detected a possible tilt pattern. " +
-                            "You can take a break or continue with a rated game."
+                    stringResource(R.string.tilt_pattern_detected)
                 )
             },
             confirmButton = {
@@ -240,14 +240,14 @@ fun MatchmakingScreen(
                         )
                     }
                 ) {
-                    Text("CONTINUE")
+                    Text(stringResource(R.string.label_continue))
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = viewModel::dismissTiltWarning
                 ) {
-                    Text("CANCEL")
+                    Text(stringResource(R.string.cancel_2))
                 }
             }
         )

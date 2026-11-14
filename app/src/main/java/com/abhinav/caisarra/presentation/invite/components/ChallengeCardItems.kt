@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -77,7 +79,7 @@ fun ReceivedChallengeCardItem(
                     fontSize = 15.sp
                 )
                 Text(
-                    text = "Challenged you · $timeLabel",
+                    text = stringResource(R.string.challenged_you, timeLabel),
                     color = FriendsCyan,
                     fontSize = 12.sp
                 )
@@ -96,7 +98,7 @@ fun ReceivedChallengeCardItem(
                 if (isBusy) {
                     CircularProgressIndicator(color = Black, modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Accept", color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.accept), color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(Modifier.width(6.dp))
@@ -109,7 +111,7 @@ fun ReceivedChallengeCardItem(
                     .padding(horizontal = 10.dp, vertical = 7.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Decline", color = FriendsTextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.decline), color = FriendsTextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -153,7 +155,7 @@ fun SentChallengeCardItem(
                     fontSize = 15.sp
                 )
                 Text(
-                    text = "Waiting for response · $timeLabel",
+                    text = stringResource(R.string.waiting_for_response_2, timeLabel),
                     color = FriendsTextMuted,
                     fontSize = 12.sp
                 )
@@ -169,7 +171,7 @@ fun SentChallengeCardItem(
                     .padding(horizontal = 10.dp, vertical = 7.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Board", color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.board), color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.width(6.dp))
             Box(
@@ -181,7 +183,7 @@ fun SentChallengeCardItem(
                     .padding(horizontal = 10.dp, vertical = 7.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Cancel", color = FriendsTextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.cancel), color = FriendsTextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

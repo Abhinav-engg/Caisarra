@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
 import android.text.Html
@@ -152,7 +153,7 @@ fun NewsScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
-                                text = "Unable to Load News",
+                                text = stringResource(R.string.unable_to_load_news),
                                 fontFamily = JetBrainsMono,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
@@ -179,7 +180,7 @@ fun NewsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No news available",
+                            text = stringResource(R.string.no_news_available),
                             fontFamily = JetBrainsMono,
                             fontSize = 14.sp,
                             color = StatsTextMuted
@@ -366,7 +367,7 @@ private fun NewsPlaceholder(source: String) {
                 color = StatsCyan
             )
             Text(
-                text = "CHESS NEWS",
+                text = stringResource(R.string.chess_news),
                 fontFamily = JetBrainsMono,
                 fontSize = 11.sp,
                 color = StatsTextMuted

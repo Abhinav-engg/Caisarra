@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -97,7 +99,7 @@ fun SelectCountryScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "SELECT COUNTRY",
+                    text = stringResource(R.string.select_country),
                     color = CountryText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -139,7 +141,7 @@ fun SelectCountryScreen(
                     Box {
                         if (search.isEmpty()) {
                             Text(
-                                text = "Search...",
+                                text = stringResource(R.string.search_2),
                                 color = CountryMuted.copy(alpha = 0.7f),
                                 fontSize = 14.sp
                             )
@@ -187,7 +189,7 @@ fun SelectCountryScreen(
             Spacer(Modifier.width(12.dp))
 
             Text(
-                text = "Not set",
+                text = stringResource(R.string.not_set),
                 modifier = Modifier.weight(1f),
                 color = CountryText,
                 fontSize = 13.sp
@@ -228,7 +230,7 @@ fun SelectCountryScreen(
             if (countries.isEmpty()) {
                 item {
                     Text(
-                        text = "No countries found",
+                        text = stringResource(R.string.no_countries_found),
                         color = CountryMuted,
                         fontSize = 14.sp,
                         modifier = Modifier

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.tournament
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,7 +55,7 @@ fun TournamentFilterBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "OPEN TOURNAMENTS · $resultCount",
+            text = stringResource(R.string.open_tournaments, resultCount),
             color = TournamentColors.Muted,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,

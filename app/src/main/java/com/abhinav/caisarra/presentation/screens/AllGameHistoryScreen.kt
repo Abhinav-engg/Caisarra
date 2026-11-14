@@ -1,6 +1,8 @@
 
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -111,7 +113,7 @@ fun AllGameHistoryScreen(
                             onClick = { viewModel.refresh() }
                         ) {
                             Text(
-                                text = "RETRY",
+                                text = stringResource(R.string.retry_2),
                                 color = Color(0xFF10B981),
                                 fontFamily = JetBrainsMono
                             )
