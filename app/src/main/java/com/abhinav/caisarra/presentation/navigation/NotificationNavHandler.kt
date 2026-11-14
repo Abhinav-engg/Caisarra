@@ -68,7 +68,7 @@ fun handleNotificationItemClick(
         }
         "post_comment",
         "post_reaction" -> {
-            navController.navigateOnce(AppRoutes.COMMUNITY)
+            navController.navigateToTab(AppRoutes.COMMUNITY)
         }
         "club_promoted",
         "club_demoted",
@@ -182,7 +182,7 @@ fun handleIntentNotificationNavigation(
         }
         "post_comment",
         "post_reaction" -> {
-            navController.navigateOnce(AppRoutes.COMMUNITY)
+            navController.navigateToTab(AppRoutes.COMMUNITY)
         }
         "club_promoted",
         "club_demoted",

@@ -63,7 +63,7 @@ fun NavController.navigateToTab(route: String) {
             saveState = true
         }
         launchSingleTop = true
-        restoreState = true
+        restoreState = route != AppRoutes.HOME
     }
 }
 

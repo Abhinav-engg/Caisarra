@@ -218,9 +218,7 @@ fun NavGraphBuilder.homeGraph(
                 navController.goToLogin()
             },
             onOpenNearby = {
-                navController.navigateOnce(AppRoutes.NEARBY) {
-                    launchSingleTop = true
-                }
+                navController.navigateToTab(AppRoutes.NEARBY)
             },
             onPlayBots = {
                 navController.navigateOnce(AppRoutes.BOT_SETUP)
@@ -232,7 +230,7 @@ fun NavGraphBuilder.homeGraph(
                 navController.navigateOnce(AppRoutes.DAILY_PUZZLE)
             },
             onOpenCommunity = {
-                navController.navigate(AppRoutes.COMMUNITY)
+                navController.navigateToTab(AppRoutes.COMMUNITY)
             },
             onOpenNotifications = {
                 navController.requireAuth(

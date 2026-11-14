@@ -57,7 +57,9 @@ class MainActivity : ComponentActivity() {
             window.isStatusBarContrastEnforced = false
         }
 
-        pendingIntentFlow.value = intent
+        if (savedInstanceState == null) {
+            pendingIntentFlow.value = intent
+        }
         requestNotificationPermission()
 
         val authRepository = AuthRepository.get(applicationContext)
