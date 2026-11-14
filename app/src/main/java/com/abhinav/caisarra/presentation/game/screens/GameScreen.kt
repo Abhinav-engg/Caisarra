@@ -37,19 +37,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abhinav.caisarra.presentation.game.components.CapturedPieces
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.abhinav.caisarra.features.gameplay.presentation.GameActions
+import com.abhinav.caisarra.features.gameplay.presentation.MoveNavigationBar
+import com.abhinav.caisarra.features.gameplay.presentation.StatePlayerCard
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
-import com.abhinav.caisarra.presentation.game.components.ClockBar
-import com.abhinav.caisarra.presentation.game.components.GameBottomBar
 import com.abhinav.caisarra.presentation.game.components.GameResultDialog
 import com.abhinav.caisarra.presentation.game.components.MoveList
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
 import com.abhinav.caisarra.presentation.game.model.GameIntent
 import com.abhinav.caisarra.presentation.game.model.GameUiState
-import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.viewmodel.GameViewModel
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -181,31 +180,30 @@ fun GameScreen(
                         .weight(1f)
                         .fillMaxHeight()
                 ) {
-                    TopBar(
-                        onHome = requestHome,
-                        onFlip = { onIntent(GameIntent.FlipBoard) }
-                    )
+                    CaisaaraTopBar(title = "PASS & PLAY", onBack = requestHome)
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    TopPlayerStrip(state = state)
+                    StatePlayerCard(state, state.isBoardFlipped)
                     MoveList(
                         moves = state.moves,
                         modifier = Modifier
                             .weight(1f)
                             .padding(vertical = 8.dp)
                     )
-                    BottomPlayerStrip(state = state)
+                    StatePlayerCard(state, !state.isBoardFlipped)
                     Spacer(modifier = Modifier.height(8.dp))
-                    GameActions(state = state, onIntent = onIntent)
+                    PassAndPlayActions(state = state, onIntent = onIntent)
+                    MoveNavigationBar(state.canUndo, state.canRedo, { onIntent(GameIntent.Undo) }, { onIntent(GameIntent.Redo) }, Modifier.padding(top = 8.dp))
                 }
             }
 
         } else {
             val boardSize = maxWidth - 24.dp
 
+            Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
                     .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -214,29 +212,13 @@ fun GameScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    TopBar(
-                        onHome = requestHome,
-                        onFlip = {
-                            onIntent(GameIntent.FlipBoard)
-                        }
-                    )
+                    CaisaaraTopBar(title = "PASS & PLAY", onBack = requestHome)
 
                     if (state.gameResult != null && !showResultDialog) {
                         GameOverPill(onClick = { showResultDialog = true })
                     }
-
-                    Spacer(modifier = Modifier.height(2.dp))
-                    MoveTicker(
-                        moves = state.moves,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(36.dp)
-                    )
                 }
-                TopPlayerStrip(
-                    state = state,
-                    modifier = Modifier.width(boardSize)
-                )
+                StatePlayerCard(state, state.isBoardFlipped, Modifier.width(boardSize))
                 Box(
                     modifier = Modifier.size(boardSize)
                 ) {
@@ -247,14 +229,11 @@ fun GameScreen(
                         onMoveAnimationStarted = viewModel::onMoveAnimationStarted
                     )
                 }
-                BottomPlayerStrip(
-                    state = state,
-                    modifier = Modifier.width(boardSize)
-                )
-                GameActions(
-                    state = state,
-                    onIntent = onIntent
-                )
+                StatePlayerCard(state, !state.isBoardFlipped, Modifier.width(boardSize))
+                MoveTicker(moves = state.moves, modifier = Modifier.width(boardSize))
+                PassAndPlayActions(state = state, onIntent = onIntent, modifier = Modifier.padding(bottom = 8.dp))
+            }
+            MoveNavigationBar(state.canUndo, state.canRedo, { onIntent(GameIntent.Undo) }, { onIntent(GameIntent.Redo) })
             }
         }
 
@@ -321,170 +300,17 @@ private fun Board(
 }
 
 @Composable
-private fun TopBar(
-    onHome: () -> Unit,
-    onFlip: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        TextButton(onClick = onHome) {
-            Text(text = "Home", color = Color.White)
-        }
-        Text(
-            text = "MOSAIC",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
-        )
-        TextButton(onClick = onFlip) {
-            Text(text = "Flip", color = Color.White)
-        }
-    }
-}
-
-
-@Composable
-private fun TopPlayerStrip(
-    state: GameUiState,
-    modifier: Modifier = Modifier
-) {
-    if (state.isBoardFlipped) {
-        PlayerStrip(
-            name = state.whitePlayerName,
-            timeMillis = state.whiteTimeMillis,
-            isActive = state.isWhiteTurn,
-            hasClock = state.hasClock,
-            captured = state.capturedBlackPieces,
-            capturedOnTop = false,
-            advantage = state.whiteAdvantage,
-            modifier = modifier
-        )
-    } else {
-        PlayerStrip(
-            name = state.blackPlayerName,
-            timeMillis = state.blackTimeMillis,
-            isActive = !state.isWhiteTurn,
-            hasClock = state.hasClock,
-            captured = state.capturedWhitePieces,
-            capturedOnTop = false,
-            advantage = state.blackAdvantage,
-            modifier = modifier
-        )
-    }
-}
-
-@Composable
-private fun BottomPlayerStrip(
-    state: GameUiState,
-    modifier: Modifier = Modifier
-) {
-    if (state.isBoardFlipped) {
-        PlayerStrip(
-            name = state.blackPlayerName,
-            timeMillis = state.blackTimeMillis,
-            isActive = !state.isWhiteTurn,
-            hasClock = state.hasClock,
-            captured = state.capturedWhitePieces,
-            capturedOnTop = true,
-            advantage = state.blackAdvantage,
-            modifier = modifier
-        )
-    } else {
-        PlayerStrip(
-            name = state.whitePlayerName,
-            timeMillis = state.whiteTimeMillis,
-            isActive = state.isWhiteTurn,
-            hasClock = state.hasClock,
-            captured = state.capturedBlackPieces,
-            capturedOnTop = true,
-            advantage = state.whiteAdvantage,
-            modifier = modifier
-        )
-    }
-}
-
-@Composable
-private fun PlayerStrip(
-    name: String,
-    timeMillis: Long,
-    isActive: Boolean,
-    hasClock: Boolean,
-    captured: List<Piece>,
-    capturedOnTop: Boolean,
-    advantage: Int = 0,
-    modifier: Modifier = Modifier
-) {
-    if (hasClock) {
-        ClockBar(
-            playerName = name,
-            timeMillis = timeMillis,
-            isActive = isActive,
-            capturedPieces = captured,
-            advantage = advantage,
-            modifier = modifier
-        )
-    } else {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .background(
-                    if (isActive) Color(0xFF263B30) else Color(0xFF151F2B),
-                    RoundedCornerShape(12.dp)
-                )
-                .border(
-                    1.dp,
-                    Color(0xFF304154),
-                    RoundedCornerShape(12.dp)
-                )
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = name,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-
-                if (captured.isNotEmpty() || advantage > 0) {
-                    CapturedPieces(
-                        pieces = captured,
-                        advantage = advantage
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun GameActions(
+private fun PassAndPlayActions(
     state: GameUiState,
     onIntent: (GameIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GameBottomBar(
-        canUndo = state.canUndo,
-        canRedo = state.canRedo,
-        optionsEnabled = state.gameResult == null,
-        onUndo = { onIntent(GameIntent.Undo) },
-        onRedo = { onIntent(GameIntent.Redo) },
-        onOfferDraw = { onIntent(GameIntent.OfferDraw) },
+    GameActions(
+        gameOngoing = state.gameResult == null,
+        isBoardFlipped = state.isBoardFlipped,
         onResign = { onIntent(GameIntent.Resign) },
+        onFlip = { onIntent(GameIntent.FlipBoard) },
+        onOfferDraw = { onIntent(GameIntent.OfferDraw) },
         autoFlip = state.autoFlip,
         onAutoFlipChange = { onIntent(GameIntent.SetAutoFlip(it)) },
         modifier = modifier
