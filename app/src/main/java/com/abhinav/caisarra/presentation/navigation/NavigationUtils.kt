@@ -72,27 +72,30 @@ fun NavController.safeBack(fallbackRoute: String) {
     if (currentDestination?.route == fallbackRoute) return
 
     val fallbackExists = runCatching { getBackStackEntry(fallbackRoute) }.isSuccess
-    if (fallbackExists) {
-        popBackStack(fallbackRoute, inclusive = false)
-    } else if (!popBackStack()) {
-        navigate(fallbackRoute) {
-            popUpTo(graph.id) {
-                inclusive = true
-            }
-            launchSingleTop = true
-        }
+    when {
+        fallbackExists -> popBackStack(fallbackRoute, inclusive = false)
+        previousBackStackEntry == null -> replaceStackWith(fallbackRoute)
+        else -> popBackStack()
     }
 }
 
 fun NavController.safePop(fallbackRoute: String = AppRoutes.HOME) {
     if (!isResumed()) return
-    if (!popBackStack() && currentDestination?.route != fallbackRoute) {
-        navigate(fallbackRoute) {
-            popUpTo(graph.id) {
-                inclusive = true
-            }
-            launchSingleTop = true
+    if (previousBackStackEntry == null) {
+        if (currentDestination?.route != fallbackRoute) {
+            replaceStackWith(fallbackRoute)
         }
+    } else {
+        popBackStack()
+    }
+}
+
+private fun NavController.replaceStackWith(route: String) {
+    navigate(route) {
+        popUpTo(graph.id) {
+            inclusive = true
+        }
+        launchSingleTop = true
     }
 }
 

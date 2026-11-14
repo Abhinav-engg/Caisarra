@@ -333,10 +333,11 @@ fun NavGraphBuilder.gameGraph(
                 }
             },
             onNewGame = {
-                navController.navigateOnce(AppRoutes.GAME_SETUP) {
+                navController.navigateOnce(AppRoutes.PASS_AND_PLAY_SETUP) {
                     popUpTo(AppRoutes.GAME) {
                         inclusive = true
                     }
+                    launchSingleTop = true
                 }
             }
         )
@@ -389,7 +390,7 @@ fun NavGraphBuilder.gameGraph(
                 }
             },
             onStartAnalysis = {
-                navController.navigate(AppRoutes.gameAnalysis(gameId))
+                navController.navigateOnce(AppRoutes.gameAnalysis(gameId))
             }
         )
     }
@@ -425,7 +426,7 @@ fun NavGraphBuilder.gameGraph(
                 }
             },
             onAnalyze = {
-                navController.navigate(AppRoutes.gameAnalysis(gameId))
+                navController.navigateOnce(AppRoutes.gameAnalysis(gameId))
             }
         )
     }
