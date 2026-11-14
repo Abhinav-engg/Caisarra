@@ -142,6 +142,17 @@ class NotificationRepository private constructor(context: Context) {
         _unreadCount.value = 0
     }
 
+    suspend fun delete(id: Long): Result<Unit> = execute {
+        val response = service.deleteNotification(id)
+        checkSuccess(response.success, response.error, response.message)
+    }
+
+    suspend fun deleteAll(): Result<Unit> = execute {
+        val response = service.deleteAllNotifications()
+        checkSuccess(response.success, response.error, response.message)
+        _unreadCount.value = 0
+    }
+
     fun onNotificationReceived(notification: NotificationItemDto) {
         _incomingNotifications.tryEmit(notification)
         if (!notification.isRead) {
