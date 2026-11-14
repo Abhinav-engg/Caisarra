@@ -1,5 +1,9 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
+import com.abhinav.caisarra.features.profilelink.presentation.openProfileOnClick
+import com.abhinav.caisarra.core.ui.components.rememberCountUp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,9 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -35,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +53,12 @@ import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
+import com.abhinav.caisarra.features.mascot.domain.GameResultMascotLines
+import com.abhinav.caisarra.features.mascot.presentation.BubbleTail
+import com.abhinav.caisarra.features.mascot.presentation.Mascot
+import com.abhinav.caisarra.features.mascot.presentation.MascotSpeechBubble
+import kotlin.math.abs
+import kotlin.random.Random
 
 private val ScreenBg = Color(0xFF0B1218)
 private val Card = Color(0xFF121A22)
@@ -91,17 +99,21 @@ fun RatedGameResultScreen(
         ResultOutcome.DEFEAT -> "Defeat"
         ResultOutcome.DRAW -> "Draw"
     }
-    val icon = when (outcome) {
-        ResultOutcome.VICTORY -> Icons.Default.EmojiEvents
-        ResultOutcome.DEFEAT -> Icons.Default.Flag
-        ResultOutcome.DRAW -> Icons.Default.Handshake
-    }
     val previousRating = state.playerRating?.let { current ->
         state.ratingChange?.let { current - it }
     }
     val iAmWhite = state.myColor != PieceColor.BLACK
     val myChange = state.ratingChange
-    val opponentChange = myChange?.let { -it }
+    val opponentChange = state.opponentRatingChange
+    val myAccuracy = analysis.summary?.summaryStats
+        ?.let { if (iAmWhite) it.accuracyWhite else it.accuracyBlack }
+        ?.takeIf { it > 0.0 }
+    val lineSeed = remember { Random.nextInt(0, 1000) }
+    val mascotReaction = when (outcome) {
+        ResultOutcome.VICTORY -> GameResultMascotLines.victory(myChange, myAccuracy, lineSeed)
+        ResultOutcome.DEFEAT -> GameResultMascotLines.defeat(myChange, myAccuracy, lineSeed)
+        ResultOutcome.DRAW -> GameResultMascotLines.draw(lineSeed)
+    }
 
     Column(
         modifier = Modifier
@@ -126,19 +138,24 @@ fun RatedGameResultScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(18.dp))
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .border(1.dp, accent.copy(alpha = 0.55f), CircleShape)
-                    .background(accent.copy(alpha = 0.12f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = title, tint = accent, modifier = Modifier.size(30.dp))
-            }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(4.dp))
+            Mascot(
+                mood = mascotReaction.mood,
+                reactionKey = mascotReaction.key,
+                size = 132.dp
+            )
+            Spacer(Modifier.height(6.dp))
             Text(title, color = TextMain, fontSize = 34.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(14.dp))
+            MascotSpeechBubble(
+                reaction = mascotReaction,
+                tail = BubbleTail.TOP,
+                centered = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+            )
+            Spacer(Modifier.height(16.dp))
             EloPill(
                 change = myChange,
                 current = state.playerRating,
@@ -172,7 +189,7 @@ fun RatedGameResultScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Start Game Analysis",
+                        stringResource(R.string.start_game_analysis),
                         color = Color(0xFF082028),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -220,12 +237,20 @@ private fun CircleIconButton(icon: ImageVector, label: String, onClick: () -> Un
     }
 }
 
+private const val RATING_COUNT_DELAY_MS = 900L
+
 @Composable
 private fun EloPill(change: Int?, current: Int?, previous: Int?, accent: Color) {
+    val shownChange = change?.let { rememberCountUp(target = it, delayMillis = RATING_COUNT_DELAY_MS) }
+    val shownCurrent = if (current != null && previous != null) {
+        rememberCountUp(target = current, from = previous, delayMillis = RATING_COUNT_DELAY_MS)
+    } else {
+        current
+    }
     val changeText = when {
-        change == null -> "Rated"
-        change > 0 -> "↑ +$change Elo"
-        change < 0 -> "↓ $change Elo"
+        change == null || shownChange == null -> "Rated"
+        change > 0 -> "↑ +$shownChange Elo"
+        change < 0 -> "↓ ${abs(shownChange)} Elo"
         else -> "Elo unchanged"
     }
     Row(
@@ -238,7 +263,7 @@ private fun EloPill(change: Int?, current: Int?, previous: Int?, accent: Color) 
     ) {
         Text(changeText, color = accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Box(Modifier.size(width = 1.dp, height = 12.dp).background(Border))
-        Text(current?.toString() ?: "—", color = TextMain, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(shownCurrent?.toString() ?: "—", color = TextMain, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         if (previous != null && previous != current) {
             Text(
                 previous.toString(),
@@ -288,7 +313,7 @@ private fun PlayersRow(
                 .border(1.dp, Border, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text("VS", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.vs), color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -306,6 +331,8 @@ private fun PlayerCard(
         modifier = modifier
             .background(Card, RoundedCornerShape(16.dp))
             .border(1.dp, if (highlight) accent.copy(alpha = 0.7f) else Border, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .openProfileOnClick(name)
             .padding(horizontal = 12.dp, vertical = 12.dp)
     ) {
         Text(
@@ -323,7 +350,8 @@ private fun PlayerCard(
                 when {
                     change == null -> Unit
                     change > 0 -> append(" (+$change)")
-                    else -> append(" ($change)")
+                    change < 0 -> append(" ($change)")
+                    else -> append(" (±0)")
                 }
             },
             color = if (highlight) accent else Muted,

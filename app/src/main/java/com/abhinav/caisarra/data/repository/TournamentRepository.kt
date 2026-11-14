@@ -90,6 +90,9 @@ class TournamentRepository private constructor(
     suspend fun cancelTournament(id: String): Result<CancelTournamentResponse> =
         call { service.cancelTournament(id) }
 
+    suspend fun regenerateInvite(id: String): Result<TournamentDto> =
+        call { service.regenerateInvite(id) }
+
     suspend fun getStandings(id: String): Result<StandingsResponse> =
         call { service.getStandings(id) }
 

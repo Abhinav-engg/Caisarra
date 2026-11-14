@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -16,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
@@ -60,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
+import com.abhinav.caisarra.core.ui.components.MainTabTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.caisaara.ui.theme.BotLockedName
 import com.caisaara.ui.theme.GoldColor
@@ -128,29 +131,14 @@ fun MenuScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(StatsBg)
-            .statusBarsPadding()
     ) {
+        MainTabTopBar(title = "MENU", icon = Icons.Filled.Menu)
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 18.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 20.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "MENU",
-                    fontFamily = JetBrainsMono,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    letterSpacing = 1.5.sp,
-                    color = StatsTextWhite
-                )
-            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -343,7 +331,7 @@ private fun LogoutConfirmationDialog(
                 .padding(horizontal = 22.dp, vertical = 21.dp)
         ) {
             Text(
-                text = "Log out of Mosaic?",
+                text = stringResource(R.string.log_out_of_mosaic),
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
@@ -351,7 +339,7 @@ private fun LogoutConfirmationDialog(
             )
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "You can sign back in to continue your chess journey. Your account and progress will be kept.",
+                text = stringResource(R.string.you_can_sign_back_in_to),
                 fontFamily = JetBrainsMono,
                 fontSize = 12.sp,
                 lineHeight = 17.sp,
@@ -372,7 +360,7 @@ private fun LogoutConfirmationDialog(
                         .clickable(onClick = onDismiss),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Cancel", fontFamily = JetBrainsMono, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Color(0xFFD4DCE5))
+                    Text(stringResource(R.string.cancel), fontFamily = JetBrainsMono, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Color(0xFFD4DCE5))
                 }
                 Box(
                     modifier = Modifier
@@ -383,7 +371,7 @@ private fun LogoutConfirmationDialog(
                         .clickable(onClick = onConfirm),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Log out", fontFamily = JetBrainsMono, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF04151B))
+                    Text(stringResource(R.string.log_out), fontFamily = JetBrainsMono, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF04151B))
                 }
             }
         }

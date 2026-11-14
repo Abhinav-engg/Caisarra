@@ -12,5 +12,6 @@ data class CreateInviteResponse(
     @SerialName("increment_seconds") val incrementSeconds: Int,
     val color: String,
     val rated: Boolean = true,
-    val status: String
+    val status: String,
+    @SerialName("watch_link") val watchLink: String? = null
 )

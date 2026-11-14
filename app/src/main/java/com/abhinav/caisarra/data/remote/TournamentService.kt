@@ -51,6 +51,9 @@ interface TournamentService {
     @POST("api/tournaments/{id}/cancel")
     suspend fun cancelTournament(@Path("id") id: String): CancelTournamentResponse
 
+    @POST("api/tournaments/{id}/regenerate-invite")
+    suspend fun regenerateInvite(@Path("id") id: String): TournamentDto
+
     @GET("api/tournaments/{id}/standings")
     suspend fun getStandings(@Path("id") id: String): StandingsResponse
 

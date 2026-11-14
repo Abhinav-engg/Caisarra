@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -204,7 +206,7 @@ private fun CustomTacticsFiltersContent(
             }
 
             Text(
-                text = "Custom Tactics",
+                text = stringResource(R.string.custom_tactics),
                 color = White,
                 fontSize = 23.sp,
                 fontWeight = FontWeight.Bold,
@@ -219,7 +221,7 @@ private fun CustomTacticsFiltersContent(
         ) {
 
             Text(
-                text = "PUZZLE RATING",
+                text = stringResource(R.string.puzzle_rating),
                 color = StatsCyan,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
@@ -241,7 +243,7 @@ private fun CustomTacticsFiltersContent(
                     },
                     modifier = Modifier.weight(1f),
                     label = {
-                        Text("Minimum")
+                        Text(stringResource(R.string.minimum))
                     },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -261,7 +263,7 @@ private fun CustomTacticsFiltersContent(
                     },
                     modifier = Modifier.weight(1f),
                     label = {
-                        Text("Maximum")
+                        Text(stringResource(R.string.maximum))
                     },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -277,7 +279,7 @@ private fun CustomTacticsFiltersContent(
             Spacer(Modifier.height(6.dp))
 
             Text(
-                text = "Selected range: ${state.filters.minRating} – ${state.filters.maxRating}",
+                text = stringResource(R.string.selected_range, state.filters.minRating, state.filters.maxRating),
                 color = ThemeSlateAccent,
                 fontSize = 12.sp
             )
@@ -304,14 +306,14 @@ private fun CustomTacticsFiltersContent(
         ) {
 
             Text(
-                text = "TACTICAL THEMES",
+                text = stringResource(R.string.tactical_themes),
                 color = StatsCyan,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "Clear selection",
+                text = stringResource(R.string.clear_selection),
                 color = StatsCyan,
                 fontSize = 12.sp,
                 modifier = Modifier
@@ -432,7 +434,7 @@ private fun CustomTacticsFiltersContent(
                     )
 
                     Text(
-                        text = "Tap a selected theme again to remove it.",
+                        text = stringResource(R.string.tap_a_selected_theme_again_to),
                         color = ThemeSlateAccent,
                         fontSize = 11.sp
                     )
@@ -608,14 +610,14 @@ private fun PuzzleInfoPanel(
             .padding(16.dp)
     ) {
         Text(
-            text = "CUSTOM TACTICS",
+            text = stringResource(R.string.custom_tactics_2),
             color = StatsCyan,
             fontWeight = FontWeight.Bold,
             fontSize = 13.sp
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Puzzle rating: ${state.puzzle.rating}",
+            text = stringResource(R.string.puzzle_rating_2, state.puzzle.rating),
             color = White,
             fontSize = 17.sp,
             fontWeight = FontWeight.Bold
@@ -673,7 +675,7 @@ private fun CustomTacticsBottomControls(
                 disabledContainerColor = StatsSkeletonChartBg.copy(alpha = 0.45f)
             )
         ) {
-            Text("💡  Hint", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.hint), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -745,7 +747,7 @@ private fun CustomTacticsResultContent(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "Puzzle rating: ${state.puzzle.rating}",
+            text = stringResource(R.string.puzzle_rating_2, state.puzzle.rating),
             color = White,
             fontSize = 16.sp
         )
@@ -753,15 +755,13 @@ private fun CustomTacticsResultContent(
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "Your rating: ${state.userRatingBefore} → ${state.userRatingAfter}",
+            text = stringResource(R.string.your_rating, state.userRatingBefore, state.userRatingAfter),
             color = ThemeSlateAccent,
             fontSize = 14.sp
         )
 
         Text(
-            text = "Rating change: ${
-                if (state.ratingChange > 0) "+" else ""
-            }${state.ratingChange}",
+            text = stringResource(R.string.rating_change, if (state.ratingChange > 0) "+" else "", state.ratingChange),
             color = StatsCyan,
             fontSize = 14.sp
         )
@@ -769,17 +769,13 @@ private fun CustomTacticsResultContent(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "Your moves: ${
-                state.attemptedMoves.joinToString(", ")
-            }",
+            text = stringResource(R.string.your_moves, state.attemptedMoves.joinToString(", ")),
             color = ThemeSlateAccent,
             fontSize = 12.sp
         )
 
         Text(
-            text = "Solution: ${
-                state.solutionMoves.joinToString(", ")
-            }",
+            text = stringResource(R.string.solution_2, state.solutionMoves.joinToString(", ")),
             color = ThemeSlateAccent,
             fontSize = 12.sp
         )

@@ -16,6 +16,7 @@ import com.abhinav.caisarra.presentation.game.model.PieceColor as UiPieceColor
 import com.abhinav.caisarra.presentation.game.model.PieceType as UiPieceType
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 import com.abhinav.caisarra.presentation.game.model.Square as UiSquare
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -39,6 +40,8 @@ class CustomTacticsViewModel(
 
     private var cachedFilters = CustomTacticsFilters()
     private var activePuzzle: CustomPuzzleResponse? = null
+    private var playerMoveIndex = 0
+    private val playedMoves = mutableListOf<String>()
 
     init {
         loadThemes()
@@ -194,6 +197,8 @@ class CustomTacticsViewModel(
     private fun setupPuzzle(puzzle: CustomPuzzleResponse) {
         try {
             activePuzzle = puzzle
+            playerMoveIndex = 0
+            playedMoves.clear()
             engine.loadFen(puzzle.fen)
 
             val fenTokens = puzzle.fen.trim().split(" ")
@@ -419,60 +424,133 @@ class CustomTacticsViewModel(
             message = "Checking your move..."
         )
 
+        val uciMove = move.toUci()
+
         viewModelScope.launch {
             repository.submitCustomPuzzleAttempt(
                 puzzleId = current.puzzle.puzzleId,
-                move = move.toUci(),
+                move = uciMove,
                 timeTakenMs = elapsed,
+                moveIndex = playerMoveIndex,
                 rated = false
             ).onSuccess { response ->
 
                 val latest = _state.value
                         as? CustomTacticsUiState.Playing ?: return@onSuccess
 
-                if (response.correct) {
+                if (!response.correct) {
+                    undoPlayerMove(latest, current, "Incorrect move. Try another move.")
+                    return@onSuccess
+                }
+
+                playedMoves.add(uciMove)
+                val nextMove = response.nextMove
+
+                if (response.solved || nextMove.isNullOrBlank()) {
                     _state.value = CustomTacticsUiState.Result(
                         puzzle = current.puzzle,
                         board = currentBoardMap(),
                         isBoardFlipped = current.isBoardFlipped,
                         correct = true,
-                        solved = response.solved,
-                        attemptedMoves = response.attemptedMoves,
+                        solved = true,
+                        attemptedMoves = playedMoves.toList(),
                         solutionMoves = response.solutionMoves,
                         ratingChange = response.ratingChange,
                         userRatingBefore = response.userRatingBefore,
                         userRatingAfter = response.userRatingAfter,
                         rated = response.rated
                     )
-                } else {
-                    engine.loadFen(current.puzzle.fen)
-                    engine.play(parseUciMove(current.puzzle.initialMove))
-
-                    _state.value = latest.copy(
-                        board = currentBoardMap(),
-                        selectedSquare = null,
-                        legalMoves = emptyList(),
-                        isAwaitingServer = false,
-                        message = "Incorrect move. Try another move."
-                    )
+                    return@onSuccess
                 }
+
+                playOpponentReply(nextMove)
 
             }.onFailure { error ->
 
                 val latest = _state.value
                         as? CustomTacticsUiState.Playing ?: return@onFailure
-                engine.loadFen(current.puzzle.fen)
-                engine.play(parseUciMove(current.puzzle.initialMove))
 
-                _state.value = latest.copy(
-                    board = currentBoardMap(),
-                    selectedSquare = null,
-                    legalMoves = emptyList(),
-                    isAwaitingServer = false,
-                    message = error.userMessage("Unable to submit your move.")
+                undoPlayerMove(
+                    latest,
+                    current,
+                    error.userMessage("Unable to submit your move.")
                 )
             }
         }
+    }
+
+    private suspend fun playOpponentReply(uci: String) {
+        delay(OPPONENT_REPLY_DELAY_MS)
+
+        val latest = _state.value as? CustomTacticsUiState.Playing ?: return
+
+        val reply = try {
+            parseUciMove(uci)
+        } catch (e: IllegalArgumentException) {
+            _state.value = latest.copy(
+                isAwaitingServer = false,
+                message = "Unable to play the opponent's reply."
+            )
+            return
+        }
+
+        val replyPiece = engine.pieces()
+            .find { it.square == reply.from }
+            ?.toUiPiece()
+
+        if (!engine.play(reply)) {
+            _state.value = latest.copy(
+                isAwaitingServer = false,
+                message = "Unable to play the opponent's reply."
+            )
+            return
+        }
+
+        playerMoveIndex++
+
+        val checkSquare = engine.checkSquare()
+
+        _state.value = latest.copy(
+            board = currentBoardMap(),
+            selectedSquare = null,
+            legalMoves = emptyList(),
+            lastMoveFrom = reply.from.toUiSquare(),
+            lastMoveTo = reply.to.toUiSquare(),
+            isWhiteInCheck = checkSquare != null &&
+                    engine.turn() == DomainPieceColor.White,
+            isBlackInCheck = checkSquare != null &&
+                    engine.turn() == DomainPieceColor.Black,
+            moveAnimationEvent = replyPiece?.let {
+                PieceMoveAnimationEvent(
+                    id = ++animationId,
+                    from = reply.from.toUiSquare(),
+                    to = reply.to.toUiSquare(),
+                    piece = it
+                )
+            },
+            isAwaitingServer = false,
+            message = "Correct! Keep going."
+        )
+    }
+
+    private fun undoPlayerMove(
+        latest: CustomTacticsUiState.Playing,
+        beforeMove: CustomTacticsUiState.Playing,
+        message: String
+    ) {
+        engine.undo()
+
+        _state.value = latest.copy(
+            board = currentBoardMap(),
+            selectedSquare = null,
+            legalMoves = emptyList(),
+            lastMoveFrom = beforeMove.lastMoveFrom,
+            lastMoveTo = beforeMove.lastMoveTo,
+            isWhiteInCheck = beforeMove.isWhiteInCheck,
+            isBlackInCheck = beforeMove.isBlackInCheck,
+            isAwaitingServer = false,
+            message = message
+        )
     }
 
     fun showHint() {
@@ -625,3 +703,5 @@ class CustomTacticsViewModel(
     }
 }
 
+
+private const val OPPONENT_REPLY_DELAY_MS = 250L

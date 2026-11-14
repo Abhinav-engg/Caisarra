@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -17,7 +19,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -47,7 +48,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,21 +70,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.app.Activity
-import android.content.ContextWrapper
-import android.view.WindowManager
-import androidx.compose.runtime.DisposableEffect
 import com.abhinav.caisarra.core.network.userMessage
+import com.abhinav.caisarra.core.ui.security.SecureScreen
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.ChatMessageDto
+import com.abhinav.caisarra.features.gameplay.presentation.GameActions
+import com.abhinav.caisarra.features.gameplay.presentation.MoveNavigationBar
+import com.abhinav.caisarra.features.gameplay.presentation.OnlineGameHeader
+import com.abhinav.caisarra.features.gameplay.presentation.StatePlayerCard
 import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
 import com.abhinav.caisarra.presentation.game.components.CapturedPieces
 import com.abhinav.caisarra.presentation.game.components.ChatPanel
 import com.abhinav.caisarra.presentation.game.components.GameOverReveal
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
-import com.abhinav.caisarra.presentation.game.components.ClockBar
-import com.abhinav.caisarra.presentation.game.components.GameBottomBar
 import com.abhinav.caisarra.presentation.game.components.GameDecision
 import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.GameResultDialog
@@ -98,13 +97,6 @@ import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
 import kotlinx.coroutines.launch
-private tailrec fun Context.findActivity(): Activity? {
-    return when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }
-}
 private val ScreenBg = Color(0xFF080D13)
 private val SheetBg = Color(0xFF111A24)
 private val Accent = Color(0xFF10B981)
@@ -129,23 +121,8 @@ fun OnlineGameScreen(
         moveTo = state.moveAnimationEvent?.to
     )
     val context = LocalContext.current
-    val activity = remember(context) {
-        context.findActivity()
-    }
 
-    DisposableEffect(activity) {
-
-        activity?.window?.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
-
-        onDispose {
-            activity?.window?.clearFlags(
-                WindowManager.LayoutParams.FLAG_SECURE
-            )
-        }
-    }
+    SecureScreen()
     val autoQueen by rememberAutoQueenEnabled()
 
     LaunchedEffect(state.promotionPending, autoQueen) {
@@ -166,6 +143,8 @@ fun OnlineGameScreen(
     val opponentName by viewModel.opponentName.collectAsState()
     val opponentAvatarUrl by viewModel.opponentAvatarUrl.collectAsState()
     val myAvatarUrl by viewModel.myAvatarUrl.collectAsState()
+    val pingMs by viewModel.pingMs.collectAsState()
+    val connected by viewModel.connected.collectAsState()
 
     var showChat by remember { mutableStateOf(false) }
     var showHomeResignDialog by remember { mutableStateOf(false) }
@@ -204,7 +183,7 @@ fun OnlineGameScreen(
             Text(text = state.errorMessage.orEmpty(), color = Color.White)
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(onClick = onHome) {
-                Text(text = "HOME", color = Accent)
+                Text(text = stringResource(R.string.home), color = Accent)
             }
         }
         return
@@ -235,7 +214,7 @@ fun OnlineGameScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Your opponent declined the rematch challenge.",
+                text = stringResource(R.string.your_opponent_declined_the_rematch_chall),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF9E9E9E),
                 textAlign = TextAlign.Center,
@@ -251,7 +230,7 @@ fun OnlineGameScreen(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     border = BorderStroke(1.dp, Color(0x33FFFFFF))
                 ) {
-                    Text("HOME")
+                    Text(stringResource(R.string.home))
                 }
                 Button(
                     onClick = {
@@ -259,7 +238,7 @@ fun OnlineGameScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)
                 ) {
-                    Text("NEW OPPONENT", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.new_opponent), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -271,7 +250,7 @@ fun OnlineGameScreen(
             CircularProgressIndicator(color = Accent)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Waiting for opponent to join...",
+                text = stringResource(R.string.waiting_for_opponent_to_join),
                 style = MaterialTheme.typography.titleSmall,
                 color = Color.White,
                 fontWeight = FontWeight.Medium
@@ -283,15 +262,18 @@ fun OnlineGameScreen(
             ) {
                 OutlinedButton(
                     onClick = {
-                        viewModel.cancelWaitingChallenge(onDone = onHome)
+                        viewModel.cancelWaitingChallenge(
+                            onDone = onHome,
+                            onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+                        )
                     },
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     border = BorderStroke(1.dp, Color(0x33FFFFFF))
                 ) {
-                    Text("CANCEL")
+                    Text(stringResource(R.string.cancel_2))
                 }
                 TextButton(onClick = onHome) {
-                    Text(text = "HOME", color = Accent)
+                    Text(text = stringResource(R.string.home), color = Accent)
                 }
             }
         }
@@ -302,7 +284,7 @@ fun OnlineGameScreen(
         CenteredColumn {
             CircularProgressIndicator(color = Accent)
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = "Loading game...", color = Color.White)
+            Text(text = stringResource(R.string.loading_game), color = Color.White)
         }
         return
     }
@@ -335,17 +317,7 @@ fun OnlineGameScreen(
                             .weight(1f)
                             .fillMaxHeight()
                     ) {
-                        OnlineTopBar(
-                            isRated = state.isRated,
-                            unread = unread,
-                            muted = chatMuted,
-                            spectatorCount = state.spectatorCount,
-                            hasWatchLink = !state.watchCode.isNullOrBlank() || !state.watchLink.isNullOrBlank(),
-                            onWatchClick = { showWatchShareDialog = true },
-                            onHome = requestHome,
-                            onFlip = viewModel::flipBoard,
-                            onChat = { showChat = true }
-                        )
+                        OnlineGameHeader(state, pingMs, connected, onBack = requestHome)
 
                         state.errorMessage?.let {
                             Spacer(Modifier.height(4.dp))
@@ -359,7 +331,7 @@ fun OnlineGameScreen(
                                 InfoBannerBg
                             )
                         }
-                        TopClock(state)
+                        StatePlayerCard(state, state.isBoardFlipped, myAvatarUrl = myAvatarUrl, opponentAvatarUrl = opponentAvatarUrl, linkProfile = true)
                         MoveList(
                             moves = state.moves,
                             modifier = Modifier
@@ -367,27 +339,33 @@ fun OnlineGameScreen(
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
                         )
-                        BottomClock(state)
+                        StatePlayerCard(state, !state.isBoardFlipped, myAvatarUrl = myAvatarUrl, opponentAvatarUrl = opponentAvatarUrl, linkProfile = true)
 
                         Spacer(Modifier.height(8.dp))
-                        OnlineActions(
-                            canUndo = state.canUndo,
-                            canRedo = state.canRedo,
-                            onUndo = viewModel::undo,
-                            onRedo = viewModel::redo,
+                        GameActions(
                             gameOngoing = gameOngoing,
+                            opponentName = opponentName,
+                            chatUnread = unread,
+                            chatMuted = chatMuted,
+                            isBoardFlipped = state.isBoardFlipped,
+                            spectatorCount = state.spectatorCount,
+                            onResign = viewModel::resign,
                             onOfferDraw = viewModel::offerDraw,
-                            onResign = viewModel::resign
+                            onChat = { showChat = true },
+                            onFlip = viewModel::flipBoard,
+                            onSpectate = { showWatchShareDialog = true }
                         )
+                        MoveNavigationBar(state.canUndo, state.canRedo, viewModel::undo, viewModel::redo, Modifier.padding(top = 8.dp))
                     }
                 }
             }
             else {
                 val portraitBoardSize = maxWidth - 24.dp
 
+                Column(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .weight(1f)
                         .padding(horizontal = 12.dp),
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -397,29 +375,11 @@ fun OnlineGameScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        OnlineTopBar(
-                            isRated = state.isRated,
-                            unread = unread,
-                            muted = chatMuted,
-                            spectatorCount = state.spectatorCount,
-                            hasWatchLink = !state.watchCode.isNullOrBlank() || !state.watchLink.isNullOrBlank(),
-                            onWatchClick = { showWatchShareDialog = true },
-                            onHome = requestHome,
-                            onFlip = viewModel::flipBoard,
-                            onChat = { showChat = true }
-                        )
+                        OnlineGameHeader(state, pingMs, connected, onBack = requestHome)
 
                         if (state.gameResult != null && !showResultDialog) {
                             GameOverPill(onClick = { showResultDialog = true })
                         }
-
-                        Spacer(modifier = Modifier.height(2.dp))
-                        MoveTicker(
-                            moves = state.moves,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(36.dp)
-                        )
 
                         state.errorMessage?.let { message ->
                             Spacer(modifier = Modifier.height(6.dp))
@@ -439,13 +399,14 @@ fun OnlineGameScreen(
                             )
                         }
                     }
-                    TopClock(state = state, modifier = Modifier.width(portraitBoardSize))
+                    StatePlayerCard(state, state.isBoardFlipped, Modifier.width(portraitBoardSize), myAvatarUrl, opponentAvatarUrl, linkProfile = true)
 
                     Box(modifier = Modifier.size(portraitBoardSize)) {
                         OnlineBoard(state, viewModel::onSquareClick, moveAnimationConsumedId = state.moveAnimationConsumedId,onMoveAnimationStarted = viewModel::onMoveAnimationStarted)
                     }
 
-                    BottomClock(state = state, modifier = Modifier.width(portraitBoardSize))
+                    StatePlayerCard(state, !state.isBoardFlipped, Modifier.width(portraitBoardSize), myAvatarUrl, opponentAvatarUrl, linkProfile = true)
+                    MoveTicker(moves = state.moves, modifier = Modifier.width(portraitBoardSize))
                     if (state.isDailyMode) {
                         state.lastMoveAccepted?.let { accepted ->
                             Text(
@@ -465,15 +426,22 @@ fun OnlineGameScreen(
                         }
                     }
 
-                    OnlineActions(
-                        canUndo = state.canUndo,
-                        canRedo = state.canRedo,
-                        onUndo = viewModel::undo,
-                        onRedo = viewModel::redo,
+                    GameActions(
                         gameOngoing = gameOngoing,
+                        opponentName = opponentName,
+                        chatUnread = unread,
+                        chatMuted = chatMuted,
+                        isBoardFlipped = state.isBoardFlipped,
+                        spectatorCount = state.spectatorCount,
+                        onResign = viewModel::resign,
                         onOfferDraw = viewModel::offerDraw,
-                        onResign = viewModel::resign
+                        onChat = { showChat = true },
+                        onFlip = viewModel::flipBoard,
+                        onSpectate = { showWatchShareDialog = true },
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
+                }
+                MoveNavigationBar(state.canUndo, state.canRedo, viewModel::undo, viewModel::redo)
                 }
             }
         }
@@ -508,7 +476,7 @@ fun OnlineGameScreen(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "Spectators (${state.spectatorCount})",
+                        text = stringResource(R.string.spectators, state.spectatorCount),
                         fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                         color = Color.White
@@ -518,7 +486,7 @@ fun OnlineGameScreen(
             text = {
                 Column {
                     Text(
-                        text = "Matchmade games allow public spectators by default. You can also share your watch link directly:",
+                        text = stringResource(R.string.matchmade_games_allow_public_spectators),
                         fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                         fontSize = 12.sp,
                         color = Color(0xFF82909E)
@@ -551,7 +519,7 @@ fun OnlineGameScreen(
                         Toast.makeText(context, "Watch link copied!", Toast.LENGTH_SHORT).show()
                     }) {
                         Text(
-                            text = "COPY LINK",
+                            text = stringResource(R.string.copy_link_2),
                             fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                             color = Color(0xFF22D3EE)
@@ -573,7 +541,7 @@ fun OnlineGameScreen(
                             context.startActivity(Intent.createChooser(shareIntent, "Share Watch Link"))
                         }) {
                             Text(
-                                text = "SHARE",
+                                text = stringResource(R.string.share_2),
                                 fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                                 color = Color.White
                             )
@@ -581,7 +549,7 @@ fun OnlineGameScreen(
                     }
                     TextButton(onClick = { showWatchShareDialog = false }) {
                         Text(
-                            text = "CLOSE",
+                            text = stringResource(R.string.close_2),
                             fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                             color = Color(0xFF82909E)
                         )
@@ -743,29 +711,6 @@ private fun OnlineBoard(state: GameUiState, onSquareClick: (com.abhinav.caisarra
 }
 
 @Composable
-private fun OnlineActions(
-    canUndo: Boolean,
-    canRedo: Boolean,
-    onUndo: () -> Unit,
-    onRedo: () -> Unit,
-    gameOngoing: Boolean,
-    onOfferDraw: () -> Unit,
-    onResign: () -> Unit
-) {
-    GameBottomBar(
-        canUndo = canUndo,
-        canRedo = canRedo,
-        optionsEnabled = gameOngoing,
-        onUndo = onUndo,
-        onRedo = onRedo,
-        onOfferDraw = onOfferDraw,
-        onResign = onResign,
-        showDraw = true,
-        showUndoRedo = true
-    )
-}
-
-@Composable
 private fun ChatOverlay(
     chat: List<ChatMessageDto>,
     myUserId: Long?,
@@ -846,211 +791,6 @@ private fun Banner(text: String, background: Color, modifier: Modifier = Modifie
 }
 
 @Composable
-private fun OnlineTopBar(
-    isRated: Boolean,
-    unread: Int,
-    muted: Boolean,
-    spectatorCount: Int = 0,
-    hasWatchLink: Boolean = false,
-    onWatchClick: () -> Unit = {},
-    onHome: () -> Unit,
-    onFlip: () -> Unit,
-    onChat: () -> Unit
-) {
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-    ) {
-        val compact = maxWidth < 380.dp
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    TextButton(
-                        onClick = onHome,
-                        contentPadding = PaddingValues(horizontal = if (compact) 6.dp else 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "Home",
-                            color = Color.White,
-                            fontSize = if (compact) 12.sp else 14.sp,
-                            maxLines = 1
-                        )
-                    }
-
-                    if (hasWatchLink || spectatorCount > 0) {
-                        Surface(
-                            onClick = onWatchClick,
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (spectatorCount > 0) Color(0xFF142230) else Color.Transparent,
-                            contentColor = if (spectatorCount > 0) Color(0xFF22D3EE) else Color.White
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(
-                                    horizontal = if (compact) 6.dp else 8.dp,
-                                    vertical = 6.dp
-                                ),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Visibility,
-                                    contentDescription = "Spectators",
-                                    tint = if (spectatorCount > 0) Color(0xFF22D3EE) else Color.White,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                if (spectatorCount > 0) {
-                                    Text(
-                                        text = "$spectatorCount",
-                                        color = Color(0xFF22D3EE),
-                                        fontSize = if (compact) 11.sp else 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = JetBrainsMono
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Column(
-                modifier = Modifier.padding(horizontal = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "MOSAIC",
-                    color = Color.White,
-                    fontSize = if (compact) 15.sp else 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = if (compact) 1.sp else 1.5.sp,
-                    maxLines = 1
-                )
-
-                Text(
-                    text = if (isRated) "RATED" else "UNRATED",
-                    color = if (isRated) Accent else Color(0xFFA6C1D4),
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    maxLines = 1
-                )
-            }
-
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    TextButton(
-                        onClick = onFlip,
-                        contentPadding = PaddingValues(horizontal = if (compact) 6.dp else 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "Flip",
-                            color = Color.White,
-                            fontSize = if (compact) 12.sp else 14.sp,
-                            maxLines = 1
-                        )
-                    }
-
-                    TextButton(
-                        onClick = onChat,
-                        contentPadding = PaddingValues(horizontal = if (compact) 6.dp else 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = when {
-                                muted -> if (compact) "Muted" else "Chat (muted)"
-                                unread > 0 -> "Chat ($unread)"
-                                else -> "Chat"
-                            },
-                            color = if (unread > 0) Accent else Color.White,
-                            fontSize = if (compact) 12.sp else 14.sp,
-                            maxLines = 1
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TopClock(
-    state: GameUiState,
-    modifier: Modifier = Modifier
-) {
-    if (state.isBoardFlipped) {
-        ClockBar(
-            playerName = state.whitePlayerName,
-            timeMillis = state.whiteTimeMillis,
-            isActive = state.isWhiteTurn,
-            rating = state.whiteRating,
-            isDailyMode = state.isDailyMode,
-            capturedPieces = state.capturedBlackPieces,
-            advantage = state.whiteAdvantage,
-            modifier = modifier
-        )
-    } else {
-        ClockBar(
-            playerName = state.blackPlayerName,
-            timeMillis = state.blackTimeMillis,
-            isActive = !state.isWhiteTurn,
-            rating = state.blackRating,
-            isDailyMode = state.isDailyMode,
-            capturedPieces = state.capturedWhitePieces,
-            advantage = state.blackAdvantage,
-            modifier = modifier
-        )
-    }
-}
-
-@Composable
-private fun BottomClock(
-    state: GameUiState,
-    modifier: Modifier = Modifier
-) {
-    if (state.isBoardFlipped) {
-        ClockBar(
-            playerName = state.blackPlayerName,
-            timeMillis = state.blackTimeMillis,
-            isActive = !state.isWhiteTurn,
-            rating = state.blackRating,
-            isDailyMode = state.isDailyMode,
-            capturedPieces = state.capturedWhitePieces,
-            advantage = state.blackAdvantage,
-            modifier = modifier
-        )
-    } else {
-        ClockBar(
-            playerName = state.whitePlayerName,
-            timeMillis = state.whiteTimeMillis,
-            isActive = state.isWhiteTurn,
-            rating = state.whiteRating,
-            isDailyMode = state.isDailyMode,
-            capturedPieces = state.capturedBlackPieces,
-            advantage = state.whiteAdvantage,
-            modifier = modifier
-        )
-    }
-}
-
-@Composable
 private fun CenteredColumn(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
@@ -1086,7 +826,7 @@ private fun GameOverPill(onClick: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                "Game Over • Tap to view result",
+                stringResource(R.string.game_over_tap_to_view_result),
                 color = Color.White,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold

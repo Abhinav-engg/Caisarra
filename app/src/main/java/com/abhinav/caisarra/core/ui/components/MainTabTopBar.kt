@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -32,6 +33,7 @@ fun MainTabTopBar(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     iconPainter: Painter? = null,
+    leadingContent: @Composable (BoxScope.() -> Unit)? = null,
     trailingContent: @Composable (BoxScope.() -> Unit)? = null
 ) {
     Box(
@@ -46,6 +48,7 @@ fun MainTabTopBar(
                 color = PuzzleCardBorder,
                 shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
             )
+            .statusBarsPadding()
             .padding(vertical = 14.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -58,14 +61,14 @@ fun MainTabTopBar(
                     imageVector = icon,
                     contentDescription = null,
                     tint = StatsCyan,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             } else if (iconPainter != null) {
                 Icon(
                     painter = iconPainter,
                     contentDescription = null,
-                    tint = StatsCyan,
-                    modifier = Modifier.size(20.dp)
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(24.dp)
                 )
             }
             Text(
@@ -76,6 +79,12 @@ fun MainTabTopBar(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp
             )
+        }
+
+        if (leadingContent != null) {
+            Box(modifier = Modifier.align(Alignment.CenterStart)) {
+                leadingContent()
+            }
         }
 
         if (trailingContent != null) {

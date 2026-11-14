@@ -1,6 +1,8 @@
 
 package com.abhinav.caisarra.presentation.game.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -56,7 +58,7 @@ fun PromotionDialog(
                 .padding(22.dp)
         ) {
             Text(
-                text = "PAWN PROMOTION",
+                text = stringResource(R.string.pawn_promotion),
                 color = PromotionAccent,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
@@ -66,7 +68,7 @@ fun PromotionDialog(
             Spacer(Modifier.height(10.dp))
 
             Text(
-                text = "Choose your piece",
+                text = stringResource(R.string.choose_your_piece),
                 color = PromotionText,
                 fontSize = 25.sp,
                 fontWeight = FontWeight.Bold
@@ -75,8 +77,7 @@ fun PromotionDialog(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Your pawn reached the final rank. " +
-                        "Select the piece you want it to become.",
+                text = stringResource(R.string.promotion_prompt),
                 color = PromotionMuted,
                 fontSize = 14.sp,
                 lineHeight = 21.sp
@@ -117,7 +118,7 @@ fun PromotionDialog(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "QUEEN IS THE MOST COMMON CHOICE",
+                text = stringResource(R.string.queen_is_the_most_common_choice),
                 color = PromotionMuted,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.SemiBold,

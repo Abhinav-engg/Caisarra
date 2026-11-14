@@ -20,6 +20,7 @@ data class NotificationsUiState(
     val notifications: List<NotificationItemDto> = emptyList(),
     val hasMore: Boolean = true,
     val unreadCount: Int = 0,
+    val isClearing: Boolean = false,
     val error: String? = null
 )
 
@@ -41,6 +42,7 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
 
         viewModelScope.launch {
             repository.incomingNotifications.collectLatest { incoming ->
+                if (!incoming.isRead) launch { repository.markAsRead(incoming.id) }
                 _uiState.update { state ->
                     if (state.notifications.none { it.id == incoming.id }) {
                         state.copy(notifications = listOf(incoming) + state.notifications)
@@ -58,6 +60,7 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
                 it.copy(
                     isLoading = !isRefresh && it.notifications.isEmpty(),
                     isRefreshing = isRefresh,
+                    isClearing = false,
                     error = null
                 )
             }
@@ -66,6 +69,7 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
 
             repository.getNotifications(limit = 30, beforeId = null)
                 .onSuccess { list ->
+                    if (list.any { !it.isRead }) repository.markAllAsRead()
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -115,27 +119,17 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun markAsRead(id: Long) {
-        viewModelScope.launch {
-            repository.markAsRead(id)
-            _uiState.update { current ->
-                current.copy(
-                    notifications = current.notifications.map {
-                        if (it.id == id) it.copy(isRead = true) else it
-                    }
-                )
-            }
+    fun delete(id: Long) {
+        val clearing = _uiState.value.isClearing
+        _uiState.update { current ->
+            val remaining = current.notifications.filterNot { it.id == id }
+            current.copy(notifications = remaining, isClearing = clearing && remaining.isNotEmpty())
         }
+        if (!clearing) viewModelScope.launch { repository.delete(id).onFailure { loadInitial(isRefresh = true) } }
     }
 
-    fun markAllAsRead() {
-        viewModelScope.launch {
-            repository.markAllAsRead()
-            _uiState.update { current ->
-                current.copy(
-                    notifications = current.notifications.map { it.copy(isRead = true) }
-                )
-            }
-        }
+    fun deleteAll() {
+        _uiState.update { it.copy(isClearing = true, hasMore = false) }
+        viewModelScope.launch { repository.deleteAll().onFailure { loadInitial(isRefresh = true) } }
     }
 }

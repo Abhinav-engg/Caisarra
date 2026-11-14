@@ -1,5 +1,8 @@
 package com.abhinav.caisarra.presentation.watch
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
+import com.abhinav.caisarra.features.profilelink.presentation.openProfileOnClick
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -81,7 +84,7 @@ fun SpectatorGameScreen(
             containerColor = Color(0xFF111A24),
             title = {
                 Text(
-                    text = "Leave Spectator Room?",
+                    text = stringResource(R.string.leave_spectator_room),
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -89,7 +92,7 @@ fun SpectatorGameScreen(
             },
             text = {
                 Text(
-                    text = "You will stop watching this live game.",
+                    text = stringResource(R.string.you_will_stop_watching_this_live),
                     fontFamily = JetBrainsMono,
                     fontSize = 13.sp,
                     color = StatsTextMuted
@@ -101,7 +104,7 @@ fun SpectatorGameScreen(
                     handleLeave()
                 }) {
                     Text(
-                        text = "LEAVE",
+                        text = stringResource(R.string.leave),
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
                         color = RedNormal
@@ -111,7 +114,7 @@ fun SpectatorGameScreen(
             dismissButton = {
                 TextButton(onClick = { showLeaveDialog = false }) {
                     Text(
-                        text = "STAY",
+                        text = stringResource(R.string.stay),
                         fontFamily = JetBrainsMono,
                         color = StatsTextMuted
                     )
@@ -139,7 +142,7 @@ fun SpectatorGameScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "CONNECTING TO SPECTATOR ROOM...",
+                    text = stringResource(R.string.connecting_to_spectator_room),
                     fontFamily = JetBrainsMono,
                     fontSize = 12.sp,
                     letterSpacing = 1.sp,
@@ -170,7 +173,7 @@ fun SpectatorGameScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "CANNOT WATCH GAME",
+                    text = stringResource(R.string.cannot_watch_game),
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
@@ -190,7 +193,7 @@ fun SpectatorGameScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = ThemeNeonDeep)
                 ) {
                     Text(
-                        text = "BACK TO WATCH HUB",
+                        text = stringResource(R.string.back_to_watch_hub),
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
                         color = StatsCyan
@@ -222,6 +225,7 @@ fun SpectatorGameScreen(
                 if (state.isFlipped) {
                     ClockBar(
                         playerName = state.whitePlayerName,
+                        modifier = Modifier.openProfileOnClick(state.whitePlayerName),
                         timeMillis = state.whiteTimeMs,
                         isActive = state.isWhiteTurn && state.status == "active" && !state.isWatchEnded,
                         rating = state.whiteRating,
@@ -230,6 +234,7 @@ fun SpectatorGameScreen(
                 } else {
                     ClockBar(
                         playerName = state.blackPlayerName,
+                        modifier = Modifier.openProfileOnClick(state.blackPlayerName),
                         timeMillis = state.blackTimeMs,
                         isActive = !state.isWhiteTurn && state.status == "active" && !state.isWatchEnded,
                         rating = state.blackRating,
@@ -307,6 +312,7 @@ fun SpectatorGameScreen(
                 if (state.isFlipped) {
                     ClockBar(
                         playerName = state.blackPlayerName,
+                        modifier = Modifier.openProfileOnClick(state.blackPlayerName),
                         timeMillis = state.blackTimeMs,
                         isActive = !state.isWhiteTurn && state.status == "active" && !state.isWatchEnded,
                         rating = state.blackRating,
@@ -315,6 +321,7 @@ fun SpectatorGameScreen(
                 } else {
                     ClockBar(
                         playerName = state.whitePlayerName,
+                        modifier = Modifier.openProfileOnClick(state.whitePlayerName),
                         timeMillis = state.whiteTimeMs,
                         isActive = state.isWhiteTurn && state.status == "active" && !state.isWatchEnded,
                         rating = state.whiteRating,
@@ -377,7 +384,7 @@ private fun SpectatorTopBar(
                         .background(StatsGreen, CircleShape)
                 )
                 Text(
-                    text = "LIVE",
+                    text = stringResource(R.string.live),
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold,
                     fontSize = 10.sp,

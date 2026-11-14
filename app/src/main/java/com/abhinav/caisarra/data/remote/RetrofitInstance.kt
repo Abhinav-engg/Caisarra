@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.data.remote
 
+import com.abhinav.caisarra.features.follow.data.FollowService
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.api.AnalysisService
 import com.abhinav.caisarra.data.remote.api.AuthService
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit
 import com.abhinav.caisarra.data.remote.api.CommunityService
 import com.abhinav.caisarra.data.remote.api.PuzzleApiService
 import com.abhinav.caisarra.features.minimates.data.MiniMatesService
+import com.abhinav.caisarra.features.notificationsettings.data.NotificationPreferencesService
 import com.abhinav.caisarra.data.remote.api.ClubService
 import com.abhinav.caisarra.data.remote.api.LeaderboardService
 import com.abhinav.caisarra.data.remote.api.DirectMessageService
@@ -133,7 +135,11 @@ object RetrofitInstance {
         authenticatedRetrofit(tokenManager).create()
     fun createNotificationService(tokenManager: TokenManager): NotificationService =
         authenticatedRetrofit(tokenManager).create()
+    fun createNotificationPreferencesService(tokenManager: TokenManager): NotificationPreferencesService =
+        authenticatedRetrofit(tokenManager).create()
     fun createNewsService(tokenManager: TokenManager): NewsService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createFollowService(tokenManager: TokenManager): FollowService =
         authenticatedRetrofit(tokenManager).create()
     fun createAdminService(tokenManager: TokenManager): AdminService =
         authenticatedRetrofit(tokenManager).create(AdminService::class.java)

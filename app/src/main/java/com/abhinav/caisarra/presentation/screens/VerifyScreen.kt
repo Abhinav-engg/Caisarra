@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -23,17 +25,22 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -69,6 +76,17 @@ fun VerifyScreen(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    var isFocused by remember { mutableStateOf(false) }
+
+    val focusOtp: () -> Unit = {
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    LaunchedEffect(Unit) { focusOtp() }
+
+    LaunchedEffect(state.otp) { viewModel.verify(onVerified) }
 
     val paste: () -> Unit = {
         scope.launch {
@@ -86,7 +104,7 @@ fun VerifyScreen(
         AuthHeader("VERIFY", subtitle)
 
         Text(
-            text = "Enter Code",
+            text = stringResource(R.string.enter_code),
             style = MaterialTheme.typography.titleMedium,
             color = Lablecolor,
             modifier = Modifier.fillMaxWidth()
@@ -99,7 +117,8 @@ fun VerifyScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .focusRequester(focusRequester),
+                .focusRequester(focusRequester)
+                .onFocusChanged { isFocused = it.isFocused },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             textStyle = TextStyle(color = Color.Transparent),
             cursorBrush = SolidColor(Color.Transparent),
@@ -116,7 +135,7 @@ fun VerifyScreen(
                         modifier = Modifier.combinedClickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = { focusRequester.requestFocus() },
+                            onClick = focusOtp,
                             onLongClick = paste
                         ),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -125,6 +144,7 @@ fun VerifyScreen(
                             OtpBox(
                                 digit = state.otp.getOrNull(index)?.toString().orEmpty(),
                                 isError = state.error != null,
+                                isActive = isFocused && index == state.otp.length.coerceAtMost(5),
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -161,7 +181,7 @@ fun VerifyScreen(
                 )
             } else {
                 Text(
-                    text = "Resend Code",
+                    text = stringResource(R.string.resend_code),
                     color = Color(0xFF00D5E9),
                     fontSize = 12.sp,
                     modifier = Modifier
@@ -184,13 +204,21 @@ fun VerifyScreen(
 }
 
 @Composable
-private fun OtpBox(digit: String, isError: Boolean, modifier: Modifier = Modifier) {
+private fun OtpBox(digit: String, isError: Boolean, isActive: Boolean, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(10.dp)
     Box(
         modifier = modifier
             .height(48.dp)
             .background(Feildbackground, shape)
-            .border(1.dp, if (isError) ErrorRed else BorderColor, shape),
+            .border(
+                1.dp,
+                when {
+                    isError -> ErrorRed
+                    isActive -> Color(0xFF00D5E9)
+                    else -> BorderColor
+                },
+                shape
+            ),
         contentAlignment = Alignment.Center
     ) {
         if (digit.isNotEmpty()) {

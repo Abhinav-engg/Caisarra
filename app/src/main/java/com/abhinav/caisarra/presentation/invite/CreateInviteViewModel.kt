@@ -19,9 +19,11 @@ data class CreateInviteUiState(
     val mode: GameMode = GameMode.RAPID,
     val color: String = "random",
     val allowTakebacks: Boolean = false,
+    val publicSpectators: Boolean = true,
     val inviteCode: String? = null,
     val gameId: String? = null,
     val link: String? = null,
+    val watchLink: String? = null,
     val opponentId: Long? = null,
     val opponentUsername: String? = null,
     val isLoading: Boolean = false,
@@ -125,6 +127,10 @@ class CreateInviteViewModel(application: Application) : AndroidViewModel(applica
         _uiState.update { it.copy(allowTakebacks = allowed) }
     }
 
+    fun onPublicSpectatorsChanged(allowed: Boolean) {
+        _uiState.update { it.copy(publicSpectators = allowed) }
+    }
+
     fun setOpponent(id: Long?, username: String?) {
         _uiState.update { it.copy(opponentId = id, opponentUsername = username) }
     }
@@ -151,7 +157,8 @@ class CreateInviteViewModel(application: Application) : AndroidViewModel(applica
                 incrementSeconds = state.incrementSeconds,
                 color = state.color,
                 rated = !state.allowTakebacks,
-                opponentId = state.opponentId
+                opponentId = state.opponentId,
+                publicSpectators = state.publicSpectators
             )
                 .onSuccess { response ->
                     _uiState.update {
@@ -159,7 +166,8 @@ class CreateInviteViewModel(application: Application) : AndroidViewModel(applica
                             isLoading = false,
                             inviteCode = response.inviteCode,
                             gameId = response.gameId,
-                            link = response.link
+                            link = response.link,
+                            watchLink = response.watchLink
                         )
                     }
                 }

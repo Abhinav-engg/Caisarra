@@ -19,6 +19,7 @@ data class CreateTournamentUiState(
     val minPlayers: String = "",
     val maxPlayers: String = "",
     val visibility: String = "public",
+    val rated: Boolean = false,
     val submitting: Boolean = false,
     val error: String? = null,
     val createdId: String? = null
@@ -38,6 +39,11 @@ class CreateTournamentViewModel(application: Application) : AndroidViewModel(app
     fun onFormatChange(value: String) = _state.update { it.copy(format = value, error = null) }
     fun onTimeControlChange(value: String) =
         _state.update { it.copy(timeControl = value, error = null) }
+
+    fun onVisibilityChange(value: String) =
+        _state.update { it.copy(visibility = value, error = null) }
+
+    fun onRatedChange(value: Boolean) = _state.update { it.copy(rated = value, error = null) }
 
     fun onMinPlayersChange(value: String) =
         _state.update { it.copy(minPlayers = value.filter(Char::isDigit).take(3), error = null) }
@@ -74,9 +80,10 @@ class CreateTournamentViewModel(application: Application) : AndroidViewModel(app
                     timeControl = s.timeControl,
                     minPlayers = min,
                     maxPlayers = max,
-                    visibility = "public",
+                    visibility = s.visibility,
                     totalRounds = 0,
-                    startAt = null
+                    startAt = null,
+                    rated = s.rated
                 )
             ).onSuccess { tournament ->
                 _state.update { it.copy(submitting = false, createdId = tournament.id) }

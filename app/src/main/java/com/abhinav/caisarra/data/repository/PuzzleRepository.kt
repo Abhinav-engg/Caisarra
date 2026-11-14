@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.data.repository
 
+import com.abhinav.caisarra.core.database.cachedFetch
 import com.abhinav.caisarra.data.remote.ApiErrorInterpreter
 import com.abhinav.caisarra.data.remote.api.PuzzleApiService
 import com.abhinav.caisarra.data.remote.dto.CustomPuzzleAttemptRequest
@@ -34,7 +35,9 @@ class PuzzleRepository(
 ) {
 
     suspend fun getDailyPuzzle(): Result<DailyPuzzleResponse> = call {
-        service.getDailyPuzzle()
+        cachedFetch("puzzle_daily", DailyPuzzleResponse.serializer()) {
+            service.getDailyPuzzle()
+        }
     }
 
     suspend fun submitAttempt(
@@ -78,17 +81,21 @@ class PuzzleRepository(
     }
 
     suspend fun getStats(): Result<PuzzleStatsResponse> = call {
-        service.getStats()
+        cachedFetch("puzzle_stats", PuzzleStatsResponse.serializer()) {
+            service.getStats()
+        }
     }
 
     suspend fun getHistory(
         limit: Int = 20,
         offset: Int = 0
     ): Result<PuzzleHistoryResponse> = call {
-        service.getHistory(
-            limit = limit,
-            offset = offset
-        )
+        cachedFetch("puzzle_history:$limit:$offset", PuzzleHistoryResponse.serializer()) {
+            service.getHistory(
+                limit = limit,
+                offset = offset
+            )
+        }
     }
 
     suspend fun getHistorySince(since: LocalDate?): Result<List<PuzzleHistoryItemDto>> = call {
@@ -182,6 +189,7 @@ class PuzzleRepository(
         puzzleId: String,
         move: String,
         timeTakenMs: Long,
+        moveIndex: Int? = null,
         rated: Boolean = false
     ): Result<CustomPuzzleAttemptResponse> = call {
 
@@ -190,6 +198,7 @@ class PuzzleRepository(
                 puzzleId = puzzleId,
                 move = move,
                 timeTakenMs = timeTakenMs,
+                moveIndex = moveIndex,
                 rated = rated
             )
         )

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.notifications
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,13 +18,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.DoneAll
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Groups
@@ -56,6 +58,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.abhinav.caisarra.core.ui.components.ListSkeleton
+import com.abhinav.caisarra.core.ui.components.SwipeToDelete
+import com.abhinav.caisarra.core.ui.components.fadeInOnAppear
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import java.time.Duration
@@ -109,12 +114,11 @@ fun NotificationsScreen(
             title = "NOTIFICATIONS",
             onBack = onBack,
             actions = {
-                val hasUnread = state.notifications.any { !it.isRead }
-                if (hasUnread) {
-                    IconButton(onClick = { viewModel.markAllAsRead() }) {
+                if (state.notifications.isNotEmpty() && !state.isClearing) {
+                    IconButton(onClick = { viewModel.deleteAll() }) {
                         Icon(
-                            imageVector = Icons.Outlined.DoneAll,
-                            contentDescription = "Mark all as read",
+                            imageVector = Icons.Outlined.Delete,
+                            contentDescription = "Delete all",
                             tint = AccentCyan
                         )
                     }
@@ -139,12 +143,7 @@ fun NotificationsScreen(
         ) {
             when {
                 state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = AccentCyan)
-                    }
+                    ListSkeleton(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp))
                 }
 
                 state.notifications.isEmpty() -> {
@@ -154,23 +153,24 @@ fun NotificationsScreen(
                 else -> {
                     LazyColumn(
                         state = listState,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().fadeInOnAppear(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(
+                        itemsIndexed(
                             items = state.notifications,
-                            key = { it.id }
-                        ) { notification ->
-                            NotificationCardItem(
-                                notification = notification,
-                                onClick = {
-                                    if (!notification.isRead) {
-                                        viewModel.markAsRead(notification.id)
-                                    }
-                                    onNotificationClick(notification)
-                                }
-                            )
+                            key = { _, it -> it.id }
+                        ) { index, notification ->
+                            SwipeToDelete(
+                                onDelete = { viewModel.delete(notification.id) },
+                                modifier = Modifier.animateItem(),
+                                autoDeleteAfterMillis = if (state.isClearing) index.coerceAtMost(12) * 90L else null
+                            ) {
+                                NotificationCardItem(
+                                    notification = notification,
+                                    onClick = { onNotificationClick(notification) }
+                                )
+                            }
                         }
 
                         if (state.isLoadingMore) {
@@ -307,7 +307,7 @@ private fun EmptyNotificationsView() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "No Notifications",
+            text = stringResource(R.string.no_notifications),
             color = TextPrimary,
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Bold,
@@ -317,7 +317,7 @@ private fun EmptyNotificationsView() {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "You're all caught up! Game challenges, friend requests, and updates will show up here.",
+            text = stringResource(R.string.you_re_all_caught_up_game),
             color = TextSecondary,
             fontFamily = JetBrainsMono,
             fontSize = 13.sp,

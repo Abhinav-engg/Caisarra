@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens.components.analysis
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -103,8 +105,8 @@ fun CurrentMoveCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text("Game Start", color = TextMain, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    Text("Starting position • White to move", color = Muted, fontSize = 12.sp)
+                    Text(stringResource(R.string.game_start), color = TextMain, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.starting_position_white_to_move), color = Muted, fontSize = 12.sp)
                 }
                 Text("0.00", color = Cyan, fontSize = 14.sp, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
             }
@@ -164,7 +166,7 @@ fun CurrentMoveCard(
         if (move.bestMove.isNotBlank() && !move.bestMove.equals(move.playedMove, ignoreCase = true)) {
             Spacer(Modifier.height(6.dp))
             Text(
-                "Best: ${move.bestMove}",
+                stringResource(R.string.best, move.bestMove),
                 color = Win,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,

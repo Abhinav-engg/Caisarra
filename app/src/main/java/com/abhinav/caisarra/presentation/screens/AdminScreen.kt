@@ -1,6 +1,8 @@
 
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -109,13 +111,13 @@ fun AdminScreen(
         ) {
             Column {
                 Text(
-                    "Administration",
+                    stringResource(R.string.administration),
                     color = AdminWhite,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    "Platform control center",
+                    stringResource(R.string.platform_control_center),
                     color = AdminMuted,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -127,7 +129,7 @@ fun AdminScreen(
                     showAdminLogoutDialog = true
                 }
             ) {
-                Text("Logout", color = AdminRed)
+                Text(stringResource(R.string.logout), color = AdminRed)
             }
         }
 
@@ -212,7 +214,7 @@ fun AdminScreen(
                         onValueChange = { search = it },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        label = { Text("Search username or email") },
+                        label = { Text(stringResource(R.string.search_username_or_email)) },
                         shape = RoundedCornerShape(14.dp),
                         colors = adminFieldColors()
                     )
@@ -257,13 +259,13 @@ fun AdminScreen(
                                 }
 
                                 Text(
-                                    "ID: ${user.id}  •  Rating: ${user.rating}",
+                                    stringResource(R.string.id_rating, user.id, user.rating),
                                     color = AdminMuted,
                                     style = MaterialTheme.typography.bodySmall
                                 )
 
                                 Text(
-                                    "Role: ${user.role}",
+                                    stringResource(R.string.role, user.role),
                                     color = AdminMuted
                                 )
 
@@ -277,7 +279,7 @@ fun AdminScreen(
                                         },
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Manage", color = AdminCyan)
+                                        Text(stringResource(R.string.manage), color = AdminCyan)
                                     }
 
                                     OutlinedButton(
@@ -287,7 +289,7 @@ fun AdminScreen(
                                         modifier = Modifier.weight(1f),
                                         enabled = user.role != "admin"
                                     ) {
-                                        Text("Force Logout", color = AdminMuted)
+                                        Text(stringResource(R.string.force_logout), color = AdminMuted)
                                     }
                                 }
                             }
@@ -340,7 +342,7 @@ fun AdminScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        "Report #${report.id}",
+                                        stringResource(R.string.report, report.id),
                                         color = AdminCyan,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -351,12 +353,12 @@ fun AdminScreen(
                                 }
 
                                 Text(
-                                    "${report.reporterUsername} reported ${report.reportedUsername}",
+                                    stringResource(R.string.reported, report.reporterUsername, report.reportedUsername),
                                     color = AdminWhite
                                 )
 
                                 Text(
-                                    "Reason: ${report.reason}",
+                                    stringResource(R.string.reason, report.reason),
                                     color = AdminMuted
                                 )
 
@@ -372,7 +374,7 @@ fun AdminScreen(
                                         },
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("Review Report", color = AdminCyan)
+                                        Text(stringResource(R.string.review_report), color = AdminCyan)
                                     }
                                 }
                             }
@@ -399,19 +401,19 @@ fun AdminScreen(
                         items(state.games, key = { it.id }) { game ->
                             AdminCard {
                                 Text(
-                                    "${game.whiteUsername} vs ${game.blackUsername}",
+                                    stringResource(R.string.vs_2, game.whiteUsername, game.blackUsername),
                                     color = AdminWhite,
                                     fontWeight = FontWeight.Bold
                                 )
 
                                 Text(
-                                    "Game ID: ${game.id}",
+                                    stringResource(R.string.game_id, game.id),
                                     color = AdminMuted,
                                     style = MaterialTheme.typography.bodySmall
                                 )
 
                                 Text(
-                                    "${game.timeControlMode} • ${game.timeControlMinutes} min • ${game.moveCount} moves",
+                                    stringResource(R.string.min_moves, game.timeControlMode, game.timeControlMinutes, game.moveCount),
                                     color = AdminMuted
                                 )
 
@@ -427,7 +429,7 @@ fun AdminScreen(
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("View Game Details", color = AdminCyan)
+                                    Text(stringResource(R.string.view_game_details), color = AdminCyan)
                                 }
                             }
                         }
@@ -452,12 +454,12 @@ fun AdminScreen(
                             )
 
                             Text(
-                                "Admin: ${action.adminUsername}",
+                                stringResource(R.string.admin, action.adminUsername),
                                 color = AdminWhite
                             )
 
                             Text(
-                                "Target: ${action.targetType} #${action.targetId}",
+                                stringResource(R.string.target, action.targetType, action.targetId),
                                 color = AdminMuted
                             )
 
@@ -494,7 +496,7 @@ fun AdminScreen(
             titleContentColor = AdminWhite,
             textContentColor = AdminMuted,
             title = {
-                Text("Manage ${user.username}")
+                Text(stringResource(R.string.manage_2, user.username))
             },
             text = {
                 Column(
@@ -503,21 +505,21 @@ fun AdminScreen(
                     if (details == null) {
                         CircularProgressIndicator(color = AdminCyan)
                     } else {
-                        Text("Email: ${details.email}")
-                        Text("Rating: ${details.rating}")
-                        Text("Games played: ${details.gamesPlayed}")
-                        Text("Reports against: ${details.reportsAgainst}")
-                        Text("Email verified: ${details.emailVerified}")
+                        Text(stringResource(R.string.email, details.email))
+                        Text(stringResource(R.string.rating_3, details.rating))
+                        Text(stringResource(R.string.games_played, details.gamesPlayed))
+                        Text(stringResource(R.string.reports_against, details.reportsAgainst))
+                        Text(stringResource(R.string.email_verified, details.emailVerified))
                         Text(
                             if (details.isBanned) "BANNED" else "ACTIVE",
                             color = if (details.isBanned) AdminRed else AdminCyan
                         )
 
                         if (details.isBanned) {
-                            Text("Reason: ${details.banReason}")
+                            Text(stringResource(R.string.reason, details.banReason))
 
                             if (!details.isPermanentBan) {
-                                Text("Banned until: ${details.bannedUntil}")
+                                Text(stringResource(R.string.banned_until, details.bannedUntil.toString()))
                             }
                         } else if (details.role != "admin") {
                             OutlinedTextField(
@@ -525,7 +527,7 @@ fun AdminScreen(
                                 onValueChange = {
                                     if (it.length <= 500) reason = it
                                 },
-                                label = { Text("Ban reason") },
+                                label = { Text(stringResource(R.string.ban_reason)) },
                                 minLines = 2,
                                 colors = adminFieldColors()
                             )
@@ -535,7 +537,7 @@ fun AdminScreen(
                                 onValueChange = {
                                     if (it.all(Char::isDigit)) days = it
                                 },
-                                label = { Text("Ban days (0 = permanent)") },
+                                label = { Text(stringResource(R.string.ban_days_0_permanent)) },
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Number
                                 ),
@@ -583,7 +585,7 @@ fun AdminScreen(
                         viewModel.clearSelectedUser()
                     }
                 ) {
-                    Text("Close", color = AdminMuted)
+                    Text(stringResource(R.string.close), color = AdminMuted)
                 }
             }
         )
@@ -605,19 +607,19 @@ fun AdminScreen(
             titleContentColor = AdminWhite,
             textContentColor = AdminMuted,
             title = {
-                Text("Resolve Report #${report.id}")
+                Text(stringResource(R.string.resolve_report, report.id))
             },
             text = {
                 Column {
-                    Text("Reported user: ${report.reportedUsername}")
-                    Text("Reason: ${report.reason}")
+                    Text(stringResource(R.string.reported_user, report.reportedUsername))
+                    Text(stringResource(R.string.reason, report.reason))
 
                     OutlinedTextField(
                         value = reportNote,
                         onValueChange = {
                             if (it.length <= 500) reportNote = it
                         },
-                        label = { Text("Admin note (optional)") },
+                        label = { Text(stringResource(R.string.admin_note_optional)) },
                         colors = adminFieldColors()
                     )
                 }
@@ -634,7 +636,7 @@ fun AdminScreen(
                         reportNote = ""
                     }
                 ) {
-                    Text("Resolve", color = AdminCyan)
+                    Text(stringResource(R.string.resolve), color = AdminCyan)
                 }
             },
             dismissButton = {
@@ -649,7 +651,7 @@ fun AdminScreen(
                         reportNote = ""
                     }
                 ) {
-                    Text("Dismiss", color = AdminRed)
+                    Text(stringResource(R.string.dismiss), color = AdminRed)
                 }
             }
         )
@@ -669,7 +671,7 @@ fun AdminScreen(
             titleContentColor = AdminWhite,
             textContentColor = AdminMuted,
             title = {
-                Text("Game Details")
+                Text(stringResource(R.string.game_details))
             },
             text = {
                 Column(
@@ -681,20 +683,20 @@ fun AdminScreen(
                         val gameData = details.game
 
                         Text(
-                            "${gameData.whiteUsername ?: "White"} vs ${gameData.blackUsername ?: "Black"}",
+                            stringResource(R.string.vs_2, gameData.whiteUsername ?: "White", gameData.blackUsername ?: "Black"),
                             color = AdminWhite
                         )
-                        Text("Status: ${gameData.status}")
-                        Text("Mode: ${gameData.timeControlMode}")
-                        Text("Moves: ${details.moves?.size ?: 0}")
-                        Text("Turn: ${gameData.currentTurn ?: "Unknown"}")
+                        Text(stringResource(R.string.status, gameData.status))
+                        Text(stringResource(R.string.mode, gameData.timeControlMode))
+                        Text(stringResource(R.string.moves_3, details.moves?.size ?: 0))
+                        Text(stringResource(R.string.turn, gameData.currentTurn ?: "Unknown"))
 
                         OutlinedTextField(
                             value = abortReason,
                             onValueChange = {
                                 if (it.length <= 500) abortReason = it
                             },
-                            label = { Text("Abort reason") },
+                            label = { Text(stringResource(R.string.abort_reason)) },
                             colors = adminFieldColors()
                         )
                     }
@@ -714,7 +716,7 @@ fun AdminScreen(
                             }
                         }
                     ) {
-                        Text("Abort Game", color = AdminRed)
+                        Text(stringResource(R.string.abort_game), color = AdminRed)
                     }
                 }
             },
@@ -726,7 +728,7 @@ fun AdminScreen(
                         abortReason = ""
                     }
                 ) {
-                    Text("Close", color = AdminMuted)
+                    Text(stringResource(R.string.close), color = AdminMuted)
                 }
             }
         )
@@ -740,12 +742,11 @@ fun AdminScreen(
             titleContentColor = AdminWhite,
             textContentColor = AdminMuted,
             title = {
-                Text("Force Logout")
+                Text(stringResource(R.string.force_logout))
             },
             text = {
                 Text(
-                    "Are you sure you want to log out ${user.username} " +
-                            "from all devices? This will invalidate their sessions."
+                    stringResource(R.string.confirm_force_logout_user, user.username)
                 )
             },
             confirmButton = {
@@ -755,7 +756,7 @@ fun AdminScreen(
                         forceLogoutUser = null
                     }
                 ) {
-                    Text("Confirm", color = AdminRed)
+                    Text(stringResource(R.string.confirm), color = AdminRed)
                 }
             },
             dismissButton = {
@@ -764,7 +765,7 @@ fun AdminScreen(
                         forceLogoutUser = null
                     }
                 ) {
-                    Text("Cancel", color = AdminMuted)
+                    Text(stringResource(R.string.cancel), color = AdminMuted)
                 }
             }
         )
@@ -782,7 +783,7 @@ fun AdminScreen(
 
             title = {
                 Text(
-                    text = "Confirm Logout",
+                    text = stringResource(R.string.confirm_logout),
                     fontWeight = FontWeight.Bold
                 )
             },
@@ -792,7 +793,7 @@ fun AdminScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Are you sure you want to logout from the MOSAIC Admin Panel?"
+                        text = stringResource(R.string.are_you_sure_you_want_to)
                     )
 
                     Row(
@@ -811,7 +812,7 @@ fun AdminScreen(
                         )
 
                         Text(
-                            text = "Yes, I confirm that I want to logout",
+                            text = stringResource(R.string.yes_i_confirm_that_i_want),
                             color = AdminWhite,
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -829,7 +830,7 @@ fun AdminScreen(
                     }
                 ) {
                     Text(
-                        text = "Logout",
+                        text = stringResource(R.string.logout),
                         color = if (confirmAdminLogout) AdminRed else AdminMuted
                     )
                 }
@@ -843,7 +844,7 @@ fun AdminScreen(
                     }
                 ) {
                     Text(
-                        text = "Cancel",
+                        text = stringResource(R.string.cancel),
                         color = AdminMuted
                     )
                 }
@@ -861,7 +862,7 @@ private fun DashboardSection(state: com.abhinav.caisarra.presentation.viewmodel.
     ) {
         item {
             Text(
-                "Platform Overview",
+                stringResource(R.string.platform_overview),
                 color = AdminWhite,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
@@ -896,18 +897,18 @@ private fun DashboardSection(state: com.abhinav.caisarra.presentation.viewmodel.
         item {
             AdminCard {
                 Text(
-                    "System Health",
+                    stringResource(R.string.system_health),
                     color = AdminWhite,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    "Database: ${state.health?.database ?: "Loading"}",
+                    stringResource(R.string.database, state.health?.database ?: "Loading"),
                     color = if (state.health?.database == "ok") AdminCyan else AdminRed
                 )
 
                 Text(
-                    "Redis: ${state.health?.redis ?: "Loading"}",
+                    stringResource(R.string.redis, state.health?.redis ?: "Loading"),
                     color = if (state.health?.redis == "ok") AdminCyan else AdminRed
                 )
             }
@@ -916,13 +917,13 @@ private fun DashboardSection(state: com.abhinav.caisarra.presentation.viewmodel.
         item {
             AdminCard {
                 Text(
-                    "Matchmaking Queues",
+                    stringResource(R.string.matchmaking_queues),
                     color = AdminWhite,
                     fontWeight = FontWeight.Bold
                 )
 
                 if (state.matchmaking.isEmpty()) {
-                    Text("No players waiting", color = AdminMuted)
+                    Text(stringResource(R.string.no_players_waiting), color = AdminMuted)
                 } else {
                     state.matchmaking.forEach { queue ->
                         Row(
@@ -931,7 +932,7 @@ private fun DashboardSection(state: com.abhinav.caisarra.presentation.viewmodel.
                         ) {
                             Text(queue.queue, color = AdminMuted)
                             Text(
-                                "${queue.players} players",
+                                stringResource(R.string.players_2, queue.players),
                                 color = AdminCyan,
                                 fontWeight = FontWeight.Bold
                             )
@@ -959,13 +960,13 @@ private fun ContentManagementSection(
     ) {
         item {
             Text(
-                "Content Moderation",
+                stringResource(R.string.content_moderation),
                 color = AdminWhite,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Enter an existing ID to perform a moderation action.",
+                stringResource(R.string.enter_an_existing_id_to_perform),
                 color = AdminMuted,
                 style = MaterialTheme.typography.bodySmall
             )

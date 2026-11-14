@@ -306,12 +306,27 @@ class ChallengeManager private constructor(private val context: Context) {
             if (_outgoingChallenge.value?.code == code) {
                 _outgoingChallenge.value = null
             }
+            _sentChallenges.update { list -> list.filterNot { it.code == code } }
             refreshSentChallenges()
             Result.success(Unit)
         } else {
             Result.failure(result.exceptionOrNull() ?: Exception("Failed to cancel challenge"))
         }
     }
+
+    suspend fun cancelChallengeForGame(gameId: String): Result<Unit>? {
+        val code = findOutgoingCode(gameId)
+            ?: run {
+                refreshSentChallenges()
+                findOutgoingCode(gameId)
+            }
+            ?: return null
+        return cancelChallenge(code)
+    }
+
+    private fun findOutgoingCode(gameId: String): String? =
+        _outgoingChallenge.value?.takeIf { it.gameId == gameId }?.code
+            ?: _sentChallenges.value.firstOrNull { it.gameId == gameId }?.code
 
     fun dismissIncomingChallenge() {
         _incomingChallenge.value = null

@@ -70,7 +70,7 @@ fun NavGraphBuilder.socialGraph(
                     scope = scope,
                     featureName = "Direct messages"
                 ) {
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.directMessage(userId, username, friendAvatarUrl)
                     )
                 }
@@ -100,7 +100,7 @@ fun NavGraphBuilder.socialGraph(
                 navController.navigateOnce(AppRoutes.CREATE_INVITE)
             },
             onJoinByCode = { code ->
-                navController.navigate(AppRoutes.joinInvite(code))
+                navController.navigateOnce(AppRoutes.joinInvite(code))
             },
             onBack = {
                 navController.safeBack(friendsBackRoute())
@@ -249,7 +249,7 @@ fun NavGraphBuilder.socialGraph(
                 }
             },
             onOpenChat = { userId, username, chatAvatarUrl ->
-                navController.navigate(
+                navController.navigateOnce(
                     AppRoutes.directMessage(userId, username, chatAvatarUrl)
                 )
             }
@@ -263,6 +263,7 @@ fun NavGraphBuilder.socialGraph(
                 locationProvider = LocationProvider(context)
             )
         }
+        val pendingFriendRequests = remember { mutableSetOf<String>() }
 
         NearbyScreen(
             viewModel = nearbyViewModel,
@@ -276,35 +277,40 @@ fun NavGraphBuilder.socialGraph(
                     scope = scope,
                     featureName = "Adding friends"
                 ) {
-                    val friendsRepo = FriendsRepository(context)
-                    val currentStatus = friendsRepo.getFriendshipStatus(player.username)
-                        .getOrNull()
-                        ?.status
-                    val statusMessage = when (currentStatus) {
-                        "friends" -> "You are already friends with ${player.username}"
-                        "request_sent" -> "Friend request already sent to ${player.username}"
-                        "request_received" -> "${player.username} already sent you a friend request. Check your requests."
-                        else -> null
-                    }
-                    if (statusMessage != null) {
-                        Toast.makeText(context, statusMessage, Toast.LENGTH_SHORT).show()
-                        return@requireAuth
-                    }
-                    friendsRepo.sendFriendRequest(player.username)
-                        .onSuccess {
-                            Toast.makeText(
-                                context,
-                                "Friend request sent to ${player.username}",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                    if (!pendingFriendRequests.add(player.username)) return@requireAuth
+                    try {
+                        val friendsRepo = FriendsRepository(context)
+                        val currentStatus = friendsRepo.getFriendshipStatus(player.username)
+                            .getOrNull()
+                            ?.status
+                        val statusMessage = when (currentStatus) {
+                            "friends" -> "You are already friends with ${player.username}"
+                            "request_sent" -> "Friend request already sent to ${player.username}"
+                            "request_received" -> "${player.username} already sent you a friend request. Check your requests."
+                            else -> null
                         }
-                        .onFailure { error ->
-                            Toast.makeText(
-                                context,
-                                error.userMessage("Could not send friend request"),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                        if (statusMessage != null) {
+                            Toast.makeText(context, statusMessage, Toast.LENGTH_SHORT).show()
+                            return@requireAuth
                         }
+                        friendsRepo.sendFriendRequest(player.username)
+                            .onSuccess {
+                                Toast.makeText(
+                                    context,
+                                    "Friend request sent to ${player.username}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            .onFailure { error ->
+                                Toast.makeText(
+                                    context,
+                                    error.userMessage("Could not send friend request"),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                    } finally {
+                        pendingFriendRequests.remove(player.username)
+                    }
                 }
             },
             onChat = { player ->
@@ -314,7 +320,7 @@ fun NavGraphBuilder.socialGraph(
                     scope = scope,
                     featureName = "Direct messages"
                 ) {
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.directMessage(player.userId.toLong(), player.username)
                     )
                 }

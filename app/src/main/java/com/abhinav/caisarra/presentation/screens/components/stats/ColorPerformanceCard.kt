@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -68,7 +70,7 @@ internal fun ColorPerformanceCard(
             verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
             Text(
-                text = "Performance by Color",
+                text = stringResource(R.string.performance_by_color),
                 fontFamily = JetBrainsMono,
                 fontSize = TextSizeSubhead,
                 fontWeight = FontWeight.Bold,
@@ -93,7 +95,7 @@ internal fun ColorPerformanceCard(
                                 .border(1.dp, StatsDivider, CircleShape)
                         )
                         Text(
-                            text = "As White",
+                            text = stringResource(R.string.as_white),
                             fontFamily = JetBrainsMono,
                             fontSize = TextSizeBadge,
                             fontWeight = FontWeight.Medium,
@@ -102,7 +104,7 @@ internal fun ColorPerformanceCard(
                     }
 
                     Text(
-                        text = "$whiteWins W • $whiteDraws D • $whiteLosses L ($whitePct%)",
+                        text = stringResource(R.string.w_d_l, whiteWins, whiteDraws, whiteLosses, whitePct),
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeCaption,
                         color = StatsTextMuted
@@ -130,7 +132,7 @@ internal fun ColorPerformanceCard(
                                 .border(1.dp, StatsSlate, CircleShape)
                         )
                         Text(
-                            text = "As Black",
+                            text = stringResource(R.string.as_black),
                             fontFamily = JetBrainsMono,
                             fontSize = TextSizeBadge,
                             fontWeight = FontWeight.Medium,
@@ -139,7 +141,7 @@ internal fun ColorPerformanceCard(
                     }
 
                     Text(
-                        text = "$blackWins W • $blackDraws D • $blackLosses L ($blackPct%)",
+                        text = stringResource(R.string.w_d_l, blackWins, blackDraws, blackLosses, blackPct),
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeCaption,
                         color = StatsTextMuted

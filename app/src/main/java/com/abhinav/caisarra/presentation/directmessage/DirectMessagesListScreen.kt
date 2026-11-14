@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.directmessage
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import com.abhinav.caisarra.core.ui.components.ListRowSkeleton
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
@@ -117,7 +120,7 @@ fun DirectMessagesListScreen(
                 ),
                 placeholder = {
                     Text(
-                        text = "Search players or ID",
+                        text = stringResource(R.string.search_players_or_id),
                         color = StatsTextMuted,
                         fontSize = 14.sp,
                         maxLines = 1,
@@ -230,7 +233,7 @@ fun DirectMessagesListScreen(
                     ) {
                         item {
                             Text(
-                                text = "No players found. Try another username.",
+                                text = stringResource(R.string.no_players_found_try_another_username),
                                 color = StatsTextMuted,
                                 modifier = Modifier.padding(
                                     vertical = 12.dp
@@ -282,22 +285,11 @@ fun DirectMessagesListScreen(
                 }
 
                 if (loadingConversations) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(28.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = StatsCyan
-                            )
-                        }
-                    }
+                    items(5) { ListRowSkeleton(Modifier.animateItem()) }
                 } else if (conversations.isEmpty()) {
                     item {
                         Text(
-                            text = "No conversations yet. Search for a player above to start chatting.",
+                            text = stringResource(R.string.no_conversations_yet_search_for_a),
                             color = StatsTextMuted,
                             modifier = Modifier.padding(
                                 vertical = 12.dp

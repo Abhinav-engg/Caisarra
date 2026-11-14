@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -83,14 +85,14 @@ fun DefaultChessAvatarsScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "DEFAULT CHESS AVATARS",
+                    text = stringResource(R.string.default_chess_avatars),
                     color = AvatarScreenText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    text = "Choose your player identity",
+                    text = stringResource(R.string.choose_your_player_identity),
                     color = AvatarScreenMuted,
                     fontSize = 11.sp
                 )
@@ -100,7 +102,7 @@ fun DefaultChessAvatarsScreen(
         }
 
         Text(
-            text = "Choose an avatar for your MOSAIC profile.",
+            text = stringResource(R.string.choose_an_avatar_for_your_mosaic),
             color = AvatarScreenMuted,
             fontSize = 13.sp,
             modifier = Modifier.padding(
@@ -202,7 +204,7 @@ fun DefaultChessAvatarsScreen(
                                 Spacer(Modifier.height(5.dp))
 
                                 Text(
-                                    text = "SELECTED",
+                                    text = stringResource(R.string.selected),
                                     color = AvatarScreenAccent,
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold

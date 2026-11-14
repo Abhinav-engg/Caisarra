@@ -169,3 +169,8 @@ val SplashTrack = Color(0xFF14252C)
 val SplashWordmarkDim = Color(0xFF0A3A44)
 val SplashProgressLabel = Color(0xFF8A97A3)
 
+val GlassTint = CyanLight.copy(alpha = 0.1f)
+val GlassHighlight = SilverColor.copy(alpha = 0.15f)
+val GlassShadow = Black.copy(alpha = 0.25f)
+val CardSurface = Color(0xFF101923)
+val IndicatorInactive = Color(0xFF304154)

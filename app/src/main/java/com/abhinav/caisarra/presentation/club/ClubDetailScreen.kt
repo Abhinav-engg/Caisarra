@@ -1,5 +1,9 @@
 package com.abhinav.caisarra.presentation.club
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
+import com.abhinav.caisarra.features.profilelink.presentation.openProfileOnClick
+import com.abhinav.caisarra.core.ui.components.rememberToaster
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -13,7 +17,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -45,6 +51,7 @@ import com.abhinav.caisarra.data.repository.ClubRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import com.abhinav.caisarra.data.local.TokenManager
+import com.abhinav.caisarra.core.ui.components.MessageText
 import com.abhinav.caisarra.data.remote.ClubChatSocket
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -52,7 +59,15 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.Brush
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.first
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 
 private val DetailBg = Color(0xFF080D13)
 private val DetailCard = Color(0xFF101923)
@@ -61,6 +76,54 @@ private val DetailText = Color(0xFFF5F5F5)
 private val DetailMuted = Color(0xFFADB8C6)
 
 private enum class DetailTab { MEMBERS, LEADERBOARD, CHAT, MANAGE }
+
+private const val MAX_CLUB_MESSAGE_CHARS = 500
+
+private fun countChars(text: String): Int =
+    text.trim().let { it.codePointCount(0, it.length) }
+
+private fun capToLimit(text: String): String =
+    if (text.codePointCount(0, text.length) <= MAX_CLUB_MESSAGE_CHARS) text
+    else text.substring(0, text.offsetByCodePoints(0, MAX_CLUB_MESSAGE_CHARS))
+
+private fun describeSendFailure(e: Exception, chars: Int, words: Int): String {
+    val fallback = "Couldn't send your message. Please try again."
+
+    if (e is retrofit2.HttpException) {
+        val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+        Log.e(
+            "ClubDetail",
+            "Send failed: HTTP ${e.code()} chars=$chars words=$words body=$body",
+            e
+        )
+
+        val serverReason = body?.let {
+            runCatching {
+                val obj = kotlinx.serialization.json.Json.parseToJsonElement(it)
+                        as kotlinx.serialization.json.JsonObject
+                listOf("error", "message", "detail").firstNotNullOfOrNull { key ->
+                    (obj[key] as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.content?.takeIf { v -> v.isNotBlank() }
+                }
+            }.getOrNull()
+        }
+
+        return when {
+            serverReason != null -> serverReason
+            e.code() == 413 || e.code() == 400 ->
+                "Message is too long for the server ($chars characters). Please shorten it and try again."
+            e.code() == 429 -> "You're sending messages too fast. Please wait a moment."
+            e.code() >= 500 -> "Server error. Please try again in a moment."
+            else -> fallback
+        }
+    }
+
+    Log.e("ClubDetail", "Failed to send club message (chars=$chars words=$words)", e)
+    return if (e is java.io.IOException) e.userMessage(fallback) else fallback
+}
+
+private fun clubMessageTooLongText(charCount: Int): String =
+    "Message too long: $charCount characters. The limit is $MAX_CLUB_MESSAGE_CHARS characters. Please shorten it and try again."
 
 data class ClubDetailState(
     val club: ClubDto? = null,
@@ -75,11 +138,23 @@ data class ClubDetailState(
     val loading: Boolean = true,
     val busy: Boolean = false,
     val chatConnected: Boolean = false,
+    val chatReconnecting: Boolean = false,
     val error: String? = null,
     val info: String? = null,
     val clubRemoved: Boolean = false,
-    val isJoined: Boolean = false
+    val isJoined: Boolean = false,
+    // null = not loaded yet, "" = nothing read yet, otherwise id of the last message the user has seen
+    val lastReadMessageId: String? = null
 )
+
+/** Messages from other members that arrived after the last one the user has seen. */
+private fun ClubDetailState.unreadChatCount(): Int {
+    if (selectedTab == "CHAT") return 0
+    val readId = lastReadMessageId ?: return 0
+    val readIndex = if (readId.isEmpty()) -1 else messages.indexOfLast { it.id == readId }
+    val newer = if (readIndex >= 0) messages.drop(readIndex + 1) else messages
+    return newer.count { it.username.trim().lowercase() != currentUsername }
+}
 
 class ClubDetailViewModel(
     private val appContext: Context,
@@ -93,6 +168,23 @@ class ClubDetailViewModel(
         private set
 
     private var chatCollectorsStarted = false
+    private var reconnectJob: Job? = null
+    private var connectRun = 0
+    private var autoReconnectAttempts = 0
+    private var wasConnected = false
+    private var needsMessageRefresh = false
+
+    private val readPrefs = appContext.getSharedPreferences("club_chat_read", Context.MODE_PRIVATE)
+    private val readKey get() = "last_read_$clubId"
+
+    private val maxAutoReconnectAttempts = 6
+    private val connectTimeoutMs = 8_000L
+    private val reconnectDelaysMs = longArrayOf(1_000, 2_000, 4_000, 8_000, 15_000, 15_000)
+
+    private fun isAuthChatError(message: String): Boolean =
+        message.startsWith("Chat authentication failed") ||
+                message.startsWith("Sign in with") ||
+                message.startsWith("Your session has expired")
 
     init {
         load()
@@ -165,6 +257,7 @@ class ClubDetailViewModel(
                 }
                 launchSection("messages") {
                     state = state.copy(messages = repository.getMessages(clubId))
+                    initReadMarker()
                 }
                 launchSection("bans") {
                     state = state.copy(bans = repository.getBans(clubId))
@@ -217,11 +310,31 @@ class ClubDetailViewModel(
     }
 
     fun selectTab(tab: String) {
+        val leavingChat = state.selectedTab == "CHAT" && tab != "CHAT"
         state = state.copy(selectedTab = tab)
+        if (tab == "CHAT" || leavingChat) markChatRead()
+    }
+
+    /** Remembers the newest message as "seen" (like WhatsApp) so the unread badge clears. */
+    private fun markChatRead() {
+        val latestId = state.messages.lastOrNull { it.id.isNotBlank() }?.id ?: return
+        if (state.lastReadMessageId == latestId) return
+        readPrefs.edit().putString(readKey, latestId).apply()
+        state = state.copy(lastReadMessageId = latestId)
+    }
+
+    /** Called once the history is loaded. First time ever: existing messages count as read. */
+    private fun initReadMarker() {
+        val stored = readPrefs.getString(readKey, null)
+        val latestId = state.messages.lastOrNull { it.id.isNotBlank() }?.id
+        val marker = stored ?: latestId ?: ""
+        if (stored == null) readPrefs.edit().putString(readKey, marker).apply()
+        state = state.copy(lastReadMessageId = marker)
+        if (state.selectedTab == "CHAT") markChatRead()
     }
 
     fun setChatInput(value: String) {
-        state = state.copy(chatInput = value)
+        state = state.copy(chatInput = capToLimit(value))
     }
 
     fun changeLeaderboardMode(mode: String) {
@@ -242,6 +355,16 @@ class ClubDetailViewModel(
                 launch {
                     chatSocket.connected.collect { connected ->
                         state = state.copy(chatConnected = connected)
+
+                        if (connected) {
+                            wasConnected = true
+                        } else if (wasConnected) {
+                            // Connection dropped on its own -> reconnect automatically
+                            wasConnected = false
+                            if (state.isJoined && !state.chatReconnecting) {
+                                startChatConnect(resetAttempts = true)
+                            }
+                        }
                     }
                 }
                 launch {
@@ -253,28 +376,122 @@ class ClubDetailViewModel(
                             state = state.copy(
                                 messages = (existing + message).takeLast(200)
                             )
+                            if (state.selectedTab == "CHAT") markChatRead()
                         }
                     }
                 }
                 launch {
                     chatSocket.errors.collect { message ->
-                        if (state.isJoined) {
+                        if (!state.isJoined) return@collect
+
+                        if (isAuthChatError(message)) {
+                            // Retrying can't fix an auth problem - stop and tell the user
+                            reconnectJob?.cancel()
                             state = state.copy(error = clubUiError(message))
+                            return@collect
                         }
+
+                        // Don't spam "Chat disconnected" toasts while auto-retrying
+                        if (state.chatReconnecting) return@collect
+
+                        state = state.copy(error = clubUiError(message))
                     }
                 }
             }
         }
 
-        viewModelScope.launch {
-            chatSocket.connect(clubId)
+        if (!chatSocket.connected.value) {
+            startChatConnect(resetAttempts = true)
         }
     }
 
     fun reconnectChat() {
         if (!state.isJoined) return
+        startChatConnect(resetAttempts = true)
+    }
+
+    fun ensureChatConnected() {
+        if (!state.isJoined || state.loading) return
+        if (state.chatConnected || state.chatReconnecting) return
+        startChatConnect(resetAttempts = true)
+    }
+
+    /**
+     * Closes the chat socket on purpose (screen left / app moved to background).
+     * The backend treats a member with an open club socket as "online" and does NOT
+     * send them a push, so the socket must not stay open while the user can't see the chat.
+     */
+    fun disconnectChat() {
+        reconnectJob?.cancel()
+        connectRun++
+        wasConnected = false
+        autoReconnectAttempts = 0
+        needsMessageRefresh = true
+        if (state.selectedTab == "CHAT") markChatRead()
+        chatSocket.close()
+        state = state.copy(chatConnected = false, chatReconnecting = false)
+    }
+
+    /** Messages sent while the socket was closed are fetched again over REST. */
+    private fun refreshMessages() {
         viewModelScope.launch {
-            chatSocket.connect(clubId)
+            val loaded = runCatching { repository.getMessages(clubId) }.getOrNull() ?: return@launch
+            if (!state.isJoined) return@launch
+            val extra = state.messages.filter { local ->
+                local.id.isBlank() || loaded.none { it.id == local.id }
+            }
+            state = state.copy(messages = (loaded + extra).takeLast(200))
+            if (state.selectedTab == "CHAT") markChatRead()
+        }
+    }
+
+    private fun startChatConnect(resetAttempts: Boolean) {
+        if (!state.isJoined) return
+        if (resetAttempts) autoReconnectAttempts = 0
+
+        reconnectJob?.cancel()
+        val myRun = ++connectRun
+        state = state.copy(chatReconnecting = true)
+
+        reconnectJob = viewModelScope.launch {
+            try {
+                while (state.isJoined && autoReconnectAttempts < maxAutoReconnectAttempts) {
+                    chatSocket.connect(clubId)
+
+                    val connected = withTimeoutOrNull(connectTimeoutMs) {
+                        chatSocket.connected.first { it }
+                    } != null
+
+                    if (connected) {
+                        autoReconnectAttempts = 0
+                        if (needsMessageRefresh) {
+                            needsMessageRefresh = false
+                            refreshMessages()
+                        }
+                        return@launch
+                    }
+
+                    autoReconnectAttempts++
+                    if (autoReconnectAttempts < maxAutoReconnectAttempts) {
+                        delay(
+                            reconnectDelaysMs[
+                                (autoReconnectAttempts - 1)
+                                    .coerceIn(0, reconnectDelaysMs.lastIndex)
+                            ]
+                        )
+                    }
+                }
+
+                if (state.isJoined && !chatSocket.connected.value) {
+                    state = state.copy(
+                        error = "Couldn't reconnect to chat. Tap \"Reconnect chat\" to try again."
+                    )
+                }
+            } finally {
+                if (myRun == connectRun) {
+                    state = state.copy(chatReconnecting = false)
+                }
+            }
         }
     }
 
@@ -282,6 +499,15 @@ class ClubDetailViewModel(
         val text = state.chatInput.trim()
 
         if (text.isBlank() || state.busy || !state.isJoined) return
+
+        val charCount = countChars(text)
+        if (charCount > MAX_CLUB_MESSAGE_CHARS) {
+            state = state.copy(
+                error = clubMessageTooLongText(charCount),
+                info = null
+            )
+            return
+        }
 
         viewModelScope.launch {
             state = state.copy(
@@ -320,10 +546,8 @@ class ClubDetailViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e("ClubDetail", "Failed to send club message", e)
-
                 state = state.copy(
-                    error = "Couldn't send your message. Please try again."
+                    error = describeSendFailure(e, text.length, text.trim().split(Regex("\\s+")).size)
                 )
             } finally {
                 state = state.copy(busy = false)
@@ -423,6 +647,8 @@ class ClubDetailViewModel(
 
 
     override fun onCleared() {
+        if (state.selectedTab == "CHAT") markChatRead()
+        reconnectJob?.cancel()
         chatSocket.close()
         super.onCleared()
     }
@@ -465,7 +691,8 @@ private fun formatClubMessageTime(timestamp: String?): String {
 fun ClubDetailScreen(
     clubId: String,
     repository: ClubRepository,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    openChat: Boolean = false
 ) {
 
     val context = LocalContext.current
@@ -485,23 +712,50 @@ fun ClubDetailScreen(
     )
 
     val state = vm.state
-    val snackbarHostState = remember { SnackbarHostState() }
+    val toaster = rememberToaster()
     LaunchedEffect(state.error) {
         val message = state.error?.takeIf { it.isNotBlank() }
         if (message != null) {
-            snackbarHostState.showSnackbar(clubUiError(message))
+            toaster.show(clubUiError(message))
             vm.clearError()
         }
     }
     LaunchedEffect(state.info) {
         val message = state.info?.takeIf { it.isNotBlank() }
         if (message != null) {
-            snackbarHostState.showSnackbar(message)
+            toaster.show(message)
             vm.clearInfo()
         }
     }
+
+    var openChatHandled by rememberSaveable(clubId, openChat) { mutableStateOf(false) }
+    LaunchedEffect(openChat, state.isJoined, state.loading) {
+        if (openChat && !openChatHandled && state.isJoined && !state.loading) {
+            vm.selectTab("CHAT")
+            openChatHandled = true
+        }
+    }
+
     BackHandler(enabled = state.selectedTab == "CHAT") {
         vm.selectTab("MEMBERS")
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, vm) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> vm.ensureChatConnected()
+                Lifecycle.Event.ON_STOP -> vm.disconnectChat()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(state.selectedTab, state.isJoined, state.loading) {
+        if (state.selectedTab == "CHAT" && state.isJoined && !state.loading) {
+            vm.ensureChatConnected()
+        }
     }
     LaunchedEffect(state.clubRemoved) {
         if (state.clubRemoved) onBack()
@@ -516,7 +770,7 @@ fun ClubDetailScreen(
 
     val isOwner = role in setOf("owner", "club_owner", "leader")
 
-    val isAdmin = isOwner || role in setOf("com/abhinav/caisarra/data/remote/admin", "administrator", "club_admin")
+    val isAdmin = isOwner || role in setOf("admin", "administrator", "club_admin")
     var selectedMember by remember { mutableStateOf<ClubMemberDto?>(null) }
     var confirmAction by remember { mutableStateOf<String?>(null) }
 
@@ -526,17 +780,6 @@ fun ClubDetailScreen(
             indication = null
         ) { focusManager.clearFocus() },
         containerColor = DetailBg,
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = DetailCard,
-                    contentColor = DetailText,
-                    actionColor = DetailGreen,
-                    shape = RoundedCornerShape(16.dp)
-                )
-            }
-        },
         topBar = {
             TopAppBar(
                 title = {
@@ -589,10 +832,10 @@ fun ClubDetailScreen(
         } else if (state.club == null) {
             Column(Modifier.fillMaxSize().padding(padding).padding(20.dp)) {
                 Text(
-                    "Couldn't load this club. Please try again.",
+                    stringResource(R.string.couldn_t_load_this_club_please),
                     color = DetailMuted
                 )
-                Button(onClick = vm::load) { Text("Retry") }
+                Button(onClick = vm::load) { Text(stringResource(R.string.retry)) }
             }
         }
         else if (!state.isJoined) {
@@ -632,12 +875,12 @@ fun ClubDetailScreen(
                             color = DetailMuted
                         )
                         Text(
-                            text = "${state.club.memberCount} members",
+                            text = stringResource(R.string.members, state.club.memberCount),
                             color = DetailGreen,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Join this club to access its members, leaderboard, chat, and management features.",
+                            text = stringResource(R.string.join_this_club_to_access_its),
                             color = DetailMuted
                         )
                         Button(
@@ -723,7 +966,7 @@ fun ClubDetailScreen(
                                     color = Color(0xFFB8C2CC)
                                 )
                                 Text(
-                                    "${state.club.memberCount} members",
+                                    stringResource(R.string.members, state.club.memberCount),
                                     color = DetailGreen,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -753,7 +996,7 @@ fun ClubDetailScreen(
                                                     }
                                             ) {
                                                 Text(
-                                                    "SHARE CODE",
+                                                    stringResource(R.string.share_code),
                                                     color = DetailMuted,
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
@@ -787,7 +1030,7 @@ fun ClubDetailScreen(
                                                     )
                                                     Spacer(Modifier.width(4.dp))
                                                     Text(
-                                                        "Copy",
+                                                        stringResource(R.string.copy),
                                                         color = DetailGreen,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.SemiBold
@@ -812,7 +1055,7 @@ fun ClubDetailScreen(
                                                     )
                                                     Spacer(Modifier.width(4.dp))
                                                     Text(
-                                                        "Link",
+                                                        stringResource(R.string.link),
                                                         color = DetailGreen,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.SemiBold
@@ -857,11 +1100,32 @@ fun ClubDetailScreen(
                                         .padding(vertical = 12.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        label,
-                                        color = if (selected) DetailBg else DetailMuted,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                                    val unread = if (key == "CHAT") state.unreadChatCount() else 0
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            label,
+                                            color = if (selected) DetailBg else DetailMuted,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        if (unread > 0) {
+                                            Box(
+                                                Modifier
+                                                    .clip(CircleShape)
+                                                    .background(DetailGreen)
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    if (unread > 99) "99+" else unread.toString(),
+                                                    color = DetailBg,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -870,13 +1134,13 @@ fun ClubDetailScreen(
                     when (state.selectedTab) {
                         "MEMBERS" -> {
                             item {
-                                Text("Members (${state.members.size})",
+                                Text(stringResource(R.string.members_2, state.members.size),
                                     color = DetailText,
                                     style = MaterialTheme.typography.titleLarge)
                             }
                             if (state.members.isEmpty()) {
                                 item {
-                                    Text("No member records returned by the server.",
+                                    Text(stringResource(R.string.no_member_records_returned_by_the),
                                         color = DetailMuted)
                                 }
                             }
@@ -888,12 +1152,12 @@ fun ClubDetailScreen(
                                         Modifier.fillMaxWidth().padding(14.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Column(Modifier.weight(1f)) {
+                                        Column(Modifier.weight(1f).openProfileOnClick(member.username)) {
                                             Text(member.username, color = DetailText,
                                                 fontWeight = FontWeight.SemiBold)
                                             Text(member.role, color = DetailGreen)
                                             member.rating?.let {
-                                                Text("Rating $it", color = DetailMuted)
+                                                Text(stringResource(R.string.rating, it), color = DetailMuted)
                                             }
                                         }
                                         val memberRole = member.role
@@ -903,7 +1167,7 @@ fun ClubDetailScreen(
                                             .replace(' ', '_')
 
                                         val isMemberOwner = memberRole in setOf("owner", "club_owner", "leader")
-                                        val isMemberAdmin = memberRole in setOf("com/abhinav/caisarra/data/remote/admin", "administrator", "club_admin")
+                                        val isMemberAdmin = memberRole in setOf("admin", "administrator", "club_admin")
 
                                         val canManageThisMember = when {
                                             isOwner -> !isMemberOwner
@@ -919,7 +1183,7 @@ fun ClubDetailScreen(
                                                 enabled = !state.busy
                                             ) {
                                                 Text(
-                                                    text = "Actions",
+                                                    text = stringResource(R.string.actions),
                                                     color = DetailGreen
                                                 )
                                             }
@@ -931,7 +1195,7 @@ fun ClubDetailScreen(
 
                         "LEADERBOARD" -> {
                             item {
-                                Text("Club leaderboard", color = DetailText,
+                                Text(stringResource(R.string.club_leaderboard), color = DetailText,
                                     style = MaterialTheme.typography.titleLarge)
                             }
                             item {
@@ -949,7 +1213,7 @@ fun ClubDetailScreen(
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     Text(
-                                        text = "Rating format",
+                                        text = stringResource(R.string.rating_format),
                                         color = DetailMuted,
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.SemiBold
@@ -983,7 +1247,7 @@ fun ClubDetailScreen(
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                     Text(
-                                                        text = "View club rankings by time control",
+                                                        text = stringResource(R.string.view_club_rankings_by_time_control),
                                                         color = DetailMuted,
                                                         style = MaterialTheme.typography.bodySmall
                                                     )
@@ -1011,7 +1275,7 @@ fun ClubDetailScreen(
                                             )
                                         ) {
                                             Text(
-                                                text = "SELECT FORMAT",
+                                                text = stringResource(R.string.select_format),
                                                 modifier = Modifier.padding(
                                                     start = 16.dp,
                                                     top = 12.dp,
@@ -1075,7 +1339,7 @@ fun ClubDetailScreen(
                             }
                             if (state.leaderboard.isEmpty()) {
                                 item {
-                                    Text("No leaderboard entries available.",
+                                    Text(stringResource(R.string.no_leaderboard_entries_available),
                                         color = DetailMuted)
                                 }
                             }
@@ -1087,7 +1351,8 @@ fun ClubDetailScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween) {
                                         Text(
                                             "${player.rank}. ${player.username}",
-                                            color = DetailText
+                                            color = DetailText,
+                                            modifier = Modifier.openProfileOnClick(player.username)
                                         )
                                         Text("${player.rating}", color = DetailGreen)
                                     }
@@ -1103,7 +1368,7 @@ fun ClubDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        "Club chat",
+                                        stringResource(R.string.club_chat),
                                         color = DetailText,
                                         style = MaterialTheme.typography.titleLarge
                                     )
@@ -1118,31 +1383,46 @@ fun ClubDetailScreen(
                                             )
                                         )
                                         Text(
-                                            if (state.chatConnected) "Live" else "Reconnecting required",
+                                            when {
+                                                state.chatConnected -> "Live"
+                                                state.chatReconnecting -> "Reconnecting..."
+                                                else -> "Disconnected"
+                                            },
                                             color = if (state.chatConnected) DetailGreen else Color(0xFFFF9999),
                                             style = MaterialTheme.typography.labelMedium
                                         )
                                     }
                                 }
                             }
-                            if (!state.chatConnected) {
+                            if (!state.chatConnected&& !state.chatReconnecting) {
                                 item {
                                     OutlinedButton(
                                         onClick = vm::reconnectChat,
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("Reconnect chat")
+                                        Text(stringResource(R.string.reconnect_chat))
                                     }
                                 }
                             }
+                            if (countChars(state.chatInput) >= MAX_CLUB_MESSAGE_CHARS - 100) {
+                                item {
+                                    Text(
+                                        stringResource(R.string.characters, countChars(state.chatInput), MAX_CLUB_MESSAGE_CHARS),
+                                        color = if (countChars(state.chatInput) >= MAX_CLUB_MESSAGE_CHARS) Color(0xFFFF9999) else DetailMuted,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
                             item {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.Bottom) {
                                     OutlinedTextField(
                                         value = state.chatInput,
                                         onValueChange = vm::setChatInput,
                                         modifier = Modifier.weight(1f),
-                                        label = { Text("Write a message") },
-                                        singleLine = true,
+                                        label = { Text(stringResource(R.string.write_a_message)) },
+                                        singleLine = false,
+                                        minLines = 1,
+                                        maxLines = 6,
                                         colors = OutlinedTextFieldDefaults.colors(
                                             focusedTextColor = DetailText,
                                             unfocusedTextColor = DetailText,
@@ -1175,7 +1455,7 @@ fun ClubDetailScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            "No messages yet. Say hello!",
+                                            stringResource(R.string.no_messages_yet_say_hello),
                                             color = DetailMuted,
                                             style = MaterialTheme.typography.bodyMedium
                                         )
@@ -1217,12 +1497,13 @@ fun ClubDetailScreen(
                                     ) {
                                         Text(
                                             text = if (isMine) "You" else message.username,
+                                            modifier = Modifier.openProfileOnClick(message.username),
                                             color = if (isMine) Color(0xFF9DE7C7) else Color(0xFF55D6A5),
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold
                                         )
                                         Spacer(Modifier.height(2.dp))
-                                        Text(
+                                        MessageText(
                                             text = message.message,
                                             color = Color(0xFFF5F5F5),
                                             style = MaterialTheme.typography.bodyLarge
@@ -1241,7 +1522,7 @@ fun ClubDetailScreen(
 
                         "MANAGE" -> {
                             item {
-                                Text("Club management", color = DetailText,
+                                Text(stringResource(R.string.club_management), color = DetailText,
                                     style = MaterialTheme.typography.titleLarge)
                                 Text(
                                     if (isOwner) "Owner permissions"
@@ -1259,7 +1540,7 @@ fun ClubDetailScreen(
                                         containerColor = DetailCard,
                                         contentColor = DetailText
                                     )
-                                ) { Text("Leave club") }
+                                ) { Text(stringResource(R.string.leave_club)) }
                             }
                             if (isOwner) {
                                 item {
@@ -1270,12 +1551,12 @@ fun ClubDetailScreen(
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = Color(0xFF8C3434)
                                         )
-                                    ) { Text("Delete club") }
+                                    ) { Text(stringResource(R.string.delete_club)) }
                                 }
                             }
                             if (isAdmin) {
                                 item {
-                                    Text("Banned members (${state.bans.size})",
+                                    Text(stringResource(R.string.banned_members, state.bans.size),
                                         color = DetailText,
                                         style = MaterialTheme.typography.titleMedium)
                                 }
@@ -1290,7 +1571,7 @@ fun ClubDetailScreen(
                                             TextButton(
                                                 onClick = { vm.unblock(banned.userId) },
                                                 enabled = !state.busy
-                                            ) { Text("Unblock", color = DetailGreen) }
+                                            ) { Text(stringResource(R.string.unblock), color = DetailGreen) }
                                         }
                                     }
                                 }
@@ -1313,31 +1594,31 @@ fun ClubDetailScreen(
                         TextButton(onClick = {
                             selectedMember = null
                             confirmAction = "promote:${member.userId}"
-                        }) { Text("Promote to admin") }
+                        }) { Text(stringResource(R.string.promote_to_admin)) }
                         TextButton(onClick = {
                             selectedMember = null
                             confirmAction = "transfer:${member.userId}"
-                        }) { Text("Transfer leadership") }
+                        }) { Text(stringResource(R.string.transfer_leadership)) }
                     }
-                    if (isOwner && member.role.lowercase() == "com/abhinav/caisarra/data/remote/admin") {
+                    if (isOwner && member.role.lowercase() in setOf("admin", "administrator", "club_admin")) {
                         TextButton(onClick = {
                             selectedMember = null
                             confirmAction = "removeadmin:${member.userId}"
-                        }) { Text("Remove admin") }
+                        }) { Text(stringResource(R.string.remove_admin)) }
                     }
                     TextButton(onClick = {
                         selectedMember = null
                         confirmAction = "kick:${member.userId}"
-                    }) { Text("Remove member", color = Color(0xFFFF9999)) }
+                    }) { Text(stringResource(R.string.remove_member), color = Color(0xFFFF9999)) }
                     TextButton(onClick = {
                         selectedMember = null
                         confirmAction = "ban:${member.userId}"
-                    }) { Text("Ban member", color = Color(0xFFFF9999)) }
+                    }) { Text(stringResource(R.string.ban_member), color = Color(0xFFFF9999)) }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { selectedMember = null }) {
-                    Text("Close", color = DetailGreen)
+                    Text(stringResource(R.string.close), color = DetailGreen)
                 }
             }
         )
@@ -1353,7 +1634,7 @@ fun ClubDetailScreen(
         AlertDialog(
             onDismissRequest = { confirmAction = null },
             containerColor = DetailCard,
-            title = { Text("Confirm action", color = DetailText) },
+            title = { Text(stringResource(R.string.confirm_action), color = DetailText) },
             text = {
                 Text(
                     when {
@@ -1391,13 +1672,13 @@ fun ClubDetailScreen(
                         }
                     }
                 ) {
-                    Text("Confirm", color = if (destructive)
+                    Text(stringResource(R.string.confirm), color = if (destructive)
                         Color(0xFFFF9999) else DetailGreen)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirmAction = null }) {
-                    Text("Cancel", color = DetailMuted)
+                    Text(stringResource(R.string.cancel), color = DetailMuted)
                 }
             }
         )
@@ -1427,15 +1708,18 @@ private fun ClubChatContent(
         ) {
             Column {
                 Text(
-                    text = "Club chat",
+                    text = stringResource(R.string.club_chat),
                     color = DetailText,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
 
                 Text(
-                    text = if (state.chatConnected) "Live conversation"
-                    else "Reconnecting...",
+                    text = when {
+                        state.chatConnected -> "Live conversation"
+                        state.chatReconnecting -> "Reconnecting..."
+                        else -> "Disconnected"
+                    },
                     color = if (state.chatConnected) DetailGreen
                     else Color(0xFFFF9999),
                     style = MaterialTheme.typography.bodySmall
@@ -1474,7 +1758,7 @@ private fun ClubChatContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No messages yet. Say hello!",
+                            text = stringResource(R.string.no_messages_yet_say_hello),
                             color = DetailMuted,
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -1528,6 +1812,7 @@ private fun ClubChatContent(
                     ) {
                         Text(
                             text = if (isMine) "You" else message.username,
+                            modifier = Modifier.openProfileOnClick(message.username),
                             color = if (isMine) {
                                 Color(0xFF9DE7C7)
                             } else {
@@ -1539,7 +1824,7 @@ private fun ClubChatContent(
 
                         Spacer(Modifier.height(4.dp))
 
-                        Text(
+                        MessageText(
                             text = message.message,
                             color = DetailText,
                             style = MaterialTheme.typography.bodyLarge
@@ -1558,11 +1843,21 @@ private fun ClubChatContent(
             }
         }
 
+        val chatCharCount = countChars(state.chatInput)
+        if (chatCharCount >= MAX_CLUB_MESSAGE_CHARS - 100) {
+            Text(
+                text = stringResource(R.string.characters, chatCharCount, MAX_CLUB_MESSAGE_CHARS),
+                color = if (chatCharCount >= MAX_CLUB_MESSAGE_CHARS) Color(0xFFFF9999) else DetailMuted,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+            )
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             OutlinedTextField(
@@ -1571,12 +1866,14 @@ private fun ClubChatContent(
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = "Write a message...",
+                        text = stringResource(R.string.write_a_message_2),
                         color = DetailMuted
                     )
                 },
                 shape = RoundedCornerShape(28.dp),
-                singleLine = true,
+                singleLine = false,
+                minLines = 1,
+                maxLines = 6,
                 enabled = !state.busy,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = DetailText,
@@ -1597,6 +1894,7 @@ private fun ClubChatContent(
                         !state.busy &&
                         state.chatInput.isNotBlank(),
                 modifier = Modifier
+                    .padding(bottom = 2.dp)
                     .size(52.dp)
                     .background(
                         color = if (
@@ -1630,12 +1928,12 @@ private fun ClubChatContent(
             }
         }
 
-        if (!state.chatConnected) {
+        if (!state.chatConnected && !state.chatReconnecting) {
             TextButton(
                 onClick = onReconnect,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text("Reconnect chat", color = DetailGreen)
+                Text(stringResource(R.string.reconnect_chat), color = DetailGreen)
             }
         }
     }

@@ -24,7 +24,7 @@ import com.abhinav.caisarra.presentation.game.OnlineGameViewModel
 import com.abhinav.caisarra.presentation.game.screens.GameAnalysisScreen
 import com.abhinav.caisarra.presentation.game.screens.GameHistoryScreen
 import com.abhinav.caisarra.presentation.game.screens.GameScreen
-import com.abhinav.caisarra.presentation.game.screens.GameSetupScreen
+import com.abhinav.caisarra.features.newgame.presentation.NewGameScreen
 import com.abhinav.caisarra.presentation.game.screens.MatchmakingScreen
 import com.abhinav.caisarra.presentation.game.screens.OnlineGameScreen
 import com.abhinav.caisarra.presentation.game.screens.PassAndPlaySetupScreen
@@ -56,7 +56,7 @@ fun NavGraphBuilder.gameGraph(
         }
         val setupState by setupViewModel.state.collectAsState()
 
-        GameSetupScreen(
+        NewGameScreen(
             state = setupState,
             onOpenTimeControls = {
                 navController.navigateOnce(AppRoutes.TIME_CONTROLS)
@@ -216,7 +216,8 @@ fun NavGraphBuilder.gameGraph(
             navArgument("incrementSeconds") {
                 type = NavType.IntType
             }
-        )
+        ),
+        deepLinks = listOf(navDeepLink { uriPattern = "caisarra://play/{minutes}/{incrementSeconds}" })
     ) { entry ->
         val minutes = entry.arguments?.getInt("minutes") ?: 10
         val increment = entry.arguments?.getInt("incrementSeconds") ?: 0
@@ -226,7 +227,7 @@ fun NavGraphBuilder.gameGraph(
         }
 
         LaunchedEffect(matchmakingViewModel, minutes, increment) {
-            matchmakingViewModel.startMatch(
+            matchmakingViewModel.startMatchOnce(
                 minutes = minutes,
                 incrementSeconds = increment,
                 rated = true
@@ -332,10 +333,11 @@ fun NavGraphBuilder.gameGraph(
                 }
             },
             onNewGame = {
-                navController.navigateOnce(AppRoutes.GAME_SETUP) {
+                navController.navigateOnce(AppRoutes.PASS_AND_PLAY_SETUP) {
                     popUpTo(AppRoutes.GAME) {
                         inclusive = true
                     }
+                    launchSingleTop = true
                 }
             }
         )
@@ -388,7 +390,7 @@ fun NavGraphBuilder.gameGraph(
                 }
             },
             onStartAnalysis = {
-                navController.navigate(AppRoutes.gameAnalysis(gameId))
+                navController.navigateOnce(AppRoutes.gameAnalysis(gameId))
             }
         )
     }
@@ -424,7 +426,7 @@ fun NavGraphBuilder.gameGraph(
                 }
             },
             onAnalyze = {
-                navController.navigate(AppRoutes.gameAnalysis(gameId))
+                navController.navigateOnce(AppRoutes.gameAnalysis(gameId))
             }
         )
     }

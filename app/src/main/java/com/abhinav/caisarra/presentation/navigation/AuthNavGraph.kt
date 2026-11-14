@@ -249,10 +249,11 @@ fun NavGraphBuilder.authGraph(
                 SetNewPasswordViewModel(repository = authRepository)
             },
             onPasswordUpdated = {
-                navController.popBackStack(
-                    route = AppRoutes.LOGIN,
-                    inclusive = false
-                )
+                navController.navigate(AppRoutes.LOGIN) {
+                    popUpTo(navController.graph.id) {
+                        inclusive = true
+                    }
+                }
             }
         )
     }

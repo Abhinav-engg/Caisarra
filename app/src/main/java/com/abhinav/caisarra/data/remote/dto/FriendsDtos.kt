@@ -56,6 +56,8 @@ data class FriendRequestDto(
     val receiverUsername: String? = null,
     @SerialName("receiver_rating")
     val receiverRating: Int? = null,
+    @SerialName("receiver_avatar_url")
+    val receiverAvatarUrl: String? = null,
     @SerialName("created_at")
     val createdAt: String? = null
 )

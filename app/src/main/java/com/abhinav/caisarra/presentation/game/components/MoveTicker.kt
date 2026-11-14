@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -49,7 +51,7 @@ fun MoveTicker(
         if (moves.isEmpty()) {
             item {
                 Text(
-                    text = "Moves",
+                    text = stringResource(R.string.moves_2),
                     color = Color(0xFF8C98A5),
                     fontSize = 12.sp
                 )

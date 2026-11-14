@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -93,7 +95,7 @@ fun BotSetupScreen(
                     onClick = singleClick(onViewHistory)
                 ) {
                     Text(
-                        text = "GAMES",
+                        text = stringResource(R.string.games),
                         color = SetupColors.Accent,
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
@@ -173,7 +175,7 @@ fun BotSetupScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Custom Rating Bot",
+                                    text = stringResource(R.string.custom_rating_bot),
                                     color = if (state.isCustomRating) SetupColors.Accent else SetupColors.Text,
                                     fontSize = TextSizeSubhead,
                                     fontWeight = FontWeight.SemiBold
@@ -264,7 +266,7 @@ fun BotSetupScreen(
                             )
                             Spacer(Modifier.height(8.dp))
                             TextButton(onClick = singleClick(onViewHistory)) {
-                                Text("VIEW ACTIVE GAMES", color = SetupColors.Accent, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.view_active_games), color = SetupColors.Accent, fontWeight = FontWeight.Bold)
                             }
                         }
                     } else if (state.errorMessage != null) {

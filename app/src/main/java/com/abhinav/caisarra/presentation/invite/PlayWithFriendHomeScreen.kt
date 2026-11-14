@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.invite
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -83,7 +84,7 @@ fun PlayWithFriendHomeScreen(
         Spacer(Modifier.height(28.dp))
 
         Text(
-            text = "Better across the board.",
+            text = stringResource(R.string.better_across_the_board),
             color = SetupColors.Text,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold
@@ -92,7 +93,7 @@ fun PlayWithFriendHomeScreen(
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "Challenge a friend, wherever they are.",
+            text = stringResource(R.string.challenge_a_friend_wherever_they_are),
             color = SetupColors.Secondary,
             fontSize = 14.sp
         )
@@ -124,7 +125,7 @@ fun PlayWithFriendHomeScreen(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "Invite Friends",
+                text = stringResource(R.string.invite_friends),
                 color = SetupColors.Text,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -133,7 +134,7 @@ fun PlayWithFriendHomeScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Find a Mosaic username and add them to your circle.",
+                text = stringResource(R.string.find_a_mosaic_username_and_add),
                 color = SetupColors.Secondary,
                 fontSize = 14.sp
             )
@@ -173,7 +174,7 @@ fun PlayWithFriendHomeScreen(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "Create a match link",
+                text = stringResource(R.string.create_a_match_link),
                 color = SetupColors.Text,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -182,7 +183,7 @@ fun PlayWithFriendHomeScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Set your rules. Share one private invitation.",
+                text = stringResource(R.string.set_your_rules_share_one_private),
                 color = SetupColors.Secondary,
                 fontSize = 14.sp
             )
@@ -223,7 +224,7 @@ fun PlayWithFriendHomeScreen(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "Join with Code or QR",
+                text = stringResource(R.string.join_with_code_or_qr),
                 color = SetupColors.Text,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -232,7 +233,7 @@ fun PlayWithFriendHomeScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Have an invite code, link, or QR code from a friend? Scan or enter it here.",
+                text = stringResource(R.string.have_an_invite_code_link_or),
                 color = SetupColors.Secondary,
                 fontSize = 14.sp
             )
@@ -242,7 +243,7 @@ fun PlayWithFriendHomeScreen(
             OutlinedTextField(
                 value = enterCode,
                 onValueChange = { enterCode = it.trim() },
-                placeholder = { Text("Code or link (e.g. 7F89AB12)", color = SetupColors.Secondary) },
+                placeholder = { Text(stringResource(R.string.code_or_link_e_g_7f89ab12), color = SetupColors.Secondary) },
                 singleLine = true,
                 trailingIcon = {
                     IconButton(onClick = { showQrScanner = true }) {
@@ -302,7 +303,7 @@ fun PlayWithFriendHomeScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "SCAN QR",
+                        text = stringResource(R.string.scan_qr),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = Color(0xFF00CFEA)

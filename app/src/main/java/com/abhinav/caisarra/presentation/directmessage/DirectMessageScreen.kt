@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.directmessage
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import com.abhinav.caisarra.core.ui.components.MessageText
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.RetrofitInstance
 import com.caisaara.ui.theme.StatsBg
@@ -156,7 +159,7 @@ fun DirectMessageScreen(
                 )
 
                 Text(
-                    text = "Direct message",
+                    text = stringResource(R.string.direct_message),
                     color = StatsTextMuted,
                     fontSize = 12.sp
                 )
@@ -220,7 +223,7 @@ fun DirectMessageScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Start the conversation",
+                                text = stringResource(R.string.start_the_conversation),
                                 color = StatsTextWhite,
                                 fontFamily = JetBrainsMono,
                                 fontWeight = FontWeight.Bold,
@@ -230,7 +233,7 @@ fun DirectMessageScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "Send a message to $username.",
+                                text = stringResource(R.string.send_a_message_to, username),
                                 color = StatsTextMuted,
                                 fontSize = 14.sp
                             )
@@ -349,9 +352,10 @@ fun DirectMessageScreen(
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                Text(
+                                MessageText(
                                     text = message.message,
                                     color = if (mine) StatsBg else StatsTextWhite,
+                                    linkColor = if (mine) StatsBg else StatsCyan,
                                     fontSize = 15.sp
                                 )
 
@@ -401,7 +405,7 @@ fun DirectMessageScreen(
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = "Write a message...",
+                        text = stringResource(R.string.write_a_message_2),
                         color = StatsTextMuted,
                         fontSize = 14.sp,
                         maxLines = 1

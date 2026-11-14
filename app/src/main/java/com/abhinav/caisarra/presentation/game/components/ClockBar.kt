@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,11 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.presentation.components.CountryUtils
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.caisaara.ui.theme.EmeraldNormal
 import com.caisaara.ui.theme.White
-
-private const val DAY_MILLIS = 86_400_000L
 
 fun formatDailyTime(timeMillis: Long): String {
     if (timeMillis <= 0L) return "0s"
@@ -50,17 +52,13 @@ fun ClockBar(
     isDailyMode: Boolean = false,
     rating: Int? = null,
     capturedPieces: List<Piece> = emptyList(),
-    advantage: Int = 0
+    advantage: Int = 0,
+    countryCode: String? = null
 ) {
-    val daily = isDailyMode || timeMillis >= DAY_MILLIS
+    val timeText = formatClockTime(timeMillis, isDailyMode)
 
-    val timeText = if (daily) {
-        formatDailyTime(timeMillis)
-    } else {
-        val totalSeconds = timeMillis.coerceAtLeast(0L) / 1000L
-        "%02d:%02d".format(totalSeconds / 60L, totalSeconds % 60L)
-    }
-
+    val flag = remember(countryCode) { CountryUtils.flag(countryCode) }
+    
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -83,8 +81,9 @@ fun ClockBar(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+
                 Text(
                     text = playerName,
                     color = White,
@@ -94,6 +93,13 @@ fun ClockBar(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
+                if (flag.isNotEmpty()) {
+                    Text(
+                        text = flag,
+                        fontSize = 16.sp,
+                        maxLines = 1
+                    )
+                }
 
                 if (capturedPieces.isNotEmpty() || advantage > 0) {
                     CapturedPieces(
@@ -105,7 +111,7 @@ fun ClockBar(
 
             rating?.let {
                 Text(
-                    text = "Rating $it",
+                    text = stringResource(R.string.rating, it),
                     color = Color(0xFF9FB0C3),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -58,7 +60,7 @@ fun MoveList(
             )
 
             Text(
-                text = "WHITE",
+                text = stringResource(R.string.white),
                 modifier = Modifier.weight(0.42f),
                 color = MoveNumberText,
                 fontSize = 11.sp,
@@ -66,7 +68,7 @@ fun MoveList(
             )
 
             Text(
-                text = "BLACK",
+                text = stringResource(R.string.black),
                 modifier = Modifier.weight(0.42f),
                 color = MoveNumberText,
                 fontSize = 11.sp,
@@ -76,7 +78,7 @@ fun MoveList(
 
         if (moves.isEmpty()) {
             Text(
-                text = "Moves will appear here",
+                text = stringResource(R.string.moves_will_appear_here),
                 color = MoveNumberText,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(vertical = 12.dp)

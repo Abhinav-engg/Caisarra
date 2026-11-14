@@ -208,13 +208,17 @@ fun NavGraphBuilder.homeGraph(
             onReviewGame = { gameId ->
                 navController.navigateOnce(AppRoutes.gameHistory(gameId))
             },
+            onOpenTactic = { tactic ->
+                navController.navigateOnce(tactic.route)
+            },
+            onOpenPuzzles = {
+                navController.navigateToTab(AppRoutes.PUZZLES)
+            },
             onLogoutSuccess = {
                 navController.goToLogin()
             },
             onOpenNearby = {
-                navController.navigateOnce(AppRoutes.NEARBY) {
-                    launchSingleTop = true
-                }
+                navController.navigateToTab(AppRoutes.NEARBY)
             },
             onPlayBots = {
                 navController.navigateOnce(AppRoutes.BOT_SETUP)
@@ -226,7 +230,7 @@ fun NavGraphBuilder.homeGraph(
                 navController.navigateOnce(AppRoutes.DAILY_PUZZLE)
             },
             onOpenCommunity = {
-                navController.navigate(AppRoutes.COMMUNITY)
+                navController.navigateToTab(AppRoutes.COMMUNITY)
             },
             onOpenNotifications = {
                 navController.requireAuth(

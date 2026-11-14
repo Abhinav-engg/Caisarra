@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.navigation
 
 import android.content.Intent
 import androidx.navigation.NavController
+import androidx.navigation.navOptions
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.remote.dto.getLongData
 import com.abhinav.caisarra.data.remote.dto.getStringData
@@ -68,7 +69,7 @@ fun handleNotificationItemClick(
         }
         "post_comment",
         "post_reaction" -> {
-            navController.navigateOnce(AppRoutes.COMMUNITY)
+            navController.navigateToTab(AppRoutes.COMMUNITY)
         }
         "club_promoted",
         "club_demoted",
@@ -91,6 +92,16 @@ fun handleNotificationItemClick(
                 navController.navigateOnce(AppRoutes.directMessage(userId, username))
             } else {
                 navController.navigateOnce(AppRoutes.DIRECT_MESSAGES_LIST)
+            }
+        }
+
+        "club_message",
+        "club_chat_message" -> {
+            val clubId = notification.getStringData("club_id")
+            if (!clubId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.clubChat(clubId))
+            } else {
+                navController.navigateOnce(AppRoutes.CLUBS)
             }
         }
         else -> {
@@ -172,7 +183,7 @@ fun handleIntentNotificationNavigation(
         }
         "post_comment",
         "post_reaction" -> {
-            navController.navigateOnce(AppRoutes.COMMUNITY)
+            navController.navigateToTab(AppRoutes.COMMUNITY)
         }
         "club_promoted",
         "club_demoted",
@@ -197,9 +208,20 @@ fun handleIntentNotificationNavigation(
                 navController.navigateOnce(AppRoutes.DIRECT_MESSAGES_LIST)
             }
         }
+        "club_message",
+        "club_chat_message" -> {
+            val clubId = intent.getStringExtra("club_id")
+            if (!clubId.isNullOrBlank()) {
+                navController.navigateOnce(AppRoutes.clubChat(clubId))
+            } else {
+                navController.navigateOnce(AppRoutes.CLUBS)
+            }
+        }
         else -> {
             val dataUri = intent.data
-            if (dataUri == null) {
+            if (dataUri != null && navController.graph.hasDeepLink(dataUri)) {
+                navController.navigate(dataUri, navOptions { launchSingleTop = true })
+            } else {
                 navController.navigateOnce(AppRoutes.NOTIFICATIONS)
             }
         }

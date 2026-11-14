@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.game
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.abhinav.caisarra.features.dailywidget.presentation.refreshDailyTurnsWidget
+import com.abhinav.caisarra.features.gameplay.data.measureLatency
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
@@ -100,6 +101,9 @@ class OnlineGameViewModel(
     val opponentAvatarUrl: StateFlow<String?> = _opponentAvatarUrl.asStateFlow()
     private val _myAvatarUrl = MutableStateFlow<String?>(null)
     val myAvatarUrl: StateFlow<String?> = _myAvatarUrl.asStateFlow()
+    val connected: StateFlow<Boolean> get() = socket.connected
+    private val _pingMs = MutableStateFlow<Long?>(null)
+    val pingMs: StateFlow<Long?> = _pingMs.asStateFlow()
     private var whitePlayerId: Long? = null
     private var blackPlayerId: Long? = null
     private var whitePlayerUsername: String? = null
@@ -148,6 +152,7 @@ class OnlineGameViewModel(
             _myUsername.value = tokenManager.getUsername()
             runCatching { profileRepository.getMyProfile() }.getOrNull()?.let { profile ->
                 _myAvatarUrl.value = profile.avatarUrl
+                _uiState.update { it.copy(myCountry = profile.country) }
                 if (_myUsername.value.isNullOrBlank() && profile.username.isNotBlank()) {
                     _myUsername.value = profile.username
                 }
@@ -168,6 +173,12 @@ class OnlineGameViewModel(
             }
         }
         viewModelScope.launch { loadGameDetailsAndRating() }
+        viewModelScope.launch {
+            while (!finished) {
+                _pingMs.value = if (socket.connected.value) measureLatency() else null
+                delay(5_000)
+            }
+        }
         viewModelScope.launch {
             gameRepository.createWatchInvite(gameId).onSuccess { watchResp ->
                 _uiState.update {
@@ -426,13 +437,13 @@ class OnlineGameViewModel(
         return res
     }
 
-    fun cancelWaitingChallenge(onDone: () -> Unit = {}) {
+    fun cancelWaitingChallenge(onDone: () -> Unit = {}, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val challengeManager = ChallengeManager.get(getApplication())
-            val outgoing = challengeManager.outgoingChallenge.value
-            val code = if (outgoing?.gameId == gameId) outgoing.code else null
-            if (!code.isNullOrBlank()) {
-                challengeManager.cancelChallenge(code)
+            val result = challengeManager.cancelChallengeForGame(gameId)
+            if (result != null && result.isFailure) {
+                onError(result.exceptionOrNull()?.message ?: "Failed to cancel challenge")
+                return@launch
             }
             challengeManager.clearOutgoingChallenge()
             _waitingForOpponent.value = false
@@ -1096,14 +1107,15 @@ class OnlineGameViewModel(
         }
         if (finished && _uiState.value.isRated && !ratingWasRefreshed) {
             ratingWasRefreshed = true
+            val opponentRatingBefore = _uiState.value.opponentRating
             viewModelScope.launch {
                 refreshRating(captureChange = true)
-                lastOpponentUsername?.let { loadOpponentProfile(it) }
+                lastOpponentUsername?.let { loadOpponentProfile(it, ratingBefore = opponentRatingBefore) }
             }
         }
     }
 
-    private suspend fun loadOpponentProfile(username: String) {
+    private suspend fun loadOpponentProfile(username: String, ratingBefore: Int? = null) {
         if (username.isBlank() || username.equals("You", true) || username.equals("Opponent", true) || username.equals("Your opponent", true)) return
         lastOpponentUsername = username
         _opponentName.value = username
@@ -1113,7 +1125,16 @@ class OnlineGameViewModel(
             val currentMode = mode ?: resolveMode(_uiState.value.timeControlMinutes)
             val rating = profile.ratings?.get(currentMode)?.rating ?: profile.rating
             _uiState.update { current ->
-                current.copy(opponentRating = rating ?: current.opponentRating).withSideRatings()
+                val change = if (ratingBefore != null && rating != null) {
+                    rating - ratingBefore
+                } else {
+                    current.opponentRatingChange
+                }
+                current.copy(
+                    opponentRating = rating ?: current.opponentRating,
+                    opponentRatingChange = change,
+                    opponentCountry = profile.country ?: current.opponentCountry
+                ).withSideRatings()
             }
             if (!profile.avatarUrl.isNullOrBlank()) {
                 _opponentAvatarUrl.value = profile.avatarUrl

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -70,13 +72,13 @@ fun FriendsLeaderboardView(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = FriendsTextWhite)
             }
             Spacer(Modifier.width(8.dp))
-            Text("FRIENDS LEADERBOARD", color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 18.sp, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.friends_leaderboard), color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 18.sp, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
             Icon(Icons.Default.EmojiEvents, null, tint = GoldColor, modifier = Modifier.padding(end = 12.dp).size(24.dp))
         }
 
         if (entries.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                Text("No players on leaderboard yet.", color = FriendsTextMuted, fontSize = 14.sp)
+                Text(stringResource(R.string.no_players_on_leaderboard_yet), color = FriendsTextMuted, fontSize = 14.sp)
             }
         } else {
             LazyColumn(
@@ -125,7 +127,7 @@ private fun LeaderboardRow(
             Text("#$rank", color = rankColor, fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
         Spacer(Modifier.width(12.dp))
-        FriendAvatar(name = name, avatarUrl = entry.avatarUrl, size = 42.dp)
+        FriendAvatar(name = name, avatarUrl = entry.avatarUrl, size = 42.dp, username = entry.username)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -133,13 +135,13 @@ private fun LeaderboardRow(
                 if (entry.isMe) {
                     Spacer(Modifier.width(6.dp))
                     Box(modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(FriendsCyan.copy(alpha = 0.25f)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                        Text("YOU", color = FriendsCyan, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                        Text(stringResource(R.string.you), color = FriendsCyan, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                     }
                 }
             }
             Text("@${entry.username}", color = FriendsTextMuted, fontSize = 12.sp)
         }
         Spacer(Modifier.width(8.dp))
-        Text("${entry.rating} Rapid", color = FriendsCyan, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Text(stringResource(R.string.rapid_2, entry.rating), color = FriendsCyan, fontWeight = FontWeight.Bold, fontSize = 15.sp)
     }
 }

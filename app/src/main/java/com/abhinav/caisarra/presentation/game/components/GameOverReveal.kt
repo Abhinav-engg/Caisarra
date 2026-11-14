@@ -19,15 +19,18 @@ import kotlinx.coroutines.delay
 import kotlin.math.hypot
 
 @Composable
-fun GameOverReveal(delayMillis: Long = 450, content: @Composable () -> Unit) {
+fun GameOverReveal(
+    delayMillis: Long = 450,
+    modifier: Modifier = Modifier.fillMaxSize(),
+    content: @Composable () -> Unit
+) {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         delay(delayMillis)
         progress.animateTo(1f, tween(750, easing = FastOutSlowInEasing))
     }
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = modifier
             .graphicsLayer {
                 val p = progress.value
                 alpha = (p * 2f).coerceAtMost(1f)

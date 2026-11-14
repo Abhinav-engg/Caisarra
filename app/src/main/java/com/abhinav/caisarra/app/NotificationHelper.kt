@@ -14,6 +14,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.abhinav.caisarra.R
+import com.abhinav.caisarra.data.local.PUSH_NOTIFICATIONS_KEY
+import com.abhinav.caisarra.data.local.settingsDataStore
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 object NotificationHelper {
 
@@ -197,6 +201,8 @@ object NotificationHelper {
         notificationId: Int = (System.currentTimeMillis() % 100000).toInt(),
         deepLink: String? = null
     ) {
+        if (runBlocking { context.settingsDataStore.data.first()[PUSH_NOTIFICATIONS_KEY] } == false) return
+
         val notificationManager = NotificationManagerCompat.from(context)
 
         if (!notificationManager.areNotificationsEnabled()) {

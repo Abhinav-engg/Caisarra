@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.presentation.screens.components.stats
 
-
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -88,7 +89,7 @@ private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${selectedMode.label.uppercase()} RATING",
+                    text = stringResource(R.string.rating_2, selectedMode.label.uppercase()),
                     fontFamily = JetBrainsMono,
                     fontSize = TextSizeCaption,
                     fontWeight = FontWeight.Medium,
@@ -116,7 +117,7 @@ private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm
                     }
 
                     Text(
-                        text = "this period",
+                        text = stringResource(R.string.this_period),
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeTiny,
                         color = StatsTextMuted
@@ -138,7 +139,7 @@ private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm
                 )
 
                 Text(
-                    text = "ELO",
+                    text = stringResource(R.string.elo),
                     fontFamily = JetBrainsMono,
                     fontSize = TextSizeBody,
                     fontWeight = FontWeight.Medium,
@@ -169,7 +170,7 @@ private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Started at ${stats.startRating}",
+                    text = stringResource(R.string.started_at, stats.startRating),
                     fontFamily = JetBrainsMono,
                     fontSize = TextSizeCaption,
                     color = StatsTextMuted
@@ -177,7 +178,7 @@ private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm
 
                 val peakText = stats.bestRating?.toString() ?: if (stats.gamesPlayed > 0) stats.rating.toString() else "—"
                 Text(
-                    text = "Peak $peakText",
+                    text = stringResource(R.string.peak, peakText),
                     fontFamily = JetBrainsMono,
                     fontSize = TextSizeCaption,
                     fontWeight = FontWeight.Medium,

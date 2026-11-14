@@ -118,6 +118,7 @@ object AppRoutes {
     const val TOURNAMENTS = "tournaments"
     const val CREATE_TOURNAMENT = "create_tournament"
     const val TOURNAMENT_DETAIL = "tournament/{id}?code={code}"
+    const val TOURNAMENT_INVITE_LINK = "tournament_invite_link/{code}"
 
     fun tournamentDetail(id: String, inviteCode: String? = null): String {
         val queryParam = inviteCode?.let { "?code=${Uri.encode(it)}" } ?: ""
@@ -133,10 +134,14 @@ object AppRoutes {
 
     const val COMMUNITY = "community"
     const val CLUBS = "clubs"
-    const val CLUB_DETAIL = "club_detail/{clubId}"
+    const val CLUB_DETAIL = "club_detail/{clubId}?openChat={openChat}"
+    const val CLUB_SHARE_LINK = "club_share_link/{code}"
 
     fun clubDetail(clubId: String): String =
         "club_detail/${Uri.encode(clubId)}"
+
+    fun clubChat(clubId: String): String =
+        "club_detail/${Uri.encode(clubId)}?openChat=true"
 
     const val MENU = "menu"
     const val THEME = "theme"
@@ -146,10 +151,14 @@ object AppRoutes {
     const val PRIVACY_SETTINGS = "privacy_settings"
     const val NOTIFICATION_SETTINGS = "notification_settings"
     const val BLOCKED_PLAYERS = "blocked_players"
+    const val FOLLOW_LIST = "follow_list/{userId}?username={username}&tab={tab}"
     const val DELETE_ACCOUNT = "delete_account"
     const val WATCH = "watch"
     const val SPECTATE_GAME = "spectate/{watchCode}"
     const val NOTIFICATIONS = "notifications"
+
+    fun followList(userId: Long, username: String, tab: String): String =
+        "follow_list/$userId?username=${Uri.encode(username)}&tab=$tab"
 
     fun spectateGame(watchCode: String): String =
         "spectate/${Uri.encode(watchCode.trim())}"

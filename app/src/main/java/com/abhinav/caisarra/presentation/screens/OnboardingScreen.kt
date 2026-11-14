@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -227,7 +228,7 @@ fun OnboardingScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "MOSAIC CHESS",
+                    text = stringResource(R.string.mosaic_chess),
                     fontFamily = CaisaaraFontFamily,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -236,7 +237,7 @@ fun OnboardingScreen(
                 )
 
                 Text(
-                    text = "Skip",
+                    text = stringResource(R.string.skip),
                     fontFamily = CaisaaraFontFamily,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
@@ -457,7 +458,7 @@ fun OnboardingNextButton(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Next",
+            text = stringResource(R.string.next),
             fontFamily = CaisaaraFontFamily,
             fontSize = 17.sp,
             fontWeight = FontWeight.Bold,

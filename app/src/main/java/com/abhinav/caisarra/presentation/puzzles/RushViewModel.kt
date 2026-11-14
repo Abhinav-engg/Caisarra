@@ -16,6 +16,7 @@ import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.PieceColor as UiPieceColor
 import com.abhinav.caisarra.presentation.game.model.PieceType as UiPieceType
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
 import com.abhinav.caisarra.presentation.game.model.Square as UiSquare
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -244,32 +245,19 @@ class RushViewModel(
             _state.value = current.copy(isSkipping = true, isAwaitingServer = true)
         }
 
-        val currentTurnColor = if (current.playerColor == UiPieceColor.WHITE) DomainPieceColor.White else DomainPieceColor.Black
-        val candidateMove = engine.pieces()
-            .filter { it.color == currentTurnColor }
-            .flatMap { engine.legalMovesFrom(it.square) }
-            .firstOrNull()
-            ?.toUci() ?: "a2a3"
-
         viewModelScope.launch {
             puzzleRepository.skipRushPuzzle(current.sessionId, current.currentPuzzle.puzzleId)
                 .onSuccess { response ->
                     handleMoveResponse(response, current)
                 }
                 .onFailure {
-                    puzzleRepository.submitRushMove(current.sessionId, current.currentPuzzle.puzzleId, candidateMove)
-                        .onSuccess { response ->
-                            handleMoveResponse(response, current)
-                        }
-                        .onFailure {
-                            val stateNow = _state.value
-                            if (stateNow is RushUiState.Playing) {
-                                _state.value = stateNow.copy(
-                                    isSkipping = false,
-                                    isAwaitingServer = false
-                                )
-                            }
-                        }
+                    val stateNow = _state.value
+                    if (stateNow is RushUiState.Playing) {
+                        _state.value = stateNow.copy(
+                            isSkipping = false,
+                            isAwaitingServer = false
+                        )
+                    }
                 }
         }
     }
@@ -441,6 +429,7 @@ class RushViewModel(
                 puzzleId = current.currentPuzzle.puzzleId,
                 move = uciMove
             ).onSuccess { response ->
+                (_state.value as? RushUiState.Playing)?.let { _state.value = it.copy(moveFeedback = MoveFeedback(++animationId, to, response.correct)) }
                 handleMoveResponse(response, current)
             }.onFailure {
                 engine.undo()
@@ -494,20 +483,8 @@ class RushViewModel(
 
         if (currentState.isSkipping) {
             val nextPuzzle = response.nextPuzzle
-            val preservedStrikes = if (currentState.mode == "survival") {
-                currentState.strikes + 1
-            } else {
-                currentState.strikes
-            }
-            val preservedStrikesLeft = maxOf(0, 3 - preservedStrikes)
-
-            if (currentState.mode == "survival" && (preservedStrikes >= 3 || preservedStrikesLeft <= 0)) {
-                onGameOver(
-                    currentState.copy(strikes = preservedStrikes, strikesLeft = preservedStrikesLeft),
-                    response.summary
-                )
-                return
-            }
+            val preservedStrikes = currentState.strikes
+            val preservedStrikesLeft = currentState.strikesLeft
 
             if (currentState.secondsRemaining != null && timeRemainingSeconds <= 0) {
                 onGameOver(
@@ -753,7 +730,8 @@ class RushViewModel(
             isSkipping = false,
             isCorrectFlash = false,
             isStrikeFlash = false,
-            highlightedSquare = null
+            highlightedSquare = null,
+            moveFeedback = null
         )
     }
 

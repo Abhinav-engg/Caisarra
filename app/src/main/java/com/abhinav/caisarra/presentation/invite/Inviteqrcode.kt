@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -58,7 +60,7 @@ fun InviteQrCode(
             )
         } else {
             Text(
-                text = "Couldn't generate QR code",
+                text = stringResource(R.string.couldn_t_generate_qr_code),
                 color = Color.Black,
                 fontFamily = JetBrainsMono,
                 fontSize = 11.sp,
@@ -84,7 +86,7 @@ fun InviteQrDialog(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "SCAN TO JOIN",
+                text = stringResource(R.string.scan_to_join),
                 color = White,
                 fontFamily = JetBrainsMono,
                 fontSize = 14.sp,
@@ -99,7 +101,7 @@ fun InviteQrDialog(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Point a phone camera at this code to open the match invite.",
+                text = stringResource(R.string.point_a_phone_camera_at_this),
                 color = Secondary,
                 fontFamily = JetBrainsMono,
                 fontSize = 11.sp,
@@ -113,7 +115,7 @@ fun InviteQrDialog(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = "CLOSE",
+                    text = stringResource(R.string.close_2),
                     color = White,
                     fontFamily = JetBrainsMono,
                     fontSize = 12.sp

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.features.mascot.presentation.AnalysisMoveMascot
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.viewmodel.AnalysisPhase
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisUiState
@@ -103,7 +106,7 @@ fun GameAnalysisScreen(
             }
             Spacer(Modifier.size(12.dp))
             Text(
-                "Game Analysis",
+                stringResource(R.string.game_analysis),
                 color = TextMain,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
@@ -133,7 +136,7 @@ fun GameAnalysisScreen(
             AnalysisPhase.ANALYSING -> CenterColumn {
                 CircularProgressIndicator(color = Cyan)
                 Spacer(Modifier.height(16.dp))
-                Text("Analysing your game...", color = Muted, fontSize = 14.sp)
+                Text(stringResource(R.string.analysing_your_game), color = Muted, fontSize = 14.sp)
             }
 
             AnalysisPhase.FAILED -> CenterColumn {
@@ -151,7 +154,7 @@ fun GameAnalysisScreen(
                         .clickable(onClick = viewModel::retry)
                         .padding(horizontal = 28.dp, vertical = 14.dp)
                 ) {
-                    Text("Retry", color = Color(0xFF082028), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.retry), color = Color(0xFF082028), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -220,6 +223,14 @@ internal fun AnalysisContent(
 
         val detailsPanel: @Composable ColumnScope.() -> Unit = {
             CurrentMoveCard(
+                currentPly = state.currentPly,
+                moves = state.moves,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
+            )
+
+            AnalysisMoveMascot(
                 currentPly = state.currentPly,
                 moves = state.moves,
                 modifier = Modifier

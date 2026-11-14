@@ -6,11 +6,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CommunityAuthorDto(
+    val id: Long? = null,
     val username: String,
     @SerialName("display_name")
     val displayName: String? = null,
     @SerialName("avatar_url")
-    val avatarUrl: String? = null
+    val avatarUrl: String? = null,
+    @SerialName("is_following")
+    val isFollowing: Boolean = false
 )
 
 @Serializable

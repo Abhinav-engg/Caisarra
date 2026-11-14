@@ -56,6 +56,15 @@ class RatingPreferencesStore private constructor(context: Context) {
         } else null
     }
 
+    fun getLastShownRating(mode: GameMode): Int? {
+        val key = "$KEY_LAST_SHOWN_RATING_PREFIX${mode.ratingKey}"
+        return if (prefs.contains(key)) prefs.getInt(key, 0) else null
+    }
+
+    fun setLastShownRating(mode: GameMode, rating: Int) {
+        prefs.edit().putInt("$KEY_LAST_SHOWN_RATING_PREFIX${mode.ratingKey}", rating).apply()
+    }
+
     fun clear() {
         prefs.edit().clear().apply()
     }
@@ -66,6 +75,7 @@ class RatingPreferencesStore private constructor(context: Context) {
         private const val KEY_LAST_RATING_CHANGE = "last_rating_change"
         private const val KEY_LAST_GAME_MODE = "last_game_mode"
         private const val KEY_RATING_CHANGE_PREFIX = "rating_change_"
+        private const val KEY_LAST_SHOWN_RATING_PREFIX = "last_shown_rating_"
 
         @Volatile
         private var instance: RatingPreferencesStore? = null

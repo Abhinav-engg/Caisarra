@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -54,7 +56,7 @@ fun FriendsSearchBar(
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                if (query.isEmpty()) Text("Search username or player ID...", color = FriendsTextMuted, fontSize = 14.sp)
+                if (query.isEmpty()) Text(stringResource(R.string.search_username_or_player_id), color = FriendsTextMuted, fontSize = 14.sp)
                 BasicTextField(
                     value = query,
                     onValueChange = onQueryChange,

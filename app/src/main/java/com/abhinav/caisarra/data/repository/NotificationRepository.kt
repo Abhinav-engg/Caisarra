@@ -97,6 +97,7 @@ class NotificationRepository private constructor(context: Context) {
             buildJsonObject { put("fcm_token", token) },
             buildJsonObject { put("device_token", token) }
         )
+        var lastException: Exception? = null
         for (body in candidates) {
             try {
                 val response = service.deleteDeviceRaw(body)
@@ -105,8 +106,10 @@ class NotificationRepository private constructor(context: Context) {
                 return@execute
             } catch (e: Exception) {
                 if (e is HttpException && e.code() == 404) return@execute
+                lastException = e
             }
         }
+        lastException?.let { throw it }
     }
 
     suspend fun fetchUnreadCount(): Result<Int> = execute {
@@ -135,6 +138,17 @@ class NotificationRepository private constructor(context: Context) {
 
     suspend fun markAllAsRead(): Result<Unit> = execute {
         val response = service.markAllAsRead()
+        checkSuccess(response.success, response.error, response.message)
+        _unreadCount.value = 0
+    }
+
+    suspend fun delete(id: Long): Result<Unit> = execute {
+        val response = service.deleteNotification(id)
+        checkSuccess(response.success, response.error, response.message)
+    }
+
+    suspend fun deleteAll(): Result<Unit> = execute {
+        val response = service.deleteAllNotifications()
         checkSuccess(response.success, response.error, response.message)
         _unreadCount.value = 0
     }

@@ -1,6 +1,7 @@
 
 package com.abhinav.caisarra.presentation.game.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -65,7 +66,7 @@ fun GameHistorySection(
             )
             Spacer(Modifier.width(12.dp))
             Text(
-                text = "GAME HISTORY",
+                text = stringResource(R.string.game_history),
                 color = HistoryWhite,
                 fontFamily = JetBrainsMono,
                 fontSize = 17.sp,
@@ -179,7 +180,7 @@ fun GameHistorySection(
 
             games.isEmpty() -> {
                 Text(
-                    text = "No completed games yet.",
+                    text = stringResource(R.string.no_completed_games_yet),
                     color = HistorySecondary,
                     fontFamily = JetBrainsMono,
                     fontSize = 12.sp,
@@ -220,7 +221,7 @@ fun GameHistorySection(
                 shape = RoundedCornerShape(15.dp)
             ) {
                 Text(
-                    text = "VIEW ALL GAMES     →",
+                    text = stringResource(R.string.view_all_games),
                     color = HistoryAccent,
                     fontFamily = JetBrainsMono,
                     fontSize = 13.sp,
@@ -298,7 +299,7 @@ private fun GameHistoryCard(
                 )
 
                 Text(
-                    text = "VS",
+                    text = stringResource(R.string.vs),
                     color = HistorySecondary,
                     fontFamily = JetBrainsMono,
                     fontSize = 10.sp
@@ -350,7 +351,7 @@ private fun GameHistoryCard(
             }
 
             Text(
-                text = "$resultText  •  ${game.timeControlMinutes ?: 0} min",
+                text = stringResource(R.string.min, resultText, game.timeControlMinutes ?: 0),
                 color = HistoryAccent,
                 fontFamily = JetBrainsMono,
                 fontSize = 10.sp,
@@ -374,7 +375,7 @@ private fun GameHistoryCard(
             shape = RoundedCornerShape(13.dp)
         ) {
             Text(
-                text = "▶ REVIEW",
+                text = stringResource(R.string.review),
                 color = HistoryWhite,
                 fontFamily = JetBrainsMono,
                 fontSize = 9.sp,

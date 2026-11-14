@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.components.setup
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,11 +31,11 @@ fun CustomClockCard(
     showBonus: Boolean = true
 ) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(SetupColors.Card).padding(20.dp)) {
-        Text("Custom Clock Setup", color = SetupColors.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.custom_clock_setup), color = SetupColors.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(22.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Initial Time", color = SetupColors.Secondary, fontSize = 14.sp)
-            Text("${minutes.toInt()} min", color = SetupColors.Accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.initial_time), color = SetupColors.Secondary, fontSize = 14.sp)
+            Text(stringResource(R.string.min_2, minutes.toInt()), color = SetupColors.Accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
         Slider(minutes, onMinutesChange, valueRange = 1f..60f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = SetupColors.Accent, inactiveTrackColor = Color(0xFF253241)))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -42,8 +44,8 @@ fun CustomClockCard(
         if (showBonus) {
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Bonus Time (Increment)", color = SetupColors.Secondary, fontSize = 14.sp)
-                Text("${bonus.toInt()} sec", color = SetupColors.Accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.bonus_time_increment), color = SetupColors.Secondary, fontSize = 14.sp)
+                Text(stringResource(R.string.sec, bonus.toInt()), color = SetupColors.Accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
             Slider(bonus, onBonusChange, valueRange = 0f..60f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = SetupColors.Accent, inactiveTrackColor = Color(0xFF253241)))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

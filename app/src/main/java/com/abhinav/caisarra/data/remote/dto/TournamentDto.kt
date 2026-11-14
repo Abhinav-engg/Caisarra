@@ -24,5 +24,6 @@ data class TournamentDto(
     @SerialName("start_at") val startAt: String? = null,
     @SerialName("created_at") val createdAt: String = "",
     @SerialName("updated_at") val updatedAt: String = "",
-    @SerialName("min_rating") val minRating: Int? = null
+    @SerialName("min_rating") val minRating: Int? = null,
+    val rated: Boolean = false
 )

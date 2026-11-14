@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(
-                android.graphics.Color.rgb(8, 13, 19)
+                android.graphics.Color.TRANSPARENT
             ),
             navigationBarStyle = SystemBarStyle.dark(
                 android.graphics.Color.rgb(8, 13, 19)
@@ -57,7 +57,10 @@ class MainActivity : ComponentActivity() {
             window.isStatusBarContrastEnforced = false
         }
 
-        pendingIntentFlow.value = intent
+        if (savedInstanceState == null) {
+            pendingIntentFlow.value = Intent(intent)
+        }
+        intent.data = null
         requestNotificationPermission()
 
         val authRepository = AuthRepository.get(applicationContext)
@@ -77,8 +80,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        pendingIntentFlow.value = Intent(intent)
+        intent.data = null
         setIntent(intent)
-        pendingIntentFlow.value = intent
     }
 
     private suspend fun saveFcmToken(authRepository: AuthRepository, token: String) {

@@ -32,6 +32,11 @@ interface ClubService {
         @Path("clubID") clubId: String
     ): Response<ResponseBody>
 
+    @GET("api/clubs/code/{code}")
+    suspend fun getClubByCode(
+        @Path("code") code: String
+    ): JsonElement
+
     @POST("api/clubs/code/{code}/join")
     suspend fun joinClubByCode(
         @Path("code") code: String

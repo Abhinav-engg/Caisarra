@@ -5,6 +5,7 @@ import com.abhinav.caisarra.data.remote.dto.RushSummaryDto
 import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
 import com.abhinav.caisarra.presentation.game.model.Square
 
 sealed interface RushUiState {
@@ -35,7 +36,8 @@ sealed interface RushUiState {
         val isSkipping: Boolean = false,
         val isCorrectFlash: Boolean = false,
         val isStrikeFlash: Boolean = false,
-        val highlightedSquare: Square? = null
+        val highlightedSquare: Square? = null,
+        val moveFeedback: MoveFeedback? = null
     ) : RushUiState
 
     data class GameOver(

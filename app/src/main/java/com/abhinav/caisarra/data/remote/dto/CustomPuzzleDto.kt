@@ -40,6 +40,9 @@ data class CustomPuzzleAttemptRequest(
     @SerialName("time_taken_ms")
     val timeTakenMs: Long,
 
+    @SerialName("move_index")
+    val moveIndex: Int? = null,
+
     val rated: Boolean = false
 )
 
@@ -48,6 +51,9 @@ data class CustomPuzzleAttemptResponse(
     val correct: Boolean,
 
     val solved: Boolean,
+
+    @SerialName("next_move")
+    val nextMove: String? = null,
 
     @SerialName("puzzle_id")
     val puzzleId: String,
