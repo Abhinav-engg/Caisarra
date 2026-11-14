@@ -14,7 +14,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -137,8 +139,19 @@ data class ClubDetailState(
     val error: String? = null,
     val info: String? = null,
     val clubRemoved: Boolean = false,
-    val isJoined: Boolean = false
+    val isJoined: Boolean = false,
+    // null = not loaded yet, "" = nothing read yet, otherwise id of the last message the user has seen
+    val lastReadMessageId: String? = null
 )
+
+/** Messages from other members that arrived after the last one the user has seen. */
+private fun ClubDetailState.unreadChatCount(): Int {
+    if (selectedTab == "CHAT") return 0
+    val readId = lastReadMessageId ?: return 0
+    val readIndex = if (readId.isEmpty()) -1 else messages.indexOfLast { it.id == readId }
+    val newer = if (readIndex >= 0) messages.drop(readIndex + 1) else messages
+    return newer.count { it.username.trim().lowercase() != currentUsername }
+}
 
 class ClubDetailViewModel(
     private val appContext: Context,
@@ -156,6 +169,10 @@ class ClubDetailViewModel(
     private var connectRun = 0
     private var autoReconnectAttempts = 0
     private var wasConnected = false
+    private var needsMessageRefresh = false
+
+    private val readPrefs = appContext.getSharedPreferences("club_chat_read", Context.MODE_PRIVATE)
+    private val readKey get() = "last_read_$clubId"
 
     private val maxAutoReconnectAttempts = 6
     private val connectTimeoutMs = 8_000L
@@ -237,6 +254,7 @@ class ClubDetailViewModel(
                 }
                 launchSection("messages") {
                     state = state.copy(messages = repository.getMessages(clubId))
+                    initReadMarker()
                 }
                 launchSection("bans") {
                     state = state.copy(bans = repository.getBans(clubId))
@@ -289,7 +307,27 @@ class ClubDetailViewModel(
     }
 
     fun selectTab(tab: String) {
+        val leavingChat = state.selectedTab == "CHAT" && tab != "CHAT"
         state = state.copy(selectedTab = tab)
+        if (tab == "CHAT" || leavingChat) markChatRead()
+    }
+
+    /** Remembers the newest message as "seen" (like WhatsApp) so the unread badge clears. */
+    private fun markChatRead() {
+        val latestId = state.messages.lastOrNull { it.id.isNotBlank() }?.id ?: return
+        if (state.lastReadMessageId == latestId) return
+        readPrefs.edit().putString(readKey, latestId).apply()
+        state = state.copy(lastReadMessageId = latestId)
+    }
+
+    /** Called once the history is loaded. First time ever: existing messages count as read. */
+    private fun initReadMarker() {
+        val stored = readPrefs.getString(readKey, null)
+        val latestId = state.messages.lastOrNull { it.id.isNotBlank() }?.id
+        val marker = stored ?: latestId ?: ""
+        if (stored == null) readPrefs.edit().putString(readKey, marker).apply()
+        state = state.copy(lastReadMessageId = marker)
+        if (state.selectedTab == "CHAT") markChatRead()
     }
 
     fun setChatInput(value: String) {
@@ -335,6 +373,7 @@ class ClubDetailViewModel(
                             state = state.copy(
                                 messages = (existing + message).takeLast(200)
                             )
+                            if (state.selectedTab == "CHAT") markChatRead()
                         }
                     }
                 }
@@ -374,6 +413,35 @@ class ClubDetailViewModel(
         startChatConnect(resetAttempts = true)
     }
 
+    /**
+     * Closes the chat socket on purpose (screen left / app moved to background).
+     * The backend treats a member with an open club socket as "online" and does NOT
+     * send them a push, so the socket must not stay open while the user can't see the chat.
+     */
+    fun disconnectChat() {
+        reconnectJob?.cancel()
+        connectRun++
+        wasConnected = false
+        autoReconnectAttempts = 0
+        needsMessageRefresh = true
+        if (state.selectedTab == "CHAT") markChatRead()
+        chatSocket.close()
+        state = state.copy(chatConnected = false, chatReconnecting = false)
+    }
+
+    /** Messages sent while the socket was closed are fetched again over REST. */
+    private fun refreshMessages() {
+        viewModelScope.launch {
+            val loaded = runCatching { repository.getMessages(clubId) }.getOrNull() ?: return@launch
+            if (!state.isJoined) return@launch
+            val extra = state.messages.filter { local ->
+                local.id.isBlank() || loaded.none { it.id == local.id }
+            }
+            state = state.copy(messages = (loaded + extra).takeLast(200))
+            if (state.selectedTab == "CHAT") markChatRead()
+        }
+    }
+
     private fun startChatConnect(resetAttempts: Boolean) {
         if (!state.isJoined) return
         if (resetAttempts) autoReconnectAttempts = 0
@@ -393,6 +461,10 @@ class ClubDetailViewModel(
 
                     if (connected) {
                         autoReconnectAttempts = 0
+                        if (needsMessageRefresh) {
+                            needsMessageRefresh = false
+                            refreshMessages()
+                        }
                         return@launch
                     }
 
@@ -572,6 +644,7 @@ class ClubDetailViewModel(
 
 
     override fun onCleared() {
+        if (state.selectedTab == "CHAT") markChatRead()
         reconnectJob?.cancel()
         chatSocket.close()
         super.onCleared()
@@ -667,7 +740,11 @@ fun ClubDetailScreen(
 
     DisposableEffect(lifecycleOwner, vm) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) vm.ensureChatConnected()
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> vm.ensureChatConnected()
+                Lifecycle.Event.ON_STOP -> vm.disconnectChat()
+                else -> Unit
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -1020,11 +1097,32 @@ fun ClubDetailScreen(
                                         .padding(vertical = 12.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        label,
-                                        color = if (selected) DetailBg else DetailMuted,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                                    val unread = if (key == "CHAT") state.unreadChatCount() else 0
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            label,
+                                            color = if (selected) DetailBg else DetailMuted,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        if (unread > 0) {
+                                            Box(
+                                                Modifier
+                                                    .clip(CircleShape)
+                                                    .background(DetailGreen)
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    if (unread > 99) "99+" else unread.toString(),
+                                                    color = DetailBg,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

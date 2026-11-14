@@ -73,7 +73,7 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
             ?: data["username"]
             ?: ""
         val clubText = data["message"] ?: data["text"] ?: data["body"].orEmpty()
-
+        val isPushOnly = isClubMessage
         val defaultTitle = when {
             isClubMessage && clubName.isNotBlank() -> clubName
             isChallenge -> "Game Challenge"
@@ -147,17 +147,18 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
                 }
             }
         }
-
-        serviceScope.launch {
-            NotificationRepository.get(applicationContext).fetchUnreadCount()
-            val notifItem = NotificationItemDto(
-                id = notificationId.toLong(),
-                type = type,
-                title = title,
-                body = body,
-                isRead = false
-            )
-            NotificationRepository.get(applicationContext).onNotificationReceived(notifItem)
+        if (!isPushOnly) {
+            serviceScope.launch {
+                NotificationRepository.get(applicationContext).fetchUnreadCount()
+                val notifItem = NotificationItemDto(
+                    id = notificationId.toLong(),
+                    type = type,
+                    title = title,
+                    body = body,
+                    isRead = false
+                )
+                NotificationRepository.get(applicationContext).onNotificationReceived(notifItem)
+            }
         }
 
         NotificationHelper.showNotification(
