@@ -25,8 +25,6 @@ import com.abhinav.caisarra.presentation.game.model.Piece
 import com.caisaara.ui.theme.EmeraldNormal
 import com.caisaara.ui.theme.White
 
-private const val DAY_MILLIS = 86_400_000L
-
 fun formatDailyTime(timeMillis: Long): String {
     if (timeMillis <= 0L) return "0s"
     val totalSec = timeMillis / 1000L
@@ -55,14 +53,7 @@ fun ClockBar(
     advantage: Int = 0,
     countryCode: String? = null
 ) {
-    val daily = isDailyMode || timeMillis >= DAY_MILLIS
-
-    val timeText = if (daily) {
-        formatDailyTime(timeMillis)
-    } else {
-        val totalSeconds = timeMillis.coerceAtLeast(0L) / 1000L
-        "%02d:%02d".format(totalSeconds / 60L, totalSeconds % 60L)
-    }
+    val timeText = formatClockTime(timeMillis, isDailyMode)
 
     val flag = remember(countryCode) { CountryUtils.flag(countryCode) }
 
