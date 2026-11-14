@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.game
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.abhinav.caisarra.features.dailywidget.presentation.refreshDailyTurnsWidget
+import com.abhinav.caisarra.features.gameplay.data.measureLatency
 import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.data.local.RatingPreferencesStore
 import com.abhinav.caisarra.data.local.TokenExpiryChecker
@@ -100,6 +101,9 @@ class OnlineGameViewModel(
     val opponentAvatarUrl: StateFlow<String?> = _opponentAvatarUrl.asStateFlow()
     private val _myAvatarUrl = MutableStateFlow<String?>(null)
     val myAvatarUrl: StateFlow<String?> = _myAvatarUrl.asStateFlow()
+    val connected: StateFlow<Boolean> get() = socket.connected
+    private val _pingMs = MutableStateFlow<Long?>(null)
+    val pingMs: StateFlow<Long?> = _pingMs.asStateFlow()
     private var whitePlayerId: Long? = null
     private var blackPlayerId: Long? = null
     private var whitePlayerUsername: String? = null
@@ -169,6 +173,12 @@ class OnlineGameViewModel(
             }
         }
         viewModelScope.launch { loadGameDetailsAndRating() }
+        viewModelScope.launch {
+            while (!finished) {
+                _pingMs.value = if (socket.connected.value) measureLatency() else null
+                delay(5_000)
+            }
+        }
         viewModelScope.launch {
             gameRepository.createWatchInvite(gameId).onSuccess { watchResp ->
                 _uiState.update {
