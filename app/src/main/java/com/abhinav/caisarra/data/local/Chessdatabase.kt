@@ -6,18 +6,22 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.abhinav.caisarra.core.database.CachedResponseDao
+import com.abhinav.caisarra.core.database.CachedResponseEntity
 import com.abhinav.caisarra.data.local.dao.GameDao
 import com.abhinav.caisarra.data.local.entity.GameEntity
 
 
 @Database(
-    entities = [GameEntity::class],
-    version = 2,
+    entities = [GameEntity::class, CachedResponseEntity::class],
+    version = 3,
     exportSchema = false
 )
 abstract class ChessDatabase : RoomDatabase() {
 
     abstract fun gameDao(): GameDao
+
+    abstract fun cachedResponseDao(): CachedResponseDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -33,6 +37,17 @@ abstract class ChessDatabase : RoomDatabase() {
                 )
             }
         }
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+
+            override fun migrate(
+                database: SupportSQLiteDatabase
+            ) {
+                database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `cached_responses` (`key` TEXT NOT NULL, `json` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`key`))"
+                )
+            }
+        }
+
         @Volatile
         private var instance: ChessDatabase? = null
 
@@ -42,7 +57,7 @@ abstract class ChessDatabase : RoomDatabase() {
                     context.applicationContext,
                     ChessDatabase::class.java,
                     "chess.db"
-                ).addMigrations(MIGRATION_1_2)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build().also { instance = it }
             }
     }

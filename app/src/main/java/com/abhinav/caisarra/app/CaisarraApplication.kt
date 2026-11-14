@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.app
 
 import android.app.Application
+import com.abhinav.caisarra.core.database.ResponseCache
 import com.abhinav.caisarra.features.dailywidget.presentation.refreshDailyTurnsWidget
 import com.abhinav.caisarra.features.minimateswidget.presentation.refreshMiniMatesWidget
 import com.abhinav.caisarra.features.streakwidget.presentation.refreshStreakWidget
@@ -11,6 +12,7 @@ class CaisarraApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        ResponseCache.install(this)
         NotificationHelper.ensureChannels(this)
         MainScope().launch { refreshDailyTurnsWidget(this@CaisarraApplication) }
         MainScope().launch { refreshStreakWidget(this@CaisarraApplication) }

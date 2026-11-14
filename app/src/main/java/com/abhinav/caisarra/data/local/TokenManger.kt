@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import com.abhinav.caisarra.core.database.ResponseCache
 private val Context.tokenDataStore by preferencesDataStore(name = "auth_tokens")
 
 class TokenManager private constructor(private val context: Context) {
@@ -102,6 +103,7 @@ class TokenManager private constructor(private val context: Context) {
             prefs.clear()
             fcmToken?.let { prefs[Keys.FCM_TOKEN] = it }
         }
+        ResponseCache.clear()
     }
 
     companion object {
