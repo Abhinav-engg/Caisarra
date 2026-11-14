@@ -1,5 +1,9 @@
 package com.abhinav.caisarra.presentation.nearby.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
+import com.abhinav.caisarra.presentation.invite.components.FriendAvatar
+import com.abhinav.caisarra.features.profilelink.presentation.openProfileOnClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -72,22 +76,17 @@ fun PlayerCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(avatarShape)
-                    .background(NearbyColors.SurfaceHigh)
-                    .border(1.dp, NearbyColors.Accent.copy(alpha = 0.5f), avatarShape),
-                contentAlignment = Alignment.Center
+            FriendAvatar(
+                name = player.username,
+                avatarUrl = player.avatarUrl,
+                size = 64.dp,
+                shape = avatarShape,
+                modifier = Modifier.border(1.dp, NearbyColors.Accent.copy(alpha = 0.5f), avatarShape)
+            )
+            Column(
+                modifier = Modifier.openProfileOnClick(player.username),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = player.username.take(1).uppercase(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = NearbyColors.Accent
-                )
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -114,7 +113,7 @@ fun PlayerCard(
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text = "${player.distanceKm} km away",
+                        text = stringResource(R.string.km_away, player.distanceKm),
                         style = MaterialTheme.typography.bodyMedium,
                         color = NearbyColors.TextSecondary
                     )
@@ -150,7 +149,7 @@ fun PlayerCard(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "Challenge",
+                    text = stringResource(R.string.challenge),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = NearbyColors.OnAccent

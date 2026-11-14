@@ -1,5 +1,8 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
+import com.abhinav.caisarra.features.profilelink.presentation.openProfileOnClick
 import com.abhinav.caisarra.core.ui.components.rememberCountUp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -186,7 +189,7 @@ fun RatedGameResultScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Start Game Analysis",
+                        stringResource(R.string.start_game_analysis),
                         color = Color(0xFF082028),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -310,7 +313,7 @@ private fun PlayersRow(
                 .border(1.dp, Border, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text("VS", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.vs), color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -328,6 +331,8 @@ private fun PlayerCard(
         modifier = modifier
             .background(Card, RoundedCornerShape(16.dp))
             .border(1.dp, if (highlight) accent.copy(alpha = 0.7f) else Border, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .openProfileOnClick(name)
             .padding(horizontal = 12.dp, vertical = 12.dp)
     ) {
         Text(

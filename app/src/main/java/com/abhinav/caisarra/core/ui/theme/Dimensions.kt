@@ -67,3 +67,4 @@ val GlassBorderWidth = 1.dp
 
 val ScreenHorizontalPadding = 20.dp
 val ScreenContentMaxWidth = 420.dp
+val FeedContentMaxWidth = 640.dp

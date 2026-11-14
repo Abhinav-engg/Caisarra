@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,8 +60,8 @@ fun FriendRequestCardItem(
             .padding(FriendsScreenPadding)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Friend request", color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f))
-            Text("NEW", color = FriendsCyan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(stringResource(R.string.friend_request), color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.label_new), color = FriendsCyan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
         Spacer(Modifier.height(14.dp))
         Row(
@@ -68,11 +70,11 @@ fun FriendRequestCardItem(
                 .clickable(onClick = onProfileClick),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FriendAvatar(name = name, avatarUrl = request.senderAvatarUrl, size = FriendsAvatarSize)
+            FriendAvatar(name = name, avatarUrl = request.senderAvatarUrl, size = FriendsAvatarSize, username = request.senderUsername)
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text("$username · $rating Rapid", color = FriendsTextMuted, fontSize = 13.sp)
+                Text(stringResource(R.string.rapid, username, rating), color = FriendsTextMuted, fontSize = 13.sp)
             }
         }
         Spacer(Modifier.height(FriendsScreenPadding))
@@ -86,7 +88,7 @@ fun FriendRequestCardItem(
                     .clickable(onClick = onAccept),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Accept", color = Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(stringResource(R.string.accept), color = Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
             Spacer(Modifier.width(10.dp))
             Box(
@@ -99,7 +101,7 @@ fun FriendRequestCardItem(
                     .clickable(onClick = onDecline),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Decline", color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(stringResource(R.string.decline), color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
     }

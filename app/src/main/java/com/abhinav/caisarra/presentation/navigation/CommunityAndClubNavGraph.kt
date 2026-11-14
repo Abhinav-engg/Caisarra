@@ -22,6 +22,7 @@ import com.abhinav.caisarra.data.repository.AuthRepository
 import com.abhinav.caisarra.data.repository.ClubRepository
 import com.abhinav.caisarra.data.repository.CommunityRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
+import com.abhinav.caisarra.features.follow.data.FollowRepository
 import com.abhinav.caisarra.presentation.club.ClubDetailScreen
 import com.abhinav.caisarra.presentation.club.ClubScreen
 import com.abhinav.caisarra.presentation.club.ClubViewModel
@@ -55,7 +56,8 @@ fun NavGraphBuilder.communityAndClubGraph(
                 ),
                 remoteGameRepository = RemoteGameRepository(
                     gamesService = RetrofitInstance.createGamesService(tokenManager)
-                )
+                ),
+                followRepository = FollowRepository(context)
             )
         }
 

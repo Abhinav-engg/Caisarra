@@ -1,5 +1,8 @@
 package com.abhinav.caisarra.presentation.tournament
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
+import com.abhinav.caisarra.features.profilelink.presentation.openProfileOnClick
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -236,7 +239,7 @@ private fun OverviewTab(
                     .padding(16.dp)
             ) {
                 Text(
-                    "Winner: ${winner?.username ?: "decided"}",
+                    stringResource(R.string.winner, winner?.username ?: "decided"),
                     color = TournamentColors.Accent,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
@@ -291,7 +294,7 @@ private fun OverviewTab(
                     .padding(16.dp)
             ) {
                 Text(
-                    "INVITE CODE",
+                    stringResource(R.string.invite_code),
                     color = TournamentColors.Muted,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -350,7 +353,7 @@ private fun OverviewTab(
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "Copy Code",
+                            stringResource(R.string.copy_code),
                             color = TournamentColors.Accent,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp
@@ -379,7 +382,7 @@ private fun OverviewTab(
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "Copy Link",
+                            stringResource(R.string.copy_link),
                             color = TournamentColors.Accent,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp
@@ -401,7 +404,7 @@ private fun OverviewTab(
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "Generate new code",
+                            stringResource(R.string.generate_new_code),
                             color = TournamentColors.Muted,
                             fontSize = 13.sp
                         )
@@ -433,7 +436,7 @@ private fun OverviewTab(
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text(
-                        "Leave Tournament",
+                        stringResource(R.string.leave_tournament),
                         color = TournamentColors.Danger,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -455,7 +458,7 @@ private fun OverviewTab(
                 TournamentActionButton("Start Tournament", onClick = onStart)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Needs at least ${tournament.minPlayers} players to start.",
+                    stringResource(R.string.needs_at_least_players_to_start, tournament.minPlayers),
                     color = TournamentColors.Muted,
                     fontSize = 12.5.sp,
                     textAlign = TextAlign.Center,
@@ -476,7 +479,7 @@ private fun OverviewTab(
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
-                    "Cancel Tournament",
+                    stringResource(R.string.cancel_tournament),
                     color = TournamentColors.Danger,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -519,7 +522,7 @@ private fun StandingsTab(standings: List<StandingDto>, myUserId: Long?) {
     if (standings.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                "Standings will appear once the tournament starts.",
+                stringResource(R.string.standings_will_appear_once_the_tournamen),
                 color = TournamentColors.Muted,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
@@ -571,7 +574,7 @@ private fun StandingsTab(standings: List<StandingDto>, myUserId: Long?) {
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).openProfileOnClick(row.username)
                 )
                 Text(
                     scoreLabel(row.score),
@@ -614,7 +617,7 @@ private fun RoundsTab(state: TournamentDetailUiState, onOpenGame: (String) -> Un
     if (state.rounds.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                "Pairings will appear once the tournament starts.",
+                stringResource(R.string.pairings_will_appear_once_the_tournament),
                 color = TournamentColors.Muted,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
@@ -627,7 +630,7 @@ private fun RoundsTab(state: TournamentDetailUiState, onOpenGame: (String) -> Un
         items(state.rounds.sortedByDescending { it.roundNumber }, key = { it.id }) { round ->
             Column {
                 Text(
-                    "ROUND ${round.roundNumber} · ${statusLabel(round.status).uppercase()}",
+                    stringResource(R.string.round, round.roundNumber, statusLabel(round.status).uppercase()),
                     color = TournamentColors.Muted,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,

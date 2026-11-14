@@ -1,5 +1,8 @@
 package com.abhinav.caisarra.presentation.club
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
+import com.abhinav.caisarra.features.profilelink.presentation.openProfileOnClick
 import com.abhinav.caisarra.core.ui.components.rememberToaster
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -829,10 +832,10 @@ fun ClubDetailScreen(
         } else if (state.club == null) {
             Column(Modifier.fillMaxSize().padding(padding).padding(20.dp)) {
                 Text(
-                    "Couldn't load this club. Please try again.",
+                    stringResource(R.string.couldn_t_load_this_club_please),
                     color = DetailMuted
                 )
-                Button(onClick = vm::load) { Text("Retry") }
+                Button(onClick = vm::load) { Text(stringResource(R.string.retry)) }
             }
         }
         else if (!state.isJoined) {
@@ -872,12 +875,12 @@ fun ClubDetailScreen(
                             color = DetailMuted
                         )
                         Text(
-                            text = "${state.club.memberCount} members",
+                            text = stringResource(R.string.members, state.club.memberCount),
                             color = DetailGreen,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Join this club to access its members, leaderboard, chat, and management features.",
+                            text = stringResource(R.string.join_this_club_to_access_its),
                             color = DetailMuted
                         )
                         Button(
@@ -963,7 +966,7 @@ fun ClubDetailScreen(
                                     color = Color(0xFFB8C2CC)
                                 )
                                 Text(
-                                    "${state.club.memberCount} members",
+                                    stringResource(R.string.members, state.club.memberCount),
                                     color = DetailGreen,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -993,7 +996,7 @@ fun ClubDetailScreen(
                                                     }
                                             ) {
                                                 Text(
-                                                    "SHARE CODE",
+                                                    stringResource(R.string.share_code),
                                                     color = DetailMuted,
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
@@ -1027,7 +1030,7 @@ fun ClubDetailScreen(
                                                     )
                                                     Spacer(Modifier.width(4.dp))
                                                     Text(
-                                                        "Copy",
+                                                        stringResource(R.string.copy),
                                                         color = DetailGreen,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.SemiBold
@@ -1052,7 +1055,7 @@ fun ClubDetailScreen(
                                                     )
                                                     Spacer(Modifier.width(4.dp))
                                                     Text(
-                                                        "Link",
+                                                        stringResource(R.string.link),
                                                         color = DetailGreen,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.SemiBold
@@ -1131,13 +1134,13 @@ fun ClubDetailScreen(
                     when (state.selectedTab) {
                         "MEMBERS" -> {
                             item {
-                                Text("Members (${state.members.size})",
+                                Text(stringResource(R.string.members_2, state.members.size),
                                     color = DetailText,
                                     style = MaterialTheme.typography.titleLarge)
                             }
                             if (state.members.isEmpty()) {
                                 item {
-                                    Text("No member records returned by the server.",
+                                    Text(stringResource(R.string.no_member_records_returned_by_the),
                                         color = DetailMuted)
                                 }
                             }
@@ -1149,12 +1152,12 @@ fun ClubDetailScreen(
                                         Modifier.fillMaxWidth().padding(14.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Column(Modifier.weight(1f)) {
+                                        Column(Modifier.weight(1f).openProfileOnClick(member.username)) {
                                             Text(member.username, color = DetailText,
                                                 fontWeight = FontWeight.SemiBold)
                                             Text(member.role, color = DetailGreen)
                                             member.rating?.let {
-                                                Text("Rating $it", color = DetailMuted)
+                                                Text(stringResource(R.string.rating, it), color = DetailMuted)
                                             }
                                         }
                                         val memberRole = member.role
@@ -1180,7 +1183,7 @@ fun ClubDetailScreen(
                                                 enabled = !state.busy
                                             ) {
                                                 Text(
-                                                    text = "Actions",
+                                                    text = stringResource(R.string.actions),
                                                     color = DetailGreen
                                                 )
                                             }
@@ -1192,7 +1195,7 @@ fun ClubDetailScreen(
 
                         "LEADERBOARD" -> {
                             item {
-                                Text("Club leaderboard", color = DetailText,
+                                Text(stringResource(R.string.club_leaderboard), color = DetailText,
                                     style = MaterialTheme.typography.titleLarge)
                             }
                             item {
@@ -1210,7 +1213,7 @@ fun ClubDetailScreen(
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     Text(
-                                        text = "Rating format",
+                                        text = stringResource(R.string.rating_format),
                                         color = DetailMuted,
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.SemiBold
@@ -1244,7 +1247,7 @@ fun ClubDetailScreen(
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                     Text(
-                                                        text = "View club rankings by time control",
+                                                        text = stringResource(R.string.view_club_rankings_by_time_control),
                                                         color = DetailMuted,
                                                         style = MaterialTheme.typography.bodySmall
                                                     )
@@ -1272,7 +1275,7 @@ fun ClubDetailScreen(
                                             )
                                         ) {
                                             Text(
-                                                text = "SELECT FORMAT",
+                                                text = stringResource(R.string.select_format),
                                                 modifier = Modifier.padding(
                                                     start = 16.dp,
                                                     top = 12.dp,
@@ -1336,7 +1339,7 @@ fun ClubDetailScreen(
                             }
                             if (state.leaderboard.isEmpty()) {
                                 item {
-                                    Text("No leaderboard entries available.",
+                                    Text(stringResource(R.string.no_leaderboard_entries_available),
                                         color = DetailMuted)
                                 }
                             }
@@ -1348,7 +1351,8 @@ fun ClubDetailScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween) {
                                         Text(
                                             "${player.rank}. ${player.username}",
-                                            color = DetailText
+                                            color = DetailText,
+                                            modifier = Modifier.openProfileOnClick(player.username)
                                         )
                                         Text("${player.rating}", color = DetailGreen)
                                     }
@@ -1364,7 +1368,7 @@ fun ClubDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        "Club chat",
+                                        stringResource(R.string.club_chat),
                                         color = DetailText,
                                         style = MaterialTheme.typography.titleLarge
                                     )
@@ -1396,14 +1400,14 @@ fun ClubDetailScreen(
                                         onClick = vm::reconnectChat,
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("Reconnect chat")
+                                        Text(stringResource(R.string.reconnect_chat))
                                     }
                                 }
                             }
                             if (countChars(state.chatInput) >= MAX_CLUB_MESSAGE_CHARS - 100) {
                                 item {
                                     Text(
-                                        "${countChars(state.chatInput)} / $MAX_CLUB_MESSAGE_CHARS characters",
+                                        stringResource(R.string.characters, countChars(state.chatInput), MAX_CLUB_MESSAGE_CHARS),
                                         color = if (countChars(state.chatInput) >= MAX_CLUB_MESSAGE_CHARS) Color(0xFFFF9999) else DetailMuted,
                                         style = MaterialTheme.typography.bodySmall
                                     )
@@ -1415,7 +1419,7 @@ fun ClubDetailScreen(
                                         value = state.chatInput,
                                         onValueChange = vm::setChatInput,
                                         modifier = Modifier.weight(1f),
-                                        label = { Text("Write a message") },
+                                        label = { Text(stringResource(R.string.write_a_message)) },
                                         singleLine = false,
                                         minLines = 1,
                                         maxLines = 6,
@@ -1451,7 +1455,7 @@ fun ClubDetailScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            "No messages yet. Say hello!",
+                                            stringResource(R.string.no_messages_yet_say_hello),
                                             color = DetailMuted,
                                             style = MaterialTheme.typography.bodyMedium
                                         )
@@ -1493,6 +1497,7 @@ fun ClubDetailScreen(
                                     ) {
                                         Text(
                                             text = if (isMine) "You" else message.username,
+                                            modifier = Modifier.openProfileOnClick(message.username),
                                             color = if (isMine) Color(0xFF9DE7C7) else Color(0xFF55D6A5),
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold
@@ -1517,7 +1522,7 @@ fun ClubDetailScreen(
 
                         "MANAGE" -> {
                             item {
-                                Text("Club management", color = DetailText,
+                                Text(stringResource(R.string.club_management), color = DetailText,
                                     style = MaterialTheme.typography.titleLarge)
                                 Text(
                                     if (isOwner) "Owner permissions"
@@ -1535,7 +1540,7 @@ fun ClubDetailScreen(
                                         containerColor = DetailCard,
                                         contentColor = DetailText
                                     )
-                                ) { Text("Leave club") }
+                                ) { Text(stringResource(R.string.leave_club)) }
                             }
                             if (isOwner) {
                                 item {
@@ -1546,12 +1551,12 @@ fun ClubDetailScreen(
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = Color(0xFF8C3434)
                                         )
-                                    ) { Text("Delete club") }
+                                    ) { Text(stringResource(R.string.delete_club)) }
                                 }
                             }
                             if (isAdmin) {
                                 item {
-                                    Text("Banned members (${state.bans.size})",
+                                    Text(stringResource(R.string.banned_members, state.bans.size),
                                         color = DetailText,
                                         style = MaterialTheme.typography.titleMedium)
                                 }
@@ -1566,7 +1571,7 @@ fun ClubDetailScreen(
                                             TextButton(
                                                 onClick = { vm.unblock(banned.userId) },
                                                 enabled = !state.busy
-                                            ) { Text("Unblock", color = DetailGreen) }
+                                            ) { Text(stringResource(R.string.unblock), color = DetailGreen) }
                                         }
                                     }
                                 }
@@ -1589,31 +1594,31 @@ fun ClubDetailScreen(
                         TextButton(onClick = {
                             selectedMember = null
                             confirmAction = "promote:${member.userId}"
-                        }) { Text("Promote to admin") }
+                        }) { Text(stringResource(R.string.promote_to_admin)) }
                         TextButton(onClick = {
                             selectedMember = null
                             confirmAction = "transfer:${member.userId}"
-                        }) { Text("Transfer leadership") }
+                        }) { Text(stringResource(R.string.transfer_leadership)) }
                     }
                     if (isOwner && member.role.lowercase() in setOf("admin", "administrator", "club_admin")) {
                         TextButton(onClick = {
                             selectedMember = null
                             confirmAction = "removeadmin:${member.userId}"
-                        }) { Text("Remove admin") }
+                        }) { Text(stringResource(R.string.remove_admin)) }
                     }
                     TextButton(onClick = {
                         selectedMember = null
                         confirmAction = "kick:${member.userId}"
-                    }) { Text("Remove member", color = Color(0xFFFF9999)) }
+                    }) { Text(stringResource(R.string.remove_member), color = Color(0xFFFF9999)) }
                     TextButton(onClick = {
                         selectedMember = null
                         confirmAction = "ban:${member.userId}"
-                    }) { Text("Ban member", color = Color(0xFFFF9999)) }
+                    }) { Text(stringResource(R.string.ban_member), color = Color(0xFFFF9999)) }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { selectedMember = null }) {
-                    Text("Close", color = DetailGreen)
+                    Text(stringResource(R.string.close), color = DetailGreen)
                 }
             }
         )
@@ -1629,7 +1634,7 @@ fun ClubDetailScreen(
         AlertDialog(
             onDismissRequest = { confirmAction = null },
             containerColor = DetailCard,
-            title = { Text("Confirm action", color = DetailText) },
+            title = { Text(stringResource(R.string.confirm_action), color = DetailText) },
             text = {
                 Text(
                     when {
@@ -1667,13 +1672,13 @@ fun ClubDetailScreen(
                         }
                     }
                 ) {
-                    Text("Confirm", color = if (destructive)
+                    Text(stringResource(R.string.confirm), color = if (destructive)
                         Color(0xFFFF9999) else DetailGreen)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirmAction = null }) {
-                    Text("Cancel", color = DetailMuted)
+                    Text(stringResource(R.string.cancel), color = DetailMuted)
                 }
             }
         )
@@ -1703,7 +1708,7 @@ private fun ClubChatContent(
         ) {
             Column {
                 Text(
-                    text = "Club chat",
+                    text = stringResource(R.string.club_chat),
                     color = DetailText,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
@@ -1753,7 +1758,7 @@ private fun ClubChatContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No messages yet. Say hello!",
+                            text = stringResource(R.string.no_messages_yet_say_hello),
                             color = DetailMuted,
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -1807,6 +1812,7 @@ private fun ClubChatContent(
                     ) {
                         Text(
                             text = if (isMine) "You" else message.username,
+                            modifier = Modifier.openProfileOnClick(message.username),
                             color = if (isMine) {
                                 Color(0xFF9DE7C7)
                             } else {
@@ -1840,7 +1846,7 @@ private fun ClubChatContent(
         val chatCharCount = countChars(state.chatInput)
         if (chatCharCount >= MAX_CLUB_MESSAGE_CHARS - 100) {
             Text(
-                text = "$chatCharCount / $MAX_CLUB_MESSAGE_CHARS characters",
+                text = stringResource(R.string.characters, chatCharCount, MAX_CLUB_MESSAGE_CHARS),
                 color = if (chatCharCount >= MAX_CLUB_MESSAGE_CHARS) Color(0xFFFF9999) else DetailMuted,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(start = 8.dp, top = 4.dp)
@@ -1860,7 +1866,7 @@ private fun ClubChatContent(
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = "Write a message...",
+                        text = stringResource(R.string.write_a_message_2),
                         color = DetailMuted
                     )
                 },
@@ -1927,7 +1933,7 @@ private fun ClubChatContent(
                 onClick = onReconnect,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text("Reconnect chat", color = DetailGreen)
+                Text(stringResource(R.string.reconnect_chat), color = DetailGreen)
             }
         }
     }

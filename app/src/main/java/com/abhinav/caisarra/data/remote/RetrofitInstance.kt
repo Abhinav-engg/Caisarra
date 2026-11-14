@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.data.remote
 
+import com.abhinav.caisarra.features.follow.data.FollowService
 import com.abhinav.caisarra.data.local.TokenManager
 import com.abhinav.caisarra.data.remote.api.AnalysisService
 import com.abhinav.caisarra.data.remote.api.AuthService
@@ -137,6 +138,8 @@ object RetrofitInstance {
     fun createNotificationPreferencesService(tokenManager: TokenManager): NotificationPreferencesService =
         authenticatedRetrofit(tokenManager).create()
     fun createNewsService(tokenManager: TokenManager): NewsService =
+        authenticatedRetrofit(tokenManager).create()
+    fun createFollowService(tokenManager: TokenManager): FollowService =
         authenticatedRetrofit(tokenManager).create()
     fun createAdminService(tokenManager: TokenManager): AdminService =
         authenticatedRetrofit(tokenManager).create(AdminService::class.java)

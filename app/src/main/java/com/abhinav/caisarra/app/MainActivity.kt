@@ -58,8 +58,9 @@ class MainActivity : ComponentActivity() {
         }
 
         if (savedInstanceState == null) {
-            pendingIntentFlow.value = intent
+            pendingIntentFlow.value = Intent(intent)
         }
+        intent.data = null
         requestNotificationPermission()
 
         val authRepository = AuthRepository.get(applicationContext)
@@ -79,8 +80,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        pendingIntentFlow.value = Intent(intent)
+        intent.data = null
         setIntent(intent)
-        pendingIntentFlow.value = intent
     }
 
     private suspend fun saveFcmToken(authRepository: AuthRepository, token: String) {

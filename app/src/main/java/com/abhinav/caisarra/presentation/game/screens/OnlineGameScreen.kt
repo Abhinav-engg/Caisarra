@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -181,7 +183,7 @@ fun OnlineGameScreen(
             Text(text = state.errorMessage.orEmpty(), color = Color.White)
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(onClick = onHome) {
-                Text(text = "HOME", color = Accent)
+                Text(text = stringResource(R.string.home), color = Accent)
             }
         }
         return
@@ -212,7 +214,7 @@ fun OnlineGameScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Your opponent declined the rematch challenge.",
+                text = stringResource(R.string.your_opponent_declined_the_rematch_chall),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF9E9E9E),
                 textAlign = TextAlign.Center,
@@ -228,7 +230,7 @@ fun OnlineGameScreen(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     border = BorderStroke(1.dp, Color(0x33FFFFFF))
                 ) {
-                    Text("HOME")
+                    Text(stringResource(R.string.home))
                 }
                 Button(
                     onClick = {
@@ -236,7 +238,7 @@ fun OnlineGameScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)
                 ) {
-                    Text("NEW OPPONENT", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.new_opponent), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -248,7 +250,7 @@ fun OnlineGameScreen(
             CircularProgressIndicator(color = Accent)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Waiting for opponent to join...",
+                text = stringResource(R.string.waiting_for_opponent_to_join),
                 style = MaterialTheme.typography.titleSmall,
                 color = Color.White,
                 fontWeight = FontWeight.Medium
@@ -268,10 +270,10 @@ fun OnlineGameScreen(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     border = BorderStroke(1.dp, Color(0x33FFFFFF))
                 ) {
-                    Text("CANCEL")
+                    Text(stringResource(R.string.cancel_2))
                 }
                 TextButton(onClick = onHome) {
-                    Text(text = "HOME", color = Accent)
+                    Text(text = stringResource(R.string.home), color = Accent)
                 }
             }
         }
@@ -282,7 +284,7 @@ fun OnlineGameScreen(
         CenteredColumn {
             CircularProgressIndicator(color = Accent)
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = "Loading game...", color = Color.White)
+            Text(text = stringResource(R.string.loading_game), color = Color.White)
         }
         return
     }
@@ -329,7 +331,7 @@ fun OnlineGameScreen(
                                 InfoBannerBg
                             )
                         }
-                        StatePlayerCard(state, state.isBoardFlipped, myAvatarUrl = myAvatarUrl, opponentAvatarUrl = opponentAvatarUrl)
+                        StatePlayerCard(state, state.isBoardFlipped, myAvatarUrl = myAvatarUrl, opponentAvatarUrl = opponentAvatarUrl, linkProfile = true)
                         MoveList(
                             moves = state.moves,
                             modifier = Modifier
@@ -337,7 +339,7 @@ fun OnlineGameScreen(
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
                         )
-                        StatePlayerCard(state, !state.isBoardFlipped, myAvatarUrl = myAvatarUrl, opponentAvatarUrl = opponentAvatarUrl)
+                        StatePlayerCard(state, !state.isBoardFlipped, myAvatarUrl = myAvatarUrl, opponentAvatarUrl = opponentAvatarUrl, linkProfile = true)
 
                         Spacer(Modifier.height(8.dp))
                         GameActions(
@@ -397,13 +399,13 @@ fun OnlineGameScreen(
                             )
                         }
                     }
-                    StatePlayerCard(state, state.isBoardFlipped, Modifier.width(portraitBoardSize), myAvatarUrl, opponentAvatarUrl)
+                    StatePlayerCard(state, state.isBoardFlipped, Modifier.width(portraitBoardSize), myAvatarUrl, opponentAvatarUrl, linkProfile = true)
 
                     Box(modifier = Modifier.size(portraitBoardSize)) {
                         OnlineBoard(state, viewModel::onSquareClick, moveAnimationConsumedId = state.moveAnimationConsumedId,onMoveAnimationStarted = viewModel::onMoveAnimationStarted)
                     }
 
-                    StatePlayerCard(state, !state.isBoardFlipped, Modifier.width(portraitBoardSize), myAvatarUrl, opponentAvatarUrl)
+                    StatePlayerCard(state, !state.isBoardFlipped, Modifier.width(portraitBoardSize), myAvatarUrl, opponentAvatarUrl, linkProfile = true)
                     MoveTicker(moves = state.moves, modifier = Modifier.width(portraitBoardSize))
                     if (state.isDailyMode) {
                         state.lastMoveAccepted?.let { accepted ->
@@ -474,7 +476,7 @@ fun OnlineGameScreen(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "Spectators (${state.spectatorCount})",
+                        text = stringResource(R.string.spectators, state.spectatorCount),
                         fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                         color = Color.White
@@ -484,7 +486,7 @@ fun OnlineGameScreen(
             text = {
                 Column {
                     Text(
-                        text = "Matchmade games allow public spectators by default. You can also share your watch link directly:",
+                        text = stringResource(R.string.matchmade_games_allow_public_spectators),
                         fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                         fontSize = 12.sp,
                         color = Color(0xFF82909E)
@@ -517,7 +519,7 @@ fun OnlineGameScreen(
                         Toast.makeText(context, "Watch link copied!", Toast.LENGTH_SHORT).show()
                     }) {
                         Text(
-                            text = "COPY LINK",
+                            text = stringResource(R.string.copy_link_2),
                             fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                             color = Color(0xFF22D3EE)
@@ -539,7 +541,7 @@ fun OnlineGameScreen(
                             context.startActivity(Intent.createChooser(shareIntent, "Share Watch Link"))
                         }) {
                             Text(
-                                text = "SHARE",
+                                text = stringResource(R.string.share_2),
                                 fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                                 color = Color.White
                             )
@@ -547,7 +549,7 @@ fun OnlineGameScreen(
                     }
                     TextButton(onClick = { showWatchShareDialog = false }) {
                         Text(
-                            text = "CLOSE",
+                            text = stringResource(R.string.close_2),
                             fontFamily = com.abhinav.caisarra.core.ui.theme.JetBrainsMono,
                             color = Color(0xFF82909E)
                         )
@@ -824,7 +826,7 @@ private fun GameOverPill(onClick: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                "Game Over • Tap to view result",
+                stringResource(R.string.game_over_tap_to_view_result),
                 color = Color.White,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold

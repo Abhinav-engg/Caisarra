@@ -15,6 +15,8 @@ import com.abhinav.caisarra.data.repository.FriendsRepository
 import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.data.repository.RatingRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
+import com.abhinav.caisarra.features.follow.data.FollowRepository
+import com.abhinav.caisarra.features.follow.dto.FollowCountsDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -31,7 +33,9 @@ data class ProfileUiState(
     val recentGames: List<GameEntity> = emptyList(),
     val loadingGames: Boolean = false,
     val isBlocked: Boolean = false,
-    val isUnavailable: Boolean = false
+    val isUnavailable: Boolean = false,
+    val isFollowing: Boolean? = null,
+    val followCounts: FollowCountsDto? = null
 )
 
 class ProfileViewModel(
@@ -40,7 +44,8 @@ class ProfileViewModel(
     private val remoteGameRepository: RemoteGameRepository? = null,
     private val friendsRepository: FriendsRepository? = null,
     private val initialUsername: String? = null,
-    private val puzzleRepository: PuzzleRepository? = null
+    private val puzzleRepository: PuzzleRepository? = null,
+    private val followRepository: FollowRepository? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -84,6 +89,7 @@ class ProfileViewModel(
                 } else {
                     loadOwnProfileInternal(isGuest, null)
                 }
+                loadFollowInfo()
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     loading = false,
@@ -343,6 +349,32 @@ class ProfileViewModel(
                     error = e.userMessage("Unable to update profile")
                 )
             }
+        }
+    }
+
+    private suspend fun loadFollowInfo() {
+        val repo = followRepository ?: return
+        val userId = _state.value.profile?.userId ?: return
+        val isOwn = _state.value.isOwnProfile
+        if (!isOwn) repo.followNewFriends()
+        _state.value = _state.value.copy(
+            followCounts = repo.counts(userId).getOrNull(),
+            isFollowing = if (isOwn) null else repo.isFollowing(userId).getOrDefault(false)
+        )
+    }
+
+    fun toggleFollow() {
+        val userId = _state.value.profile?.userId ?: return
+        val follow = _state.value.isFollowing != true
+        viewModelScope.launch {
+            followRepository?.setFollowing(userId, follow)
+                ?.onSuccess { following ->
+                    _state.value = _state.value.copy(
+                        isFollowing = following,
+                        followCounts = _state.value.followCounts?.let { it.copy(followers = it.followers + if (following) 1 else -1) }
+                    )
+                }
+                ?.onFailure { error -> _state.value = _state.value.copy(error = error.userMessage("Could not update follow.")) }
         }
     }
 

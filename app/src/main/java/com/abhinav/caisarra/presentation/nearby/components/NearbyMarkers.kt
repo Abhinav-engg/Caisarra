@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.nearby.components
 
+import com.abhinav.caisarra.presentation.invite.components.FriendAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -109,11 +110,11 @@ fun PlayerMarker(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = player.username.take(1).uppercase(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = NearbyColors.TextPrimary
+                FriendAvatar(
+                    name = player.username,
+                    avatarUrl = player.avatarUrl,
+                    size = avatarSize,
+                    shape = CircleShape
                 )
             }
             if (player.active) {

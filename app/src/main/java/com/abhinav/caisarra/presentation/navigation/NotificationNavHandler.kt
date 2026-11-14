@@ -2,6 +2,7 @@ package com.abhinav.caisarra.presentation.navigation
 
 import android.content.Intent
 import androidx.navigation.NavController
+import androidx.navigation.navOptions
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.remote.dto.getLongData
 import com.abhinav.caisarra.data.remote.dto.getStringData
@@ -218,7 +219,9 @@ fun handleIntentNotificationNavigation(
         }
         else -> {
             val dataUri = intent.data
-            if (dataUri == null) {
+            if (dataUri != null && navController.graph.hasDeepLink(dataUri)) {
+                navController.navigate(dataUri, navOptions { launchSingleTop = true })
+            } else {
                 navController.navigateOnce(AppRoutes.NOTIFICATIONS)
             }
         }

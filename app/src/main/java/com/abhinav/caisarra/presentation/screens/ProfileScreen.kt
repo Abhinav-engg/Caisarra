@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -55,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.abhinav.caisarra.core.ui.components.ListSkeleton
+import com.abhinav.caisarra.features.follow.domain.FollowListTab
+import com.abhinav.caisarra.features.follow.presentation.FollowButton
 import com.abhinav.caisarra.core.ui.components.fadeInOnAppear
 import com.abhinav.caisarra.presentation.components.CountryUtils
 import com.abhinav.caisarra.presentation.game.components.GameHistorySection
@@ -82,7 +86,8 @@ fun ProfileScreen(
     onStatsClick: (GameMode, String?) -> Unit = { _, _ -> },
     onReviewGame: (String) -> Unit = {},
     onDirectMessage: ((Long, String) -> Unit)? = null,
-    onEnterGame: (String) -> Unit = {}
+    onEnterGame: (String) -> Unit = {},
+    onFollowList: (Long, String, FollowListTab) -> Unit = { _, _, _ -> }
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -151,7 +156,7 @@ fun ProfileScreen(
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        text = "Edit Profile",
+                                        text = stringResource(R.string.edit_profile),
                                         color = ProfileWhite,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -301,7 +306,7 @@ fun ProfileScreen(
                     },
                     dismissButton = {
                         TextButton(onClick = { showBlockDialog = false }) {
-                            Text("Cancel", color = ProfileMuted)
+                            Text(stringResource(R.string.cancel), color = ProfileMuted)
                         }
                     }
                 )
@@ -441,6 +446,24 @@ fun ProfileScreen(
                         }
                     }
 
+                    state.followCounts?.let { counts ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            listOf(FollowListTab.FOLLOWERS to counts.followers, FollowListTab.FOLLOWING to counts.following).forEach { (tab, count) ->
+                                InfoChip(
+                                    label = stringResource(tab.title).uppercase(),
+                                    value = count.toString(),
+                                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable(enabled = profile.userId != null) {
+                                        profile.userId?.let { onFollowList(it, profile.username, tab) }
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    state.isFollowing?.takeIf { !isGuest && !state.isBlocked }?.let {
+                        FollowButton(it, viewModel::toggleFollow, Modifier.fillMaxWidth())
+                    }
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -576,7 +599,7 @@ fun ProfileScreen(
                         subtitle = if (state.isOwnProfile) "Your strength across game modes" else "Strength across game modes"
                     )
 
-                    val modes = GameMode.entries
+                    val modes = if (state.isOwnProfile) GameMode.entries else GameMode.entries - GameMode.PUZZLE
 
                     modes.chunked(2).forEach { rowModes ->
                         Row(

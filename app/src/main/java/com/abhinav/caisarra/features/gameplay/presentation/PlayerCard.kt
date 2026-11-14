@@ -31,6 +31,7 @@ fun PlayerCard(
     countryCode: String? = null,
     capturedPieces: List<Piece> = emptyList(),
     advantage: Int = 0,
+    profileUsername: String? = null,
     trailing: @Composable () -> Unit = {}
 ) {
     val flag = remember(countryCode) { CountryUtils.flag(countryCode) }
@@ -39,7 +40,7 @@ fun PlayerCard(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FriendAvatar(name = username, avatarUrl = avatarUrl, size = 46.dp, shape = RoundedCornerShape(14.dp))
+        FriendAvatar(name = username, avatarUrl = avatarUrl, size = 46.dp, shape = RoundedCornerShape(14.dp), username = profileUsername)
         Column(modifier = Modifier.weight(1f)) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
