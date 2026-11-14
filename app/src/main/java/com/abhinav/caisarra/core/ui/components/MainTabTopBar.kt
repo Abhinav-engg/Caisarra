@@ -33,6 +33,7 @@ fun MainTabTopBar(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     iconPainter: Painter? = null,
+    leadingContent: @Composable (BoxScope.() -> Unit)? = null,
     trailingContent: @Composable (BoxScope.() -> Unit)? = null
 ) {
     Box(
@@ -60,7 +61,7 @@ fun MainTabTopBar(
                     imageVector = icon,
                     contentDescription = null,
                     tint = StatsCyan,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             } else if (iconPainter != null) {
                 Icon(
@@ -78,6 +79,12 @@ fun MainTabTopBar(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp
             )
+        }
+
+        if (leadingContent != null) {
+            Box(modifier = Modifier.align(Alignment.CenterStart)) {
+                leadingContent()
+            }
         }
 
         if (trailingContent != null) {

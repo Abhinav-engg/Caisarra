@@ -1,5 +1,12 @@
 package com.abhinav.caisarra.presentation.community
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.Groups
+import com.abhinav.caisarra.core.ui.components.MainTabTopBar
+import com.abhinav.caisarra.core.ui.components.TopBarIconAction
 import com.abhinav.caisarra.core.ui.components.Toaster
 import com.abhinav.caisarra.core.ui.components.rememberToaster
 import androidx.compose.foundation.background
@@ -186,34 +193,17 @@ fun CommunityScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(CommunityBackground)
-                .statusBarsPadding()
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (state.showingBookmarks) {
-                    TextButton(
-                        onClick = viewModel::showFeed,
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
-                    ) {
-                        Text("‹", color = CommunityGreen, fontSize = 30.sp, lineHeight = 30.sp)
-                    }
-                }
-                Text(
-                    text = if (state.showingBookmarks) "SAVED POSTS" else "COMMUNITY",
-                    modifier = Modifier.weight(1f),
-                    color = CommunityText,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
-                if (isRegisteredUser && !state.showingBookmarks) {
-                    TextButton(onClick = viewModel::loadBookmarks) {
-                        Text("▣ Saved", color = CommunityGreen, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
+            MainTabTopBar(
+                title = if (state.showingBookmarks) "SAVED POSTS" else "COMMUNITY",
+                icon = if (state.showingBookmarks) Icons.Filled.Bookmark else Icons.Filled.Groups,
+                leadingContent = if (state.showingBookmarks) {
+                    { TopBarIconAction(Icons.AutoMirrored.Filled.ArrowBackIos, "Back", CommunityText, viewModel::showFeed) }
+                } else null,
+                trailingContent = if (isRegisteredUser && !state.showingBookmarks) {
+                    { TopBarIconAction(Icons.Filled.Bookmarks, "Saved", CommunityGreen, viewModel::loadBookmarks) }
+                } else null
+            )
 
             PullToRefreshBox(
                 isRefreshing = state.isLoading && state.posts.isNotEmpty(),

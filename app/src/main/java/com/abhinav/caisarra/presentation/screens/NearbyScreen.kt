@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,7 +58,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -73,6 +71,7 @@ import com.abhinav.caisarra.presentation.nearby.NearbyMapState
 import com.abhinav.caisarra.presentation.nearby.NearbyOperation
 import com.abhinav.caisarra.presentation.nearby.NearbyViewModel
 import com.abhinav.caisarra.presentation.nearby.components.NearbyMap
+import com.abhinav.caisarra.presentation.nearby.components.NearbyTopBar
 import com.abhinav.caisarra.presentation.nearby.components.PlayerCard
 import com.abhinav.caisarra.presentation.nearby.components.SquareIconButton
 import com.caisaara.ui.theme.CyanLight
@@ -181,18 +180,10 @@ fun NearbyScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(top = 16.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "NEARBY",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 2.sp,
-                color = White
-            )
+            NearbyTopBar()
 
             Spacer(Modifier.height(18.dp))
 
