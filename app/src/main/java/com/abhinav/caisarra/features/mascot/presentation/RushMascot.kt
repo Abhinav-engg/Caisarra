@@ -7,13 +7,16 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.features.mascot.domain.RushMascotLines
 import com.abhinav.caisarra.presentation.puzzles.RushUiState
 
 @Composable
 fun RushMascot(
     state: RushUiState.Playing,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    mascotSize: Dp = 56.dp
 ) {
     val transient = rememberTransientMascotReaction(holdMillis = 2600L)
     var lastScore by remember(state.sessionId) { mutableIntStateOf(state.score) }
@@ -46,5 +49,5 @@ fun RushMascot(
     val reaction = transient.current
         ?: RushMascotLines.idle(state.mode, state.strikesLeft, state.secondsRemaining, state.sessionId.hashCode())
 
-    MascotSays(reaction = reaction, modifier = modifier)
+    MascotSays(reaction = reaction, modifier = modifier, mascotSize = mascotSize)
 }
