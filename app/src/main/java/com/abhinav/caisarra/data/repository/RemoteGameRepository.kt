@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.data.repository
 
+import com.abhinav.caisarra.core.database.cachedFetch
+import kotlinx.serialization.builtins.ListSerializer
 import com.abhinav.caisarra.data.local.entity.GameEntity
 import com.abhinav.caisarra.data.local.entity.RecordStatus
 import com.abhinav.caisarra.data.remote.RetrofitInstance
@@ -35,7 +37,7 @@ class RemoteGameRepository(
     suspend fun getGameHistory(
         username: String
     ): List<GameEntity> {
-        return gamesService.getGameHistory().map { remote ->
+        return fetchGameHistory().map { remote ->
             remote.toGameEntity(username)
         }
     }
@@ -54,8 +56,13 @@ class RemoteGameRepository(
     }
 
     suspend fun getRawGameHistory(): List<GameHistoryDto> {
-        return gamesService.getGameHistory()
+        return fetchGameHistory()
     }
+
+    private suspend fun fetchGameHistory(): List<GameHistoryDto> =
+        cachedFetch("game_history", ListSerializer(GameHistoryDto.serializer())) {
+            gamesService.getGameHistory()
+        }
 
     suspend fun getPlayerGames(
         username: String,

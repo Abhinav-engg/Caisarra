@@ -1,6 +1,8 @@
 
 package com.abhinav.caisarra.data.repository
 
+import com.abhinav.caisarra.core.database.cachedFetch
+import kotlinx.serialization.builtins.ListSerializer
 import com.abhinav.caisarra.core.network.userMessage
 import android.content.Context
 import com.abhinav.caisarra.data.local.TokenManager
@@ -43,15 +45,17 @@ class FriendsRepository(context: Context) {
     suspend fun getFriends(
         status: String? = null
     ): Result<List<FriendDto>> = execute {
-        val response = service.getFriends(
-            status = status
-        )
-        checkSuccess(
-            success = response.success,
-            error = response.error,
-            message = response.message
-        )
-        response.data?.friends.orEmpty()
+        cachedFetch("friends:${status.orEmpty()}", ListSerializer(FriendDto.serializer())) {
+            val response = service.getFriends(
+                status = status
+            )
+            checkSuccess(
+                success = response.success,
+                error = response.error,
+                message = response.message
+            )
+            response.data?.friends.orEmpty()
+        }
     }
 
     suspend fun getOnlineFriends(): Result<List<FriendDto>> = execute {
