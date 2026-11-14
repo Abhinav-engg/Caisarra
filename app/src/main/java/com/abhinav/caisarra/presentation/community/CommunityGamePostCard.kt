@@ -1,6 +1,7 @@
 
 package com.abhinav.caisarra.presentation.community
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -136,7 +137,7 @@ fun CommunityGamePostCard(
                 )
 
                 Text(
-                    text = "SHARED GAME",
+                    text = stringResource(R.string.shared_game),
                     color = GameAccent,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp
@@ -174,7 +175,7 @@ fun CommunityGamePostCard(
         ) {
             Column {
                 Text(
-                    text = "RESULT",
+                    text = stringResource(R.string.result),
                     color = GameMuted,
                     fontSize = 10.sp
                 )
@@ -190,7 +191,7 @@ fun CommunityGamePostCard(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "END REASON",
+                    text = stringResource(R.string.end_reason),
                     color = GameMuted,
                     fontSize = 10.sp
                 )

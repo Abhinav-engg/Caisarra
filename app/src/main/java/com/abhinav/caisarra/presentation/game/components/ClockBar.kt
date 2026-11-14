@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -109,7 +111,7 @@ fun ClockBar(
 
             rating?.let {
                 Text(
-                    text = "Rating $it",
+                    text = stringResource(R.string.rating, it),
                     color = Color(0xFF9FB0C3),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium

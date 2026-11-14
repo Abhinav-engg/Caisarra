@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -155,7 +157,7 @@ fun LeaderboardScreen(
 
                     if (state.myClubs.isNotEmpty()) {
                         Text(
-                            "My Clubs",
+                            stringResource(R.string.my_clubs),
                             color = Color.LightGray,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
@@ -233,7 +235,7 @@ fun LeaderboardScreen(
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                "Search another club by ID or share code",
+                                stringResource(R.string.search_another_club_by_id_or),
                                 color = BoardCyan,
                                 fontSize = 12.sp
                             )
@@ -249,8 +251,8 @@ fun LeaderboardScreen(
                                 onValueChange = viewModel::setClubId,
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
-                                label = { Text("Club ID, Code, or Name", color = Color.LightGray, fontSize = 12.sp) },
-                                placeholder = { Text("e.g. 12 or SHARECODE", color = Color.Gray, fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.club_id_code_or_name), color = Color.LightGray, fontSize = 12.sp) },
+                                placeholder = { Text(stringResource(R.string.e_g_12_or_sharecode), color = Color.Gray, fontSize = 12.sp) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Done),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = Color.White,
@@ -266,7 +268,7 @@ fun LeaderboardScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = BoardCyan, contentColor = Color.Black),
                                 shape = RoundedCornerShape(10.dp)
                             ) {
-                                Text("Load", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.load), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -344,7 +346,7 @@ fun LeaderboardScreen(
                         onClick = viewModel::retry,
                         colors = ButtonDefaults.buttonColors(containerColor = BoardCyan, contentColor = Color.Black)
                     ) {
-                        Text("Retry", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.retry), fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
@@ -398,7 +400,7 @@ fun LeaderboardScreen(
                                                     color = BoardCyan
                                                 )
                                             } else {
-                                                Text("Load More Players")
+                                                Text(stringResource(R.string.load_more_players))
                                             }
                                         }
                                     }

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
@@ -215,7 +217,7 @@ fun NearbyScreen(
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Text(
-                        text = "Appear on Map",
+                        text = stringResource(R.string.appear_on_map),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = White
@@ -265,7 +267,7 @@ fun NearbyScreen(
                         color = MaterialTheme.colorScheme.error
                     )
                     TextButton(onClick = singleClick(retryAction)) {
-                        Text("Retry", color = NearbyColors.Accent)
+                        Text(stringResource(R.string.retry), color = NearbyColors.Accent)
                     }
                 }
             }

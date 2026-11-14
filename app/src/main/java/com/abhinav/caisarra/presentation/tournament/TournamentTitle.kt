@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.tournament
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -75,7 +77,7 @@ fun TournamentTitle(
                 )
                 Spacer(Modifier.width(4.dp))
                 Text(
-                    "Private",
+                    stringResource(R.string.label_private),
                     color = TournamentColors.Accent,
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.SemiBold

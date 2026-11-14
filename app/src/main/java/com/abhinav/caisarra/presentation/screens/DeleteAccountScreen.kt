@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -117,7 +119,7 @@ fun DeleteAccountScreen(
             }
 
             Text(
-                text = "Permanently Delete Account?",
+                text = stringResource(R.string.permanently_delete_account),
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
                 fontSize = TextSizeTitle,
@@ -135,7 +137,7 @@ fun DeleteAccountScreen(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "This action is permanent and cannot be reversed:",
+                        text = stringResource(R.string.this_action_is_permanent_and_cannot),
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = TextSizeBadge,
@@ -155,7 +157,7 @@ fun DeleteAccountScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = "CONFIRM WITH PASSWORD",
+                    text = stringResource(R.string.confirm_with_password),
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = TextSizeCaption,
@@ -230,7 +232,7 @@ fun DeleteAccountScreen(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "DELETING ACCOUNT...",
+                        text = stringResource(R.string.deleting_account),
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
                         fontSize = TextSizeBody,
@@ -238,7 +240,7 @@ fun DeleteAccountScreen(
                     )
                 } else {
                     Text(
-                        text = "DELETE MY ACCOUNT",
+                        text = stringResource(R.string.delete_my_account),
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
                         fontSize = TextSizeBody,
@@ -256,7 +258,7 @@ fun DeleteAccountScreen(
                     .height(48.dp)
             ) {
                 Text(
-                    text = "CANCEL & KEEP ACCOUNT",
+                    text = stringResource(R.string.cancel_keep_account),
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Medium,
                     fontSize = TextSizeBody,

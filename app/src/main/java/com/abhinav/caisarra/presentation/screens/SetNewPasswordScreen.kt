@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,7 +43,7 @@ fun SetNewPasswordScreen(
         if (state.newPasswordError == null) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "Password must be at least 8 characters long.",
+                text = stringResource(R.string.password_must_be_at_least_8),
                 color = SubtleText,
                 fontSize = 12.sp,
                 modifier = Modifier.fillMaxWidth()

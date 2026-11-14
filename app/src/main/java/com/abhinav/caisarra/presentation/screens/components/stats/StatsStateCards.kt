@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens.components.stats
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -64,14 +66,14 @@ fun GuestStatsCard(
                 modifier = Modifier.size(40.dp)
             )
             Text(
-                text = "Player Statistics",
+                text = stringResource(R.string.player_statistics),
                 fontFamily = JetBrainsMono,
                 fontSize = TextSizeTitle,
                 fontWeight = FontWeight.Bold,
                 color = StatsTextWhite
             )
             Text(
-                text = "Detailed rating progression charts, win rates, and game histories are available for registered accounts.",
+                text = stringResource(R.string.detailed_rating_progression_charts_win_r),
                 fontFamily = JetBrainsMono,
                 fontSize = TextSizeBadge,
                 color = StatsTextMuted,
@@ -105,7 +107,7 @@ fun ErrorStateCard(
             verticalArrangement = Arrangement.spacedBy(StatsCardItemSpacing)
         ) {
             Text(
-                text = "Unable to Load Stats",
+                text = stringResource(R.string.unable_to_load_stats),
                 fontFamily = JetBrainsMono,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,

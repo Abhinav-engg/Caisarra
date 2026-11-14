@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.features.streakwidget.presentation
 
+import androidx.glance.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
@@ -51,7 +52,7 @@ fun StreakWidgetContent(streak: DailyStreakResponse) {
         ) {
             Image(provider = ImageProvider(R.drawable.ic_streak_flame), contentDescription = null, modifier = GlanceModifier.size(52.dp))
             Text(text = "${streak.currentStreak}", style = TextStyle(color = ColorProvider(StatsTextWhite), fontSize = TextSizeLarge, fontWeight = FontWeight.Bold))
-            Text(text = "day streak", style = TextStyle(color = ColorProvider(StatsTextMuted), fontSize = TextSizeCaption))
+            Text(text = LocalContext.current.getString(R.string.day_streak), style = TextStyle(color = ColorProvider(StatsTextMuted), fontSize = TextSizeCaption))
         }
         Spacer(GlanceModifier.width(10.dp))
         Column(modifier = GlanceModifier.defaultWeight().fillMaxHeight(), verticalAlignment = Alignment.CenterVertically) {
@@ -60,7 +61,7 @@ fun StreakWidgetContent(streak: DailyStreakResponse) {
                 style = TextStyle(color = ColorProvider(if (streak.todayCompleted) ThemeNeonSky else StatsTextWhite), fontSize = TextSizeBody, fontWeight = FontWeight.Bold),
                 maxLines = 1
             )
-            Text(text = "Best ${maxOf(streak.bestStreak, streak.currentStreak)} days", style = TextStyle(color = ColorProvider(StatsTextMuted), fontSize = TextSizeCaption))
+            Text(text = LocalContext.current.getString(R.string.best_days, maxOf(streak.bestStreak, streak.currentStreak)), style = TextStyle(color = ColorProvider(StatsTextMuted), fontSize = TextSizeCaption))
             Spacer(GlanceModifier.height(10.dp))
             Row(GlanceModifier.fillMaxWidth().background(StatsCardBg).cornerRadius(14.dp).padding(vertical = 8.dp, horizontal = 2.dp)) {
                 week.forEach { StreakWeekDay(it) }

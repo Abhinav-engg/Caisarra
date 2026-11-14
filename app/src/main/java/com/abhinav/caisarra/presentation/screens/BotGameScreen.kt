@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import com.abhinav.caisarra.presentation.game.components.GameOverReveal
 import com.abhinav.caisarra.core.ui.components.rememberToaster
 import androidx.activity.compose.BackHandler
@@ -136,7 +138,7 @@ fun BotGameScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(color = Accent)
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(text = "Loading game...", color = Color.White, fontFamily = JetBrainsMono)
+                Text(text = stringResource(R.string.loading_game), color = Color.White, fontFamily = JetBrainsMono)
             }
         }
         return
@@ -372,7 +374,7 @@ private fun BotResultDialog(
             Spacer(Modifier.height(12.dp))
 
             TextButton(onClick = onHome) {
-                Text(text = "BACK TO HOME", color = Color(0xFFAAB7C6), fontFamily = JetBrainsMono)
+                Text(text = stringResource(R.string.back_to_home), color = Color(0xFFAAB7C6), fontFamily = JetBrainsMono)
             }
         }
         }
@@ -401,7 +403,7 @@ private fun GameOverPill(onClick: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                "Game Over • Tap to view result",
+                stringResource(R.string.game_over_tap_to_view_result),
                 color = Color.White,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold

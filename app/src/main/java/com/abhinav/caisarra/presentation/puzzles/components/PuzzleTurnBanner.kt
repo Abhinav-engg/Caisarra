@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.puzzles.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +49,7 @@ fun PuzzleTurnBanner(
                     strokeWidth = 2.dp
                 )
                 Text(
-                    text = "Checking move...",
+                    text = stringResource(R.string.checking_move),
                     color = StatsBarSlate,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold

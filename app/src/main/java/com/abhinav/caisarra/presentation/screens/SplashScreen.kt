@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.app.Activity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -347,7 +349,7 @@ fun SplashScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "ASSEMBLING YOUR NEXT MOVE",
+                text = stringResource(R.string.assembling_your_next_move),
                 style = CaisaaraTypography.MicroBold.copy(
                     fontFamily = CaisaaraFontFamily,
                     fontSize = 10.sp,
@@ -365,7 +367,7 @@ fun SplashScreenContent(
             Spacer(modifier = Modifier.height(10.dp))
             Box(contentAlignment = Alignment.Center) {
                 Text(
-                    text = "MOSAIC",
+                    text = stringResource(R.string.mosaic),
                     style = CaisaaraTypography.H1.copy(
                         fontFamily = CaisaaraFontFamily,
                         fontWeight = FontWeight.Bold,
@@ -375,7 +377,7 @@ fun SplashScreenContent(
                     )
                 )
                 Text(
-                    text = "MOSAIC",
+                    text = stringResource(R.string.mosaic),
                     style = CaisaaraTypography.H1.copy(
                         fontFamily = CaisaaraFontFamily,
                         fontWeight = FontWeight.Bold,

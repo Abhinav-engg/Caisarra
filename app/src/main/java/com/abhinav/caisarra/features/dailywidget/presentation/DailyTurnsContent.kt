@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.features.dailywidget.presentation
 
+import com.abhinav.caisarra.R
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
@@ -44,7 +45,7 @@ fun DailyTurnsContent(turns: List<DailyTurn>) {
         if (turns.isEmpty()) {
             WidgetCard(GlanceModifier.fillMaxWidth(), widgetDeepLink(LocalContext.current, "play/1440/0")) {
                 Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "No active daily games", modifier = GlanceModifier.defaultWeight(), style = TextStyle(color = ColorProvider(StatsTextMuted), fontSize = TextSizeBody))
+                    Text(text = LocalContext.current.getString(R.string.no_active_daily_games), modifier = GlanceModifier.defaultWeight(), style = TextStyle(color = ColorProvider(StatsTextMuted), fontSize = TextSizeBody))
                     WidgetPill("New game", true)
                 }
             }

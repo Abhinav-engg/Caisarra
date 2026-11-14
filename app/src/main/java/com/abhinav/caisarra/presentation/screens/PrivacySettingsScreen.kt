@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.components.rememberToaster
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -163,7 +165,7 @@ fun PrivacySettingsScreen(
                         )
                         TextButton(onClick = { viewModel.loadSettings() }) {
                             Text(
-                                text = "RETRY",
+                                text = stringResource(R.string.retry_2),
                                 fontFamily = JetBrainsMono,
                                 fontWeight = FontWeight.Bold,
                                 color = StatsCyan
@@ -207,7 +209,7 @@ fun PrivacySettingsScreen(
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "INTERACTION CONTROLS",
+                                    text = stringResource(R.string.interaction_controls),
                                     fontFamily = JetBrainsMono,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = TextSizeCaption,
@@ -215,7 +217,7 @@ fun PrivacySettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Choose who is permitted to send you direct messages and friend invites.",
+                                    text = stringResource(R.string.choose_who_is_permitted_to_send),
                                     fontFamily = JetBrainsMono,
                                     fontSize = TextSizeTiny,
                                     color = StatsTextMuted,

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.watch
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -102,7 +104,7 @@ fun WatchScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "SPECTATE A MATCH",
+                text = stringResource(R.string.spectate_a_match),
                 fontFamily = JetBrainsMono,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
@@ -113,7 +115,7 @@ fun WatchScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Enter a 6-character game code or paste a match link to watch the game in real time.",
+                text = stringResource(R.string.enter_a_6_character_game_code),
                 fontFamily = JetBrainsMono,
                 fontSize = 13.sp,
                 color = StatsTextMuted,
@@ -140,7 +142,7 @@ fun WatchScreen(
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
-                                text = "Enter game code or link...",
+                                text = stringResource(R.string.enter_game_code_or_link),
                                 fontFamily = JetBrainsMono,
                                 fontSize = 13.sp,
                                 color = StatsTextMuted
@@ -181,7 +183,7 @@ fun WatchScreen(
                             .height(48.dp)
                     ) {
                         Text(
-                            text = "WATCH GAME",
+                            text = stringResource(R.string.watch_game),
                             fontFamily = JetBrainsMono,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,

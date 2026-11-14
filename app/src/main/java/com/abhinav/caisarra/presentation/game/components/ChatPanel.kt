@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -112,7 +114,7 @@ fun ChatPanel(
         ) {
             if (messages.isEmpty()) {
                 Text(
-                    text = "No messages yet",
+                    text = stringResource(R.string.no_messages_yet),
                     color = Muted,
                     fontSize = 15.sp,
                     modifier = Modifier.align(Alignment.Center)
@@ -151,7 +153,7 @@ private fun ChatHeader(muted: Boolean, onToggleMute: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "CHAT",
+                text = stringResource(R.string.chat),
                 color = Color(0xFFE5EAF0),
                 fontSize = 27.sp,
                 fontWeight = FontWeight.Bold,
@@ -170,14 +172,14 @@ private fun ChatHeader(muted: Boolean, onToggleMute: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Game Chat",
+                text = stringResource(R.string.game_chat_2),
                 color = Accent,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
             if (muted) {
                 Text(
-                    text = "Muted",
+                    text = stringResource(R.string.muted),
                     color = Muted,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(start = 12.dp)
@@ -198,7 +200,7 @@ private fun QuickReplyRow(onReply: (String) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "QUICK:", color = Muted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Text(text = stringResource(R.string.quick), color = Muted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
         QuickReplyChip(text = QuickReplies[0], onClick = { onReply(QuickReplies[0]) })
         QuickReplyChip(text = QuickReplies[1], onClick = { onReply(QuickReplies[1]) })
         QuickReplyChip(text = QuickReplies[2], onClick = { onReply(QuickReplies[2]) })
@@ -385,7 +387,7 @@ private fun ChatComposer(text: String, onTextChange: (String) -> Unit, onSend: (
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text("Message...", color = Muted, fontSize = 17.sp) },
+            placeholder = { Text(stringResource(R.string.message), color = Muted, fontSize = 17.sp) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
             keyboardActions = KeyboardActions(onSend = { onSend() }),
@@ -411,7 +413,7 @@ private fun ChatComposer(text: String, onTextChange: (String) -> Unit, onSend: (
             ),
             contentPadding = PaddingValues(horizontal = 20.dp)
         ) {
-            Text(text = "Send  ▷", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.send), fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -2,6 +2,8 @@
 
 package com.abhinav.caisarra.presentation.tournament
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -174,7 +176,7 @@ fun CreateTournamentScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Minimum",
+                            text = stringResource(R.string.minimum),
                             color = Color(0xFFC4D0DC),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -195,7 +197,7 @@ fun CreateTournamentScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Maximum",
+                            text = stringResource(R.string.maximum),
                             color = Color(0xFFC4D0DC),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -50,7 +52,7 @@ fun CountryPicker(
     Column(modifier = modifier.fillMaxWidth()) {
 
         Text(
-            text = "Country",
+            text = stringResource(R.string.country_2),
             color = textColor,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
@@ -124,7 +126,7 @@ fun CountryPicker(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = "🌐  Not set",
+                            text = stringResource(R.string.not_set_2),
                             color = textColor
                         )
                     },

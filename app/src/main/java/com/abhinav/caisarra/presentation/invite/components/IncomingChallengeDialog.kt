@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -219,7 +221,7 @@ fun IncomingChallengeDialog(
                             )
                         } else {
                             Text(
-                                text = "ACCEPT",
+                                text = stringResource(R.string.accept_2),
                                 color = Color(0xFF082028),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp

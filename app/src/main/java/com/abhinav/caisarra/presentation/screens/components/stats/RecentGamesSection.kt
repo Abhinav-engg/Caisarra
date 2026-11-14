@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens.components.stats
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -60,7 +62,7 @@ fun RecentGamesSection(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            text = "Recent Rated Games",
+            text = stringResource(R.string.recent_rated_games),
             fontFamily = JetBrainsMono,
             fontSize = TextSizeSubhead,
             fontWeight = FontWeight.Bold,
@@ -142,7 +144,7 @@ fun RecentGamesSection(
 
                 Column {
                     Text(
-                        text = "vs ${game.opponentUsername}",
+                        text = stringResource(R.string.vs_3, game.opponentUsername),
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeBody,
                         fontWeight = FontWeight.Bold,

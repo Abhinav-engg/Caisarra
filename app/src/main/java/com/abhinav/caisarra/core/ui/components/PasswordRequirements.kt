@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.core.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
@@ -64,7 +66,7 @@ fun PasswordRequirements(
             )
     ) {
         Text(
-            text = "Password Requirements",
+            text = stringResource(R.string.password_requirements),
             color = SubtleText,
             fontSize = 12.sp
         )

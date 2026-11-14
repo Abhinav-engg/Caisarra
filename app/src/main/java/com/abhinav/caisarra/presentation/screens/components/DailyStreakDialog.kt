@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.screens.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -78,7 +79,7 @@ fun DailyStreakDialog(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "$currentStreak Day Streak",
+                text = stringResource(R.string.day_streak_2, currentStreak),
                 color = Color.White,
                 fontFamily = JetBrainsMono,
                 fontSize = 20.sp,
@@ -162,14 +163,14 @@ fun DailyStreakDialog(
                     )
                     Column {
                         Text(
-                            text = "Puzzle Streak",
+                            text = stringResource(R.string.puzzle_streak),
                             color = Color.White,
                             fontFamily = JetBrainsMono,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "$puzzleStreak days",
+                            text = stringResource(R.string.days, puzzleStreak),
                             color = ThemeSlateAccent,
                             fontFamily = JetBrainsMono,
                             fontSize = 11.sp
@@ -181,7 +182,7 @@ fun DailyStreakDialog(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "Play",
+                        text = stringResource(R.string.play),
                         color = StatsCyan,
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
@@ -208,7 +209,7 @@ fun DailyStreakDialog(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Close",
+                    text = stringResource(R.string.close),
                     color = Color.White,
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.SemiBold,

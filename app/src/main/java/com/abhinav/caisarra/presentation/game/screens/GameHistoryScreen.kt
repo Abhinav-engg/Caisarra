@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -92,7 +94,7 @@ fun GameHistoryScreen(
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text =
-                    "Loading game history...",
+                    stringResource(R.string.loading_game_history),
                 color = White
             )
         }
@@ -122,7 +124,7 @@ fun GameHistoryScreen(
                 onClick = onBack
             ) {
                 Text(
-                    "BACK",
+                    stringResource(R.string.back),
                     color = White
                 )
             }
@@ -164,8 +166,7 @@ fun GameHistoryScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(text =
-                "${state.whitePlayerName}  vs  " +
-                        state.blackPlayerName,
+                stringResource(R.string.player_vs_player, state.whitePlayerName, state.blackPlayerName),
                 color = White,
                 fontFamily =
                     JetBrainsMono,
@@ -176,7 +177,7 @@ fun GameHistoryScreen(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "${state.currentPly} / " + "${state.totalPlies} moves",
+                text = stringResource(R.string.ply_of_total_moves, state.currentPly, state.totalPlies),
                 color = Secondary,
                 fontFamily = JetBrainsMono,
                 fontSize = 11.sp
@@ -278,13 +279,13 @@ private fun HistoryTopBar(
             onClick = onBack
         ) {
             Text(
-                "Back",
+                stringResource(R.string.back_2),
                 color = White
             )
         }
 
         Text(
-            text = "MOSAIC HISTORY",
+            text = stringResource(R.string.mosaic_history),
             color = White,
             fontFamily = JetBrainsMono,
             fontSize = 16.sp,
@@ -297,7 +298,7 @@ private fun HistoryTopBar(
             onClick = onFlip
         ) {
             Text(
-                "Flip",
+                stringResource(R.string.flip),
                 color = White
             )
         }
@@ -345,7 +346,7 @@ private fun HistoryNavigationButtons(
             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "‹ BACK",
+                text = stringResource(R.string.back_3),
                 color = if (canGoBack) White else Secondary,
                 fontFamily = JetBrainsMono,
                 fontSize = 12.sp,
@@ -362,7 +363,7 @@ private fun HistoryNavigationButtons(
             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "FORWARD ›",
+                text = stringResource(R.string.forward),
                 color = if (canGoForward) White else Secondary,
                 fontFamily = JetBrainsMono,
                 fontSize = 12.sp,
@@ -416,7 +417,7 @@ private fun HistoryMoves(
     ) {
 
         Text(
-            text = "MOVES",
+            text = stringResource(R.string.moves),
             color = White,
             fontFamily = JetBrainsMono,
             fontSize = 13.sp,
@@ -429,7 +430,7 @@ private fun HistoryMoves(
         if (moves.isEmpty()) {
 
             Text(
-                text = "No moves recorded.",
+                text = stringResource(R.string.no_moves_recorded),
                 color = Secondary,
                 fontFamily = JetBrainsMono,
                 fontSize = 11.sp
@@ -565,7 +566,7 @@ private fun ChatHistorySection(
             .padding(12.dp)
     ) {
         Text(
-            text = "GAME CHAT",
+            text = stringResource(R.string.game_chat),
             color = White,
             fontFamily = JetBrainsMono,
             fontSize = 13.sp,
@@ -586,7 +587,7 @@ private fun ChatHistorySection(
 
             messages.isEmpty() -> {
                 Text(
-                    text = "No chat messages recorded.",
+                    text = stringResource(R.string.no_chat_messages_recorded),
                     color = Secondary,
                     fontFamily = JetBrainsMono,
                     fontSize = 11.sp

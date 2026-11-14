@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -102,7 +104,7 @@ fun VerifyScreen(
         AuthHeader("VERIFY", subtitle)
 
         Text(
-            text = "Enter Code",
+            text = stringResource(R.string.enter_code),
             style = MaterialTheme.typography.titleMedium,
             color = Lablecolor,
             modifier = Modifier.fillMaxWidth()
@@ -179,7 +181,7 @@ fun VerifyScreen(
                 )
             } else {
                 Text(
-                    text = "Resend Code",
+                    text = stringResource(R.string.resend_code),
                     color = Color(0xFF00D5E9),
                     fontSize = 12.sp,
                     modifier = Modifier

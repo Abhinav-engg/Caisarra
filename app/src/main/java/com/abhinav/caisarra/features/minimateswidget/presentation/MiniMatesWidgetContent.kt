@@ -49,13 +49,13 @@ fun MiniMatesWidgetContent(state: MiniMatesWidgetState) {
             }
             Spacer(GlanceModifier.width(14.dp))
             Column(GlanceModifier.defaultWeight()) {
-                Text(text = "MINI MATES · LEVEL ${overview.currentLevel}", style = TextStyle(color = ColorProvider(ThemeNeonSky), fontSize = TextSizeMicro, fontWeight = FontWeight.Bold), maxLines = 1)
-                Text(text = "Mate in ${level?.targetMoves ?: 1}", style = TextStyle(color = ColorProvider(StatsTextWhite), fontSize = TextSizeHeading, fontWeight = FontWeight.Bold), maxLines = 1)
+                Text(text = LocalContext.current.getString(R.string.mini_mates_level, overview.currentLevel), style = TextStyle(color = ColorProvider(ThemeNeonSky), fontSize = TextSizeMicro, fontWeight = FontWeight.Bold), maxLines = 1)
+                Text(text = LocalContext.current.getString(R.string.mate_in, level?.targetMoves ?: 1), style = TextStyle(color = ColorProvider(StatsTextWhite), fontSize = TextSizeHeading, fontWeight = FontWeight.Bold), maxLines = 1)
                 Text(text = subtitle, style = TextStyle(color = ColorProvider(StatsTextMuted), fontSize = TextSizeCaption), maxLines = 1)
                 Spacer(GlanceModifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "★ ${overview.totalStars}", style = TextStyle(color = ColorProvider(StatsPeakBadgeText), fontSize = TextSizeCaption, fontWeight = FontWeight.Bold))
-                    Text(text = "  ·  ${overview.completedLevels}/$total solved", style = TextStyle(color = ColorProvider(StatsTextMuted), fontSize = TextSizeCaption), maxLines = 1)
+                    Text(text = LocalContext.current.getString(R.string.solved_2, overview.completedLevels, total), style = TextStyle(color = ColorProvider(StatsTextMuted), fontSize = TextSizeCaption), maxLines = 1)
                 }
                 Spacer(GlanceModifier.height(10.dp))
                 WidgetPill("Solve now", true)

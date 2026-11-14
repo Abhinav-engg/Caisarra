@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.features.dailytactics.presentation
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -53,7 +55,7 @@ fun DailyTacticsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Daily Tactics & Puzzles",
+                text = stringResource(R.string.daily_tactics_puzzles),
                 color = SilverColor,
                 fontSize = TextSizeHeading,
                 fontWeight = FontWeight.Bold,

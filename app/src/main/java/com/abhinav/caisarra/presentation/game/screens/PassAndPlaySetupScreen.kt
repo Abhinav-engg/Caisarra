@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,14 +45,14 @@ fun PassAndPlaySetupScreen(
         ) {
             androidx.compose.foundation.layout.Column {
                 Text(
-                    text = "Use a clock",
+                    text = stringResource(R.string.use_a_clock),
                     color = SetupColors.Text,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Give each player a time limit",
+                    text = stringResource(R.string.give_each_player_a_time_limit),
                     color = SetupColors.Secondary,
                     fontSize = 13.sp
                 )
@@ -71,14 +73,14 @@ fun PassAndPlaySetupScreen(
         ) {
             androidx.compose.foundation.layout.Column {
                 Text(
-                    text = "Auto-flip board",
+                    text = stringResource(R.string.auto_flip_board),
                     color = SetupColors.Text,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Rotate the board after each move",
+                    text = stringResource(R.string.rotate_the_board_after_each_move),
                     color = SetupColors.Secondary,
                     fontSize = 13.sp
                 )

@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.watch.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -83,7 +85,7 @@ fun ActiveGameCard(
                             .background(StatsGreen, CircleShape)
                     )
                     Text(
-                        text = "LIVE",
+                        text = stringResource(R.string.live),
                         fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
                         fontSize = 10.sp,
@@ -101,7 +103,7 @@ fun ActiveGameCard(
 
                 if (game.rated) {
                     Text(
-                        text = "• Rated",
+                        text = stringResource(R.string.rated),
                         fontFamily = JetBrainsMono,
                         fontSize = 11.sp,
                         color = StatsTextMuted
@@ -158,7 +160,7 @@ fun ActiveGameCard(
                 }
                 game.whiteRating?.let {
                     Text(
-                        text = "Rating $it",
+                        text = stringResource(R.string.rating, it),
                         fontFamily = JetBrainsMono,
                         fontSize = 11.sp,
                         color = StatsTextMuted,
@@ -175,7 +177,7 @@ fun ActiveGameCard(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "VS",
+                    text = stringResource(R.string.vs),
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.sp,
@@ -209,7 +211,7 @@ fun ActiveGameCard(
                 }
                 game.blackRating?.let {
                     Text(
-                        text = "Rating $it",
+                        text = stringResource(R.string.rating, it),
                         fontFamily = JetBrainsMono,
                         fontSize = 11.sp,
                         color = StatsTextMuted,
@@ -247,7 +249,7 @@ fun ActiveGameCard(
                 modifier = Modifier.height(34.dp)
             ) {
                 Text(
-                    text = "WATCH",
+                    text = stringResource(R.string.watch),
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,

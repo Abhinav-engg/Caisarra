@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.core.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.content.ClipData
 import android.content.Intent
 import android.os.Build
@@ -73,7 +75,7 @@ fun MessageText(
             containerColor = StatsCardBg
         ) {
             DropdownMenuItem(
-                text = { Text("Copy", color = StatsTextWhite) },
+                text = { Text(stringResource(R.string.copy), color = StatsTextWhite) },
                 leadingIcon = { Icon(Icons.Default.ContentCopy, null, tint = StatsCyan) },
                 onClick = {
                     menuOpen = false
@@ -82,7 +84,7 @@ fun MessageText(
                 }
             )
             DropdownMenuItem(
-                text = { Text("Share", color = StatsTextWhite) },
+                text = { Text(stringResource(R.string.share), color = StatsTextWhite) },
                 leadingIcon = { Icon(Icons.Default.Share, null, tint = StatsCyan) },
                 onClick = {
                     menuOpen = false

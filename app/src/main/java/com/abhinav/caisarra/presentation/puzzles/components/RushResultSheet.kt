@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.puzzles.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -55,7 +57,7 @@ fun RushResultSheet(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "RUSH COMPLETED",
+                text = stringResource(R.string.rush_completed),
                 fontFamily = JetBrainsMono,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -73,7 +75,7 @@ fun RushResultSheet(
                         .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "NEW HIGH SCORE!",
+                        text = stringResource(R.string.new_high_score),
                         color = MenuFriendsGreen,
                         fontSize = 12.sp,
                         fontFamily = JetBrainsMono,
@@ -92,7 +94,7 @@ fun RushResultSheet(
             )
 
             Text(
-                text = "PUZZLES SOLVED",
+                text = stringResource(R.string.puzzles_solved),
                 fontSize = 11.sp,
                 fontFamily = JetBrainsMono,
                 color = StatsPieceCircleDarkBorder,
@@ -108,7 +110,7 @@ fun RushResultSheet(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "BEST SCORE",
+                        text = stringResource(R.string.best_score),
                         fontSize = 11.sp,
                         fontFamily = JetBrainsMono,
                         color = StatsPieceCircleDarkBorder
@@ -124,7 +126,7 @@ fun RushResultSheet(
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "STRIKES",
+                        text = stringResource(R.string.strikes),
                         fontSize = 11.sp,
                         fontFamily = JetBrainsMono,
                         color = StatsPieceCircleDarkBorder
@@ -141,7 +143,7 @@ fun RushResultSheet(
                 if (summary.durationSec > 0) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "DURATION",
+                            text = stringResource(R.string.duration),
                             fontSize = 11.sp,
                             fontFamily = JetBrainsMono,
                             color = StatsPieceCircleDarkBorder

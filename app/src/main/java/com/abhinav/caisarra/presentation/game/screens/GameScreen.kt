@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.game.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -133,7 +135,7 @@ fun GameScreen(
         CenteredColumn {
             CircularProgressIndicator(color = Accent)
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = "Loading game...", color = Color.White)
+            Text(text = stringResource(R.string.loading_game), color = Color.White)
         }
         return
     }
@@ -143,7 +145,7 @@ fun GameScreen(
             Text(text = error, color = Color.White)
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(onClick = onHome) {
-                Text(text = "HOME", color = Accent)
+                Text(text = stringResource(R.string.home), color = Accent)
             }
         }
         return
@@ -353,7 +355,7 @@ private fun GameOverPill(onClick: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                "Game Over • Tap to view result",
+                stringResource(R.string.game_over_tap_to_view_result),
                 color = Color.White,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold

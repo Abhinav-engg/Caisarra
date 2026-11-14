@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,7 +68,7 @@ fun LoginScreen(
             horizontalArrangement = Arrangement.End
         ) {
             Text(
-                text = "Forgot password?",
+                text = stringResource(R.string.forgot_password),
                 color = Color(0xFF00D5E9),
                 fontSize = 14.sp,
                 modifier = Modifier.clickable { onForgotPasswordClick() }
@@ -100,19 +102,19 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
-                    text = "Please wait...",
+                    text = stringResource(R.string.please_wait),
                     color = Color(0xFF00D5E9),
                     fontSize = 14.sp
                 )
             } else {
                 Text(
-                    text = "OR ",
+                    text = stringResource(R.string.or),
                     color = Color(0xFF8D9AAA),
                     fontSize = 14.sp
                 )
 
                 Text(
-                    text = "continue as guest",
+                    text = stringResource(R.string.continue_as_guest),
                     color = Color(0xFF00D5E9),
                     fontSize = 14.sp
                 )

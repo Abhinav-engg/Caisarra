@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -73,7 +75,7 @@ fun BotHistoryScreen(
         ) {
             TextButton(onClick = singleClick(onBack)) {
                 Text(
-                    text = "← BACK",
+                    text = stringResource(R.string.back_4),
                     color = Color.White,
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold
@@ -81,7 +83,7 @@ fun BotHistoryScreen(
             }
             TextButton(onClick = singleClick(onNewGame)) {
                 Text(
-                    text = "+ NEW GAME",
+                    text = stringResource(R.string.new_game),
                     color = SetupColors.Accent,
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold
@@ -92,7 +94,7 @@ fun BotHistoryScreen(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "BOT GAMES",
+            text = stringResource(R.string.bot_games),
             color = Color.White,
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Bold,
@@ -129,7 +131,7 @@ fun BotHistoryScreen(
                         )
                         Spacer(Modifier.height(12.dp))
                         TextButton(onClick = singleClick(viewModel::loadGames)) {
-                            Text("RETRY", color = BotSelectedBorder, fontFamily = JetBrainsMono)
+                            Text(stringResource(R.string.retry_2), color = BotSelectedBorder, fontFamily = JetBrainsMono)
                         }
                     }
                 }
@@ -143,7 +145,7 @@ fun BotHistoryScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No bot games played yet.",
+                        text = stringResource(R.string.no_bot_games_played_yet),
                         color = BotTextMuted,
                         fontFamily = JetBrainsMono,
                         fontSize = TextSizeBody
@@ -223,7 +225,7 @@ private fun BotGameHistoryItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Playing as ${game.playerColor.replaceFirstChar { it.uppercase() }} · ${game.moves.size} moves",
+                    text = stringResource(R.string.playing_as_moves, game.playerColor.replaceFirstChar { it.uppercase() }, game.moves.size),
                     color = BotTextMuted,
                     fontSize = TextSizeCaption
                 )

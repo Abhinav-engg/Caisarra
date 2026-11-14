@@ -1,6 +1,8 @@
 
 package com.abhinav.caisarra.presentation.game.components
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -89,7 +91,7 @@ fun AutoQueenPromotionSetting(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Auto-promote to Queen",
+                text = stringResource(R.string.auto_promote_to_queen),
                 color = SettingText,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold
