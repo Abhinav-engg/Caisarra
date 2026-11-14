@@ -73,13 +73,18 @@ fun StatsScreen(
             .statusBarsPadding()
     ) {
         CaisaaraTopBar(
-            title = "STATS",
+            title = if (state.isOwnStats == false && state.username.isNotBlank()) {
+                "${state.username.uppercase()}'S STATS"
+            } else {
+                "STATS"
+            },
             onBack = onBack
         )
 
         ModeSelectorBar(
             selectedMode = state.selectedMode,
             onSelectMode = viewModel::selectMode,
+            modes = state.availableModes,
             modifier = Modifier.padding(horizontal = StatsScreenPadding, vertical = 8.dp)
         )
 

@@ -39,8 +39,12 @@ data class StatsUiState(
     val selectedRange: StatsRange = StatsRange.THIRTY_DAYS,
     val stats: ModeStatsData? = null,
     val error: String? = null,
-    val isGuest: Boolean = false
-)
+    val isGuest: Boolean = false,
+    val isOwnStats: Boolean? = null
+) {
+    val availableModes: List<GameMode>
+        get() = if (isOwnStats == false) GameMode.entries - GameMode.PUZZLE else GameMode.entries
+}
 
 class StatsViewModel(
     private val authRepository: AuthRepository,
@@ -81,13 +85,24 @@ class StatsViewModel(
 
             val candidateUsername = _state.value.username.takeIf { it.isNotBlank() && !it.contains("@") }
             if (candidateUsername != null) {
+                val isOwn = _state.value.isOwnStats ?: resolveIsOwn(candidateUsername)
+                _state.value = _state.value.copy(
+                    isOwnStats = isOwn,
+                    selectedMode = if (!isOwn && _state.value.selectedMode == GameMode.PUZZLE) {
+                        GameMode.RAPID
+                    } else {
+                        _state.value.selectedMode
+                    }
+                )
                 if (initialMode == null) {
                     try {
                         val profile = cachedProfile ?: runCatching {
                             profileRepository.getPublicProfile(candidateUsername)
-                        }.getOrNull() ?: runCatching {
-                            profileRepository.getMyProfile()
-                        }.getOrNull()
+                        }.getOrNull() ?: if (isOwn) {
+                            runCatching { profileRepository.getMyProfile() }.getOrNull()
+                        } else {
+                            null
+                        }
                         cachedProfile = profile
                         val bestMode = pickBestInitialMode(profile)
                         _state.value = _state.value.copy(selectedMode = bestMode)
@@ -126,7 +141,8 @@ class StatsViewModel(
                 }
                 _state.value = _state.value.copy(
                     username = resolvedUsername,
-                    selectedMode = bestMode
+                    selectedMode = bestMode,
+                    isOwnStats = true
                 )
                 loadStats(
                     username = resolvedUsername,
@@ -144,6 +160,7 @@ class StatsViewModel(
     }
 
     fun selectMode(mode: GameMode) {
+        if (mode !in _state.value.availableModes) return
         if (_state.value.selectedMode == mode && _state.value.stats != null) return
         _state.value = _state.value.copy(selectedMode = mode)
         val username = _state.value.username
@@ -303,7 +320,11 @@ class StatsViewModel(
                     } catch (_: Exception) {}
                 }
 
-                val profile = fallbackProfile ?: cachedProfile ?: runCatching { profileRepository.getMyProfile() }.getOrNull()
+                val profile = fallbackProfile ?: cachedProfile ?: if (_state.value.isOwnStats != false) {
+                    runCatching { profileRepository.getMyProfile() }.getOrNull()
+                } else {
+                    null
+                }
                 val modeRating = profile?.ratings?.entries?.firstOrNull {
                     it.key.equals(mode.ratingKey, ignoreCase = true)
                 }?.value
@@ -355,6 +376,15 @@ class StatsViewModel(
                 "Network connection issue. Please check your internet connection."
             else -> e.userMessage("Failed to load player statistics")
         }
+    }
+
+    private suspend fun resolveIsOwn(username: String): Boolean {
+        val stored = authRepository.getUsername()?.trim()?.takeUnless { it.isBlank() || it.contains("@") }
+        if (stored != null) return stored.equals(username, ignoreCase = true)
+        val myProfile = runCatching { profileRepository.getMyProfile() }.getOrNull() ?: return false
+        val isOwn = myProfile.username.trim().equals(username, ignoreCase = true)
+        if (isOwn) cachedProfile = myProfile
+        return isOwn
     }
 
     private fun pickBestInitialMode(profile: ProfileData?): GameMode {

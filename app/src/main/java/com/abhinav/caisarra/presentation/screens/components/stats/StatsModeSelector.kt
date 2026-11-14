@@ -36,7 +36,8 @@ private val RecentGameDateFormatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm
 fun ModeSelectorBar(
     selectedMode: GameMode,
     onSelectMode: (GameMode) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    modes: List<GameMode> = GameMode.entries
 ) {
     Box(
         modifier = modifier
@@ -50,7 +51,7 @@ fun ModeSelectorBar(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            GameMode.entries.forEach { mode ->
+            modes.forEach { mode ->
                 val isSelected = mode == selectedMode
                 Box(
                     modifier = Modifier
