@@ -42,6 +42,9 @@ import com.abhinav.caisarra.core.ui.components.FullScreenError
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.components.RollingNumber
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
+import com.abhinav.caisarra.features.mascot.domain.RushMascotLines
+import com.abhinav.caisarra.features.mascot.presentation.MascotSpotlight
+import com.abhinav.caisarra.features.mascot.presentation.RushMascot
 import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
@@ -111,11 +114,19 @@ fun RushScreen(
                     .systemBarsPadding(),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                RushResultSheet(
-                    summary = uiState.summary,
-                    onPlayAgain = { viewModel.startRush() },
-                    onClose = onBack
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    MascotSpotlight(
+                        reaction = RushMascotLines.gameOver(uiState.summary),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 32.dp, vertical = 16.dp)
+                    )
+                    RushResultSheet(
+                        summary = uiState.summary,
+                        onPlayAgain = { viewModel.startRush() },
+                        onClose = onBack
+                    )
+                }
             }
         }
     }
@@ -232,6 +243,8 @@ private fun RushLandscapeContent(
                         Text("${state.currentPuzzle.rating}", color = White, fontSize = TextSizeSubhead, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
                     }
                 }
+
+                RushMascot(state = state, modifier = Modifier.fillMaxWidth())
 
                 Row(
                     modifier = Modifier
@@ -508,6 +521,13 @@ private fun RushPortraitContent(
                 )
             }
         }
+
+        RushMascot(
+            state = state,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        )
 
         Spacer(modifier = Modifier.weight(1f))
 

@@ -156,6 +156,7 @@ class ClubDetailViewModel(
     private var connectRun = 0
     private var autoReconnectAttempts = 0
     private var wasConnected = false
+    private var needsMessageRefresh = false
 
     private val maxAutoReconnectAttempts = 6
     private val connectTimeoutMs = 8_000L
@@ -343,13 +344,11 @@ class ClubDetailViewModel(
                         if (!state.isJoined) return@collect
 
                         if (isAuthChatError(message)) {
-                            // Retrying can't fix an auth problem - stop and tell the user
                             reconnectJob?.cancel()
                             state = state.copy(error = clubUiError(message))
                             return@collect
                         }
 
-                        // Don't spam "Chat disconnected" toasts while auto-retrying
                         if (state.chatReconnecting) return@collect
 
                         state = state.copy(error = clubUiError(message))
@@ -374,6 +373,27 @@ class ClubDetailViewModel(
         startChatConnect(resetAttempts = true)
     }
 
+    fun disconnectChat() {
+        reconnectJob?.cancel()
+        connectRun++
+        wasConnected = false
+        autoReconnectAttempts = 0
+        needsMessageRefresh = true
+        chatSocket.close()
+        state = state.copy(chatConnected = false, chatReconnecting = false)
+    }
+    
+    private fun refreshMessages() {
+        viewModelScope.launch {
+            val loaded = runCatching { repository.getMessages(clubId) }.getOrNull() ?: return@launch
+            if (!state.isJoined) return@launch
+            val extra = state.messages.filter { local ->
+                local.id.isBlank() || loaded.none { it.id == local.id }
+            }
+            state = state.copy(messages = (loaded + extra).takeLast(200))
+        }
+    }
+
     private fun startChatConnect(resetAttempts: Boolean) {
         if (!state.isJoined) return
         if (resetAttempts) autoReconnectAttempts = 0
@@ -393,6 +413,10 @@ class ClubDetailViewModel(
 
                     if (connected) {
                         autoReconnectAttempts = 0
+                        if (needsMessageRefresh) {
+                            needsMessageRefresh = false
+                            refreshMessages()
+                        }
                         return@launch
                     }
 
@@ -667,7 +691,11 @@ fun ClubDetailScreen(
 
     DisposableEffect(lifecycleOwner, vm) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) vm.ensureChatConnected()
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> vm.ensureChatConnected()
+                Lifecycle.Event.ON_STOP -> vm.disconnectChat()
+                else -> Unit
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }

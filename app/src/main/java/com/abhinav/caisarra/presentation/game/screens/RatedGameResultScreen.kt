@@ -23,9 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -36,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +50,12 @@ import com.abhinav.caisarra.presentation.game.model.GameResult
 import com.abhinav.caisarra.presentation.game.model.GameUiState
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisViewModel
+import com.abhinav.caisarra.features.mascot.domain.GameResultMascotLines
+import com.abhinav.caisarra.features.mascot.presentation.BubbleTail
+import com.abhinav.caisarra.features.mascot.presentation.Mascot
+import com.abhinav.caisarra.features.mascot.presentation.MascotSpeechBubble
 import kotlin.math.abs
+import kotlin.random.Random
 
 private val ScreenBg = Color(0xFF0B1218)
 private val Card = Color(0xFF121A22)
@@ -93,17 +96,21 @@ fun RatedGameResultScreen(
         ResultOutcome.DEFEAT -> "Defeat"
         ResultOutcome.DRAW -> "Draw"
     }
-    val icon = when (outcome) {
-        ResultOutcome.VICTORY -> Icons.Default.EmojiEvents
-        ResultOutcome.DEFEAT -> Icons.Default.Flag
-        ResultOutcome.DRAW -> Icons.Default.Handshake
-    }
     val previousRating = state.playerRating?.let { current ->
         state.ratingChange?.let { current - it }
     }
     val iAmWhite = state.myColor != PieceColor.BLACK
     val myChange = state.ratingChange
     val opponentChange = state.opponentRatingChange
+    val myAccuracy = analysis.summary?.summaryStats
+        ?.let { if (iAmWhite) it.accuracyWhite else it.accuracyBlack }
+        ?.takeIf { it > 0.0 }
+    val lineSeed = remember { Random.nextInt(0, 1000) }
+    val mascotReaction = when (outcome) {
+        ResultOutcome.VICTORY -> GameResultMascotLines.victory(myChange, myAccuracy, lineSeed)
+        ResultOutcome.DEFEAT -> GameResultMascotLines.defeat(myChange, myAccuracy, lineSeed)
+        ResultOutcome.DRAW -> GameResultMascotLines.draw(lineSeed)
+    }
 
     Column(
         modifier = Modifier
@@ -128,19 +135,24 @@ fun RatedGameResultScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(18.dp))
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .border(1.dp, accent.copy(alpha = 0.55f), CircleShape)
-                    .background(accent.copy(alpha = 0.12f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = title, tint = accent, modifier = Modifier.size(30.dp))
-            }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(4.dp))
+            Mascot(
+                mood = mascotReaction.mood,
+                reactionKey = mascotReaction.key,
+                size = 132.dp
+            )
+            Spacer(Modifier.height(6.dp))
             Text(title, color = TextMain, fontSize = 34.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(14.dp))
+            MascotSpeechBubble(
+                reaction = mascotReaction,
+                tail = BubbleTail.TOP,
+                centered = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+            )
+            Spacer(Modifier.height(16.dp))
             EloPill(
                 change = myChange,
                 current = state.playerRating,

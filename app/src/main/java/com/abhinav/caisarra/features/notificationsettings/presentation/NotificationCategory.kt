@@ -36,6 +36,12 @@ enum class NotificationCategory(
         "Comments and reactions on your posts",
         listOf("post_comment", "post_reaction")
     ),
+    CLUB_CHAT(
+        "SOCIAL",
+        "Club Chat",
+        "Push alerts for new club chat messages",
+        listOf("club_message")
+    ),
     CLUBS(
         "SOCIAL",
         "Clubs",

@@ -37,6 +37,8 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -332,6 +334,8 @@ fun ChessBoard(
                     }
                 )
         ) {
+            val lightTexture = theme.lightSquareTexture?.let { ImageBitmap.imageResource(it) }
+            val darkTexture = theme.darkSquareTexture?.let { ImageBitmap.imageResource(it) }
             repeat(boardSize) { displayRow ->
                 Row(
                     modifier = Modifier.weight(1f),
@@ -360,6 +364,9 @@ fun ChessBoard(
                                 .weight(1f)
                                 .aspectRatio(1f)
                                 .background(squareColor)
+                                .squareTexture(if (isDark) darkTexture else lightTexture, displayRow, displayColumn, maxOf(boardSize, columns))
+                                .then((if (isDark) theme.darkSquareGradient else theme.lightSquareGradient).takeIf { it.size > 1 }?.let { Modifier.background(Brush.horizontalGradient(it)) } ?: Modifier)
+                                .squareInnerShadows(theme.squareInnerShadows)
                                 .then(
                                     if (isLastMove) Modifier.background(theme.lastMoveColor) else Modifier
                                 )
@@ -368,7 +375,7 @@ fun ChessBoard(
                                 )
                                 .border(
                                     width = 0.5.dp,
-                                    color = Color.Black.copy(alpha = 0.15f)
+                                    color = theme.squareBorder
                                 )
                                 .clickable {
                                     onSquareClick(square)

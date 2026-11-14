@@ -43,19 +43,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.abhinav.caisarra.core.ui.components.FullScreenError
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.features.gameplay.presentation.GameActions
+import com.abhinav.caisarra.features.gameplay.presentation.MoveNavigationBar
+import com.abhinav.caisarra.features.gameplay.presentation.StatePlayerCard
+import com.abhinav.caisarra.features.gameplay.presentation.ThinkingIndicator
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.presentation.common.singleClick
 import com.abhinav.caisarra.presentation.game.BotGameViewModel
-import com.abhinav.caisarra.presentation.game.components.CapturedPieces
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
-import com.abhinav.caisarra.presentation.game.components.GameBottomBar
 import com.abhinav.caisarra.presentation.game.components.GameDecision
 import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.MoveList
@@ -175,32 +177,24 @@ fun BotGameScreen(
                             .weight(1f)
                             .fillMaxHeight()
                     ) {
-                        BotTopBar(
-                            onHome = singleClick(requestHome),
-                            onFlip = singleClick(viewModel::flipBoard)
-                        )
+                        CaisaaraTopBar(title = "VS BOT", onBack = requestHome)
                         if (state.gameResult != null && !showResultDialog) {
                             GameOverPill(onClick = { showResultDialog = true })
                         }
-                        TopPlayer(state, thinking)
+                        BotPlayer(state, state.isBoardFlipped, thinking)
                         MoveList(state.moves, Modifier.weight(1f).padding(vertical = 8.dp))
-                        BottomPlayer(state, thinking)
+                        BotPlayer(state, !state.isBoardFlipped, thinking)
                         Spacer(Modifier.height(8.dp))
-                        BotActions(
-                            canUndo = state.canUndo,
-                            canRedo = state.canRedo,
-                            onUndo = viewModel::undo,
-                            onRedo = viewModel::redo,
-                            gameOngoing = state.gameResult == null,
-                            onResign = viewModel::resign
-                        )
+                        GameActions(state.gameResult == null, state.isBoardFlipped, viewModel::resign, viewModel::flipBoard)
+                        MoveNavigationBar(state.canUndo, state.canRedo, viewModel::undo, viewModel::redo, Modifier.padding(top = 8.dp))
                     }
                 }
             } else {
                 val boardSize = maxWidth - 24.dp
+                Column(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .weight(1f)
                         .padding(horizontal = 12.dp),
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -209,27 +203,13 @@ fun BotGameScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        BotTopBar(
-                            onHome = singleClick(requestHome),
-                            onFlip = singleClick(viewModel::flipBoard)
-                        )
+                        CaisaaraTopBar(title = "VS BOT", onBack = requestHome)
                         if (state.gameResult != null && !showResultDialog) {
                             GameOverPill(onClick = { showResultDialog = true })
                         }
-                        Spacer(Modifier.height(2.dp))
-                        MoveTicker(
-                            moves = state.moves,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(36.dp)
-                        )
                     }
 
-                    TopPlayer(
-                        state = state,
-                        thinking = thinking,
-                        modifier = Modifier.width(boardSize)
-                    )
+                    BotPlayer(state, state.isBoardFlipped, thinking, Modifier.width(boardSize))
 
                     Box(modifier = Modifier.size(boardSize)) {
                         BotBoard(
@@ -239,20 +219,11 @@ fun BotGameScreen(
                         )
                     }
 
-                    BottomPlayer(
-                        state = state,
-                        thinking = thinking,
-                        modifier = Modifier.width(boardSize)
-                    )
-
-                    BotActions(
-                        canUndo = state.canUndo,
-                        canRedo = state.canRedo,
-                        onUndo = viewModel::undo,
-                        onRedo = viewModel::redo,
-                        gameOngoing = state.gameResult == null,
-                        onResign = viewModel::resign
-                    )
+                    BotPlayer(state, !state.isBoardFlipped, thinking, Modifier.width(boardSize))
+                    MoveTicker(moves = state.moves, modifier = Modifier.width(boardSize))
+                    GameActions(state.gameResult == null, state.isBoardFlipped, viewModel::resign, viewModel::flipBoard, Modifier.padding(bottom = 8.dp))
+                }
+                MoveNavigationBar(state.canUndo, state.canRedo, viewModel::undo, viewModel::redo)
                 }
             }
         }
@@ -320,167 +291,9 @@ private fun BotBoard(
 }
 
 @Composable
-private fun BotActions(
-    canUndo: Boolean,
-    canRedo: Boolean,
-    onUndo: () -> Unit,
-    onRedo: () -> Unit,
-    gameOngoing: Boolean,
-    onResign: () -> Unit
-) {
-    GameBottomBar(
-        canUndo = canUndo,
-        canRedo = canRedo,
-        optionsEnabled = gameOngoing,
-        onUndo = onUndo,
-        onRedo = onRedo,
-        onOfferDraw = {},
-        onResign = onResign,
-        showDraw = false,
-        showUndoRedo = true
-    )
-}
-
-@Composable
-private fun BotTopBar(onHome: () -> Unit, onFlip: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        TextButton(onClick = onHome) {
-            Text(text = "Home", color = Color.White, fontFamily = JetBrainsMono)
-        }
-        Text(
-            text = "MOSAIC",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp,
-            fontFamily = JetBrainsMono
-        )
-        TextButton(onClick = onFlip) {
-            Text(text = "Flip", color = Color.White, fontFamily = JetBrainsMono)
-        }
-    }
-}
-
-@Composable
-private fun TopPlayer(
-    state: GameUiState,
-    thinking: Boolean,
-    modifier: Modifier = Modifier
-) {
-    if (state.isBoardFlipped) {
-        PlayerBar(
-            name = state.whitePlayerName,
-            isActive = state.isWhiteTurn,
-            thinking = thinking,
-            captured = state.capturedBlackPieces,
-            advantage = state.whiteAdvantage,
-            modifier = modifier
-        )
-    } else {
-        PlayerBar(
-            name = state.blackPlayerName,
-            isActive = !state.isWhiteTurn,
-            thinking = thinking,
-            captured = state.capturedWhitePieces,
-            advantage = state.blackAdvantage,
-            modifier = modifier
-        )
-    }
-}
-
-@Composable
-private fun BottomPlayer(
-    state: GameUiState,
-    thinking: Boolean,
-    modifier: Modifier = Modifier
-) {
-    if (state.isBoardFlipped) {
-        PlayerBar(
-            name = state.blackPlayerName,
-            isActive = !state.isWhiteTurn,
-            thinking = thinking,
-            captured = state.capturedWhitePieces,
-            advantage = state.blackAdvantage,
-            modifier = modifier
-        )
-    } else {
-        PlayerBar(
-            name = state.whitePlayerName,
-            isActive = state.isWhiteTurn,
-            thinking = thinking,
-            captured = state.capturedBlackPieces,
-            advantage = state.whiteAdvantage,
-            modifier = modifier
-        )
-    }
-}
-
-@Composable
-private fun PlayerBar(
-    name: String,
-    isActive: Boolean,
-    thinking: Boolean,
-    captured: List<com.abhinav.caisarra.presentation.game.model.Piece>,
-    advantage: Int = 0,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                if (isActive) Color(0xFF263B30) else Color(0xFF151F2B),
-                RoundedCornerShape(12.dp)
-            )
-            .border(
-                1.dp,
-                Color(0xFF304154),
-                RoundedCornerShape(12.dp)
-            )
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = name,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
-            )
-            if (captured.isNotEmpty() || advantage > 0) {
-                CapturedPieces(
-                    pieces = captured,
-                    advantage = advantage
-                )
-            }
-        }
-
-        if (isActive && thinking) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(
-                    color = Accent,
-                    strokeWidth = 2.dp,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = "Thinking...",
-                    color = Accent,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-        }
+private fun BotPlayer(state: GameUiState, isWhite: Boolean, thinking: Boolean, modifier: Modifier = Modifier) {
+    StatePlayerCard(state, isWhite, modifier) {
+        if (thinking && state.isWhiteTurn == isWhite) ThinkingIndicator()
     }
 }
 

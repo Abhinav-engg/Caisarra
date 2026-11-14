@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -35,6 +34,10 @@ import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.DailyStreakResponse
 import com.abhinav.caisarra.data.remote.dto.StreakDayDto
+import com.abhinav.caisarra.features.mascot.domain.StreakMascotLines
+import com.abhinav.caisarra.features.mascot.presentation.BubbleTail
+import com.abhinav.caisarra.features.mascot.presentation.Mascot
+import com.abhinav.caisarra.features.mascot.presentation.MascotSpeechBubble
 import com.caisaara.ui.theme.PuzzleCardBorder
 import com.caisaara.ui.theme.StatsBg
 import com.caisaara.ui.theme.StatsCyan
@@ -58,23 +61,21 @@ fun DailyStreakDialog(
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE28339).copy(alpha = 0.18f))
-                    .border(1.dp, Color(0xFFE28339).copy(alpha = 0.4f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.LocalFireDepartment,
-                    contentDescription = null,
-                    tint = Color(0xFFE28339),
-                    modifier = Modifier.size(34.dp)
-                )
-            }
+            val bestStreak = maxOf(streakData?.bestStreak ?: 0, streakData?.maxStreak ?: 0, currentStreak)
+            val mascotReaction = StreakMascotLines.forStreak(
+                currentStreak = currentStreak,
+                bestStreak = bestStreak,
+                todayCompleted = streakData?.todayCompleted == true,
+                status = streakData?.streakStatus.orEmpty()
+            )
 
-            Spacer(Modifier.height(12.dp))
+            Mascot(
+                mood = mascotReaction.mood,
+                reactionKey = mascotReaction.key,
+                size = 104.dp
+            )
+
+            Spacer(Modifier.height(8.dp))
 
             Text(
                 text = "$currentStreak Day Streak",
@@ -86,16 +87,13 @@ fun DailyStreakDialog(
 
             Spacer(Modifier.height(4.dp))
 
-            val subtitle = when {
-                streakData?.todayCompleted == true -> "Completed today!"
-                else -> "Play a game today to maintain your streak"
-            }
-            Text(
-                text = subtitle,
-                color = ThemeSlateAccent,
-                fontFamily = JetBrainsMono,
-                fontSize = 12.sp,
-                textAlign = TextAlign.Center
+            Spacer(Modifier.height(10.dp))
+
+            MascotSpeechBubble(
+                reaction = mascotReaction,
+                tail = BubbleTail.TOP,
+                centered = true,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(16.dp))
@@ -106,7 +104,7 @@ fun DailyStreakDialog(
             ) {
                 StreakMetricPill(
                     label = "Best Streak",
-                    value = "${streakData?.bestStreak ?: currentStreak} days"
+                    value = "$bestStreak days"
                 )
                 StreakMetricPill(
                     label = "Freezes",

@@ -46,6 +46,9 @@ import com.abhinav.caisarra.R
 import com.abhinav.caisarra.core.ui.components.GeneralButton
 import com.abhinav.caisarra.core.ui.components.RollingNumber
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
+import com.abhinav.caisarra.features.mascot.domain.PuzzleMascotLines
+import com.abhinav.caisarra.features.mascot.presentation.DailyPuzzleMascot
+import com.abhinav.caisarra.features.mascot.presentation.MascotSays
 import com.abhinav.caisarra.presentation.common.singleClickable
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
@@ -253,9 +256,7 @@ private fun DailyPuzzleLandscapeContent(
                     }
                 }
 
-                state.message?.let {
-                    Text(it, color = ThemeSlateAccent, fontSize = TextSizeBadge)
-                }
+                DailyPuzzleMascot(state = state, modifier = Modifier.fillMaxWidth())
 
                 if (state.puzzle.themes.isNotEmpty()) {
                     Text("THEMES", color = StatsCyan, fontSize = TextSizeCaption, fontWeight = FontWeight.Bold)
@@ -568,15 +569,12 @@ private fun DailyPuzzlePortraitContent(
             }
         }
 
-        state.message?.let { msg ->
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = msg,
-                color = ThemeSlateAccent,
-                fontSize = TextSizeBadge,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-        }
+        DailyPuzzleMascot(
+            state = state,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+        )
 
         if (state.puzzle.themes.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -890,6 +888,14 @@ private fun DailyPuzzleSolvedContent(
             }
         }
 
+        MascotSays(
+            reaction = PuzzleMascotLines.solved(state.streak, state.ratingChange, state.puzzle.hashCode()),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            mascotSize = 64.dp
+        )
+
         PuzzleResultSheet(
             isSolved = true,
             ratingChange = state.ratingChange,
@@ -939,6 +945,14 @@ private fun DailyPuzzleFailedContent(
                 )
             }
         }
+
+        MascotSays(
+            reaction = PuzzleMascotLines.failed(state.puzzle.hashCode()),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            mascotSize = 64.dp
+        )
 
         PuzzleResultSheet(
             isSolved = false,

@@ -74,5 +74,6 @@ data class MoveAnalysisDto(
     @SerialName("best_move") val bestMove: String = "",
     val pv: List<String> = emptyList(),
     @SerialName("centipawn_loss") val centipawnLoss: Int = 0,
-    val classification: String = ""
+    val classification: String = "",
+    val explanation: String = ""
 )

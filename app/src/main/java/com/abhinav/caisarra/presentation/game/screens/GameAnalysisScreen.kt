@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.abhinav.caisarra.features.mascot.presentation.AnalysisMoveMascot
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.viewmodel.AnalysisPhase
 import com.abhinav.caisarra.presentation.game.viewmodel.GameAnalysisUiState
@@ -220,6 +221,14 @@ internal fun AnalysisContent(
 
         val detailsPanel: @Composable ColumnScope.() -> Unit = {
             CurrentMoveCard(
+                currentPly = state.currentPly,
+                moves = state.moves,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
+            )
+
+            AnalysisMoveMascot(
                 currentPly = state.currentPly,
                 moves = state.moves,
                 modifier = Modifier
