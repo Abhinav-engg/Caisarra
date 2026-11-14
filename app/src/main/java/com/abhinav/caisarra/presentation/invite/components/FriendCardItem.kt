@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.invite.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -73,7 +74,8 @@ fun FriendCardItem(
                 name = displayName,
                 avatarUrl = friend.avatarUrl,
                 size = FriendsAvatarSize,
-                isOnline = isOnline
+                isOnline = isOnline,
+                username = friend.username
             )
 
             Spacer(modifier = Modifier.width(14.dp))
@@ -94,7 +96,7 @@ fun FriendCardItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${friend.rating ?: 1200} Rapid",
+                        text = stringResource(R.string.rapid_2, friend.rating ?: 1200),
                         color = FriendsTextMuted,
                         fontSize = 13.sp
                     )

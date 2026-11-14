@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.invite.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -77,11 +78,11 @@ fun PlayerSearchResultItem(
                 .clickable(onClick = onPlayerClick),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FriendAvatar(name = name, avatarUrl = player.avatarUrl, size = 44.dp)
+            FriendAvatar(name = name, avatarUrl = player.avatarUrl, size = 44.dp, username = player.username)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text("@${player.username} · $rating Rapid", color = FriendsTextMuted, fontSize = 12.sp)
+                Text(stringResource(R.string.rapid_3, player.username, rating), color = FriendsTextMuted, fontSize = 12.sp)
             }
         }
         Spacer(Modifier.width(8.dp))
@@ -113,7 +114,7 @@ fun PlayerSearchResultItem(
                     modifier = Modifier.clip(btnShape).background(FriendsButtonDark).clickable(enabled = !isBusy, onClick = onCancel).padding(horizontal = 12.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Cancel", color = FriendsTextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.cancel), color = FriendsTextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
             "request_received" -> {
@@ -122,25 +123,25 @@ fun PlayerSearchResultItem(
                         modifier = Modifier.clip(btnShape).background(FriendsCyan).clickable(enabled = !isBusy, onClick = onAccept).padding(horizontal = 10.dp, vertical = 7.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Accept", color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.accept), color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.width(6.dp))
                     Box(
                         modifier = Modifier.clip(btnShape).background(FriendsButtonDark).border(1.dp, FriendsButtonDarkBorder, btnShape).clickable(enabled = !isBusy, onClick = onReject).padding(horizontal = 10.dp, vertical = 7.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Decline", color = FriendsTextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.decline), color = FriendsTextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
-            "self" -> Text("You", color = FriendsTextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            "unavailable" -> Text("Unavailable", color = FriendsTextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            "self" -> Text(stringResource(R.string.you_2), color = FriendsTextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            "unavailable" -> Text(stringResource(R.string.unavailable), color = FriendsTextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             "blocked" -> {
                 Box(
                     modifier = Modifier.clip(btnShape).background(FriendsButtonDark).border(1.dp, FriendsButtonDarkBorder, btnShape).clickable(enabled = !isBusy, onClick = onUnblock).padding(horizontal = 12.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Unblock", color = FriendsTextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.unblock), color = FriendsTextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
             else -> {
@@ -164,7 +165,7 @@ fun PlayerSearchResultItem(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.PersonAdd, "Add", tint = Black, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Add", color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.add), color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

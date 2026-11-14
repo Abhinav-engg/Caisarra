@@ -1,5 +1,7 @@
 package com.abhinav.caisarra.presentation.invite
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -143,11 +145,11 @@ fun PlayWithFriendScreen(
             onDismissRequest = { removeTarget = null },
             containerColor = FriendsCardBg,
             title = {
-                Text("Remove friend", color = FriendsTextWhite, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.remove_friend), color = FriendsTextWhite, fontWeight = FontWeight.Bold)
             },
             text = {
                 Text(
-                    "Remove ${friend.displayName ?: friend.username} from your friends?",
+                    stringResource(R.string.remove_from_your_friends, friend.displayName ?: friend.username),
                     color = FriendsTextMuted
                 )
             },
@@ -158,12 +160,12 @@ fun PlayWithFriendScreen(
                         removeTarget = null
                     }
                 ) {
-                    Text("Remove", color = Color(0xFFF87171), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.remove), color = Color(0xFFF87171), fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { removeTarget = null }) {
-                    Text("Cancel", color = FriendsTextMuted)
+                    Text(stringResource(R.string.cancel), color = FriendsTextMuted)
                 }
             }
         )
@@ -295,7 +297,7 @@ fun PlayWithFriendScreen(
                     if (state.searchResults.isEmpty()) {
                         item { EmptyNotice("No players found", "Try searching with another username.") }
                     } else {
-                        item { Text("SEARCH RESULTS", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
+                        item { Text(stringResource(R.string.search_results), color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
                         items(state.searchResults) { player ->
                             val status = state.friendshipStatuses[player.username]
                             val isBlocked = status?.status == "blocked" || state.blockedUsers.any { it.userId == player.userId }
@@ -331,7 +333,7 @@ fun PlayWithFriendScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "MY FRIENDS",
+                                        text = stringResource(R.string.my_friends),
                                         color = FriendsTextMuted,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp,
@@ -341,7 +343,7 @@ fun PlayWithFriendScreen(
 
                                     if (onJoinByCode != null) {
                                         Text(
-                                            text = "SCAN QR",
+                                            text = stringResource(R.string.scan_qr),
                                             color = FriendsCyan,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp,
@@ -352,7 +354,7 @@ fun PlayWithFriendScreen(
                                     }
 
                                     Text(
-                                        text = "INVITE LINK",
+                                        text = stringResource(R.string.invite_link),
                                         color = FriendsCyan,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp,
@@ -399,7 +401,7 @@ fun PlayWithFriendScreen(
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
-                                                text = "All (${state.friends.size})",
+                                                text = stringResource(R.string.all, state.friends.size),
                                                 color = if (filterAllSelected) {
                                                     FriendsTextWhite
                                                 } else {
@@ -451,7 +453,7 @@ fun PlayWithFriendScreen(
                                                 )
 
                                                 Text(
-                                                    text = "Online (${state.onlineFriendsCount})",
+                                                    text = stringResource(R.string.online, state.onlineFriendsCount),
                                                     color = if (filterOnlineSelected) {
                                                         FriendsTextWhite
                                                     } else {
@@ -528,7 +530,7 @@ fun PlayWithFriendScreen(
                         }
                         FriendsTab.REQUESTS -> {
                             if (receivedChallenges.isNotEmpty()) {
-                                item { Text("INCOMING CHALLENGES", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
+                                item { Text(stringResource(R.string.incoming_challenges), color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
                                 items(receivedChallenges) { challenge ->
                                     ReceivedChallengeCardItem(
                                         challenge = challenge,
@@ -555,7 +557,7 @@ fun PlayWithFriendScreen(
                             }
 
                             if (sentChallenges.isNotEmpty()) {
-                                item { Text("SENT CHALLENGES", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
+                                item { Text(stringResource(R.string.sent_challenges), color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
                                 items(sentChallenges) { challenge ->
                                     SentChallengeCardItem(
                                         challenge = challenge,
@@ -578,7 +580,7 @@ fun PlayWithFriendScreen(
                                 item { EmptyNotice("No pending challenges or requests", "Incoming and sent challenges and friend requests will appear here.") }
                             }
                             if (state.incomingRequests.isNotEmpty()) {
-                                item { Text("INCOMING FRIEND REQUESTS", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
+                                item { Text(stringResource(R.string.incoming_friend_requests), color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp) }
                                 items(state.incomingRequests) { request ->
                                     FriendRequestCardItem(
                                         request = request,
@@ -591,11 +593,12 @@ fun PlayWithFriendScreen(
                             if (state.sentRequests.isNotEmpty()) {
                                 item {
                                     Spacer(Modifier.height(8.dp))
-                                    Text("SENT FRIEND REQUESTS", color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
+                                    Text(stringResource(R.string.sent_friend_requests), color = FriendsTextMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
                                 }
                                 items(state.sentRequests) { request ->
                                     SentRequestItem(
                                         name = request.receiverUsername ?: "Player ${request.receiverId ?: ""}",
+                                        avatarUrl = request.receiverAvatarUrl,
                                         onProfileClick = { request.receiverUsername?.let(onViewProfile) },
                                         onCancel = { request.receiverUsername?.let { viewModel.cancelRequest(request.id, it) } }
                                     )
@@ -624,13 +627,13 @@ fun PlayWithFriendScreen(
 }
 
 @Composable
-private fun SentRequestItem(name: String, onProfileClick: (() -> Unit)? = null, onCancel: () -> Unit) {
+private fun SentRequestItem(name: String, avatarUrl: String?, onProfileClick: (() -> Unit)? = null, onCancel: () -> Unit) {
     val cardShape = RoundedCornerShape(FriendsCardRadius)
     Row(
         modifier = Modifier.fillMaxWidth().clip(cardShape).background(FriendsCardBg).border(1.dp, FriendsCardBorder, cardShape).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FriendAvatar(name = name, avatarUrl = null, size = 44.dp)
+        FriendAvatar(name = name, avatarUrl = avatarUrl, size = 44.dp)
         Spacer(Modifier.width(12.dp))
         Column(
             modifier = Modifier
@@ -638,13 +641,13 @@ private fun SentRequestItem(name: String, onProfileClick: (() -> Unit)? = null, 
                 .then(if (onProfileClick != null) Modifier.clickable(onClick = onProfileClick) else Modifier)
         ) {
             Text(name, color = FriendsTextWhite, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Text("Waiting for response", color = FriendsTextMuted, fontSize = 12.sp)
+            Text(stringResource(R.string.waiting_for_response), color = FriendsTextMuted, fontSize = 12.sp)
         }
         Box(
             modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(FriendsButtonDark).clickable(onClick = onCancel).padding(horizontal = 12.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text("Cancel", color = FriendsTextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.cancel), color = FriendsTextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

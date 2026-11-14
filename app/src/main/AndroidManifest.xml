@@ -27,7 +27,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.App.Starting"
-        android:networkSecurityConfig="@xml/network_security_config"
         >
         <activity
             android:name=".app.InsetAwareUCropActivity"
@@ -50,26 +49,15 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.app"
-                    android:pathPrefix="/play/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.app"
-                    android:pathPrefix="/watch/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.app"
-                    android:pathPrefix="/tournament/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.app"
-                    android:pathPrefix="/club/" />
-                <data
-                    android:scheme="https"
-                    android:host="caisaara.app"
-                    android:pathPrefix="/tournaments/invite/" />
+                <data android:scheme="https" />
+                <data android:host="caisaara.app" />
+                <data android:host="caisaara.duckdns.org" />
+                <data android:pathPrefix="/play/" />
+                <data android:pathPrefix="/game/" />
+                <data android:pathPrefix="/watch/" />
+                <data android:pathPrefix="/tournament/" />
+                <data android:pathPrefix="/club/" />
+                <data android:pathPrefix="/tournaments/invite/" />
             </intent-filter>
 
             <intent-filter>

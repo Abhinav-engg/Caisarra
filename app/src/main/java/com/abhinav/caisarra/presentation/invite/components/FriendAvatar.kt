@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.invite.components
 
+import com.abhinav.caisarra.features.profilelink.presentation.rememberAvatarUrl
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -39,9 +40,10 @@ fun FriendAvatar(
     modifier: Modifier = Modifier,
     size: Dp = FriendsAvatarSize,
     shape: Shape = RoundedCornerShape(FriendsAvatarRadius),
-    isOnline: Boolean? = null
+    isOnline: Boolean? = null,
+    username: String? = name
 ) {
-    val resolvedUrl = avatarUrl?.trim()?.takeIf { it.isNotBlank() }?.let { url ->
+    val resolvedUrl = rememberAvatarUrl(username, avatarUrl)?.trim()?.takeIf { it.isNotBlank() }?.let { url ->
         if (url.startsWith("/")) "${RetrofitInstance.BASE_URL}$url" else url
     }
     var imageLoadFailed by remember(resolvedUrl) { mutableStateOf(false) }

@@ -151,10 +151,14 @@ object AppRoutes {
     const val PRIVACY_SETTINGS = "privacy_settings"
     const val NOTIFICATION_SETTINGS = "notification_settings"
     const val BLOCKED_PLAYERS = "blocked_players"
+    const val FOLLOW_LIST = "follow_list/{userId}?username={username}&tab={tab}"
     const val DELETE_ACCOUNT = "delete_account"
     const val WATCH = "watch"
     const val SPECTATE_GAME = "spectate/{watchCode}"
     const val NOTIFICATIONS = "notifications"
+
+    fun followList(userId: Long, username: String, tab: String): String =
+        "follow_list/$userId?username=${Uri.encode(username)}&tab=$tab"
 
     fun spectateGame(watchCode: String): String =
         "spectate/${Uri.encode(watchCode.trim())}"

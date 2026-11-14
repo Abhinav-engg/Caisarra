@@ -8,6 +8,7 @@ import com.abhinav.caisarra.data.remote.dto.CommunityPostDto
 import com.abhinav.caisarra.data.remote.dto.GameHistoryDto
 import com.abhinav.caisarra.data.repository.CommunityRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
+import com.abhinav.caisarra.features.follow.data.FollowRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,12 +27,14 @@ data class CommunityUiState(
     val showingBookmarks: Boolean = false,
     val isLoadingBookmarks: Boolean = false,
     val shareableGames: List<GameHistoryDto> = emptyList(),
-    val isLoadingGames: Boolean = false
+    val isLoadingGames: Boolean = false,
+    val feedTab: CommunityFeedTab = CommunityFeedTab.FOLLOWING
 )
 
 class CommunityViewModel(
     private val repository: CommunityRepository,
-    private val remoteGameRepository: RemoteGameRepository
+    private val remoteGameRepository: RemoteGameRepository,
+    private val followRepository: FollowRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CommunityUiState())
@@ -40,6 +43,24 @@ class CommunityViewModel(
     init {
         refresh()
         loadShareableGames()
+        viewModelScope.launch { markFollowing(followRepository.followNewFriends(), true) }
+    }
+
+    fun selectTab(tab: CommunityFeedTab) = _state.update { it.copy(feedTab = tab) }
+
+    fun toggleFollow(userId: Long) {
+        val follow = _state.value.posts.none { it.author.id == userId && it.author.isFollowing }
+        viewModelScope.launch {
+            followRepository.setFollowing(userId, follow)
+                .onSuccess { markFollowing(setOf(userId), it) }
+                .onFailure { e -> _state.update { it.copy(error = e.userMessage("Unable to update follow.")) } }
+        }
+    }
+
+    private fun markFollowing(userIds: Set<Long>, following: Boolean) = _state.update { state ->
+        state.copy(posts = state.posts.map { post ->
+            if (post.author.id?.let(userIds::contains) == true) post.copy(author = post.author.copy(isFollowing = following)) else post
+        })
     }
 
     fun refresh() {

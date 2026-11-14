@@ -16,6 +16,7 @@ import com.abhinav.caisarra.data.repository.ProfileRepository
 import com.abhinav.caisarra.data.repository.PuzzleRepository
 import com.abhinav.caisarra.data.repository.RatingRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
+import com.abhinav.caisarra.features.follow.data.FollowRepository
 import com.abhinav.caisarra.presentation.screens.EditProfileScreen
 import com.abhinav.caisarra.presentation.screens.ProfileScreen
 import com.abhinav.caisarra.presentation.screens.StatsScreen
@@ -57,7 +58,8 @@ fun NavGraphBuilder.profileGraph(
                 puzzleRepository = PuzzleRepository(
                     service = authRepository.createPuzzleService()
                 ),
-                initialUsername = usernameArg
+                initialUsername = usernameArg,
+                followRepository = FollowRepository(context)
             )
         }
 
@@ -114,7 +116,7 @@ fun NavGraphBuilder.profileGraph(
                     scope = scope,
                     featureName = "Direct messages"
                 ) {
-                    navController.navigate(
+                    navController.navigateOnce(
                         AppRoutes.directMessage(userId, username)
                     )
                 }
@@ -123,6 +125,9 @@ fun NavGraphBuilder.profileGraph(
                 navController.navigate(AppRoutes.onlineGame(gameId)) {
                     launchSingleTop = true
                 }
+            },
+            onFollowList = { userId, username, tab ->
+                navController.navigateOnce(AppRoutes.followList(userId, username, tab.name))
             }
         )
     }

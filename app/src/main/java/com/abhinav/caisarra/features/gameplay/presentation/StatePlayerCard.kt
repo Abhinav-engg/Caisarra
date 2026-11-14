@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.features.gameplay.presentation
 
+import com.abhinav.caisarra.features.profilelink.presentation.openProfileOnClick
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.abhinav.caisarra.presentation.game.model.GameUiState
@@ -12,6 +13,7 @@ fun StatePlayerCard(
     modifier: Modifier = Modifier,
     myAvatarUrl: String? = null,
     opponentAvatarUrl: String? = null,
+    linkProfile: Boolean = false,
     trailing: @Composable () -> Unit = {
         if (state.hasClock) {
             ClockPill(
@@ -23,14 +25,16 @@ fun StatePlayerCard(
     }
 ) {
     val isMine = state.myColor == if (isWhite) PieceColor.WHITE else PieceColor.BLACK
+    val username = if (isWhite) state.whitePlayerName else state.blackPlayerName
     PlayerCard(
-        username = if (isWhite) state.whitePlayerName else state.blackPlayerName,
+        username = username,
         avatarUrl = if (isMine) myAvatarUrl else opponentAvatarUrl,
         rating = if (isWhite) state.whiteRating else state.blackRating,
         countryCode = if (isWhite) state.whiteCountry else state.blackCountry,
         capturedPieces = if (isWhite) state.capturedBlackPieces else state.capturedWhitePieces,
         advantage = if (isWhite) state.whiteAdvantage else state.blackAdvantage,
         trailing = trailing,
-        modifier = modifier
+        profileUsername = username.takeIf { linkProfile },
+        modifier = if (linkProfile) modifier.openProfileOnClick(username) else modifier
     )
 }
