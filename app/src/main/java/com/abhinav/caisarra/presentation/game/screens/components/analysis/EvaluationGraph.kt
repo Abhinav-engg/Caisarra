@@ -1,10 +1,13 @@
 package com.abhinav.caisarra.presentation.game.screens.components.analysis
 
+import androidx.compose.ui.res.stringResource
+import com.abhinav.caisarra.R
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,11 +27,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.abhinav.caisarra.data.remote.dto.EvalPointDto
+import kotlin.math.roundToInt
 
 private val Card = Color(0xFF121A22)
 private val Border = Color(0xFF2A3848)
@@ -41,6 +47,8 @@ fun EvalGraph(
     onPointClick: (Int) -> Unit = {}
 ) {
     if (points.size < 2) return
+    val currentPoints by rememberUpdatedState(points)
+    val currentOnPointClick by rememberUpdatedState(onPointClick)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -48,12 +56,21 @@ fun EvalGraph(
             .border(1.dp, Border, RoundedCornerShape(16.dp))
             .padding(12.dp)
     ) {
-        Text("EVALUATION GRAPH", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+        Text(stringResource(R.string.evaluation_graph), color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
         Spacer(Modifier.height(8.dp))
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(110.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures { offset ->
+                        val pts = currentPoints
+                        if (pts.size < 2 || size.width <= 0) return@detectTapGestures
+                        val stepX = size.width.toFloat() / (pts.size - 1)
+                        val index = (offset.x / stepX).roundToInt().coerceIn(0, pts.lastIndex)
+                        currentOnPointClick(pts[index].moveNumber)
+                    }
+                }
         ) {
             val limit = 500
             val half = size.height / 2f
