@@ -56,9 +56,7 @@ fun ClockBar(
     val timeText = formatClockTime(timeMillis, isDailyMode)
 
     val flag = remember(countryCode) { CountryUtils.flag(countryCode) }
-
-    val flag = remember(countryCode) { CountryUtils.flag(countryCode) }
-
+    
     Row(
         modifier = modifier
             .fillMaxWidth()
