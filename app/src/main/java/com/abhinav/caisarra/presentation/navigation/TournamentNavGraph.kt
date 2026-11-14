@@ -67,10 +67,10 @@ fun NavGraphBuilder.tournamentGraph(
         TournamentListScreen(
             viewModel = listViewModel,
             onCreate = {
-                navController.navigate(AppRoutes.CREATE_TOURNAMENT)
+                navController.navigateOnce(AppRoutes.CREATE_TOURNAMENT)
             },
             onOpenTournament = { id, code ->
-                navController.navigate(AppRoutes.tournamentDetail(id, code))
+                navController.navigateOnce(AppRoutes.tournamentDetail(id, code))
             },
             onBack = {
                 navController.safeBack(AppRoutes.GAME_SETUP)
