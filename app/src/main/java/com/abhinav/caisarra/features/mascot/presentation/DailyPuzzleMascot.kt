@@ -3,13 +3,16 @@ package com.abhinav.caisarra.features.mascot.presentation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.features.mascot.domain.PuzzleMascotLines
 import com.abhinav.caisarra.presentation.puzzles.DailyPuzzleUiState
 
 @Composable
 fun DailyPuzzleMascot(
     state: DailyPuzzleUiState.Playing,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    mascotSize: Dp = 56.dp
 ) {
     val transient = rememberTransientMascotReaction()
     val feedback = state.moveFeedback
@@ -31,5 +34,5 @@ fun DailyPuzzleMascot(
         else -> transient.current ?: PuzzleMascotLines.idle(state.attemptsLeft, state.message, seed)
     }
 
-    MascotSays(reaction = reaction, modifier = modifier)
+    MascotSays(reaction = reaction, modifier = modifier, mascotSize = mascotSize)
 }
