@@ -18,11 +18,14 @@ import com.abhinav.caisarra.presentation.game.model.PieceType as UiPieceType
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 import com.abhinav.caisarra.presentation.game.model.MoveFeedback
 import com.abhinav.caisarra.presentation.game.model.Square as UiSquare
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class RushViewModel(
     private val puzzleRepository: PuzzleRepository,
@@ -268,10 +271,12 @@ class RushViewModel(
         timerJob = null
 
         if (current is RushUiState.Playing) {
-            viewModelScope.launch {
-                try {
-                    puzzleRepository.endRush(current.sessionId)
-                } catch (_: Exception) {
+            viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                withContext(NonCancellable) {
+                    try {
+                        puzzleRepository.endRush(current.sessionId)
+                    } catch (_: Exception) {
+                    }
                 }
             }
         }

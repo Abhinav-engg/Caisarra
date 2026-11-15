@@ -32,10 +32,7 @@ fun RushScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    BackHandler {
-        if (state is RushUiState.Playing) {
-            viewModel.quitRush()
-        }
+    BackHandler(enabled = state !is RushUiState.Playing) {
         onBack()
     }
 
