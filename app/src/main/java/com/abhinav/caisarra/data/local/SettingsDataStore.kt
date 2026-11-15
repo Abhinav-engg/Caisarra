@@ -20,3 +20,5 @@ val BOARD_THEME_KEY = stringPreferencesKey("board_theme")
 val PIECE_THEME_KEY = stringPreferencesKey("piece_theme")
 
 val PUSH_NOTIFICATIONS_KEY = booleanPreferencesKey("push_notifications_enabled")
+
+val NOTIFICATION_PROMPT_SHOWN_KEY = booleanPreferencesKey("notification_prompt_shown")

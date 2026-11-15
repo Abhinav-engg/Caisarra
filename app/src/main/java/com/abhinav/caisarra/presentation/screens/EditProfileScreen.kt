@@ -1,5 +1,8 @@
 package com.abhinav.caisarra.presentation.screens
 
+import com.abhinav.caisarra.core.permissions.PermissionBlockedDialog
+import com.abhinav.caisarra.core.permissions.isPermissionBlockedAfterDenial
+import com.abhinav.caisarra.core.permissions.openAppSettings
 import androidx.compose.ui.res.stringResource
 import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
@@ -271,14 +274,29 @@ fun EditProfileScreen(
         }
     }
 
+    var showCameraBlockedDialog by remember { mutableStateOf(false) }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
             openCamera()
+        } else if (context.isPermissionBlockedAfterDenial(Manifest.permission.CAMERA)) {
+            showCameraBlockedDialog = true
         } else {
             Toast.makeText(context, "Camera permission is needed to take a photo", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    if (showCameraBlockedDialog) {
+        PermissionBlockedDialog(
+            title = "Camera is blocked",
+            message = "Mosaic needs camera access to take a profile photo. Allow it in Settings, then try again.",
+            onOpenSettings = {
+                showCameraBlockedDialog = false
+                context.openAppSettings()
+            },
+            onDismiss = { showCameraBlockedDialog = false }
+        )
     }
 
     var displayName by remember { mutableStateOf("") }

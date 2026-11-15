@@ -17,6 +17,8 @@
     <string name="no_active_daily_games">No active daily games</string>
     <string name="couldn_t_load_this_club_please">Couldn\'t load this club. Please try again.</string>
     <string name="retry">Retry</string>
+    <string name="open_settings">Open settings</string>
+    <string name="open_settings_caps">OPEN SETTINGS</string>
     <string name="members">%1$s members</string>
     <string name="join_this_club_to_access_its">Join this club to access its members, leaderboard, chat, and management features.</string>
     <string name="share_code">SHARE CODE</string>
