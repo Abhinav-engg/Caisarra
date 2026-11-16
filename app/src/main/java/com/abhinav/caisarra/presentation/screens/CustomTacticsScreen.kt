@@ -409,7 +409,7 @@ private fun CustomTacticsFiltersContent(
                                 },
                                 label = {
                                     Text(
-                                        text = "${theme.name} (${theme.count})",
+                                        text = theme.name,
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium
                                     )
