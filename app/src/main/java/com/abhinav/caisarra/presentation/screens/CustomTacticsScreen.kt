@@ -1,5 +1,19 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.SkipNext
+import androidx.compose.material.icons.outlined.Tune
+import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.abhinav.caisarra.features.gameplay.presentation.GameActionButton
+import com.abhinav.caisarra.features.mascot.domain.PuzzleMascotLines
+import com.abhinav.caisarra.features.mascot.presentation.CustomTacticsMascot
+import com.abhinav.caisarra.features.mascot.presentation.MascotSays
+import com.abhinav.caisarra.features.puzzles.presentation.PuzzleInfoRow
+import com.abhinav.caisarra.features.puzzles.presentation.PuzzleLayout
+import com.abhinav.caisarra.features.puzzles.presentation.PuzzleThemeChips
+import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
+import com.abhinav.caisarra.presentation.game.model.PieceColor
 import androidx.compose.ui.res.stringResource
 import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
@@ -500,98 +514,47 @@ private fun CustomTacticsPlayingContent(
     viewModel: CustomTacticsViewModel,
     onBack: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    ChessMoveSound(
+        board = state.board,
+        moveEventId = state.moveAnimationEvent?.id,
+        moveTo = state.moveAnimationEvent?.to
+    )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(StatsBg)
-            .systemBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
-        if (isLandscape) {
-            Row(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                BoxWithConstraints(
-                    modifier = Modifier.weight(1.15f).padding(4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val boardSize = minOf(
-                        maxWidth,
-                        (configuration.screenHeightDp.dp - 150.dp).coerceAtLeast(160.dp)
-                    )
-                    Box(Modifier.size(boardSize).aspectRatio(1f)) {
-                        ChessBoard(
-                            board = state.board,
-                            selectedSquare = state.selectedSquare,
-                            legalMoves = state.legalMoves,
-                            lastMoveFrom = state.lastMoveFrom,
-                            lastMoveTo = state.lastMoveTo,
-                            isWhiteInCheck = state.isWhiteInCheck,
-                            isBlackInCheck = state.isBlackInCheck,
-                            isFlipped = state.isBoardFlipped,
-                            moveAnimationEvent = state.moveAnimationEvent,
-                            moveAnimationConsumedId = state.moveAnimationConsumedId,
-                            onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
-                            onSquareClick = viewModel::onSquareClicked
-                        )
-                    }
-                }
-                PuzzleInfoPanel(state = state, modifier = Modifier.weight(0.85f))
-            }
-        } else {
-            Column(
-                modifier = Modifier.weight(1f).fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                PuzzleInfoPanel(state = state, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(12.dp))
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val boardSize = maxWidth
-
-                    Box(
-                        modifier = Modifier
-                            .size(boardSize)
-                            .aspectRatio(1f)
-                    ) {
-                        ChessBoard(
-                            board = state.board,
-                            selectedSquare = state.selectedSquare,
-                            legalMoves = state.legalMoves,
-                            lastMoveFrom = state.lastMoveFrom,
-                            lastMoveTo = state.lastMoveTo,
-                            isWhiteInCheck = state.isWhiteInCheck,
-                            isBlackInCheck = state.isBlackInCheck,
-                            isFlipped = state.isBoardFlipped,
-                            moveAnimationEvent = state.moveAnimationEvent,
-                            moveAnimationConsumedId = state.moveAnimationConsumedId,
-                            onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
-                            onSquareClick = { square ->
-                                viewModel.onSquareClicked(square)
-                            }
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-            }
+    PuzzleLayout(
+        header = {
+            CaisaaraTopBar(
+                title = stringResource(R.string.custom_tactics_2),
+                onBack = onBack
+            )
+            CustomTacticsMascot(
+                state = state,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                mascotSize = 88.dp
+            )
+        },
+        board = {
+            ChessBoard(
+                board = state.board,
+                selectedSquare = state.selectedSquare,
+                legalMoves = state.legalMoves,
+                lastMoveFrom = state.lastMoveFrom,
+                lastMoveTo = state.lastMoveTo,
+                isWhiteInCheck = state.isWhiteInCheck,
+                isBlackInCheck = state.isBlackInCheck,
+                isFlipped = state.isBoardFlipped,
+                moveAnimationEvent = state.moveAnimationEvent,
+                moveAnimationConsumedId = state.moveAnimationConsumedId,
+                onMoveAnimationStarted = viewModel::onMoveAnimationStarted,
+                moveFeedback = state.moveFeedback,
+                onSquareClick = viewModel::onSquareClicked
+            )
+        },
+        panel = {
+            CustomTacticsPanel(state = state, viewModel = viewModel)
         }
-
-        CustomTacticsBottomControls(
-            enabled = !state.isAwaitingServer,
-            onBack = viewModel::onBackToFilters,
-            onHint = viewModel::showHint
-        )
-    }
+    )
 
     state.promotionPending?.let {
         PromotionDialog(onPieceSelected = viewModel::onPromotionPieceSelected)
@@ -599,116 +562,55 @@ private fun CustomTacticsPlayingContent(
 }
 
 @Composable
-private fun PuzzleInfoPanel(
+private fun CustomTacticsPanel(
     state: CustomTacticsUiState.Playing,
-    modifier: Modifier = Modifier
+    viewModel: CustomTacticsViewModel
 ) {
-    Column(
-        modifier = modifier
-            .background(StatsSkeletonChartBg, RoundedCornerShape(18.dp))
-            .border(1.dp, StatsCyan.copy(alpha = 0.25f), RoundedCornerShape(18.dp))
-            .padding(16.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.custom_tactics_2),
-            color = StatsCyan,
-            fontWeight = FontWeight.Bold,
-            fontSize = 13.sp
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.puzzle_rating_2, state.puzzle.rating),
-            color = White,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = state.puzzle.themes.joinToString(" • "),
-            color = ThemeSlateAccent,
-            fontSize = 12.sp
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = state.message ?: "Find the best move!",
-            color = if (state.message?.startsWith("Incorrect") == true) {
-                Color(0xFFFF7777)
-            } else White,
-            fontSize = 14.sp
-        )
-        if (state.isAwaitingServer) {
-            Spacer(Modifier.height(12.dp))
-            CircularProgressIndicator(color = StatsCyan, modifier = Modifier.size(24.dp))
-        }
-    }
-}
+    val busy = state.isAwaitingServer
 
-@Composable
-private fun CustomTacticsBottomControls(
-    enabled: Boolean,
-    onBack: () -> Unit,
-    onHint: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(StatsBg)
-            .padding(top = 8.dp, bottom = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        BottomPuzzleControl(
-            icon = "‹",
-            label = "Back",
-            enabled = enabled,
-            onClick = onBack,
-            modifier = Modifier.weight(1f)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        PuzzleInfoRow(
+            title = "Puzzle #${state.puzzle.puzzleId}",
+            subtitle = if (busy) {
+                "Checking move…"
+            } else {
+                "${if (state.playerColor == PieceColor.WHITE) "White" else "Black"} to move · ${state.puzzle.rating}"
+            }
         )
-        Button(
-            onClick = onHint,
-            enabled = enabled,
-            modifier = Modifier.weight(1.00f).height(40.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = StatsSkeletonChartBg,
-                contentColor = White,
-                disabledContainerColor = StatsSkeletonChartBg.copy(alpha = 0.45f)
-            )
+
+        if (state.puzzle.themes.isNotEmpty()) {
+            PuzzleThemeChips(state.puzzle.themes)
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(stringResource(R.string.hint), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            GameActionButton(
+                icon = Icons.Outlined.Lightbulb,
+                label = "Hint",
+                onClick = viewModel::showHint,
+                modifier = Modifier.weight(1f),
+                enabled = !busy,
+                selected = state.hintCount > 0 && state.selectedSquare != null
+            )
+            GameActionButton(
+                icon = Icons.Outlined.SkipNext,
+                label = "Skip",
+                onClick = viewModel::skipPuzzle,
+                modifier = Modifier.weight(1f),
+                enabled = !busy
+            )
+            GameActionButton(
+                icon = Icons.Outlined.Tune,
+                label = "Filters",
+                onClick = viewModel::onBackToFilters,
+                modifier = Modifier.weight(1f),
+                enabled = !busy
+            )
         }
     }
 }
-
-@Composable
-private fun BottomPuzzleControl(
-    icon: String,
-    label: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = icon,
-            color = if (enabled) White else ThemeSlateAccent,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Medium
-        )
-        Text(
-            text = label,
-            color = if (enabled) White else ThemeSlateAccent,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
 
 @Composable
 private fun CustomTacticsResultContent(
@@ -716,83 +618,131 @@ private fun CustomTacticsResultContent(
     onNextPuzzle: () -> Unit,
     onBack: () -> Unit
 ) {
+    val seed = state.puzzle.hashCode()
+    val reaction = remember(state) {
+        if (state.correct) {
+            PuzzleMascotLines.solved(0, state.ratingChange, seed).copy(
+                detail = if (state.ratingChange > 0) {
+                    "+${state.ratingChange} rating. Ready for another?"
+                } else {
+                    "Ready for another one?"
+                }
+            )
+        } else {
+            PuzzleMascotLines.failed(seed)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(StatsBg)
             .systemBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
     ) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(8.dp)
+        ) {
+            val boardSize = minOf(maxWidth, maxHeight)
+            Box(
+                modifier = Modifier
+                    .size(boardSize)
+                    .aspectRatio(1f)
+                    .align(Alignment.Center)
+            ) {
+                ChessBoard(
+                    board = state.board,
+                    selectedSquare = null,
+                    legalMoves = emptyList(),
+                    lastMoveFrom = null,
+                    lastMoveTo = null,
+                    isWhiteInCheck = false,
+                    isBlackInCheck = false,
+                    isFlipped = state.isBoardFlipped,
+                    onSquareClick = {}
+                )
+            }
+        }
 
-        Text(
-            text = if (state.solved) {
-                "Puzzle Solved!"
-            } else if (state.correct) {
-                "Correct Move!"
-            } else {
-                "Incorrect Move"
-            },
-            color = if (state.correct) {
-                StatsCyan
-            } else {
-                Color(0xFFFF7777)
-            },
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
+        MascotSays(
+            reaction = reaction,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            mascotSize = 64.dp
         )
 
-        Spacer(Modifier.height(12.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Color(0xFF0F172A),
+                    RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                )
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = if (state.solved) {
+                    "Puzzle Solved!"
+                } else if (state.correct) {
+                    "Correct Move!"
+                } else {
+                    "Incorrect Move"
+                },
+                color = if (state.correct) StatsCyan else Color(0xFFFF7777),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
 
-        Text(
-            text = stringResource(R.string.puzzle_rating_2, state.puzzle.rating),
-            color = White,
-            fontSize = 16.sp
-        )
+            Spacer(Modifier.height(8.dp))
 
-        Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.puzzle_rating_2, state.puzzle.rating),
+                color = White,
+                fontSize = 15.sp
+            )
 
-        Text(
-            text = stringResource(R.string.your_rating, state.userRatingBefore, state.userRatingAfter),
-            color = ThemeSlateAccent,
-            fontSize = 14.sp
-        )
+            Spacer(Modifier.height(6.dp))
 
-        Text(
-            text = stringResource(R.string.rating_change, if (state.ratingChange > 0) "+" else "", state.ratingChange),
-            color = StatsCyan,
-            fontSize = 14.sp
-        )
+            Text(
+                text = stringResource(R.string.your_rating, state.userRatingBefore, state.userRatingAfter),
+                color = ThemeSlateAccent,
+                fontSize = 13.sp
+            )
 
-        Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.rating_change, if (state.ratingChange > 0) "+" else "", state.ratingChange),
+                color = StatsCyan,
+                fontSize = 13.sp
+            )
 
-        Text(
-            text = stringResource(R.string.your_moves, state.attemptedMoves.joinToString(", ")),
-            color = ThemeSlateAccent,
-            fontSize = 12.sp
-        )
+            Spacer(Modifier.height(8.dp))
 
-        Text(
-            text = stringResource(R.string.solution_2, state.solutionMoves.joinToString(", ")),
-            color = ThemeSlateAccent,
-            fontSize = 12.sp
-        )
+            Text(
+                text = stringResource(R.string.your_moves, state.attemptedMoves.joinToString(", ")),
+                color = ThemeSlateAccent,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
+            )
 
-        Spacer(Modifier.height(24.dp))
+            Text(
+                text = stringResource(R.string.solution_2, state.solutionMoves.joinToString(", ")),
+                color = ThemeSlateAccent,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
+            )
 
-        ActionButton(
-            text = "Next Puzzle",
-            onClick = onNextPuzzle
-        )
+            Spacer(Modifier.height(18.dp))
 
-        Spacer(Modifier.height(10.dp))
+            ActionButton(text = "Next Puzzle", onClick = onNextPuzzle)
 
-        ActionButton(
-            text = "Back",
-            onClick = onBack
-        )
+            Spacer(Modifier.height(10.dp))
+
+            ActionButton(text = "Back", onClick = onBack)
+        }
     }
 }
 
