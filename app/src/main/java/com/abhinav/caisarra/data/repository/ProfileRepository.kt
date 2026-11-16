@@ -9,8 +9,6 @@ import android.net.Uri
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.File
-import java.io.FileInputStream
 
 class ProfileRepository(
     private val service: ProfileService
@@ -33,11 +31,8 @@ class ProfileRepository(
         return response.data?.players.orEmpty()
     }
     suspend fun uploadAvatar(context: Context, uri: Uri): ProfileData {
-        val bytes = when (uri.scheme) {
-            "file" -> FileInputStream(File(uri.path!!)).use { it.readBytes() }
-            else -> context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                ?: error("Unable to read selected image")
-        }
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: error("Unable to read selected image")
         require(bytes.size <= 5 * 1024 * 1024) { "Photo must be 5 MB or smaller." }
         val mimeType = if (uri.scheme == "file") {
             "image/jpeg"

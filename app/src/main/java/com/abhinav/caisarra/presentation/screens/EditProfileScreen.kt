@@ -29,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -68,7 +67,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -631,25 +629,6 @@ fun EditProfileScreen(
                             label = "Bio",
                             supportingText = "${bio.length}/160",
                             minLines = 3
-                        )
-
-                        EditProfileField(
-                            value = avatarUrl,
-                            onValueChange = { newValue ->
-                                avatarUrl = newValue
-                                selectedSource = AvatarSource.URL
-                                validationError = null
-                            },
-                            label = "Avatar HTTPS URL",
-                            singleLine = true,
-                            keyboardType = KeyboardType.Uri,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Link,
-                                    contentDescription = "Avatar URL",
-                                    tint = EditMuted
-                                )
-                            }
                         )
 
                         validationError?.let {

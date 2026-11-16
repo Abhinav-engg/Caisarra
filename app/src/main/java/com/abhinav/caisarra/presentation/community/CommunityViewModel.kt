@@ -10,6 +10,7 @@ import com.abhinav.caisarra.data.repository.CommunityRepository
 import com.abhinav.caisarra.data.repository.RemoteGameRepository
 import com.abhinav.caisarra.features.follow.data.FollowRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -39,6 +40,7 @@ class CommunityViewModel(
 
     private val _state = MutableStateFlow(CommunityUiState())
     val state = _state.asStateFlow()
+    private var feedJob: Job? = null
 
     init {
         refresh()
@@ -46,7 +48,13 @@ class CommunityViewModel(
         viewModelScope.launch { markFollowing(followRepository.followNewFriends(), true) }
     }
 
-    fun selectTab(tab: CommunityFeedTab) = _state.update { it.copy(feedTab = tab) }
+    fun selectTab(tab: CommunityFeedTab) {
+        if (_state.value.feedTab == tab) return
+        _state.update { it.copy(feedTab = tab, posts = emptyList(), nextBeforeId = null, isLoading = false, isLoadingMore = false) }
+        if (!_state.value.showingBookmarks) refresh()
+    }
+
+    private val followingFeed get() = _state.value.feedTab == CommunityFeedTab.FOLLOWING
 
     fun toggleFollow(userId: Long) {
         val follow = _state.value.posts.none { it.author.id == userId && it.author.isFollowing }
@@ -58,8 +66,13 @@ class CommunityViewModel(
     }
 
     private fun markFollowing(userIds: Set<Long>, following: Boolean) = _state.update { state ->
-        state.copy(posts = state.posts.map { post ->
-            if (post.author.id?.let(userIds::contains) == true) post.copy(author = post.author.copy(isFollowing = following)) else post
+        val hide = !following && !state.showingBookmarks && state.feedTab == CommunityFeedTab.FOLLOWING
+        state.copy(posts = state.posts.mapNotNull { post ->
+            when {
+                post.author.id?.let(userIds::contains) != true -> post
+                hide -> null
+                else -> post.copy(author = post.author.copy(isFollowing = following))
+            }
         })
     }
 
@@ -70,17 +83,19 @@ class CommunityViewModel(
             return
         }
 
-        viewModelScope.launch {
+        feedJob?.cancel()
+        feedJob = viewModelScope.launch {
             _state.update {
                 it.copy(
                     isLoading = true,
+                    isLoadingMore = false,
                     error = null,
                     info = null
                 )
             }
 
             try {
-                val feed = repository.loadFeed()
+                val feed = repository.loadFeed(following = followingFeed)
 
                 _state.update {
                     it.copy(
@@ -240,7 +255,7 @@ class CommunityViewModel(
             cursor == null
         ) return
 
-        viewModelScope.launch {
+        feedJob = viewModelScope.launch {
             _state.update {
                 it.copy(
                     isLoadingMore = true,
@@ -249,7 +264,7 @@ class CommunityViewModel(
             }
 
             try {
-                val feed = if (current.showingBookmarks) repository.loadBookmarks(cursor) else repository.loadFeed(cursor)
+                val feed = if (current.showingBookmarks) repository.loadBookmarks(cursor) else repository.loadFeed(cursor, followingFeed)
 
                 _state.update { old ->
                     old.copy(

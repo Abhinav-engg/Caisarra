@@ -28,10 +28,10 @@ fun NavGraphBuilder.followListGraph(navController: NavController) {
         val args = requireNotNull(entry.arguments)
         val currentUsername by produceState<String?>(null) { value = TokenManager.get(context).getUsername() }
         FollowListScreen(
-            viewModel = screenViewModel {
+            viewModel = screenViewModel(key = "${args.getLong("userId")}") {
                 FollowListViewModel(FollowRepository(context), args.getLong("userId"), FollowListTab.valueOf(args.getString("tab").orEmpty()))
             },
-            title = args.getString("username").orEmpty().uppercase(),
+            title = (args.getString("username")?.takeIf { it.isNotBlank() } ?: currentUsername.orEmpty()).uppercase(),
             currentUsername = currentUsername,
             onBack = { navController.popBackStack() },
             onOpenProfile = { navController.navigateOnce(AppRoutes.profile(it)) }

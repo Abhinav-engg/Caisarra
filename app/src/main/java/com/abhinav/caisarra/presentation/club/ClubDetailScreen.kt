@@ -526,8 +526,7 @@ class ClubDetailViewModel(
                                 sentMessage.id.isNotBlank() &&
                                         it.id == sentMessage.id
                             } + sentMessage
-                            ).takeLast(200),
-                    info = "Message sent successfully."
+                            ).takeLast(200)
                 )
 
                 try {

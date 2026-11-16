@@ -11,12 +11,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -43,16 +43,19 @@ import kotlinx.coroutines.launch
 fun ThemeCustomizationScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val savedTheme by remember(context) {
-        context.settingsDataStore.data.map { BoardThemes.getByStorageKey(it[BOARD_THEME_KEY]) }
-    }.collectAsState(initial = BoardThemes.MidnightCyan)
-    val savedPieces by remember(context) {
-        context.settingsDataStore.data.map { PieceThemes.getByStorageKey(it[PIECE_THEME_KEY]) }
-    }.collectAsState(initial = PieceThemes.Classic)
-    var selectedTheme by remember { mutableStateOf(savedTheme) }
-    var selectedPieces by remember { mutableStateOf(savedPieces) }
-    LaunchedEffect(savedTheme) { selectedTheme = savedTheme }
-    LaunchedEffect(savedPieces) { selectedPieces = savedPieces }
+    val saved by remember(context) {
+        context.settingsDataStore.data.map {
+            BoardThemes.getByStorageKey(it[BOARD_THEME_KEY]) to PieceThemes.getByStorageKey(it[PIECE_THEME_KEY])
+        }
+    }.collectAsState(initial = null)
+    var selectedThemeKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedPiecesKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
+    val savedTheme = saved?.first ?: BoardThemes.MidnightCyan
+    val savedPieces = saved?.second ?: PieceThemes.Classic
+    val selectedTheme = selectedThemeKey?.let { BoardThemes.getByStorageKey(it) } ?: savedTheme
+    val selectedPieces = selectedPiecesKey?.let { PieceThemes.getByStorageKey(it) } ?: savedPieces
+    val hasChanges = saved != null && (selectedTheme.id != savedTheme.id || selectedPieces.id != savedPieces.id)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -78,7 +81,7 @@ fun ThemeCustomizationScreen(onBack: () -> Unit) {
                     title = theme.name,
                     description = theme.description,
                     selected = theme.id == selectedTheme.id,
-                    onClick = { selectedTheme = theme },
+                    onClick = { selectedThemeKey = theme.id.storageKey },
                     modifier = modifier,
                     iconBorder = theme.darkSquare
                 ) { ThemePaletteBar(theme.palette) }
@@ -89,7 +92,7 @@ fun ThemeCustomizationScreen(onBack: () -> Unit) {
                     title = pieces.name,
                     description = pieces.description,
                     selected = pieces.id == selectedPieces.id,
-                    onClick = { selectedPieces = pieces },
+                    onClick = { selectedPiecesKey = pieces.id.storageKey },
                     modifier = modifier
                 ) { PieceSetPreviewRow(pieces) }
             }
@@ -97,13 +100,16 @@ fun ThemeCustomizationScreen(onBack: () -> Unit) {
         GeneralButton(
             text = "Save & Apply",
             onClick = {
+                isSaving = true
                 scope.launch {
                     context.settingsDataStore.edit {
                         it[BOARD_THEME_KEY] = selectedTheme.id.storageKey
                         it[PIECE_THEME_KEY] = selectedPieces.id.storageKey
                     }
+                    onBack()
                 }
             },
+            enabled = hasChanges && !isSaving,
             modifier = Modifier.padding(16.dp)
         )
     }

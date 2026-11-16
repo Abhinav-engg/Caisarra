@@ -24,6 +24,12 @@ enum class NotificationCategory(
         "New requests and accepted requests",
         listOf("friend_request", "friend_accepted")
     ),
+    FOLLOWERS(
+        "SOCIAL",
+        "New Followers",
+        "When someone starts following you",
+        listOf("user_follow")
+    ),
     DIRECT_MESSAGES(
         "SOCIAL",
         "Direct Messages",

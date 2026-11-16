@@ -39,9 +39,11 @@ private const val TacticCardsVisible = 3
 fun DailyTacticsSection(
     onTacticClick: (DailyTactic) -> Unit,
     onViewAll: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tactics: List<DailyTactic> = DailyTactic.entries
 ) {
-    val tactics = DailyTactic.entries
+    if (tactics.isEmpty()) return
+
     val scrollState = rememberScrollState()
 
     Column(

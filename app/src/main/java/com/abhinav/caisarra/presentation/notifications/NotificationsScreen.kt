@@ -163,12 +163,16 @@ fun NotificationsScreen(
                         ) { index, notification ->
                             SwipeToDelete(
                                 onDelete = { viewModel.delete(notification.id) },
-                                modifier = Modifier.animateItem(),
-                                autoDeleteAfterMillis = if (state.isClearing) index.coerceAtMost(12) * 90L else null
+                                modifier = Modifier.animateItem(fadeOutSpec = null),
+                                autoDeleteAfterMillis = if (state.isClearing) index.coerceAtMost(10) * 70L else null
                             ) {
                                 NotificationCardItem(
                                     notification = notification,
-                                    onClick = { onNotificationClick(notification) }
+                                    onClick = {
+                                        if (!state.isClearing) {
+                                            onNotificationClick(notification)
+                                        }
+                                    }
                                 )
                             }
                         }
@@ -328,7 +332,7 @@ private fun EmptyNotificationsView() {
 }
 
 private fun resolveNotificationIcon(type: String): ImageVector = when (type.lowercase()) {
-    "friend_request", "friend_accepted" -> Icons.Outlined.PersonAdd
+    "friend_request", "friend_accepted", "user_follow" -> Icons.Outlined.PersonAdd
     "game_challenge", "challenge_declined" -> Icons.Outlined.SportsEsports
     "tournament_round_started", "tournament_finished", "tournament_completed", "tournament_cancelled" -> Icons.Outlined.EmojiEvents
     "post_comment" -> Icons.Outlined.ChatBubbleOutline

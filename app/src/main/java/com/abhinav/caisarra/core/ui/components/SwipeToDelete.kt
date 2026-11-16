@@ -30,7 +30,7 @@ fun SwipeToDelete(
     content: @Composable RowScope.() -> Unit
 ) {
     val state = rememberSwipeToDismissBoxState()
-    LaunchedEffect(autoDeleteAfterMillis) {
+    LaunchedEffect(autoDeleteAfterMillis != null) {
         autoDeleteAfterMillis?.let {
             delay(it)
             state.dismiss(SwipeToDismissBoxValue.EndToStart)
@@ -39,13 +39,21 @@ fun SwipeToDelete(
     SwipeToDismissBox(
         state = state,
         modifier = modifier,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
+        gesturesEnabled = autoDeleteAfterMillis == null,
         onDismiss = { onDelete() },
         backgroundContent = {
             Box(
                 modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(RedNormal),
-                contentAlignment = if (state.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
+                contentAlignment = Alignment.CenterEnd
             ) {
-                Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = Color.White, modifier = Modifier.padding(horizontal = 20.dp))
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.White,
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
             }
         },
         content = content

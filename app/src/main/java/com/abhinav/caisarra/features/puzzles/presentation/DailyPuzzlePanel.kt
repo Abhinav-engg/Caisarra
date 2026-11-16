@@ -15,7 +15,7 @@ fun DailyPuzzlePanel(state: DailyPuzzleUiState.Playing, viewModel: DailyPuzzleVi
     val busy = state.isAwaitingServer || state.isPlayingSolution
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         PuzzleInfoRow(
-            title = "Puzzle #${state.puzzle.puzzleId}",
+            title = "Puzzle",
             subtitle = when {
                 state.isAwaitingServer -> "Checking move…"
                 else -> "${if (state.playerColor == PieceColor.WHITE) "White" else "Black"} to move · ${state.puzzle.rating}"

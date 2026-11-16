@@ -17,7 +17,8 @@ fun handleNotificationItemClick(
         "friend_request" -> {
             navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
         }
-        "friend_accepted" -> {
+        "friend_accepted",
+        "user_follow" -> {
             val username = notification.getStringData("username")
             navController.navigateOnce(AppRoutes.profile(username))
         }
@@ -119,7 +120,8 @@ fun handleIntentNotificationNavigation(
         "friend_request" -> {
             navController.navigateOnce(AppRoutes.PLAY_WITH_FRIEND)
         }
-        "friend_accepted" -> {
+        "friend_accepted",
+        "user_follow" -> {
             val username = intent.getStringExtra("username")
             navController.navigateOnce(AppRoutes.profile(username))
         }

@@ -73,7 +73,9 @@ class ProfileViewModel(
                 if (targetUser != null) {
                     var myProfile: ProfileData? = null
                     if (!isGuest) {
-                        myProfile = runCatching { repository.getMyProfile() }.getOrNull()
+                        val fetched = runCatching { repository.getMyProfile() }.getOrNull()
+                        val id = fetched?.userId ?: followRepository?.currentUserId()
+                        myProfile = if (fetched != null && fetched.userId == null && id != null) fetched.copy(userId = id) else fetched
                     }
 
                     val isOwn = myProfile != null && (
@@ -182,10 +184,12 @@ class ProfileViewModel(
         }
         val enrichedRatings = profile.ratings?.toMutableMap() ?: mutableMapOf()
         val ratingRepo = ratingRepository
+        var publicProfileUserId: Long? = null
         if (ratingRepo != null && profile.username.isNotBlank()) {
             val publicProfile = runCatching {
                 ratingRepo.getPublicProfile(profile.username)
             }.getOrNull()
+            publicProfileUserId = publicProfile?.userId?.toLong()
 
             publicProfile?.ratings?.forEach { (key, modeRating) ->
                 if (
@@ -233,11 +237,15 @@ class ProfileViewModel(
             }
         }
 
-        val finalProfile = if (enrichedRatings.isNotEmpty()) {
+        val resolvedUserId = profile.userId
+            ?: followRepository?.currentUserId()
+            ?: publicProfileUserId
+
+        val finalProfile = (if (enrichedRatings.isNotEmpty()) {
             profile.copy(ratings = enrichedRatings)
         } else {
             profile
-        }
+        }).let { if (it.userId == null && resolvedUserId != null) it.copy(userId = resolvedUserId) else it }
 
         _state.value = _state.value.copy(
             profile = finalProfile,
@@ -275,7 +283,7 @@ class ProfileViewModel(
                 val profile = repository.setDefaultAvatar(avatarId)
 
                 _state.value = _state.value.copy(
-                    profile = profile,
+                    profile = if (profile.userId == null) profile.copy(userId = _state.value.profile?.userId) else profile,
                     saving = false,
                     message = "Avatar updated successfully",
                     error = null
@@ -295,7 +303,11 @@ class ProfileViewModel(
             _state.value = _state.value.copy(saving = true, error = null, message = null)
             try {
                 val profile = repository.uploadAvatar(appContext, uri)
-                _state.value = _state.value.copy(profile = profile, saving = false, message = "Profile photo uploaded successfully")
+                _state.value = _state.value.copy(
+                    profile = if (profile.userId == null) profile.copy(userId = _state.value.profile?.userId) else profile,
+                    saving = false,
+                    message = "Profile photo uploaded successfully"
+                )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(saving = false, error = e.userMessage("Unable to upload photo"))
             }
@@ -339,7 +351,7 @@ class ProfileViewModel(
                 )
 
                 _state.value = _state.value.copy(
-                    profile = updated,
+                    profile = if (updated.userId == null) updated.copy(userId = _state.value.profile?.userId) else updated,
                     saving = false,
                     message = "Profile updated successfully"
                 )
@@ -354,10 +366,11 @@ class ProfileViewModel(
 
     private suspend fun loadFollowInfo() {
         val repo = followRepository ?: return
-        val userId = _state.value.profile?.userId ?: return
+        val userId = _state.value.profile?.userId ?: repo.currentUserId() ?: return
         val isOwn = _state.value.isOwnProfile
         if (!isOwn) repo.followNewFriends()
         _state.value = _state.value.copy(
+            profile = _state.value.profile?.let { if (it.userId == null) it.copy(userId = userId) else it },
             followCounts = repo.counts(userId).getOrNull(),
             isFollowing = if (isOwn) null else repo.isFollowing(userId).getOrDefault(false)
         )

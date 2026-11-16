@@ -28,6 +28,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Instant
 
+private const val RESUME_REFRESH_MIN_INTERVAL_MS = 5_000L
+
 data class ActiveGame(
     val id: String,
     val opponentUsername: String,
@@ -83,6 +85,7 @@ class HomeViewModel(
     private var signedInUser = false
     private var cachedProfile: ProfileData? = null
     private var hasStartedInitialLoad = false
+    private var lastLoadStartedAt = 0L
     private var loadJob: Job? = null
 
     init {
@@ -97,6 +100,12 @@ class HomeViewModel(
 
         hasStartedInitialLoad = true
         loadHomeData()
+    }
+
+    fun refreshOnResume() {
+        if (loadJob?.isActive == true || _state.value.isRefreshing) return
+        if (System.currentTimeMillis() - lastLoadStartedAt < RESUME_REFRESH_MIN_INTERVAL_MS) return
+        loadHomeData(isRefresh = true)
     }
 
     fun pullToRefresh() {
@@ -148,6 +157,7 @@ class HomeViewModel(
     }
 
     private fun loadHomeData(isRefresh: Boolean = false) {
+        lastLoadStartedAt = System.currentTimeMillis()
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             if (!isRefresh) {
@@ -236,7 +246,7 @@ class HomeViewModel(
                     val rawGames = remoteGameRepository.getRawGameHistory()
                     with(remoteGameRepository) {
                         remoteHistory = rawGames
-                            .map { it.toGameEntity(currentUsername ?: savedUsername!!) }
+                            .map { it.toGameEntity(currentUsername ?: savedUsername ?: "Player") }
                             .filter(::isCompletedGame)
                     }
 

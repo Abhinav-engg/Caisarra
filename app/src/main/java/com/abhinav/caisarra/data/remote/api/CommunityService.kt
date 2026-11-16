@@ -24,7 +24,8 @@ interface CommunityService {
     @GET("posts")
     suspend fun getFeed(
         @Query("before_id") beforeId: Long? = null,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = 20,
+        @Query("following") following: Boolean? = null
     ): ApiResponse<CommunityFeedData>
 
     @GET("posts/{id}")

@@ -63,6 +63,9 @@ class TokenManager private constructor(private val context: Context) {
 
     suspend fun getRefreshToken(): String? = refreshTokenFlow.first()
 
+    suspend fun getUserId(): Long? =
+        getAccessToken()?.let { TokenExpiryChecker.getUserId(it) }
+
     suspend fun saveTokens(accessToken: String, refreshToken: String) {
         context.tokenDataStore.edit { prefs ->
             prefs[Keys.ACCESS_TOKEN] = accessToken

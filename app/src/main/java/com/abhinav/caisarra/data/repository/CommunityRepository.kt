@@ -13,8 +13,8 @@ import com.abhinav.caisarra.data.remote.dto.CommunityReactionRequest
 class CommunityRepository(
     private val service: CommunityService
 ) {
-    suspend fun loadFeed(beforeId: Long? = null) =
-        service.getFeed(beforeId = beforeId, limit = 20)
+    suspend fun loadFeed(beforeId: Long? = null, following: Boolean = false) =
+        service.getFeed(beforeId = beforeId, limit = 20, following = following.takeIf { it })
             .also {
                 check(it.success) {
                     it.error ?: it.message ?: "Unable to load community feed"

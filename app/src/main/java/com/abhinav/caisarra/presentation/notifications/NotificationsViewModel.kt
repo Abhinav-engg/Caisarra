@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.abhinav.caisarra.core.network.userMessage
 import com.abhinav.caisarra.data.remote.dto.NotificationItemDto
 import com.abhinav.caisarra.data.repository.NotificationRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -120,16 +121,23 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun delete(id: Long) {
-        val clearing = _uiState.value.isClearing
+        if (_uiState.value.isClearing) return
         _uiState.update { current ->
             val remaining = current.notifications.filterNot { it.id == id }
-            current.copy(notifications = remaining, isClearing = clearing && remaining.isNotEmpty())
+            current.copy(notifications = remaining)
         }
-        if (!clearing) viewModelScope.launch { repository.delete(id).onFailure { loadInitial(isRefresh = true) } }
+        viewModelScope.launch { repository.delete(id) }
     }
 
     fun deleteAll() {
+        val count = _uiState.value.notifications.size
+        val maxId = _uiState.value.notifications.maxOfOrNull { it.id } ?: 0L
         _uiState.update { it.copy(isClearing = true, hasMore = false) }
-        viewModelScope.launch { repository.deleteAll().onFailure { loadInitial(isRefresh = true) } }
+        viewModelScope.launch {
+            val animDuration = (count.coerceAtMost(10) * 70L) + 300L
+            delay(animDuration)
+            _uiState.update { it.copy(notifications = emptyList(), isClearing = false) }
+            repository.deleteAll(maxId)
+        }
     }
 }

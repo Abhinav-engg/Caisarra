@@ -67,7 +67,7 @@ fun RushPlayingContent(state: RushUiState.Playing, viewModel: RushViewModel, onQ
         },
         panel = {
             PuzzleInfoRow(
-                title = "Puzzle ${state.score + state.strikes + 1} · #${state.currentPuzzle.puzzleId}",
+                title = "Puzzle ${state.score + state.strikes + 1}",
                 subtitle = when {
                     state.isSkipping -> "Skipping…"
                     state.isAwaitingServer -> "Checking move…"
