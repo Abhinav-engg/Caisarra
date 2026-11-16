@@ -1,5 +1,6 @@
 package com.abhinav.caisarra.presentation.navigation
 
+import com.abhinav.caisarra.features.notificationsettings.presentation.NotificationPermissionPrompt
 import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -177,6 +178,7 @@ fun NavGraphBuilder.homeGraph(
             activity?.finish()
         }
 
+        NotificationPermissionPrompt()
         HomeScreen(
             viewModel = homeViewModel,
             onStartChallenge = {

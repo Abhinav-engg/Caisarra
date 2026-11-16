@@ -20,7 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
 class CustomTacticsViewModel(
     private val repository: PuzzleRepository
 ) : ViewModel() {
@@ -435,6 +435,11 @@ class CustomTacticsViewModel(
                 rated = false
             ).onSuccess { response ->
 
+                val feedback = MoveFeedback(++animationId, to, response.correct)
+                (_state.value as? CustomTacticsUiState.Playing)?.let {
+                    _state.value = it.copy(moveFeedback = feedback)
+                }
+
                 val latest = _state.value
                         as? CustomTacticsUiState.Playing ?: return@onSuccess
 
@@ -577,6 +582,7 @@ class CustomTacticsViewModel(
         _state.value = current.copy(
             selectedSquare = candidate.first.toUiSquare(),
             legalMoves = candidate.second.map { it.to.toUiSquare() },
+            hintCount = current.hintCount + 1,
             message = "Hint: try moving the highlighted piece."
         )
     }

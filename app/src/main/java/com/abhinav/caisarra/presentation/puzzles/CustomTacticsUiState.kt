@@ -6,7 +6,7 @@ import com.abhinav.caisarra.presentation.game.model.Piece
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.game.model.PieceMoveAnimationEvent
 import com.abhinav.caisarra.presentation.game.model.Square
-
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
 data class CustomTacticsFilters(
     val selectedThemes: Set<String> = emptySet(),
     val minRating: Int = 800,
@@ -43,7 +43,9 @@ sealed interface CustomTacticsUiState {
         val promotionPending: Pair<Square, Square>? = null,
         val isAwaitingServer: Boolean = false,
         val message: String? = null,
-        val elapsedTimeMs: Long = 0L
+        val elapsedTimeMs: Long = 0L,
+        val moveFeedback: MoveFeedback? = null,
+        val hintCount: Int = 0
     ) : CustomTacticsUiState
 
     data class Result(

@@ -1,5 +1,10 @@
 package com.abhinav.caisarra.presentation.invite
 
+import com.abhinav.caisarra.core.permissions.hasPermission
+import com.abhinav.caisarra.core.permissions.isPermissionBlockedAfterDenial
+import com.abhinav.caisarra.core.permissions.openAppSettings
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.res.stringResource
 import com.abhinav.caisarra.R
 import android.Manifest
@@ -109,10 +114,26 @@ fun QrCodeScannerDialog(
         )
     }
 
+    var cameraBlocked by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasCameraPermission = granted
+        cameraBlocked = !granted && context.isPermissionBlockedAfterDenial(Manifest.permission.CAMERA)
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && !hasCameraPermission &&
+                context.hasPermission(Manifest.permission.CAMERA)
+            ) {
+                hasCameraPermission = true
+                cameraBlocked = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val barcodeScanner = remember {
@@ -180,7 +201,11 @@ fun QrCodeScannerDialog(
                 )
             } else {
                 PermissionRequestView(
-                    onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                    isBlocked = cameraBlocked,
+                    onRequestPermission = {
+                        if (cameraBlocked) context.openAppSettings()
+                        else permissionLauncher.launch(Manifest.permission.CAMERA)
+                    },
                     onOpenGallery = { galleryLauncher.launch("image/*") },
                     onDismiss = onDismiss
                 )
@@ -508,6 +533,7 @@ private fun ScannerOverlay(boxSize: Dp) {
 
 @Composable
 private fun PermissionRequestView(
+    isBlocked: Boolean,
     onRequestPermission: () -> Unit,
     onOpenGallery: () -> Unit,
     onDismiss: () -> Unit
@@ -585,7 +611,7 @@ private fun PermissionRequestView(
                 colors = ButtonDefaults.buttonColors(containerColor = ScannerCyan)
             ) {
                 Text(
-                    text = stringResource(R.string.allow_camera),
+                    text = stringResource(if (isBlocked) R.string.open_settings_caps else R.string.allow_camera),
                     color = Color.Black,
                     fontWeight = FontWeight.Bold,
                     fontFamily = JetBrainsMono,

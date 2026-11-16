@@ -34,6 +34,7 @@ sealed interface DailyPuzzleUiState {
         val solutionMoves: List<String> = emptyList(),
         val solutionRevealed: Boolean = false,
         val isPlayingSolution: Boolean = false,
+        val solutionPly: Int = 0,
         val hintAvailable: Boolean = true,
         val canViewSolution: Boolean = false,
         val moveFeedback: MoveFeedback? = null

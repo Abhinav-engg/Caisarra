@@ -261,9 +261,31 @@ class DailyPuzzleViewModel(
             isWhiteInCheck = checkSquare != null && engine.turn() == DomainPieceColor.White,
             isBlackInCheck = checkSquare != null && engine.turn() == DomainPieceColor.Black,
             isPlayingSolution = false,
+            solutionPly = 0,
             message = "Now try playing the moves yourself!"
         )
         moveStartTime = SystemClock.elapsedRealtime()
+    }
+
+    fun stepSolution(delta: Int) {
+        val current = _state.value as? DailyPuzzleUiState.Playing ?: return
+        if (current.isPlayingSolution) return
+        val ply = (current.solutionPly + delta).coerceIn(0, current.solutionMoves.size)
+        engine.loadFen(current.puzzle.fen)
+        applyInitialMove(current.puzzle.initialMove)
+        applyMoveSequence(current.solutionMoves.take(ply))
+        val last = current.solutionMoves.getOrNull(ply - 1)?.let(::parseUciMove)
+        val checkSquare = engine.checkSquare()
+        _state.value = current.copy(
+            board = currentBoardMap(),
+            solutionPly = ply,
+            selectedSquare = null,
+            legalMoves = emptyList(),
+            lastMoveFrom = last?.from?.toUiSquare(),
+            lastMoveTo = last?.to?.toUiSquare(),
+            isWhiteInCheck = checkSquare != null && engine.turn() == DomainPieceColor.White,
+            isBlackInCheck = checkSquare != null && engine.turn() == DomainPieceColor.Black
+        )
     }
 
     private fun playSolutionAnimation(moves: List<String>) {
@@ -273,6 +295,7 @@ class DailyPuzzleViewModel(
         viewModelScope.launch {
             _state.value = (_state.value as? DailyPuzzleUiState.Playing)?.copy(
                 isPlayingSolution = true,
+                solutionPly = 0,
                 message = "Showing solution..."
             ) ?: return@launch
 
@@ -289,7 +312,7 @@ class DailyPuzzleViewModel(
 
             delay(400)
 
-            for (uci in moves) {
+            for ((index, uci) in moves.withIndex()) {
                 if (uci.isBlank()) continue
                 val move = parseUciMove(uci)
                 val piece = engine.pieces().find { it.square == move.from }?.toUiPiece()
@@ -313,7 +336,8 @@ class DailyPuzzleViewModel(
                     lastMoveTo = move.to.toUiSquare(),
                     isWhiteInCheck = checkSquare != null && engine.turn() == DomainPieceColor.White,
                     isBlackInCheck = checkSquare != null && engine.turn() == DomainPieceColor.Black,
-                    moveAnimationEvent = animation
+                    moveAnimationEvent = animation,
+                    solutionPly = index + 1
                 ) ?: return@launch
 
                 delay(900)
