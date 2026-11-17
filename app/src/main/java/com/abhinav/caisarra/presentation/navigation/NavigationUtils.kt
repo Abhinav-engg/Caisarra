@@ -3,14 +3,19 @@ package com.abhinav.caisarra.presentation.navigation
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -169,17 +174,31 @@ fun rememberCurrentUserProfile(
 ): State<ProfileData?> {
 
     val accessToken by tokenManager.accessTokenFlow.collectAsState(initial = null)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var resumeTick by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(accessToken, isGuest) {
+    DisposableEffect(lifecycleOwner) {
+        var seenFirstResume = false
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (seenFirstResume) resumeTick++ else seenFirstResume = true
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(accessToken, isGuest, refreshKey, resumeTick) {
 
         if (isGuest || accessToken.isNullOrBlank()) {
             return@LaunchedEffect
         }
 
         val token = accessToken ?: return@LaunchedEffect
-        if (CurrentUserProfileCache.loadedToken == token ||
-            CurrentUserProfileCache.loadingToken == token
-        ) {
+        if (CurrentUserProfileCache.loadingToken == token) {
+            return@LaunchedEffect
+        }
+        if (CurrentUserProfileCache.loadedToken == token && resumeTick == 0 && refreshKey == null) {
             return@LaunchedEffect
         }
         if (CurrentUserProfileCache.activeToken != token) {

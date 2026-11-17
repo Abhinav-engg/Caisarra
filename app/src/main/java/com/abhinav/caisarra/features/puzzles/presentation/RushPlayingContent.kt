@@ -1,17 +1,24 @@
 package com.abhinav.caisarra.features.puzzles.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
 import com.abhinav.caisarra.features.mascot.presentation.RushMascot
 import com.abhinav.caisarra.presentation.game.components.ChessBoard
 import com.abhinav.caisarra.presentation.game.components.ChessMoveSound
+import com.abhinav.caisarra.presentation.game.components.GameDecision
+import com.abhinav.caisarra.presentation.game.components.GameDecisionDialog
 import com.abhinav.caisarra.presentation.game.components.PromotionDialog
 import com.abhinav.caisarra.presentation.game.model.PieceColor
 import com.abhinav.caisarra.presentation.puzzles.RushUiState
@@ -22,9 +29,19 @@ import com.abhinav.caisarra.presentation.puzzles.components.RushStrikesIndicator
 fun RushPlayingContent(state: RushUiState.Playing, viewModel: RushViewModel, onQuit: () -> Unit) {
     ChessMoveSound(board = state.board, moveEventId = state.moveAnimationEvent?.id, moveTo = state.moveAnimationEvent?.to)
     val survival = state.mode == "survival"
-    val endRun = {
-        viewModel.quitRush()
-        onQuit()
+    var showEndRunDialog by rememberSaveable { mutableStateOf(false) }
+    val endRun = { showEndRunDialog = true }
+    BackHandler { showEndRunDialog = !showEndRunDialog }
+    if (showEndRunDialog) {
+        GameDecisionDialog(
+            decision = GameDecision.EndRun,
+            onConfirm = {
+                showEndRunDialog = false
+                viewModel.quitRush()
+                onQuit()
+            },
+            onDismiss = { showEndRunDialog = false }
+        )
     }
     PuzzleLayout(
         header = {
@@ -50,7 +67,7 @@ fun RushPlayingContent(state: RushUiState.Playing, viewModel: RushViewModel, onQ
         },
         panel = {
             PuzzleInfoRow(
-                title = "Puzzle ${state.score + state.strikes + 1} · #${state.currentPuzzle.puzzleId}",
+                title = "Puzzle ${state.score + state.strikes + 1}",
                 subtitle = when {
                     state.isSkipping -> "Skipping…"
                     state.isAwaitingServer -> "Checking move…"

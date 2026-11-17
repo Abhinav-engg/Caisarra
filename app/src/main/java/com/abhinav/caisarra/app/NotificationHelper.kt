@@ -220,6 +220,7 @@ object NotificationHelper {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("notification_id", (dataMap?.get("notification_id") ?: notificationId.toString()))
             putExtra("notification_type", type.orEmpty())
+            putExtra("type", type.orEmpty())
             dataMap?.forEach { (k, v) ->
                 putExtra(k, v)
             }

@@ -294,7 +294,6 @@ fun LeaderboardScreen(
                     ) {
                         listOf(
                             "3min" to "3 Minutes",
-                            "5min" to "5 Minutes",
                             "survival" to "Survival"
                         ).forEach { (mode, label) ->
                             StyledModeChip(

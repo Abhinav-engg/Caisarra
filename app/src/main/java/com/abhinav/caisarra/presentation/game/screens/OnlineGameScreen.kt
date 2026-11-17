@@ -163,13 +163,14 @@ fun OnlineGameScreen(
         if (showChat || chatMuted) seenCount = chat.size
     }
 
-    BackHandler(enabled = showChat || showResultDialog || state.gameResult != null) {
-        if (showChat) {
-            showChat = false
-        } else if (showResultDialog) {
-            showResultDialog = false
-        } else {
-            onHome()
+    BackHandler {
+        when {
+            showChat -> showChat = false
+            showResultDialog -> showResultDialog = false
+            showHomeResignDialog -> showHomeResignDialog = false
+            rematchDeclined != null -> onHome()
+            !state.isLoading && state.board.isEmpty() && state.errorMessage != null -> onHome()
+            else -> requestHome()
         }
     }
 

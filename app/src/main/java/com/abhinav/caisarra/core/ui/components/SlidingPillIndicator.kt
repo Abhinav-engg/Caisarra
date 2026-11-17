@@ -28,6 +28,8 @@ fun SlidingPillIndicator(
     modifier: Modifier = Modifier,
     inset: PaddingValues = PaddingValues()
 ) {
+    if (itemCount <= 0) return
+
     BoxWithConstraints(modifier = modifier) {
         val slot = constraints.maxWidth.toFloat() / itemCount
         val left = remember { Animatable(slot * selectedIndex) }

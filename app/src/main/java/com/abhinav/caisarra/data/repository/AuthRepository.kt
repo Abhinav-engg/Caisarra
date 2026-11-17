@@ -29,10 +29,15 @@ import com.abhinav.caisarra.data.remote.dto.VerifyRegistrationRequest
 import com.abhinav.caisarra.data.remote.dto.VerifyResetCodeRequest
 import okhttp3.Headers
 import retrofit2.HttpException
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+
+private const val LOGOUT_NETWORK_TIMEOUT_MS = 3_000L
 
 class AuthRepository private constructor(private val context: Context) {
 
@@ -177,17 +182,24 @@ class AuthRepository private constructor(private val context: Context) {
 
     suspend fun logout(): AuthResult {
         val fcmToken = tokenManager.getFcmToken()
-        if (!fcmToken.isNullOrBlank()) {
-            try {
-                NotificationRepository.get(context).unregisterDevice(fcmToken)
-            } catch (_: Exception) {}
-        }
-
         val refreshToken = tokenManager.getRefreshToken()
-        if (refreshToken != null) {
-            try {
-                service.logout(RefreshTokenRequest(refreshToken))
-            } catch (_: Exception) {}
+        withTimeoutOrNull(LOGOUT_NETWORK_TIMEOUT_MS) {
+            coroutineScope {
+                if (!fcmToken.isNullOrBlank()) {
+                    launch {
+                        try {
+                            NotificationRepository.get(context).unregisterDevice(fcmToken)
+                        } catch (_: Exception) {}
+                    }
+                }
+                if (refreshToken != null) {
+                    launch {
+                        try {
+                            service.logout(RefreshTokenRequest(refreshToken))
+                        } catch (_: Exception) {}
+                    }
+                }
+            }
         }
 
         tokenManager.clearTokens()

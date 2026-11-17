@@ -20,7 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
+import com.abhinav.caisarra.presentation.game.model.MoveFeedback
 class CustomTacticsViewModel(
     private val repository: PuzzleRepository
 ) : ViewModel() {
@@ -435,6 +435,11 @@ class CustomTacticsViewModel(
                 rated = false
             ).onSuccess { response ->
 
+                val feedback = MoveFeedback(++animationId, to, response.correct)
+                (_state.value as? CustomTacticsUiState.Playing)?.let {
+                    _state.value = it.copy(moveFeedback = feedback)
+                }
+
                 val latest = _state.value
                         as? CustomTacticsUiState.Playing ?: return@onSuccess
 
@@ -557,28 +562,55 @@ class CustomTacticsViewModel(
         val current = _state.value as? CustomTacticsUiState.Playing ?: return
         if (current.isAwaitingServer) return
 
-        val candidate = engine.pieces()
-            .asSequence()
-            .filter { it.color == if (current.playerColor == UiPieceColor.WHITE) {
-                DomainPieceColor.White
-            } else {
-                DomainPieceColor.Black
-            } }
-            .map { piece ->
-                piece.square to engine.legalMovesFrom(piece.square)
-            }
-            .firstOrNull { it.second.isNotEmpty() }
-
-        if (candidate == null) {
-            _state.value = current.copy(message = "No legal moves available.")
+        if (playerMoveIndex > 0) {
+            _state.value = current.copy(
+                message = "Hints are only available for the first move."
+            )
             return
         }
 
         _state.value = current.copy(
-            selectedSquare = candidate.first.toUiSquare(),
-            legalMoves = candidate.second.map { it.to.toUiSquare() },
-            message = "Hint: try moving the highlighted piece."
+            isAwaitingServer = true,
+            message = "Getting hint..."
         )
+
+        viewModelScope.launch {
+            repository.getHint(current.puzzle.puzzleId)
+                .onSuccess { response ->
+                    val latest = _state.value as? CustomTacticsUiState.Playing
+                        ?: return@onSuccess
+
+                    val hintSquare = response.fromSquare?.let { parseSquareNameToUi(it) }
+
+                    if (hintSquare == null) {
+                        _state.value = latest.copy(
+                            isAwaitingServer = false,
+                            message = response.message ?: "No hint available for this puzzle."
+                        )
+                        return@onSuccess
+                    }
+
+                    val legalTargets = engine.legalMovesFrom(hintSquare.toDomainSquare())
+                        .map { it.to.toUiSquare() }
+
+                    _state.value = latest.copy(
+                        isAwaitingServer = false,
+                        selectedSquare = hintSquare,
+                        legalMoves = legalTargets,
+                        hintCount = latest.hintCount + 1,
+                        message = response.message ?: "Hint: move the highlighted piece."
+                    )
+                }
+                .onFailure { error ->
+                    val latest = _state.value as? CustomTacticsUiState.Playing
+                        ?: return@onFailure
+
+                    _state.value = latest.copy(
+                        isAwaitingServer = false,
+                        message = error.userMessage("Could not get hint.")
+                    )
+                }
+        }
     }
 
     fun skipPuzzle() {
@@ -703,5 +735,11 @@ class CustomTacticsViewModel(
     }
 }
 
-
 private const val OPPONENT_REPLY_DELAY_MS = 250L
+private fun parseSquareNameToUi(name: String): UiSquare? {
+    if (name.length < 2) return null
+    val file = name[0].lowercaseChar() - 'a'
+    val rank = name[1] - '1'
+    if (file !in 0..7 || rank !in 0..7) return null
+    return UiSquare(row = 7 - rank, column = file)
+}

@@ -168,7 +168,7 @@ class LeaderboardViewModel(
     fun selectPuzzleMode(mode: String) {
         val normalized = mode.lowercase()
         if (normalized == _state.value.puzzleMode) return
-        if (normalized !in setOf("3min", "5min", "survival")) return
+        if (normalized !in setOf("3min", "survival")) return
 
         loadPuzzleRushLeaderboard(mode = normalized)
     }
@@ -374,7 +374,7 @@ class LeaderboardViewModel(
     ) {
         val normalizedMode = mode.lowercase()
 
-        if (normalizedMode !in setOf("3min", "5min", "survival")) {
+        if (normalizedMode !in setOf("3min", "survival")) {
             _state.update {
                 it.copy(
                     isRefreshing = false,

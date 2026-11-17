@@ -1,5 +1,8 @@
 package com.abhinav.caisarra.presentation.screens
 
+import com.abhinav.caisarra.core.permissions.PermissionBlockedDialog
+import com.abhinav.caisarra.core.permissions.isPermissionBlockedAfterDenial
+import com.abhinav.caisarra.core.permissions.openAppSettings
 import androidx.compose.ui.res.stringResource
 import com.abhinav.caisarra.R
 import androidx.compose.foundation.background
@@ -26,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -65,7 +67,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -271,14 +272,29 @@ fun EditProfileScreen(
         }
     }
 
+    var showCameraBlockedDialog by remember { mutableStateOf(false) }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
             openCamera()
+        } else if (context.isPermissionBlockedAfterDenial(Manifest.permission.CAMERA)) {
+            showCameraBlockedDialog = true
         } else {
             Toast.makeText(context, "Camera permission is needed to take a photo", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    if (showCameraBlockedDialog) {
+        PermissionBlockedDialog(
+            title = "Camera is blocked",
+            message = "Mosaic needs camera access to take a profile photo. Allow it in Settings, then try again.",
+            onOpenSettings = {
+                showCameraBlockedDialog = false
+                context.openAppSettings()
+            },
+            onDismiss = { showCameraBlockedDialog = false }
+        )
     }
 
     var displayName by remember { mutableStateOf("") }
@@ -613,25 +629,6 @@ fun EditProfileScreen(
                             label = "Bio",
                             supportingText = "${bio.length}/160",
                             minLines = 3
-                        )
-
-                        EditProfileField(
-                            value = avatarUrl,
-                            onValueChange = { newValue ->
-                                avatarUrl = newValue
-                                selectedSource = AvatarSource.URL
-                                validationError = null
-                            },
-                            label = "Avatar HTTPS URL",
-                            singleLine = true,
-                            keyboardType = KeyboardType.Uri,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Link,
-                                    contentDescription = "Avatar URL",
-                                    tint = EditMuted
-                                )
-                            }
                         )
 
                         validationError?.let {

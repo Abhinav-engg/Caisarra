@@ -14,9 +14,12 @@ import kotlinx.coroutines.flow.first
 private val AUTO_FOLLOWED_FRIENDS_KEY = stringSetPreferencesKey("auto_followed_friends")
 
 class FollowRepository(context: Context) {
-    private val service = RetrofitInstance.createFollowService(TokenManager.get(context.applicationContext))
+    private val tokenManager = TokenManager.get(context.applicationContext)
+    private val service = RetrofitInstance.createFollowService(tokenManager)
     private val friends = FriendsRepository(context)
     private val settings = context.applicationContext.settingsDataStore
+
+    suspend fun currentUserId(): Long? = tokenManager.getUserId()
 
     suspend fun setFollowing(userId: Long, follow: Boolean) =
         apiCall { if (follow) service.follow(userId) else service.unfollow(userId) }.map { it.isFollowing }

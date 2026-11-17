@@ -121,10 +121,9 @@ fun CommunityScreen(
     val toaster = rememberToaster()
     val isWriteScreenVisible = selectedPost == null && showWritePost && isRegisteredUser
     val followingOnly = isRegisteredUser && !state.showingBookmarks && state.feedTab == CommunityFeedTab.FOLLOWING
-    val visiblePosts = if (followingOnly) state.posts.filter { it.author.isFollowing || it.author.username.equals(resolvedUsername, true) } else state.posts
     val onFollow = { author: CommunityAuthorDto -> author.id?.takeIf { isRegisteredUser && !author.username.equals(resolvedUsername, true) }?.let { { viewModel.toggleFollow(it) } } }
-    LaunchedEffect(followingOnly, visiblePosts.size, state.nextBeforeId, state.isLoading) {
-        if (followingOnly && visiblePosts.size < 10) viewModel.loadMore()
+    LaunchedEffect(isRegisteredUser) {
+        if (!isRegisteredUser) viewModel.selectTab(CommunityFeedTab.ALL)
     }
     BackHandler(
         enabled = selectedPost != null ||
@@ -399,7 +398,7 @@ fun CommunityScreen(
                         }
                     }
 
-                    if ((state.isLoading && state.posts.isEmpty()) || (visiblePosts.isEmpty() && state.isLoadingMore)) {
+                    if ((state.isLoading && state.posts.isEmpty()) || (state.posts.isEmpty() && state.isLoadingMore)) {
                         item(key = "community_loading") {
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(220.dp),
@@ -408,7 +407,7 @@ fun CommunityScreen(
                                 CircularProgressIndicator(color = CommunityGreen)
                             }
                         }
-                    } else if (visiblePosts.isEmpty()) {
+                    } else if (state.posts.isEmpty()) {
                         item(key = "community_empty") {
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -431,7 +430,7 @@ fun CommunityScreen(
                             }
                         }
                     } else {
-                        items(items = visiblePosts, key = { it.id }) { post ->
+                        items(items = state.posts, key = { it.id }) { post ->
                             CommunityPostCard(
                                 post = post,
                                 isRegisteredUser = isRegisteredUser,

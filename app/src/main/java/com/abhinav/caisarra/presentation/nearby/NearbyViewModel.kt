@@ -222,12 +222,16 @@ class NearbyViewModel(
         }
     }
 
-    fun permissionDenied() {
+    fun permissionDenied(blocked: Boolean = false) {
         _state.update {
             it.copy(
                 lastOperation = NearbyOperation.Enable,
                 loading = false,
-                error = "Location permission is needed to find players near you"
+                error = if (blocked) {
+                    "Location is blocked for Mosaic. Allow it in Settings to find players near you"
+                } else {
+                    "Location permission is needed to find players near you"
+                }
             )
         }
     }

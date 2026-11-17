@@ -25,6 +25,7 @@ class NotificationRepository private constructor(context: Context) {
     private val tokenManager = TokenManager.get(context.applicationContext)
     private val service: NotificationService =
         RetrofitInstance.createNotificationService(tokenManager)
+    private val prefs = context.applicationContext.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
 
     private val _unreadCount = MutableStateFlow(0)
     val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
@@ -126,7 +127,11 @@ class NotificationRepository private constructor(context: Context) {
     ): Result<List<NotificationItemDto>> = execute {
         val response = service.getNotifications(limit = limit, beforeId = beforeId)
         checkSuccess(response.success, response.error, response.message)
-        response.data?.notifications.orEmpty()
+        val clearedBeforeId = prefs.getLong("cleared_before_id", 0L)
+        val dismissedIds = prefs.getStringSet("dismissed_ids", emptySet()).orEmpty()
+        response.data?.notifications.orEmpty().filter {
+            it.id > clearedBeforeId && it.id.toString() !in dismissedIds
+        }
     }
 
     suspend fun markAsRead(id: Long): Result<Unit> = execute {
@@ -143,17 +148,30 @@ class NotificationRepository private constructor(context: Context) {
     }
 
     suspend fun delete(id: Long): Result<Unit> = execute {
-        val response = service.deleteNotification(id)
-        checkSuccess(response.success, response.error, response.message)
+        val dismissed = prefs.getStringSet("dismissed_ids", emptySet()).orEmpty().toMutableSet()
+        dismissed.add(id.toString())
+        prefs.edit().putStringSet("dismissed_ids", dismissed).apply()
+        try {
+            service.markAsRead(id)
+        } catch (_: Exception) {}
+        _unreadCount.value = (_unreadCount.value - 1).coerceAtLeast(0)
     }
 
-    suspend fun deleteAll(): Result<Unit> = execute {
-        val response = service.deleteAllNotifications()
-        checkSuccess(response.success, response.error, response.message)
+    suspend fun deleteAll(maxId: Long = 0L): Result<Unit> = execute {
+        if (maxId > 0L) {
+            val current = prefs.getLong("cleared_before_id", 0L)
+            prefs.edit().putLong("cleared_before_id", maxOf(current, maxId)).apply()
+        }
+        try {
+            service.markAllAsRead()
+        } catch (_: Exception) {}
         _unreadCount.value = 0
     }
 
     fun onNotificationReceived(notification: NotificationItemDto) {
+        val clearedBeforeId = prefs.getLong("cleared_before_id", 0L)
+        val dismissedIds = prefs.getStringSet("dismissed_ids", emptySet()).orEmpty()
+        if (notification.id <= clearedBeforeId || notification.id.toString() in dismissedIds) return
         _incomingNotifications.tryEmit(notification)
         if (!notification.isRead) {
             _unreadCount.value += 1
@@ -161,6 +179,7 @@ class NotificationRepository private constructor(context: Context) {
     }
 
     fun clearLocalState() {
+        prefs.edit().clear().apply()
         _unreadCount.value = 0
     }
 

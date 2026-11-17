@@ -42,6 +42,8 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -138,8 +140,18 @@ fun HomeScreen(
     val unreadCount by notificationRepo.unreadCount.collectAsState()
     var showStreakDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        notificationRepo.fetchUnreadCount()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val resumeScope = rememberCoroutineScope()
+    DisposableEffect(lifecycleOwner) {
+        var seenFirstResume = false
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                resumeScope.launch { notificationRepo.fetchUnreadCount() }
+                if (seenFirstResume) viewModel.refreshOnResume() else seenFirstResume = true
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     if (showStreakDialog) {

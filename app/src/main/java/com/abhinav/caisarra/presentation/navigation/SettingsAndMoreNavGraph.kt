@@ -86,6 +86,7 @@ fun NavGraphBuilder.settingsAndMoreGraph(
         var isAdmin by remember {
             mutableStateOf(false)
         }
+        var isLoggingOut by remember { mutableStateOf(false) }
 
         LaunchedEffect(isGuestUser) {
             isAdmin = if (isGuestUser) {
@@ -206,7 +207,10 @@ fun NavGraphBuilder.settingsAndMoreGraph(
                     navController.navigateOnce(AppRoutes.PRIVACY_SETTINGS)
                 }
             },
+            isLoggingOut = isLoggingOut,
             onLogoutClick = {
+                if (isLoggingOut) return@MenuScreen
+                isLoggingOut = true
                 scope.launch {
                     authRepository.logout()
                     navController.navigate(AppRoutes.LOGIN) {

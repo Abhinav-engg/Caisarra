@@ -1,5 +1,9 @@
 package com.abhinav.caisarra.presentation.screens
 
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.abhinav.caisarra.core.permissions.hasPermission
+import com.abhinav.caisarra.core.permissions.isPermissionBlockedAfterDenial
+import com.abhinav.caisarra.core.permissions.openAppSettings
 import androidx.compose.ui.res.stringResource
 import com.abhinav.caisarra.R
 import android.Manifest
@@ -95,6 +99,7 @@ fun NearbyScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var isFirstResume by remember { mutableStateOf(true) }
+    var locationBlocked by rememberSaveable { mutableStateOf(false) }
     var challengingPlayer by remember { mutableStateOf<NearbyPlayer?>(null) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "refreshSpin")
@@ -113,6 +118,9 @@ fun NearbyScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
                 if (isFirstResume) {
                     isFirstResume = false
+                } else if (locationBlocked && context.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                    locationBlocked = false
+                    viewModel.enable()
                 } else {
                     viewModel.refresh(silent = true)
                 }
@@ -139,7 +147,13 @@ fun NearbyScreen(
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
-        if (granted) viewModel.enable() else viewModel.permissionDenied()
+        if (granted) {
+            locationBlocked = false
+            viewModel.enable()
+        } else {
+            locationBlocked = context.isPermissionBlockedAfterDenial(Manifest.permission.ACCESS_COARSE_LOCATION)
+            viewModel.permissionDenied(blocked = locationBlocked)
+        }
     }
 
     val turnOn = {
@@ -266,8 +280,14 @@ fun NearbyScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
-                    TextButton(onClick = singleClick(retryAction)) {
-                        Text(stringResource(R.string.retry), color = NearbyColors.Accent)
+                    val needsSettings = locationBlocked && state.lastOperation == NearbyOperation.Enable
+                    TextButton(
+                        onClick = singleClick(if (needsSettings) ({ context.openAppSettings() }) else retryAction)
+                    ) {
+                        Text(
+                            stringResource(if (needsSettings) R.string.open_settings else R.string.retry),
+                            color = NearbyColors.Accent
+                        )
                     }
                 }
             }

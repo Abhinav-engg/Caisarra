@@ -7,7 +7,6 @@ import com.abhinav.caisarra.data.remote.dto.RegisterDeviceRequest
 import com.abhinav.caisarra.data.remote.dto.SimpleApiResponse
 import com.abhinav.caisarra.data.remote.dto.UnreadCountData
 import retrofit2.http.Body
-import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.HTTP
 import retrofit2.http.POST
@@ -48,10 +47,4 @@ interface NotificationService {
 
     @POST("api/notifications/read-all")
     suspend fun markAllAsRead(): SimpleApiResponse
-
-    @DELETE("api/notifications/{id}")
-    suspend fun deleteNotification(@Path("id") id: Long): SimpleApiResponse
-
-    @DELETE("api/notifications")
-    suspend fun deleteAllNotifications(): SimpleApiResponse
 }

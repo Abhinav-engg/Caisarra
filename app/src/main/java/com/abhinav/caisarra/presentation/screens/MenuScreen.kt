@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -111,6 +112,7 @@ fun MenuScreen(
     isGuest: Boolean = false,
     hasUnreadMessages: Boolean = false,
     isAdmin: Boolean = false,
+    isLoggingOut: Boolean = false,
     onAdminClick: () -> Unit = {}
 ) {
     BackHandler { onBack() }
@@ -307,7 +309,8 @@ fun MenuScreen(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     iconTint = ThemeSlateAccent,
                     iconBg = MenuSurface,
-                    title = "Log out",
+                    title = if (isLoggingOut) "Logging out…" else "Log out",
+                    isLoading = isLoggingOut,
                     onClick = { showLogoutDialog = true }
                 )
             }
@@ -410,12 +413,14 @@ private fun MenuItem(
     title: String,
     trailingLabel: String? = null,
     hasUnreadDot: Boolean = false,
+    isLoading: Boolean = false,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
+                enabled = !isLoading,
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = StatsCyan.copy(alpha = 0.12f)),
                 onClick = onClick
@@ -451,12 +456,20 @@ private fun MenuItem(
             )
             Spacer(Modifier.width(7.dp))
         }
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = BotLockedName,
-            modifier = Modifier.size(20.dp)
-        )
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = StatsCyan,
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(18.dp)
+            )
+        } else {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = BotLockedName,
+                modifier = Modifier.size(20.dp)
+            )
+        }
         if (hasUnreadDot) {
             Spacer(Modifier.width(8.dp))
             Box(Modifier.size(7.dp).clip(CircleShape).background(MenuCyan))
