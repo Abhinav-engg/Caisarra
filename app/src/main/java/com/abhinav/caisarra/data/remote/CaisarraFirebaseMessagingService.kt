@@ -73,9 +73,31 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
             ?: data["username"]
             ?: ""
         val clubText = data["message"] ?: data["text"] ?: data["body"].orEmpty()
+
+        val isDirectMessage = type.equals("direct_message", ignoreCase = true) ||
+                type.equals("message", ignoreCase = true) ||
+                type.equals("chat", ignoreCase = true) ||
+                type.equals("dm", ignoreCase = true)
+        val dmUserId = data["user_id"]
+            ?: data["userId"]
+            ?: data["sender_id"]
+            ?: data["senderId"]
+        if (!dmUserId.isNullOrBlank() && !data.containsKey("user_id")) {
+            data["user_id"] = dmUserId
+        }
+        val dmUsername = data["username"]
+            ?: data["sender_username"]
+            ?: data["senderUsername"]
+            ?: data["sender"]
+        if (!dmUsername.isNullOrBlank() && !data.containsKey("username")) {
+            data["username"] = dmUsername
+        }
+        val dmText = data["message"] ?: data["text"] ?: data["body"].orEmpty()
+
         val isPushOnly = isClubMessage
         val defaultTitle = when {
             isClubMessage && clubName.isNotBlank() -> clubName
+            isDirectMessage && !dmUsername.isNullOrBlank() -> dmUsername
             isChallenge -> "Game Challenge"
             else -> getString(R.string.app_name)
         }
@@ -83,6 +105,7 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
             isClubMessage && senderName.isNotBlank() && clubText.isNotBlank() ->
                 "$senderName: $clubText"
             isClubMessage && clubText.isNotBlank() -> clubText
+            isDirectMessage && dmText.isNotBlank() -> dmText
             isChallenge && challengerUsername.isNotBlank() ->
                 "$challengerUsername challenged you to a game"
             isChallenge -> "You have a new game challenge"
@@ -101,6 +124,8 @@ class CaisarraFirebaseMessagingService : FirebaseMessagingService() {
         val notificationIdStr = data["notification_id"]
         val notificationId = if (isClubMessage && clubId.isNotBlank()) {
             ("club_chat_$clubId").hashCode()
+        } else if (isDirectMessage && !dmUserId.isNullOrBlank()) {
+            ("dm_$dmUserId").hashCode()
         } else {
             notificationIdStr?.toIntOrNull() ?: (System.currentTimeMillis() % 100000).toInt()
         }

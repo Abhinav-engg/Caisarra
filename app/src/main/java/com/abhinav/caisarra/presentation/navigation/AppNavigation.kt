@@ -98,7 +98,10 @@ fun AppNavigation(
             ?: intent.getStringExtra("type")
         val notifId = intent.getStringExtra("notification_id")?.toLongOrNull()
         if (notifType.isNullOrBlank() && notifId == null) {
-            val uri = intent.data ?: return@LaunchedEffect
+            val uri = intent.data ?: run {
+                MainActivity.pendingIntentFlow.value = null
+                return@LaunchedEffect
+            }
             when (decideDeepLink(uri, currentRoute, preAuthRoutes, navController, authRepository)) {
                 DeepLinkDecision.Wait -> Unit
                 DeepLinkDecision.Drop -> MainActivity.pendingIntentFlow.value = null

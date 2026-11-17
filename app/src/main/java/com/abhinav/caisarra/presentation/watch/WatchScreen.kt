@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -22,8 +24,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -42,6 +42,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.abhinav.caisarra.core.ui.components.CaisaaraTopBar
+import com.abhinav.caisarra.core.ui.components.GeneralButton
+import com.abhinav.caisarra.core.ui.components.clearFocusOnTap
 import com.abhinav.caisarra.core.ui.theme.JetBrainsMono
 import com.caisaara.ui.theme.RedNormal
 import com.caisaara.ui.theme.StatsBg
@@ -72,6 +74,9 @@ fun WatchScreen(
             .fillMaxSize()
             .background(StatsBg)
             .statusBarsPadding()
+            .navigationBarsPadding()
+            .imePadding()
+            .clearFocusOnTap()
     ) {
         CaisaaraTopBar(
             title = "WATCH",
@@ -80,7 +85,8 @@ fun WatchScreen(
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -165,31 +171,14 @@ fun WatchScreen(
                         })
                     )
 
-                    Button(
+                    GeneralButton(
+                        text = stringResource(R.string.watch_game),
                         onClick = {
                             focusManager.clearFocus()
                             viewModel.submitCodeOrLink()
                         },
-                        enabled = codeQuery.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = StatsCyan,
-                            contentColor = Color.Black,
-                            disabledContainerColor = StatsCardBorder,
-                            disabledContentColor = StatsTextMuted
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.watch_game),
-                            fontFamily = JetBrainsMono,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            letterSpacing = 1.sp
-                        )
-                    }
+                        enabled = codeQuery.isNotBlank()
+                    )
                 }
             }
 
