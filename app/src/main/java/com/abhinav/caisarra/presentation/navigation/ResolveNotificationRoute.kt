@@ -11,7 +11,14 @@ fun resolveNotificationRoute(
         "post_comment",
         "comment",
         "post_reaction",
-        "reaction" -> AppRoutes.NOTIFICATIONS
+        "reaction" -> {
+            val postId = (getParam("post_id") ?: getParam("postId"))?.toLongOrNull()
+            if (postId != null && postId > 0L) {
+                AppRoutes.communityPost(postId)
+            } else {
+                AppRoutes.COMMUNITY
+            }
+        }
 
         "direct_message",
         "message",

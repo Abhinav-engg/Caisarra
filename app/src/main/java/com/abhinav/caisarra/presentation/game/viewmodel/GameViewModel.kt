@@ -172,7 +172,9 @@ class GameViewModel(
         _state.update {
             it.copy(
                 isBoardFlipped = false,
-                undoEnabled = true
+                undoEnabled = newUndoEnabled,
+                whitePlayerName = savedGame.whiteName.ifBlank { newWhiteName },
+                blackPlayerName = savedGame.blackName.ifBlank { newBlackName }
             )
         }
         updateUiState(clockEnabled = savedClockEnabled)

@@ -75,6 +75,14 @@ class CommunityRepository(
 
 
 
+    suspend fun loadPost(postId: Long): CommunityPostDto {
+        val result = service.getPost(postId)
+        check(result.success) {
+            result.error ?: result.message ?: "Unable to load post"
+        }
+        return result.data ?: error("Post was missing from response")
+    }
+
     suspend fun deletePost(postId: Long) {
         val result = service.deletePost(postId)
         check(result.success) {
