@@ -133,6 +133,9 @@ object AppRoutes {
     fun puzzleRush(mode: String = "3min"): String = "puzzle_rush?mode=$mode"
 
     const val COMMUNITY = "community"
+    const val COMMUNITY_POST = "community_post/{postId}"
+
+    fun communityPost(postId: Long): String = "community_post/$postId"
     const val CLUBS = "clubs"
     const val CLUB_DETAIL = "club_detail/{clubId}?openChat={openChat}"
     const val CLUB_SHARE_LINK = "club_share_link/{code}"

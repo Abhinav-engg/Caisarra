@@ -424,6 +424,19 @@ class CommunityViewModel(
         }
     }
 
+    suspend fun loadPost(postId: Long): CommunityPostDto {
+        val post = repository.loadPost(postId)
+        _state.update { old ->
+            val posts = if (old.posts.any { it.id == post.id }) {
+                old.posts.map { if (it.id == post.id) post else it }
+            } else {
+                listOf(post) + old.posts
+            }
+            old.copy(posts = posts)
+        }
+        return post
+    }
+
     suspend fun loadComments(
         postId: Long,
         afterId: Long? = null

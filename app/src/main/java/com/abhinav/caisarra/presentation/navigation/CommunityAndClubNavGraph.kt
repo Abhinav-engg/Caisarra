@@ -1,6 +1,7 @@
 package com.abhinav.caisarra.presentation.navigation
 
 import android.content.Context
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,39 +41,27 @@ fun NavGraphBuilder.communityAndClubGraph(
 ) {
 
     composable(route = AppRoutes.COMMUNITY) {
-        val tokenManager = remember {
-            TokenManager.get(context)
-        }
-        val accessToken by tokenManager.accessTokenFlow.collectAsState(initial = null)
-        val profile by rememberCurrentUserProfile(
-            tokenManager = tokenManager,
-            isGuest = isGuestUser
+        CommunityDestination(
+            navController = navController,
+            authRepository = authRepository,
+            isGuestUser = isGuestUser,
+            context = context,
+            scope = scope
         )
+    }
 
-        val communityViewModel = screenViewModel {
-            CommunityViewModel(
-                repository = CommunityRepository(
-                    service = RetrofitInstance.createCommunityService(tokenManager)
-                ),
-                remoteGameRepository = RemoteGameRepository(
-                    gamesService = RetrofitInstance.createGamesService(tokenManager)
-                ),
-                followRepository = FollowRepository(context)
-            )
-        }
-
-        CommunityScreen(
-            viewModel = communityViewModel,
-            isRegisteredUser = !accessToken.isNullOrBlank(),
-            currentUsername = profile?.username,
-            accessToken = accessToken,
-            currentAvatarUrl = profile?.avatarUrl,
-            currentDisplayName = profile?.displayName,
-            onBack = {
-                scope.launch {
-                    navController.safeBack(homeRoute(authRepository))
-                }
-            }
+    composable(
+        route = AppRoutes.COMMUNITY_POST,
+        arguments = listOf(navArgument("postId") { type = NavType.LongType })
+    ) { backStackEntry ->
+        val postId = backStackEntry.arguments?.getLong("postId")?.takeIf { it > 0L }
+        CommunityDestination(
+            navController = navController,
+            authRepository = authRepository,
+            isGuestUser = isGuestUser,
+            context = context,
+            scope = scope,
+            initialPostId = postId
         )
     }
 
@@ -199,4 +188,41 @@ fun NavGraphBuilder.communityAndClubGraph(
             )
         }
     }
+}
+
+@Composable
+private fun CommunityDestination(
+    navController: NavController,
+    authRepository: AuthRepository,
+    isGuestUser: Boolean,
+    context: Context,
+    scope: CoroutineScope,
+    initialPostId: Long? = null
+) {
+    val tokenManager = remember { TokenManager.get(context) }
+    val accessToken by tokenManager.accessTokenFlow.collectAsState(initial = null)
+    val profile by rememberCurrentUserProfile(tokenManager = tokenManager, isGuest = isGuestUser)
+
+    val communityViewModel = screenViewModel {
+        CommunityViewModel(
+            repository = CommunityRepository(service = RetrofitInstance.createCommunityService(tokenManager)),
+            remoteGameRepository = RemoteGameRepository(gamesService = RetrofitInstance.createGamesService(tokenManager)),
+            followRepository = FollowRepository(context)
+        )
+    }
+
+    CommunityScreen(
+        viewModel = communityViewModel,
+        isRegisteredUser = !accessToken.isNullOrBlank(),
+        currentUsername = profile?.username,
+        accessToken = accessToken,
+        currentAvatarUrl = profile?.avatarUrl,
+        currentDisplayName = profile?.displayName,
+        initialPostId = initialPostId,
+        onBack = {
+            scope.launch {
+                navController.safeBack(if (initialPostId != null) AppRoutes.COMMUNITY else homeRoute(authRepository))
+            }
+        }
+    )
 }

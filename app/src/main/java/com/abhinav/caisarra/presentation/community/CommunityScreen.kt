@@ -106,6 +106,7 @@ fun CommunityScreen(
     currentAvatarUrl: String? = null,
     currentDisplayName: String? = null,
     accessToken: String? = null,
+    initialPostId: Long? = null,
     onBack: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -117,11 +118,34 @@ fun CommunityScreen(
     var showGamePicker by remember { mutableStateOf(false) }
     var gameCaption by remember { mutableStateOf("") }
     var publishingFromWriteScreen by remember { mutableStateOf(false) }
-    var selectedPost by remember { mutableStateOf<CommunityPostDto?>(null) }
+    var selectedPost by remember(initialPostId) {
+        mutableStateOf(initialPostId?.let { id -> state.posts.firstOrNull { it.id == id } })
+    }
+    var loadingInitialPost by remember(initialPostId) {
+        mutableStateOf(initialPostId != null && selectedPost == null)
+    }
     val toaster = rememberToaster()
     val isWriteScreenVisible = selectedPost == null && showWritePost && isRegisteredUser
     val followingOnly = isRegisteredUser && !state.showingBookmarks && state.feedTab == CommunityFeedTab.FOLLOWING
     val onFollow = { author: CommunityAuthorDto -> author.id?.takeIf { isRegisteredUser && !author.username.equals(resolvedUsername, true) }?.let { { viewModel.toggleFollow(it) } } }
+    LaunchedEffect(initialPostId) {
+        val postId = initialPostId ?: return@LaunchedEffect
+        if (selectedPost?.id == postId) {
+            loadingInitialPost = false
+            return@LaunchedEffect
+        }
+        loadingInitialPost = true
+        try {
+            selectedPost = viewModel.loadPost(postId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            toaster.show(e.userMessage("Unable to load post."))
+            onBack()
+        } finally {
+            loadingInitialPost = false
+        }
+    }
     LaunchedEffect(isRegisteredUser) {
         if (!isRegisteredUser) viewModel.selectTab(CommunityFeedTab.ALL)
     }
@@ -131,7 +155,7 @@ fun CommunityScreen(
                 state.showingBookmarks
     ) {
         when {
-            selectedPost != null -> selectedPost = null
+            selectedPost != null -> if (initialPostId != null) onBack() else selectedPost = null
 
             showWritePost && isRegisteredUser -> {
                 focusManager.clearFocus()
@@ -161,20 +185,31 @@ fun CommunityScreen(
         viewModel.clearError(message)
     }
 
-    if (selectedPost != null) {
+    if (loadingInitialPost && selectedPost == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(CommunityBackground)
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = CommunityGreen)
+        }
+    } else if (selectedPost != null) {
         CommunityPostDetailScreen(
             post = state.posts.firstOrNull { it.id == selectedPost!!.id } ?: selectedPost!!,
             viewModel = viewModel,
             isRegisteredUser = isRegisteredUser,
             currentUsername = resolvedUsername,
             toaster = toaster,
-            onBack = { selectedPost = null },
+            onBack = { if (initialPostId != null) onBack() else selectedPost = null },
             onReact = { reaction -> selectedPost?.let { viewModel.react(it.id, reaction) } },
             onBookmark = { selectedPost?.let { viewModel.toggleBookmark(it.id) } },
             onFollow = onFollow,
             onDeletePost = {
                 selectedPost?.let { viewModel.deletePost(it.id) }
-                selectedPost = null
+                if (initialPostId != null) onBack() else selectedPost = null
             }
         )
     } else if (showWritePost && isRegisteredUser) {
