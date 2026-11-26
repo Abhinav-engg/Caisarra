@@ -35,16 +35,16 @@ The app talks to a MOSAIC game server over REST and WebSockets. It keeps a local
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/home.jpeg" width="240" alt="Home"/></td>
-    <td align="center"><img src="docs/screenshots/new_game.jpeg" width="240" alt="New game"/></td>
-    <td align="center"><img src="docs/screenshots/time_controls.jpeg" width="240" alt="Time controls"/></td>
-    <td align="center"><img src="docs/screenshots/matchmaking.jpeg" width="240" alt="Matchmaking"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/home.jpeg" width="240" alt="Home"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/new_game.jpeg" width="240" alt="New game"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/time_controls.jpeg" width="240" alt="Time controls"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/matchmaking.jpeg" width="240" alt="Matchmaking"/></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Home</b><br/>Rating overview, Quick Play and daily tactics</sub></td>
-    <td align="center"><sub><b>New game</b><br/>Start a match, play friends, bots, pass &amp; play or tournaments</sub></td>
-    <td align="center"><sub><b>Time controls</b><br/>Bullet, Blitz, Rapid, Daily or a custom clock</sub></td>
-    <td align="center"><sub><b>Matchmaking</b><br/>Find a rated opponent in seconds</sub></td>
+    <td width="25%" align="center"><sub><b>Home</b><br/>Rating overview, Quick Play and daily tactics</sub></td>
+    <td width="25%" align="center"><sub><b>New game</b><br/>Start a match, play friends, bots, pass &amp; play or tournaments</sub></td>
+    <td width="25%" align="center"><sub><b>Time controls</b><br/>Bullet, Blitz, Rapid, Daily or a custom clock</sub></td>
+    <td width="25%" align="center"><sub><b>Matchmaking</b><br/>Find a rated opponent in seconds</sub></td>
   </tr>
 </table>
 
@@ -52,14 +52,14 @@ The app talks to a MOSAIC game server over REST and WebSockets. It keeps a local
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/bot_setup.jpeg" width="240" alt="Bot setup"/></td>
-    <td align="center"><img src="docs/screenshots/analysis.jpeg" width="240" alt="Game analysis"/></td>
-    <td align="center"><img src="docs/screenshots/themes.jpeg" width="240" alt="Theme customization"/></td>
+    <td width="33%" align="center"><img src="docs/screenshots/bot_setup.jpeg" width="240" alt="Bot setup"/></td>
+    <td width="33%" align="center"><img src="docs/screenshots/analysis.jpeg" width="240" alt="Game analysis"/></td>
+    <td width="33%" align="center"><img src="docs/screenshots/themes.jpeg" width="240" alt="Theme customization"/></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Bots</b><br/>A ladder of rated bots plus a custom rating bot</sub></td>
-    <td align="center"><sub><b>Analysis</b><br/>Evaluation bar, accuracy, key moves and mascot feedback</sub></td>
-    <td align="center"><sub><b>Themes</b><br/>8 board themes and 5 piece sets with live preview</sub></td>
+    <td width="33%" align="center"><sub><b>Bots</b><br/>A ladder of rated bots plus a custom rating bot</sub></td>
+    <td width="33%" align="center"><sub><b>Analysis</b><br/>Evaluation bar, accuracy, key moves and mascot feedback</sub></td>
+    <td width="33%" align="center"><sub><b>Themes</b><br/>8 board themes and 5 piece sets with live preview</sub></td>
   </tr>
 </table>
 
@@ -67,18 +67,18 @@ The app talks to a MOSAIC game server over REST and WebSockets. It keeps a local
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/puzzles.jpeg" width="240" alt="Puzzles hub"/></td>
-    <td align="center"><img src="docs/screenshots/daily_puzzle.jpeg" width="240" alt="Daily puzzle"/></td>
-    <td align="center"><img src="docs/screenshots/puzzle_solved.jpeg" width="240" alt="Puzzle solved"/></td>
-    <td align="center"><img src="docs/screenshots/rush.jpeg" width="240" alt="Puzzle Rush"/></td>
-    <td align="center"><img src="docs/screenshots/custom_tactics.jpeg" width="240" alt="Custom tactics"/></td>
+    <td width="20%" align="center"><img src="docs/screenshots/puzzles.jpeg" width="240" alt="Puzzles hub"/></td>
+    <td width="20%" align="center"><img src="docs/screenshots/daily_puzzle.jpeg" width="240" alt="Daily puzzle"/></td>
+    <td width="20%" align="center"><img src="docs/screenshots/puzzle_solved.jpeg" width="240" alt="Puzzle solved"/></td>
+    <td width="20%" align="center"><img src="docs/screenshots/rush.jpeg" width="240" alt="Puzzle Rush"/></td>
+    <td width="20%" align="center"><img src="docs/screenshots/custom_tactics.jpeg" width="240" alt="Custom tactics"/></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Puzzles hub</b><br/>Daily puzzle, Rush, Survival, Custom Tactics and Mini Mates</sub></td>
-    <td align="center"><sub><b>Daily puzzle</b><br/>Hints, solutions, lives and a streak</sub></td>
-    <td align="center"><sub><b>Puzzle solved</b><br/>Rating gain, streak update and mascot celebration</sub></td>
-    <td align="center"><sub><b>Puzzle Rush</b><br/>Solve as many as you can before three strikes</sub></td>
-    <td align="center"><sub><b>Custom tactics</b><br/>Pick tactical themes and a rating range</sub></td>
+    <td width="20%" align="center"><sub><b>Puzzles hub</b><br/>Daily puzzle, Rush, Survival, Custom Tactics and Mini Mates</sub></td>
+    <td width="20%" align="center"><sub><b>Daily puzzle</b><br/>Hints, solutions, lives and a streak</sub></td>
+    <td width="20%" align="center"><sub><b>Puzzle solved</b><br/>Rating gain, streak update and mascot celebration</sub></td>
+    <td width="20%" align="center"><sub><b>Puzzle Rush</b><br/>Solve as many as you can before three strikes</sub></td>
+    <td width="20%" align="center"><sub><b>Custom tactics</b><br/>Pick tactical themes and a rating range</sub></td>
   </tr>
 </table>
 
@@ -86,16 +86,16 @@ The app talks to a MOSAIC game server over REST and WebSockets. It keeps a local
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/friends.jpeg" width="240" alt="Friends"/></td>
-    <td align="center"><img src="docs/screenshots/clubs.jpeg" width="240" alt="Clubs"/></td>
-    <td align="center"><img src="docs/screenshots/tournaments.jpeg" width="240" alt="Tournaments"/></td>
-    <td align="center"><img src="docs/screenshots/community.jpeg" width="240" alt="Community feed"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/friends.jpeg" width="240" alt="Friends"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/clubs.jpeg" width="240" alt="Clubs"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/tournaments.jpeg" width="240" alt="Tournaments"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/community.jpeg" width="240" alt="Community feed"/></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Friends</b><br/>Search, invite links, direct chat and challenges</sub></td>
-    <td align="center"><sub><b>Clubs</b><br/>Discover, join with a code and browse your communities</sub></td>
-    <td align="center"><sub><b>Tournaments</b><br/>Browse, sort, filter and join or create events</sub></td>
-    <td align="center"><sub><b>Community</b><br/>Posts, shared games, reactions and comments</sub></td>
+    <td width="25%" align="center"><sub><b>Friends</b><br/>Search, invite links, direct chat and challenges</sub></td>
+    <td width="25%" align="center"><sub><b>Clubs</b><br/>Discover, join with a code and browse your communities</sub></td>
+    <td width="25%" align="center"><sub><b>Tournaments</b><br/>Browse, sort, filter and join or create events</sub></td>
+    <td width="25%" align="center"><sub><b>Community</b><br/>Posts, shared games, reactions and comments</sub></td>
   </tr>
 </table>
 
@@ -103,16 +103,16 @@ The app talks to a MOSAIC game server over REST and WebSockets. It keeps a local
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/profile.jpeg" width="240" alt="Profile"/></td>
-    <td align="center"><img src="docs/screenshots/stats.jpeg" width="240" alt="Statistics"/></td>
-    <td align="center"><img src="docs/screenshots/nearby.jpeg" width="240" alt="Nearby players"/></td>
-    <td align="center"><img src="docs/screenshots/widgets.jpeg" width="240" alt="Home screen widgets"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/profile.jpeg" width="240" alt="Profile"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/stats.jpeg" width="240" alt="Statistics"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/nearby.jpeg" width="240" alt="Nearby players"/></td>
+    <td width="25%" align="center"><img src="docs/screenshots/widgets.jpeg" width="240" alt="Home screen widgets"/></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Profile</b><br/>Followers, country, current strength and rating breakdown</sub></td>
-    <td align="center"><sub><b>Statistics</b><br/>Rating progression, win/draw/loss results and streaks</sub></td>
-    <td align="center"><sub><b>Nearby</b><br/>Find players around you on an opt-in map</sub></td>
-    <td align="center"><sub><b>Widgets</b><br/>Home screen streak and Mini Mates widgets</sub></td>
+    <td width="25%" align="center"><sub><b>Profile</b><br/>Followers, country, current strength and rating breakdown</sub></td>
+    <td width="25%" align="center"><sub><b>Statistics</b><br/>Rating progression, win/draw/loss results and streaks</sub></td>
+    <td width="25%" align="center"><sub><b>Nearby</b><br/>Find players around you on an opt-in map</sub></td>
+    <td width="25%" align="center"><sub><b>Widgets</b><br/>Home screen streak and Mini Mates widgets</sub></td>
   </tr>
 </table>
 
