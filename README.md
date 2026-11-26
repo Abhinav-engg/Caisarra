@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/screenshots/logo.png" width="96" alt="MOSAIC logo"/>
+  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" width="96" alt="MOSAIC logo"/>
   <h1>MOSAIC</h1>
   <p>A modern chess app for Android: rated online games, bots, daily puzzles, tournaments, clubs and a friendly community, all in one place.</p>
   <p>
