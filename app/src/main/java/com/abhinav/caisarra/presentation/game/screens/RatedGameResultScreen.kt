@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -83,7 +84,8 @@ fun RatedGameResultScreen(
     onRematch: () -> Unit,
     onNewOpponent: () -> Unit,
     onSavePgn: () -> Unit,
-    analysisViewModel: GameAnalysisViewModel
+    analysisViewModel: GameAnalysisViewModel,
+    onBackToTournament: (() -> Unit)? = null
 ) {
     val analysis by analysisViewModel.state.collectAsState()
     LaunchedEffect(Unit) { analysisViewModel.start() }
@@ -202,20 +204,29 @@ fun RatedGameResultScreen(
                     )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (onBackToTournament != null) {
                 OutlineAction(
-                    label = if (rematchBusy) "Inviting..." else "Rematch",
-                    icon = Icons.Default.Refresh,
-                    modifier = Modifier.weight(1f),
-                    enabled = !rematchBusy,
-                    onClick = onRematch
+                    label = "Back to Tournament",
+                    icon = Icons.Default.EmojiEvents,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onBackToTournament
                 )
-                OutlineAction(
-                    label = "New Opponent",
-                    icon = Icons.Default.PersonSearch,
-                    modifier = Modifier.weight(1f),
-                    onClick = onNewOpponent
-                )
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlineAction(
+                        label = if (rematchBusy) "Inviting..." else "Rematch",
+                        icon = Icons.Default.Refresh,
+                        modifier = Modifier.weight(1f),
+                        enabled = !rematchBusy,
+                        onClick = onRematch
+                    )
+                    OutlineAction(
+                        label = "New Opponent",
+                        icon = Icons.Default.PersonSearch,
+                        modifier = Modifier.weight(1f),
+                        onClick = onNewOpponent
+                    )
+                }
             }
             Box(Modifier.fillMaxWidth().padding(bottom = 10.dp, top = 4.dp), contentAlignment = Alignment.Center) {
                 TextAction(Icons.Default.Download, "Save PGN", onSavePgn)

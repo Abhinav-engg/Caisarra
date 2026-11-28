@@ -110,6 +110,7 @@ fun OnlineGameScreen(
     viewModel: OnlineGameViewModel,
     analysisViewModel: GameAnalysisViewModel,
     onHome: () -> Unit,
+    onBack: (() -> Unit)? = null,
     onNewOpponent: (minutes: Int, incrementSeconds: Int) -> Unit = { _, _ -> onHome() },
     onRematchStarted: (gameId: String, shareLink: String, opponentName: String) -> Unit = { _, _, _ -> },
     onStartAnalysis: () -> Unit = {}
@@ -149,11 +150,13 @@ fun OnlineGameScreen(
     var showChat by remember { mutableStateOf(false) }
     var showHomeResignDialog by remember { mutableStateOf(false) }
     var showWatchShareDialog by remember { mutableStateOf(false) }
-    val requestHome = {
+    val exitAction = onBack ?: onHome
+    val isTournament = onBack != null
+    val requestExit = {
         if (state.gameResult == null && !waiting) {
             showHomeResignDialog = true
         } else {
-            onHome()
+            exitAction()
         }
     }
     var seenCount by remember { mutableIntStateOf(0) }
@@ -168,9 +171,9 @@ fun OnlineGameScreen(
             showChat -> showChat = false
             showResultDialog -> showResultDialog = false
             showHomeResignDialog -> showHomeResignDialog = false
-            rematchDeclined != null -> onHome()
-            !state.isLoading && state.board.isEmpty() && state.errorMessage != null -> onHome()
-            else -> requestHome()
+            rematchDeclined != null -> exitAction()
+            !state.isLoading && state.board.isEmpty() && state.errorMessage != null -> exitAction()
+            else -> requestExit()
         }
     }
 
@@ -183,8 +186,8 @@ fun OnlineGameScreen(
         CenteredColumn {
             Text(text = state.errorMessage.orEmpty(), color = Color.White)
             Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = onHome) {
-                Text(text = stringResource(R.string.home), color = Accent)
+            TextButton(onClick = exitAction) {
+                Text(text = if (isTournament) "Back to Tournament" else stringResource(R.string.home), color = Accent)
             }
         }
         return
@@ -261,20 +264,22 @@ fun OnlineGameScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
-                    onClick = {
-                        viewModel.cancelWaitingChallenge(
-                            onDone = onHome,
-                            onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
-                        )
-                    },
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0x33FFFFFF))
-                ) {
-                    Text(stringResource(R.string.cancel_2))
+                if (!isTournament) {
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.cancelWaitingChallenge(
+                                onDone = onHome,
+                                onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+                            )
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        border = BorderStroke(1.dp, Color(0x33FFFFFF))
+                    ) {
+                        Text(stringResource(R.string.cancel_2))
+                    }
                 }
-                TextButton(onClick = onHome) {
-                    Text(text = stringResource(R.string.home), color = Accent)
+                TextButton(onClick = exitAction) {
+                    Text(text = if (isTournament) "Back to Tournament" else stringResource(R.string.home), color = Accent)
                 }
             }
         }
@@ -318,7 +323,7 @@ fun OnlineGameScreen(
                             .weight(1f)
                             .fillMaxHeight()
                     ) {
-                        OnlineGameHeader(state, pingMs, connected, onBack = requestHome)
+                        OnlineGameHeader(state, pingMs, connected, onBack = requestExit)
 
                         state.errorMessage?.let {
                             Spacer(Modifier.height(4.dp))
@@ -376,7 +381,7 @@ fun OnlineGameScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        OnlineGameHeader(state, pingMs, connected, onBack = requestHome)
+                        OnlineGameHeader(state, pingMs, connected, onBack = requestExit)
 
                         if (state.gameResult != null && !showResultDialog) {
                             GameOverPill(onClick = { showResultDialog = true })
@@ -631,7 +636,8 @@ fun OnlineGameScreen(
                         onNewOpponent(state.timeControlMinutes, state.incrementSeconds)
                     },
                     onSavePgn = { savePgn(context, viewModel.pgn()) },
-                    analysisViewModel = analysisViewModel
+                    analysisViewModel = analysisViewModel,
+                    onBackToTournament = onBack
                 ) }
             } else {
                 GameResultDialog(
@@ -644,7 +650,8 @@ fun OnlineGameScreen(
                     isRated = state.isRated,
                     whitePlayerName = state.whitePlayerName,
                     blackPlayerName = state.blackPlayerName,
-                    onDismiss = { showResultDialog = false }
+                    onDismiss = { showResultDialog = false },
+                    onBackToTournament = onBack
                 )
             }
         }

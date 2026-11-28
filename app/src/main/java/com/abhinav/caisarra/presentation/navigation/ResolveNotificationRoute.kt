@@ -120,7 +120,7 @@ fun resolveNotificationRoute(
             val gameId = getParam("game_id") ?: getParam("gameId")
             val tournamentId = getParam("tournament_id") ?: getParam("tournamentId")
             if (!gameId.isNullOrBlank()) {
-                AppRoutes.onlineGame(gameId)
+                AppRoutes.onlineGame(gameId, tournamentId)
             } else if (!tournamentId.isNullOrBlank()) {
                 AppRoutes.tournamentDetail(tournamentId)
             } else {

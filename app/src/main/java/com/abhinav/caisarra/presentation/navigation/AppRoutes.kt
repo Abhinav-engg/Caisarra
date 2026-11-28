@@ -50,7 +50,7 @@ object AppRoutes {
     const val PASS_AND_PLAY_SETUP = "pass_and_play_setup"
     const val TIME_CONTROLS = "time_controls"
     const val MATCHMAKING = "matchmaking/{minutes}/{incrementSeconds}"
-    const val ONLINE_GAME = "online_game/{gameId}"
+    const val ONLINE_GAME = "online_game/{gameId}?tournamentId={tournamentId}"
     const val GAME_ANALYSIS = "game_analysis/{gameId}"
     const val GAME_HISTORY = "game_history/{gameId}"
     const val GAME = "game?resume={resume}" +
@@ -80,8 +80,9 @@ object AppRoutes {
     fun gameHistory(gameId: String): String {
         return "game_history/${Uri.encode(gameId)}"
     }
-    fun onlineGame(gameId: String): String {
-        return "online_game/${Uri.encode(gameId)}"
+    fun onlineGame(gameId: String, tournamentId: String? = null): String {
+        val query = tournamentId?.takeIf { it.isNotBlank() }?.let { "?tournamentId=${Uri.encode(it)}" } ?: ""
+        return "online_game/${Uri.encode(gameId)}$query"
     }
     fun gameAnalysis(gameId: String): String {
         return "game_analysis/${Uri.encode(gameId)}"

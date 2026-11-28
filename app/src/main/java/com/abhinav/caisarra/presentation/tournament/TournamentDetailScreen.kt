@@ -43,12 +43,17 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,7 +79,19 @@ fun TournamentDetailScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var tab by rememberSaveable { mutableStateOf(0) }
+    var hasResumedOnce by rememberSaveable { mutableStateOf(false) }
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (hasResumedOnce) viewModel.refresh(showLoading = false) else hasResumedOnce = true
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -83,10 +100,12 @@ fun TournamentDetailScreen(
         }
     }
 
-    LaunchedEffect(state.isTournamentCancelled) {
+    LaunchedEffect(state.isTournamentCancelled, lifecycleOwner) {
         if (state.isTournamentCancelled) {
-            Toast.makeText(context, "Tournament cancelled", Toast.LENGTH_SHORT).show()
-            onBack()
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                Toast.makeText(context, "Tournament cancelled", Toast.LENGTH_SHORT).show()
+                onBack()
+            }
         }
     }
 
