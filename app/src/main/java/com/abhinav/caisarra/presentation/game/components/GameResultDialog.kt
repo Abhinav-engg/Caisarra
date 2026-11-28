@@ -59,7 +59,8 @@ fun GameResultDialog(
     isRated: Boolean = false,
     whitePlayerName: String = "White",
     blackPlayerName: String = "Black",
-    onDismiss: () -> Unit = {}
+    onDismiss: () -> Unit = {},
+    onBackToTournament: (() -> Unit)? = null
 ) {
     val outcome = outcomeFor(result, playerColor)
     val outcomeColor = when (outcome) {
@@ -138,13 +139,17 @@ fun GameResultDialog(
                     RatingSummary(it, ratingChange, isRated, outcomeColor)
                 }
 
-                GeneralButton(text = "NEW GAME", onClick = onNewGame)
-                Text(
-                    text = stringResource(R.string.home),
-                    color = Color(0xFFD5DCE6),
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable(onClick = onHome).padding(12.dp)
-                )
+                if (onBackToTournament != null) {
+                    GeneralButton(text = "BACK TO TOURNAMENT", onClick = onBackToTournament)
+                } else {
+                    GeneralButton(text = "NEW GAME", onClick = onNewGame)
+                    Text(
+                        text = stringResource(R.string.home),
+                        color = Color(0xFFD5DCE6),
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable(onClick = onHome).padding(12.dp)
+                    )
+                }
             }
             }
         }

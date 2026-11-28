@@ -63,8 +63,8 @@ class TournamentDetailViewModel(
         keepSocketAlive()
     }
 
-    fun refresh() {
-        viewModelScope.launch { refreshAll(showLoading = true) }
+    fun refresh(showLoading: Boolean = true) {
+        viewModelScope.launch { refreshAll(showLoading = showLoading) }
     }
 
     fun clearMessage() = _state.update { it.copy(message = null) }

@@ -3,6 +3,7 @@ package com.abhinav.caisarra.presentation.navigation
 import android.app.Application
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.runtime.key
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -29,34 +30,37 @@ fun NavGraphBuilder.tournamentGraph(
             }
         ),
         deepLinks = listOf(
+            navDeepLink { uriPattern = "caisarra://tournaments/invite/{code}" },
             navDeepLink { uriPattern = "https://caisaara.app/tournaments/invite/{code}" },
             navDeepLink { uriPattern = "https://caisaara.duckdns.org/tournaments/invite/{code}" }
         )
     ) { entry ->
         val code = entry.arguments?.getString("code").orEmpty()
 
-        LinkResolverScreen(
-            resolveRoute = {
-                TournamentRepository.get(context)
-                    .getTournamentByInvite(code)
-                    .fold(
-                        onSuccess = { tournament ->
-                            AppRoutes.tournamentDetail(tournament.id, code)
-                        },
-                        onFailure = {
-                            Toast.makeText(context, "Tournament link is invalid", Toast.LENGTH_SHORT).show()
-                            AppRoutes.TOURNAMENTS
+        key(code) {
+            LinkResolverScreen(
+                resolveRoute = {
+                    TournamentRepository.get(context)
+                        .getTournamentByInvite(code)
+                        .fold(
+                            onSuccess = { tournament ->
+                                AppRoutes.tournamentDetail(tournament.id, code)
+                            },
+                            onFailure = {
+                                Toast.makeText(context, "Tournament link is invalid", Toast.LENGTH_SHORT).show()
+                                AppRoutes.TOURNAMENTS
+                            }
+                        )
+                },
+                onResolved = { route ->
+                    navController.navigate(route) {
+                        popUpTo(AppRoutes.TOURNAMENT_INVITE_LINK) {
+                            inclusive = true
                         }
-                    )
-            },
-            onResolved = { route ->
-                navController.navigate(route) {
-                    popUpTo(AppRoutes.TOURNAMENT_INVITE_LINK) {
-                        inclusive = true
                     }
                 }
-            }
-        )
+            )
+        }
     }
 
     composable(route = AppRoutes.TOURNAMENTS) {
@@ -73,7 +77,7 @@ fun NavGraphBuilder.tournamentGraph(
                 navController.navigateOnce(AppRoutes.tournamentDetail(id, code))
             },
             onBack = {
-                navController.safeBack(AppRoutes.GAME_SETUP)
+                navController.safePop(AppRoutes.HOME)
             }
         )
     }
@@ -118,18 +122,20 @@ fun NavGraphBuilder.tournamentGraph(
     ) { entry ->
         val id = entry.arguments?.getString("id").orEmpty()
         val code = entry.arguments?.getString("code")
-        val detailViewModel = screenViewModel {
+        val detailViewModel = screenViewModel(key = "tournament_$id") {
             TournamentDetailViewModel(context as Application, id, code)
         }
 
-        TournamentDetailScreen(
-            viewModel = detailViewModel,
-            onOpenGame = { gameId ->
-                navController.navigateOnce(AppRoutes.onlineGame(gameId))
-            },
-            onBack = {
-                navController.safeBack(AppRoutes.TOURNAMENTS)
-            }
-        )
+        key(id) {
+            TournamentDetailScreen(
+                viewModel = detailViewModel,
+                onOpenGame = { gameId ->
+                    navController.navigateOnce(AppRoutes.onlineGame(gameId, tournamentId = id))
+                },
+                onBack = {
+                    navController.safePop(AppRoutes.HOME)
+                }
+            )
+        }
     }
 }

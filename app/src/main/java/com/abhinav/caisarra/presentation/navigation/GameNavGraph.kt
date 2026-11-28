@@ -348,6 +348,11 @@ fun NavGraphBuilder.gameGraph(
         arguments = listOf(
             navArgument("gameId") {
                 type = NavType.StringType
+            },
+            navArgument("tournamentId") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
             }
         ),
         deepLinks = listOf(
@@ -357,6 +362,8 @@ fun NavGraphBuilder.gameGraph(
         )
     ) { entry ->
         val gameId = entry.arguments?.getString("gameId").orEmpty()
+        val tournamentId = entry.arguments?.getString("tournamentId")?.takeIf { it.isNotBlank() }
+        val hasTournamentInStack = runCatching { navController.getBackStackEntry(AppRoutes.TOURNAMENT_DETAIL) }.isSuccess
         val onlineViewModel = screenViewModel(key = "online_game_$gameId") {
             OnlineGameViewModel(context as Application, gameId)
         }
@@ -372,6 +379,26 @@ fun NavGraphBuilder.gameGraph(
             analysisViewModel = analysisViewModel,
             onHome = {
                 navController.goHome()
+            },
+            onBack = if (tournamentId != null || hasTournamentInStack) {
+                {
+                    when {
+                        runCatching { navController.getBackStackEntry(AppRoutes.TOURNAMENT_DETAIL) }.isSuccess -> {
+                            navController.safeBack(AppRoutes.TOURNAMENT_DETAIL)
+                        }
+                        tournamentId != null -> {
+                            navController.navigateOnce(AppRoutes.tournamentDetail(tournamentId)) {
+                                popUpTo(AppRoutes.ONLINE_GAME) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                        else -> navController.safePop(AppRoutes.HOME)
+                    }
+                }
+            } else {
+                null
             },
             onNewOpponent = { minutes, increment ->
                 navController.navigate(AppRoutes.matchmaking(minutes, increment)) {
